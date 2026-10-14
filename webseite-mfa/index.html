@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Arbeitsplatz Arztpraxis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: Praxis-Mindmap – runde Mitte (Foto), fünf Wege zu den Themen; Unterseiten als ruhige Lese-/Hörseite */
+:root{
+  --bg:#EEF5F4; --grid:#DBE9E7; --card:#FFFFFF; --ink:#14302F; --muted:#4F6B69; --blue:#0F6E6E; --blue-soft:#D6EDEA; --orange:#D2405A; --orange-soft:#FADDE2; --mark:#FFE7A3; --line:#93B9B5;
+  --f-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1A1A; --grid:#172A29; --card:#152625; --ink:#E5F2F0; --muted:#98B8B4; --blue:#6FD1C8; --blue-soft:#1D3B39; --orange:#FF7C92; --orange-soft:#4A1E27; --mark:#5A4A12; --line:#335957; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1A1A; --grid:#172A29; --card:#152625; --ink:#E5F2F0; --muted:#98B8B4; --blue:#6FD1C8; --blue-soft:#1D3B39; --orange:#FF7C92; --orange-soft:#4A1E27; --mark:#5A4A12; --line:#335957; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;}
+.wrap{max-width:1040px;margin:0 auto;padding-block:24px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:8px}
+
+/* Kopf */
+.head{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);font-weight:600}
+.head h1{font-size:clamp(26px,4vw,40px);color:var(--blue)}
+.head p{margin:0;color:var(--muted);max-width:62ch}
+
+/* Mindmap */
+.map{position:relative;width:100%;aspect-ratio:4/3;max-height:820px}
+.spokes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.spokes line{stroke:var(--line);stroke-width:4;stroke-linecap:round;stroke-dasharray:2 10;vector-effect:non-scaling-stroke}
+.hub{position:absolute;left:50%;top:50%;width:28%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;overflow:hidden;background:var(--orange-soft);
+  border:8px solid var(--card);box-shadow:0 0 0 4px var(--blue),0 12px 30px rgba(15,30,60,.18)}
+.hub img,.hub svg{width:100%;height:100%;object-fit:cover;display:block}
+.hub-label{position:absolute;left:50%;top:calc(50% + 15.5%);transform:translateX(-50%);
+  background:var(--blue);color:#fff;font-family:var(--f-display);font-weight:600;
+  padding:4px 14px;border-radius:999px;white-space:nowrap;font-size:15px}
+.node{position:absolute;transform:translate(-50%,-50%);width:min(27%,260px);
+  background:var(--card);border:2px solid var(--blue);border-radius:16px;padding:12px 14px;
+  display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 18px rgba(15,30,60,.10)}
+.node .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.node h2{font-size:19px;color:var(--blue)}
+.node .row{display:flex;align-items:center;gap:10px}
+.node .bar{flex:1;min-width:0}
+.node .more{font-size:14px;font-weight:600;text-decoration:none;color:var(--orange)}
+.node .more:hover{text-decoration:underline}
+.node.playing{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft),0 6px 18px rgba(15,30,60,.12)}
+
+/* Player-Bausteine */
+.play{flex:none;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--orange);color:#fff;display:grid;place-items:center}
+.play svg{width:20px;height:20px;fill:currentColor}
+.play.big{width:64px;height:64px}.play.big svg{width:28px;height:28px}
+.bar{height:8px;border-radius:99px;background:var(--blue-soft);overflow:hidden;cursor:pointer}
+.bar span{display:block;height:100%;width:0;background:var(--orange)}
+.time{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);flex:none}
+
+/* Handy: Mindmap wird zur senkrechten Kette */
+@media (max-width:760px){
+  .map{aspect-ratio:auto;max-height:none;display:flex;flex-direction:column;align-items:stretch;gap:14px;
+    padding-left:22px;border-left:4px dotted var(--line)}
+  .spokes{display:none}
+  .hub{position:relative;left:auto;top:auto;transform:none;width:min(62vw,240px);align-self:center;margin-left:-22px}
+  .hub-label{position:relative;left:auto;top:auto;transform:none;align-self:center;margin:-26px 0 6px -22px}
+  .node{position:relative;transform:none;width:100%;left:auto!important;top:auto!important}
+}
+
+/* Unterseite */
+.back{display:inline-flex;gap:6px;align-items:center;font-weight:600;text-decoration:none;margin-bottom:14px}
+.sheet{background:var(--card);border-radius:20px;border:2px solid var(--blue);padding:clamp(18px,4vw,36px);
+  display:flex;flex-direction:column;gap:20px;max-width:760px}
+.sheet h1{font-size:clamp(26px,4.5vw,38px);color:var(--blue)}
+.player{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--blue-soft);border-radius:16px;padding:12px 16px}
+.player .bar{flex:1;min-width:140px;height:10px;background:var(--card)}
+.speed{border:2px solid var(--blue);background:transparent;color:var(--blue);border-radius:999px;
+  padding:4px 12px;font:600 14px var(--f-body);cursor:pointer}
+.speed[aria-pressed="true"]{background:var(--blue);color:var(--card)}
+.text{font-size:clamp(18px,2.3vw,21px);line-height:1.75;max-width:62ch}
+.text p{margin:0 0 .9em}
+.s{cursor:pointer;border-radius:6px;padding:1px 2px;transition:background .2s}
+.s:hover{background:var(--blue-soft)}
+.s.now{background:var(--mark)}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.task{border-top:2px dashed var(--line);padding-top:16px}
+.task h3{font-size:18px;color:var(--orange);margin-bottom:6px}
+.task ul{margin:0;padding-left:1.2em}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:760px;margin-top:14px}
+.pager a{font-weight:600;text-decoration:none}
+@media (prefers-reduced-motion:reduce){.s{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <section id="start">
+    <header class="head">
+      <span class="eyebrow">Berufsorientierung · Mittelschule</span>
+      <h1>Der Arbeitsplatz einer Medizinischen Fachangestellten</h1>
+      <p>Selin erzählt von seiner Arbeit. Hör dir die fünf Texte an und schreib Stichpunkte unter die passende Überschrift in deinem Hefteintrag. Mit „Mitlesen“ siehst du den Text dazu.</p>
+    </header>
+    <div class="map" id="map">
+      <svg class="spokes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" id="spokes"></svg>
+      <div class="hub">
+        <img src="mfa.jpg" alt="Medizinische Fachangestellte bei der Arbeit" id="photo">
+        <svg id="drawing" hidden viewBox="0 0 200 200" role="img" aria-label="Zeichnung einer Medizinischen Fachangestellten"><rect width="200" height="200" fill="#CDEDEA"/>
+<rect x="138" y="26" width="38" height="38" rx="6" fill="#FFFFFF"/><rect x="152" y="32" width="10" height="26" fill="#0F7C7A"/><rect x="144" y="40" width="26" height="10" fill="#0F7C7A"/>
+<rect y="150" width="200" height="50" fill="#B5DCD8"/>
+<circle cx="100" cy="50" r="15" fill="#3B2A20"/>
+<ellipse cx="100" cy="94" rx="36" ry="40" fill="#3B2A20"/>
+<path d="M52 200 C52 150 70 128 100 128 C130 128 148 150 148 200Z" fill="#7FD0C9"/>
+<rect x="92" y="110" width="16" height="22" fill="#D59B76"/>
+<path d="M88 128 L100 148 L112 128Z" fill="#D59B76"/>
+<circle cx="100" cy="90" r="30" fill="#E2AC86"/>
+<path d="M70 88 C68 64 84 56 100 56 C118 56 132 66 130 88 C122 74 106 68 92 72 C82 75 74 80 70 88Z" fill="#3B2A20"/>
+<circle cx="90" cy="93" r="3.4" fill="#2A1E18"/><circle cx="111" cy="93" r="3.4" fill="#2A1E18"/>
+<circle cx="83" cy="102" r="5" fill="#F29C9C" opacity=".55"/><circle cx="118" cy="102" r="5" fill="#F29C9C" opacity=".55"/>
+<path d="M90 105 Q100 113 111 105" stroke="#2A1E18" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M82 130 C76 162 94 172 100 162 M118 130 C124 162 106 172 100 162" stroke="#2E3A46" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<circle cx="100" cy="168" r="7" fill="#AEB8C4" stroke="#2E3A46" stroke-width="3"/>
+<rect x="118" y="146" width="20" height="12" rx="2" fill="#FFFFFF"/><rect x="121" y="150" width="14" height="2" fill="#0F7C7A"/><rect x="121" y="154" width="9" height="2" fill="#0F7C7A"/></svg>
+      </div>
+      <span class="hub-label">Selin, Medizinische Fachangestellte</span>
+    </div>
+  </section>
+
+  <section id="detail" hidden>
+    <a class="back" href="#start">← Zur Mindmap</a>
+    <article class="sheet">
+      <div><span class="eyebrow" id="d-tag"></span><h1 id="d-title"></h1></div>
+      <div class="player">
+        <button class="play big" id="d-play" aria-label="Abspielen"></button>
+        <div class="bar" id="d-bar"><span></span></div>
+        <span class="time" id="d-time">0:00</span>
+        <button class="speed" id="d-speed" aria-pressed="false">Langsamer</button>
+      </div>
+      <p class="hint">Tipp: Tippe auf einen Satz, dann wird ab dort vorgelesen.</p>
+      <div class="text" id="d-text"></div>
+      <div class="task"><h3>✎ Arbeitsauftrag</h3><ul id="d-task"></ul></div>
+    </article>
+    <nav class="pager"><a id="d-prev" href="#"></a><a id="d-next" href="#"></a></nav>
+  </section>
+</div>
+
+<script>
+const TIMING={"1":[{"p":0,"s":"Text 1.","start":0.0,"end":1.18},{"p":1,"s":"Hallo, ich bin Selin.","start":1.78,"end":3.5},{"p":1,"s":"Vor einem Jahr habe ich meine dreijährige Ausbildung zur Medizinischen Fachangestellten abgeschlossen.","start":4.1,"end":10.36},{"p":1,"s":"Ich arbeite in einer Hausarztpraxis in Augsburg.","start":10.96,"end":14.17},{"p":2,"s":"Morgens sitze ich oft am Empfang.","start":14.77,"end":17.27},{"p":2,"s":"Ich begrüße die Patienten, nehme Anrufe an und vergebe Termine.","start":17.87,"end":22.54},{"p":2,"s":"Danach helfe ich der Ärztin bei den Untersuchungen.","start":23.14,"end":26.54},{"p":2,"s":"Ich messe den Blutdruck, nehme Blut ab, schreibe ein EKG und lege Verbände an.","start":27.14,"end":32.94},{"p":3,"s":"Auch Büroarbeit gehört dazu: Ich rechne mit den Krankenkassen ab und pflege die Patientenakten am Computer.","start":33.54,"end":40.79}],"2":[{"p":0,"s":"Text 2.","start":0.0,"end":1.05},{"p":1,"s":"In unserer Praxis arbeite ich mit vielen Geräten.","start":1.65,"end":4.89},{"p":1,"s":"Mit dem Blutdruckmessgerät und dem Fieberthermometer prüfe ich die Werte der Patienten.","start":5.49,"end":11.13},{"p":1,"s":"Für die Blutabnahme brauche ich Spritzen, Kanülen und Röhrchen.","start":11.73,"end":15.93},{"p":1,"s":"Mit dem EKG-Gerät zeichne ich auf, wie das Herz schlägt.","start":16.53,"end":20.87},{"p":2,"s":"Sehr wichtig ist der Computer.","start":21.47,"end":23.64},{"p":2,"s":"Dort trage ich Termine ein, drucke Rezepte und lese die Gesundheitskarte der Patienten ein.","start":24.24,"end":30.41},{"p":3,"s":"Außerdem brauche ich Verbandsmaterial, Pflaster, Einmalhandschuhe und Desinfektionsmittel.","start":31.01,"end":37.43},{"p":3,"s":"Die Instrumente reinige ich und mache sie im Sterilisator wieder keimfrei.","start":38.03,"end":42.73}],"3":[{"p":0,"s":"Text 3.","start":0.0,"end":1.1},{"p":1,"s":"Mein Beruf hat schöne und anstrengende Seiten.","start":1.7,"end":4.74},{"p":1,"s":"Ich arbeite in hellen, sauberen Räumen und muss nie bei Regen raus.","start":5.34,"end":9.54},{"p":1,"s":"Gut finde ich auch, dass ich mal sitze und mal stehe.","start":10.14,"end":13.62},{"p":2,"s":"Oft ist es aber stressig.","start":14.22,"end":16.66},{"p":2,"s":"Das Telefon klingelt ständig und das Wartezimmer ist voll.","start":17.26,"end":21.3},{"p":2,"s":"Manche Patienten sind ungeduldig oder unfreundlich.","start":21.9,"end":25.34},{"p":2,"s":"Weil viele Patienten krank sind, kann ich mich anstecken.","start":25.94,"end":29.66},{"p":2,"s":"Deshalb trage ich Handschuhe und desinfiziere oft meine Hände.","start":30.26,"end":34.5},{"p":2,"s":"Davon wird meine Haut trocken.","start":35.1,"end":37.13},{"p":3,"s":"Abends habe ich meistens um 18 Uhr frei, und am Mittwochnachmittag ist die Praxis zu.","start":37.73,"end":43.18}],"4":[{"p":0,"s":"Text 4.","start":0.0,"end":0.97},{"p":1,"s":"Warum ich diesen Beruf gewählt habe?","start":1.57,"end":3.83},{"p":1,"s":"Ich wollte schon immer mit Menschen arbeiten und ihnen helfen.","start":4.43,"end":8.46},{"p":1,"s":"Wenn sich ein Patient bei mir bedankt, freue ich mich sehr.","start":9.06,"end":12.62},{"p":2,"s":"Mir gefällt auch, dass ich viel über Medizin und den menschlichen Körper lerne.","start":13.22,"end":18.1},{"p":2,"s":"In unserer Praxis sind wir ein tolles Team.","start":18.7,"end":21.54},{"p":3,"s":"Arztpraxen gibt es überall, deshalb finde ich leicht eine Stelle.","start":22.14,"end":26.55},{"p":3,"s":"Der Lohn ist am Anfang nicht sehr hoch.","start":27.15,"end":29.83},{"p":3,"s":"Aber ich kann mich weiterbilden, zum Beispiel zur Praxismanagerin.","start":30.43,"end":34.58},{"p":3,"s":"Dann verdiene ich mehr.","start":35.18,"end":36.68}],"5":[{"p":0,"s":"Text 5.","start":0.0,"end":1.03},{"p":1,"s":"Für meinen Beruf braucht man einige Fähigkeiten.","start":1.63,"end":4.49},{"p":1,"s":"Am wichtigsten ist, dass man freundlich und geduldig mit Menschen umgehen kann.","start":5.09,"end":10.09},{"p":1,"s":"Ich muss auch ruhig bleiben, wenn es hektisch wird oder ein Notfall kommt.","start":10.69,"end":14.92},{"p":2,"s":"Man muss sorgfältig arbeiten, denn ein Fehler bei Medikamenten kann gefährlich sein.","start":15.52,"end":20.98},{"p":2,"s":"Außerdem darf man sich nicht vor Blut und Wunden ekeln.","start":21.58,"end":25.18},{"p":2,"s":"Gute Deutschkenntnisse brauche ich zum Schreiben und Erklären.","start":25.78,"end":29.5},{"p":2,"s":"Mit dem Computer muss ich sicher umgehen.","start":30.1,"end":32.92},{"p":3,"s":"Alles, was ich über Patienten erfahre, muss ich geheim halten.","start":33.52,"end":37.7},{"p":3,"s":"Die Medizin entwickelt sich ständig weiter, deshalb besuche ich regelmäßig Fortbildungen.","start":38.3,"end":44.34}]};
+const TOPICS=[{"t": "Tätigkeiten & Arbeitsort", "tasks": ["Welche Aufgaben muss Selin täglich bei ihrer Arbeit erledigen?", "Wo arbeitet Selin?"], "x": 50, "y": 13}, {"t": "Arbeitsmittel & Material", "tasks": ["Mit welchen Arbeitsmitteln und welchem Material arbeitet Selin?"], "x": 84, "y": 38}, {"t": "Arbeitsbedingungen", "tasks": ["Welche guten und schlechten Arbeitsbedingungen hat Selins Arbeitsplatz?"], "x": 72, "y": 83}, {"t": "Gründe für die Berufswahl", "tasks": ["Warum hat Selin sich ausgerechnet diesen Beruf ausgewählt?"], "x": 28, "y": 83}, {"t": "Anforderungen & Fähigkeiten", "tasks": ["Welche Fähigkeiten braucht Selin als Medizinische Fachangestellte?", "Was muss Selin tun, um auch in Zukunft erfolgreich zu sein?"], "x": 16, "y": 38}];
+const IC={play:'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>',pause:'<svg viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>'};
+const fmt=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const audio=new Audio();audio.preload="none";let cur=0;
+
+const photo=document.getElementById("photo"),drawing=document.getElementById("drawing");
+function noPhoto(){photo.hidden=true;drawing.removeAttribute("hidden")}
+photo.addEventListener("error",noPhoto);
+if(photo.complete&&!photo.naturalWidth)noPhoto();
+
+// Mindmap aufbauen
+const map=document.getElementById("map"),spokes=document.getElementById("spokes");
+TOPICS.forEach((o,i)=>{
+  const n=i+1;
+  spokes.insertAdjacentHTML("beforeend",`<line x1="50" y1="50" x2="${o.x}" y2="${o.y}"/>`);
+  const el=document.createElement("div");el.className="node";el.id="node"+n;
+  el.style.left=o.x+"%";el.style.top=o.y+"%";
+  el.innerHTML=`<span class="tag">Text ${n}</span><h2>${o.t}</h2>
+   <div class="row"><button class="play" data-n="${n}" aria-label="Text ${n} abspielen">${IC.play}</button>
+   <div class="bar" data-n="${n}"><span></span></div><span class="time" data-n="${n}">${fmt(TIMING[n].at(-1).end)}</span></div>
+   <a class="more" href="#t${n}">Mitlesen →</a>`;
+  map.appendChild(el);
+});
+
+function load(n){if(cur!==n){cur=n;audio.src="audio/Text_"+n+".mp3";}}
+function toggle(n){load(n);audio.paused?audio.play().catch(()=>{}):audio.pause()}
+function seek(n,frac){load(n);const go=()=>{audio.currentTime=frac*(audio.duration||0);audio.play().catch(()=>{})};
+  audio.readyState>=1?go():audio.addEventListener("loadedmetadata",go,{once:true});if(audio.readyState<1)audio.load()}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".node .play");if(b){toggle(+b.dataset.n);return}
+  const bar=e.target.closest(".node .bar");if(bar){const r=bar.getBoundingClientRect();seek(+bar.dataset.n,(e.clientX-r.left)/r.width)}
+});
+
+// Unterseite
+const $=id=>document.getElementById(id);
+let shown=0;
+function renderDetail(n){
+  shown=n;const o=TOPICS[n-1];
+  $("d-tag").textContent="Text "+n+" von 5";$("d-title").textContent=o.t;
+  const paras={};TIMING[n].forEach((s,k)=>{if(s.p===0)return;(paras[s.p]??=[]).push(`<span class="s" data-k="${k}">${s.s}</span>`)});
+  $("d-text").innerHTML=Object.values(paras).map(a=>"<p>"+a.join(" ")+"</p>").join("");
+  $("d-task").innerHTML=o.tasks.map(t=>"<li>"+t+"</li>").join("");
+  $("d-prev").textContent=n>1?"← Text "+(n-1)+": "+TOPICS[n-2].t:"";$("d-prev").href=n>1?"#t"+(n-1):"#start";
+  $("d-next").textContent=n<5?"Text "+(n+1)+": "+TOPICS[n].t+" →":"Zurück zur Mindmap →";$("d-next").href=n<5?"#t"+(n+1):"#start";
+  if(cur!==n){audio.pause();}
+  update();
+}
+$("d-play").onclick=()=>toggle(shown);
+$("d-bar").onclick=e=>{const r=e.currentTarget.getBoundingClientRect();seek(shown,(e.clientX-r.left)/r.width)};
+$("d-text").onclick=e=>{const s=e.target.closest(".s");if(!s)return;load(shown);const t=TIMING[shown][+s.dataset.k].start;
+  const go=()=>{audio.currentTime=t;audio.play().catch(()=>{})};audio.readyState>=1?go():(audio.addEventListener("loadedmetadata",go,{once:true}),audio.load())};
+$("d-speed").onclick=e=>{const on=e.currentTarget.getAttribute("aria-pressed")!=="true";e.currentTarget.setAttribute("aria-pressed",on);audio.playbackRate=on?0.8:1};
+audio.addEventListener("play",()=>{audio.playbackRate=$("d-speed").getAttribute("aria-pressed")==="true"?0.8:1});
+
+function update(){
+  const playing=!audio.paused,t=audio.currentTime,d=audio.duration||0;
+  document.querySelectorAll(".node").forEach((el,i)=>{const n=i+1,me=n===cur;
+    el.classList.toggle("playing",me&&playing);
+    el.querySelector(".play").innerHTML=me&&playing?IC.pause:IC.play;
+    el.querySelector(".play").setAttribute("aria-label",(me&&playing?"Pause Text ":"Text ")+n+(me&&playing?"":" abspielen"));
+    el.querySelector(".bar span").style.width=me&&d?(t/d*100)+"%":"0";
+    el.querySelector(".time").textContent=me&&t>0?fmt(t)+" / "+fmt(d):fmt(TIMING[n].at(-1).end)});
+  if(shown){const me=cur===shown;
+    $("d-play").innerHTML=me&&playing?IC.pause:IC.play;$("d-play").setAttribute("aria-label",me&&playing?"Pause":"Abspielen");
+    $("d-bar").firstElementChild.style.width=me&&d?(t/d*100)+"%":"0";
+    $("d-time").textContent=me?fmt(t)+" / "+fmt(d||TIMING[shown].at(-1).end):"0:00 / "+fmt(TIMING[shown].at(-1).end);
+    document.querySelectorAll("#d-text .s").forEach(s=>{const x=TIMING[shown][+s.dataset.k];
+      s.classList.toggle("now",me&&t>0&&t>=x.start&&t<x.end+0.6)});}
+}
+["timeupdate","play","pause","ended","loadedmetadata"].forEach(ev=>audio.addEventListener(ev,update));
+
+function route(){
+  const m=/^#t([1-5])$/.exec(location.hash);
+  $("start").hidden=!!m;$("detail").hidden=!m;
+  if(m){renderDetail(+m[1]);window.scrollTo(0,0)}else{shown=0;update()}
+}
+addEventListener("hashchange",route);route();
+</script>
+
+</body>
+</html>
