@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Arbeitsplatz Kfz-Mechatroniker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: Werkstatt-Mindmap – runde Mitte (Foto), fünf Speichen wie Radbolzen; Unterseiten als ruhige Lese-/Hörseite */
+:root{
+  --bg:#EEF2F6; --grid:#DCE3EC; --card:#FFFFFF; --ink:#16243A; --muted:#55657C;
+  --blue:#1F4E9E; --blue-soft:#DCE6F5; --orange:#E8650F; --orange-soft:#FDE6D3; --mark:#FFE7A3;
+  --line:#9FB0C6;
+  --f-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1724; --grid:#1A2638; --card:#18243A; --ink:#E8EEF7; --muted:#9DAEC6;
+  --blue:#7FA8F0; --blue-soft:#22355A; --orange:#FF8A3D; --orange-soft:#4A2A14; --mark:#5A4A12;
+  --line:#3A4E6C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1724; --grid:#1A2638; --card:#18243A; --ink:#E8EEF7; --muted:#9DAEC6;
+  --blue:#7FA8F0; --blue-soft:#22355A; --orange:#FF8A3D; --orange-soft:#4A2A14; --mark:#5A4A12;
+  --line:#3A4E6C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;}
+.wrap{max-width:1040px;margin:0 auto;padding-block:24px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:8px}
+
+/* Kopf */
+.head{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);font-weight:600}
+.head h1{font-size:clamp(26px,4vw,40px);color:var(--blue)}
+.head p{margin:0;color:var(--muted);max-width:62ch}
+
+/* Mindmap */
+.map{position:relative;width:100%;aspect-ratio:4/3;max-height:820px}
+.spokes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.spokes line{stroke:var(--line);stroke-width:4;stroke-linecap:round;stroke-dasharray:2 10;vector-effect:non-scaling-stroke}
+.hub{position:absolute;left:50%;top:50%;width:28%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border-radius:50%;overflow:hidden;background:var(--orange-soft);
+  border:8px solid var(--card);box-shadow:0 0 0 4px var(--blue),0 12px 30px rgba(15,30,60,.18)}
+.hub img,.hub svg{width:100%;height:100%;object-fit:cover;display:block}
+.hub-label{position:absolute;left:50%;top:calc(50% + 15.5%);transform:translateX(-50%);
+  background:var(--blue);color:#fff;font-family:var(--f-display);font-weight:600;
+  padding:4px 14px;border-radius:999px;white-space:nowrap;font-size:15px}
+.node{position:absolute;transform:translate(-50%,-50%);width:min(27%,260px);
+  background:var(--card);border:2px solid var(--blue);border-radius:16px;padding:12px 14px;
+  display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 18px rgba(15,30,60,.10)}
+.node .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.node h2{font-size:19px;color:var(--blue)}
+.node .row{display:flex;align-items:center;gap:10px}
+.node .bar{flex:1;min-width:0}
+.node .more{font-size:14px;font-weight:600;text-decoration:none;color:var(--orange)}
+.node .more:hover{text-decoration:underline}
+.node.playing{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft),0 6px 18px rgba(15,30,60,.12)}
+
+/* Player-Bausteine */
+.play{flex:none;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--orange);color:#fff;display:grid;place-items:center}
+.play svg{width:20px;height:20px;fill:currentColor}
+.play.big{width:64px;height:64px}.play.big svg{width:28px;height:28px}
+.bar{height:8px;border-radius:99px;background:var(--blue-soft);overflow:hidden;cursor:pointer}
+.bar span{display:block;height:100%;width:0;background:var(--orange)}
+.time{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);flex:none}
+
+/* Handy: Mindmap wird zur senkrechten Kette */
+@media (max-width:760px){
+  .map{aspect-ratio:auto;max-height:none;display:flex;flex-direction:column;align-items:stretch;gap:14px;
+    padding-left:22px;border-left:4px dotted var(--line)}
+  .spokes{display:none}
+  .hub{position:relative;left:auto;top:auto;transform:none;width:min(62vw,240px);align-self:center;margin-left:-22px}
+  .hub-label{position:relative;left:auto;top:auto;transform:none;align-self:center;margin:-26px 0 6px -22px}
+  .node{position:relative;transform:none;width:100%;left:auto!important;top:auto!important}
+}
+
+/* Unterseite */
+.back{display:inline-flex;gap:6px;align-items:center;font-weight:600;text-decoration:none;margin-bottom:14px}
+.sheet{background:var(--card);border-radius:20px;border:2px solid var(--blue);padding:clamp(18px,4vw,36px);
+  display:flex;flex-direction:column;gap:20px;max-width:760px}
+.sheet h1{font-size:clamp(26px,4.5vw,38px);color:var(--blue)}
+.player{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--blue-soft);border-radius:16px;padding:12px 16px}
+.player .bar{flex:1;min-width:140px;height:10px;background:var(--card)}
+.speed{border:2px solid var(--blue);background:transparent;color:var(--blue);border-radius:999px;
+  padding:4px 12px;font:600 14px var(--f-body);cursor:pointer}
+.speed[aria-pressed="true"]{background:var(--blue);color:var(--card)}
+.text{font-size:clamp(18px,2.3vw,21px);line-height:1.75;max-width:62ch}
+.text p{margin:0 0 .9em}
+.s{cursor:pointer;border-radius:6px;padding:1px 2px;transition:background .2s}
+.s:hover{background:var(--blue-soft)}
+.s.now{background:var(--mark)}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.task{border-top:2px dashed var(--line);padding-top:16px}
+.task h3{font-size:18px;color:var(--orange);margin-bottom:6px}
+.task ul{margin:0;padding-left:1.2em}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:760px;margin-top:14px}
+.pager a{font-weight:600;text-decoration:none}
+@media (prefers-reduced-motion:reduce){.s{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <section id="start">
+    <header class="head">
+      <span class="eyebrow">Berufsorientierung · Mittelschule</span>
+      <h1>Der Arbeitsplatz eines Kfz-Mechatronikers</h1>
+      <p>Tim erzählt von seiner Arbeit. Hör dir die fünf Texte an und schreib Stichpunkte unter die passende Überschrift in deinem Hefteintrag. Mit „Mitlesen“ siehst du den Text dazu.</p>
+    </header>
+    <div class="map" id="map">
+      <svg class="spokes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" id="spokes"></svg>
+      <div class="hub">
+        <img src="mechatroniker.jpg" alt="Kfz-Mechatroniker bei der Arbeit" id="photo">
+        <svg id="drawing" hidden viewBox="0 0 200 200" role="img" aria-label="Zeichnung eines Kfz-Mechatronikers">
+          <rect width="200" height="200" fill="#FBD7B5"/>
+          <rect y="128" width="200" height="72" fill="#C9D3DF"/>
+          <circle cx="160" cy="150" r="34" fill="#2B2F36"/><circle cx="160" cy="150" r="16" fill="#9AA6B5"/>
+          <path d="M52 200 C52 150 70 128 100 128 C130 128 148 150 148 200Z" fill="#1F4E9E"/>
+          <rect x="80" y="128" width="40" height="40" rx="6" fill="#2A63C4"/>
+          <rect x="83" y="138" width="34" height="5" fill="#E8650F"/>
+          <rect x="92" y="112" width="16" height="20" fill="#F1B88F"/>
+          <circle cx="100" cy="88" r="30" fill="#F6C7A1"/>
+          <path d="M68 82 C68 58 84 50 100 50 C118 50 132 60 132 80 L68 80Z" fill="#1F4E9E"/>
+          <path d="M100 78 L144 78 C146 84 138 86 128 86 L100 86Z" fill="#E8650F"/>
+          <circle cx="90" cy="92" r="3.4" fill="#16243A"/><circle cx="111" cy="92" r="3.4" fill="#16243A"/>
+          <path d="M89 104 Q100 112 112 104" stroke="#16243A" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M80 102 q4 6 0 8" stroke="#2B2F36" stroke-width="2" fill="none" opacity=".25"/>
+          <path d="M140 160 L150 128" stroke="#1F4E9E" stroke-width="16" stroke-linecap="round"/>
+          <circle cx="151" cy="124" r="9" fill="#F6C7A1"/>
+          <g transform="rotate(-30 152 104)"><rect x="148" y="82" width="8" height="40" rx="3" fill="#8D99A8"/>
+          <path d="M143 74 a10 10 0 1 1 22 0 l-5 0 0 6 -12 0 0 -6z" fill="#8D99A8"/></g>
+        </svg>
+      </div>
+      <span class="hub-label">Tim, Kfz-Mechatroniker</span>
+    </div>
+  </section>
+
+  <section id="detail" hidden>
+    <a class="back" href="#start">← Zur Mindmap</a>
+    <article class="sheet">
+      <div><span class="eyebrow" id="d-tag"></span><h1 id="d-title"></h1></div>
+      <div class="player">
+        <button class="play big" id="d-play" aria-label="Abspielen"></button>
+        <div class="bar" id="d-bar"><span></span></div>
+        <span class="time" id="d-time">0:00</span>
+        <button class="speed" id="d-speed" aria-pressed="false">Langsamer</button>
+      </div>
+      <p class="hint">Tipp: Tippe auf einen Satz, dann wird ab dort vorgelesen.</p>
+      <div class="text" id="d-text"></div>
+      <div class="task"><h3>✎ Arbeitsauftrag</h3><ul id="d-task"></ul></div>
+    </article>
+    <nav class="pager"><a id="d-prev" href="#"></a><a id="d-next" href="#"></a></nav>
+  </section>
+</div>
+
+<script>
+const TIMING={"1":[{"p":0,"s":"Text 1.","start":0.0,"end":1.13},{"p":1,"s":"Hallo, ich bin Tim.","start":1.73,"end":3.42},{"p":1,"s":"Vor zwei Jahren habe ich meine dreieinhalbjährige Ausbildung zum Kfz-Mechatroniker abgeschlossen.","start":4.02,"end":10.18},{"p":1,"s":"Jetzt arbeite ich in einer Autowerkstatt in Regensburg.","start":10.78,"end":14.09},{"p":2,"s":"Jeden Tag bringen Kunden ihre Autos zu uns.","start":14.69,"end":17.43},{"p":2,"s":"Ich mache Inspektionen und wechsle Öl, Bremsen und Reifen.","start":18.03,"end":22.46},{"p":2,"s":"Hat ein Auto eine Störung, suche ich den Fehler und repariere ihn.","start":23.06,"end":27.26},{"p":2,"s":"Immer wichtiger wird die Elektronik: Ich prüfe Steuergeräte, Sensoren und bei Elektroautos auch die Batterie.","start":27.86,"end":34.42},{"p":2,"s":"Außerdem bereite ich Autos für die Hauptuntersuchung (TÜV) vor.","start":35.02,"end":39.56},{"p":3,"s":"Zum Schluss erkläre ich den Kunden, was ich gemacht habe, und berate sie.","start":40.16,"end":44.31}],"2":[{"p":0,"s":"Text 2.","start":0.0,"end":1.19},{"p":1,"s":"Viele denken, ich brauche nur Schraubenschlüssel und Schraubenzieher.","start":1.79,"end":5.64},{"p":1,"s":"Die brauche ich natürlich, genauso wie Ratsche und Drehmomentschlüssel.","start":6.24,"end":10.23},{"p":1,"s":"Aber ohne Technik geht heute nichts mehr.","start":10.83,"end":13.21},{"p":2,"s":"Mit der Hebebühne hebe ich das Auto an, damit ich gut darunter arbeiten kann.","start":13.81,"end":18.42},{"p":2,"s":"Das wichtigste Gerät ist der Diagnose-Computer.","start":19.02,"end":21.96},{"p":2,"s":"Ich schließe ihn an das Auto an und er zeigt mir, wo ein Fehler steckt.","start":22.56,"end":26.5},{"p":2,"s":"Außerdem arbeite ich mit dem Reifenmontiergerät, der Auswuchtmaschine und dem Abgasmessgerät.","start":27.1,"end":32.47},{"p":3,"s":"Material wie Motoröl, Ersatzteile, Schrauben und Bremsflüssigkeit hole ich aus unserem Lager.","start":33.07,"end":39.3}],"3":[{"p":0,"s":"Text 3.","start":0.0,"end":1.16},{"p":1,"s":"Mein Beruf hat nicht nur schöne Seiten.","start":1.76,"end":3.96},{"p":1,"s":"Oft arbeite ich im Stehen oder in unbequemer Haltung unter dem Auto.","start":4.56,"end":8.58},{"p":1,"s":"Abends tun mir dann manchmal Rücken und Knie weh.","start":9.18,"end":12.18},{"p":1,"s":"In der Werkstatt ist es oft laut, und im Winter zieht es kalt durch das offene Tor.","start":12.78,"end":17.83},{"p":1,"s":"Meine Hände werden schmutzig von Öl und Fett.","start":18.43,"end":21.32},{"p":2,"s":"Vorsicht ist wichtig, denn man kann sich schnell verletzen.","start":21.92,"end":24.94},{"p":2,"s":"Bei Elektroautos gibt es sogar gefährliche Hochspannung.","start":25.54,"end":29.05},{"p":2,"s":"Deshalb trage ich Arbeitskleidung, Sicherheitsschuhe und Handschuhe.","start":29.65,"end":33.61},{"p":3,"s":"Gut finde ich: Ich arbeite unter einem Dach, habe feste Arbeitszeiten und am Wochenende meistens frei.","start":34.21,"end":40.6}],"4":[{"p":0,"s":"Text 4.","start":0.0,"end":1.19},{"p":1,"s":"Warum ich Kfz-Mechatroniker geworden bin?","start":1.79,"end":4.57},{"p":1,"s":"Schon als Kind habe ich mit meinem Opa am Mofa geschraubt.","start":5.17,"end":8.1},{"p":1,"s":"Technik interessiert mich einfach.","start":8.7,"end":10.46},{"p":2,"s":"Am schönsten ist es, wenn ich einen schwierigen Fehler finde und das Auto wieder läuft.","start":11.06,"end":15.74},{"p":2,"s":"Dann freut sich der Kunde und lobt mich.","start":16.34,"end":18.76},{"p":2,"s":"In unserer Werkstatt sind wir ein gutes Team und helfen uns gegenseitig.","start":19.36,"end":23.88},{"p":3,"s":"Kfz-Mechatroniker werden immer gebraucht, deshalb ist mein Arbeitsplatz sicher.","start":24.48,"end":29.02},{"p":3,"s":"Der Lohn ist in Ordnung.","start":29.62,"end":31.16},{"p":3,"s":"Später möchte ich die Meisterprüfung machen.","start":31.76,"end":34.33},{"p":3,"s":"Dann kann ich eine Werkstatt leiten oder mich selbstständig machen.","start":34.93,"end":38.57}],"5":[{"p":0,"s":"Text 5.","start":0.0,"end":1.27},{"p":1,"s":"Nicht jeder ist für meinen Beruf geeignet.","start":1.87,"end":4.14},{"p":1,"s":"Man braucht handwerkliches Geschick und technisches Verständnis.","start":4.74,"end":8.26},{"p":1,"s":"Auch Mathe und Physik sind wichtig, zum Beispiel beim Messen und Berechnen.","start":8.86,"end":13.45},{"p":1,"s":"Ich muss sorgfältig und genau arbeiten, denn ein Fehler an den Bremsen kann lebensgefährlich sein.","start":14.05,"end":19.58},{"p":1,"s":"Außerdem sollte man körperlich fit sein und mit dem Computer umgehen können.","start":20.18,"end":24.74},{"p":2,"s":"Weil ich Kunden berate, muss ich freundlich sein und Dinge gut erklären können.","start":25.34,"end":30.14},{"p":3,"s":"Die Technik verändert sich ständig, vor allem durch Elektroautos.","start":30.74,"end":34.81},{"p":3,"s":"Deshalb besuche ich regelmäßig Schulungen, damit ich immer auf dem neuesten Stand bin.","start":35.41,"end":40.01}]};
+const TOPICS=[
+ {t:"Tätigkeiten & Arbeitsort",tasks:["Welche Aufgaben muss Tim täglich bei seiner Arbeit verrichten?","Wo arbeitet Tim?"],x:50,y:13},
+ {t:"Arbeitsmittel & Material",tasks:["Mit welchen Arbeitsmitteln und welchem Material arbeitet Tim?"],x:84,y:38},
+ {t:"Arbeitsbedingungen",tasks:["Welche guten und schlechten Arbeitsbedingungen hat Tims Arbeitsplatz?"],x:72,y:83},
+ {t:"Gründe für die Berufswahl",tasks:["Warum hat Tim sich ausgerechnet diesen Beruf ausgewählt?"],x:28,y:83},
+ {t:"Anforderungen & Fähigkeiten",tasks:["Welche Fähigkeiten braucht Tim als Kfz-Mechatroniker?","Was muss Tim tun, um auch in Zukunft erfolgreich zu sein?"],x:16,y:38}
+];
+const IC={play:'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>',pause:'<svg viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>'};
+const fmt=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const audio=new Audio();audio.preload="none";let cur=0;
+
+const photo=document.getElementById("photo"),drawing=document.getElementById("drawing");
+function noPhoto(){photo.hidden=true;drawing.removeAttribute("hidden")}
+photo.addEventListener("error",noPhoto);
+if(photo.complete&&!photo.naturalWidth)noPhoto();
+
+// Mindmap aufbauen
+const map=document.getElementById("map"),spokes=document.getElementById("spokes");
+TOPICS.forEach((o,i)=>{
+  const n=i+1;
+  spokes.insertAdjacentHTML("beforeend",`<line x1="50" y1="50" x2="${o.x}" y2="${o.y}"/>`);
+  const el=document.createElement("div");el.className="node";el.id="node"+n;
+  el.style.left=o.x+"%";el.style.top=o.y+"%";
+  el.innerHTML=`<span class="tag">Text ${n}</span><h2>${o.t}</h2>
+   <div class="row"><button class="play" data-n="${n}" aria-label="Text ${n} abspielen">${IC.play}</button>
+   <div class="bar" data-n="${n}"><span></span></div><span class="time" data-n="${n}">${fmt(TIMING[n].at(-1).end)}</span></div>
+   <a class="more" href="#t${n}">Mitlesen →</a>`;
+  map.appendChild(el);
+});
+
+function load(n){if(cur!==n){cur=n;audio.src="audio/Text_"+n+".mp3";}}
+function toggle(n){load(n);audio.paused?audio.play().catch(()=>{}):audio.pause()}
+function seek(n,frac){load(n);const go=()=>{audio.currentTime=frac*(audio.duration||0);audio.play().catch(()=>{})};
+  audio.readyState>=1?go():audio.addEventListener("loadedmetadata",go,{once:true});if(audio.readyState<1)audio.load()}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".node .play");if(b){toggle(+b.dataset.n);return}
+  const bar=e.target.closest(".node .bar");if(bar){const r=bar.getBoundingClientRect();seek(+bar.dataset.n,(e.clientX-r.left)/r.width)}
+});
+
+// Unterseite
+const $=id=>document.getElementById(id);
+let shown=0;
+function renderDetail(n){
+  shown=n;const o=TOPICS[n-1];
+  $("d-tag").textContent="Text "+n+" von 5";$("d-title").textContent=o.t;
+  const paras={};TIMING[n].forEach((s,k)=>{if(s.p===0)return;(paras[s.p]??=[]).push(`<span class="s" data-k="${k}">${s.s}</span>`)});
+  $("d-text").innerHTML=Object.values(paras).map(a=>"<p>"+a.join(" ")+"</p>").join("");
+  $("d-task").innerHTML=o.tasks.map(t=>"<li>"+t+"</li>").join("");
+  $("d-prev").textContent=n>1?"← Text "+(n-1)+": "+TOPICS[n-2].t:"";$("d-prev").href=n>1?"#t"+(n-1):"#start";
+  $("d-next").textContent=n<5?"Text "+(n+1)+": "+TOPICS[n].t+" →":"Zurück zur Mindmap →";$("d-next").href=n<5?"#t"+(n+1):"#start";
+  if(cur!==n){audio.pause();}
+  update();
+}
+$("d-play").onclick=()=>toggle(shown);
+$("d-bar").onclick=e=>{const r=e.currentTarget.getBoundingClientRect();seek(shown,(e.clientX-r.left)/r.width)};
+$("d-text").onclick=e=>{const s=e.target.closest(".s");if(!s)return;load(shown);const t=TIMING[shown][+s.dataset.k].start;
+  const go=()=>{audio.currentTime=t;audio.play().catch(()=>{})};audio.readyState>=1?go():(audio.addEventListener("loadedmetadata",go,{once:true}),audio.load())};
+$("d-speed").onclick=e=>{const on=e.currentTarget.getAttribute("aria-pressed")!=="true";e.currentTarget.setAttribute("aria-pressed",on);audio.playbackRate=on?0.8:1};
+audio.addEventListener("play",()=>{audio.playbackRate=$("d-speed").getAttribute("aria-pressed")==="true"?0.8:1});
+
+function update(){
+  const playing=!audio.paused,t=audio.currentTime,d=audio.duration||0;
+  document.querySelectorAll(".node").forEach((el,i)=>{const n=i+1,me=n===cur;
+    el.classList.toggle("playing",me&&playing);
+    el.querySelector(".play").innerHTML=me&&playing?IC.pause:IC.play;
+    el.querySelector(".play").setAttribute("aria-label",(me&&playing?"Pause Text ":"Text ")+n+(me&&playing?"":" abspielen"));
+    el.querySelector(".bar span").style.width=me&&d?(t/d*100)+"%":"0";
+    el.querySelector(".time").textContent=me&&t>0?fmt(t)+" / "+fmt(d):fmt(TIMING[n].at(-1).end)});
+  if(shown){const me=cur===shown;
+    $("d-play").innerHTML=me&&playing?IC.pause:IC.play;$("d-play").setAttribute("aria-label",me&&playing?"Pause":"Abspielen");
+    $("d-bar").firstElementChild.style.width=me&&d?(t/d*100)+"%":"0";
+    $("d-time").textContent=me?fmt(t)+" / "+fmt(d||TIMING[shown].at(-1).end):"0:00 / "+fmt(TIMING[shown].at(-1).end);
+    document.querySelectorAll("#d-text .s").forEach(s=>{const x=TIMING[shown][+s.dataset.k];
+      s.classList.toggle("now",me&&t>0&&t>=x.start&&t<x.end+0.6)});}
+}
+["timeupdate","play","pause","ended","loadedmetadata"].forEach(ev=>audio.addEventListener(ev,update));
+
+function route(){
+  const m=/^#t([1-5])$/.exec(location.hash);
+  $("start").hidden=!!m;$("detail").hidden=!m;
+  if(m){renderDetail(+m[1]);window.scrollTo(0,0)}else{shown=0;update()}
+}
+addEventListener("hashchange",route);route();
+</script>
+
+</body>
+</html>
