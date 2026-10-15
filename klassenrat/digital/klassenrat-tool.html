@@ -380,6 +380,8 @@ body.tafel .blitz { position: fixed; }
 .bk-eintrag:hover { border-color: var(--akzent); }
 .bk-eintrag span { font-size: .8rem; color: var(--leise); }
 
+.meldung { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 120; background: #2b2b2b; color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -531,6 +533,7 @@ function migrieren(st) {
     s.unterschriften ||= {};
   }
   st.version = 2;
+  st.gespeichertAm ||= Date.now();  // ältere Stände ohne Zeitstempel gelten als aktuell
   return st;
 }
 let speicherTimer;
@@ -538,6 +541,7 @@ function speichern() {
   clearTimeout(speicherTimer);
   speicherTimer = setTimeout(() => {
     const el = document.getElementById("gespeichert");
+    state.gespeichertAm = Date.now();  // Vergleich mit der OneDrive-Datei (welche ist neuer?)
     sichernInOrdnerSpaeter();
     try {
       localStorage.setItem(SPEICHER, JSON.stringify(state));
@@ -784,6 +788,7 @@ function padStarten(c) {
 
 function viewWillkommen(zusatz) {
   return `
+  <div style="max-width:640px;margin:20px auto 0">${zusatz ? "" : ladenHinweis()}</div>
   <div class="karte akzent" style="max-width:640px;margin:20px auto">
     <div class="illu">${BILDER.klassenrat}</div>
     <h2 style="justify-content:center">${zusatz ? "Weitere Klasse anlegen" : "Willkommen beim digitalen Klassenrat!"}</h2>
@@ -802,7 +807,8 @@ function viewWillkommen(zusatz) {
     <label class="feld">Ein Name pro Zeile (Vor- und Nachname)<textarea id="nk-schueler" rows="8" placeholder="Anna Beispiel&#10;Ben Muster&#10;…"></textarea></label>
     <div class="aktionen abstand">
       <button class="knopf gross" data-act="klasse-anlegen">Klasse anlegen</button>
-      ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `<button class="knopf rand" data-act="import">Sicherung laden …</button>`}
+      ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `<button class="knopf rand" data-act="import">Sicherung laden …</button>
+        ${ordnerMoeglich ? `<button class="knopf rand" data-act="ordner-waehlen">☁ Aus OneDrive-Ordner laden …</button>` : ""}`}
     </div>
     ${zusatz ? "" : tafelKarte()}
   </div>`;
@@ -837,6 +843,7 @@ function viewSitzungen() {
   const offen = beschluesse(k).filter(istOffen);
   const exportAlt = ordner.status !== "aktiv" && (!state.letzterExport || (Date.now() - state.letzterExport) / 864e5 > 14);
   return `
+  ${ladenHinweis()}
   ${k.sitzungen.length && exportAlt ? `<div class="hinweis-box">${bild("wandzeitung", "m")}<div><b>Tipp:</b> Sichere die Daten regelmäßig (zuletzt: ${state.letzterExport ? datum(new Date(state.letzterExport).toISOString().slice(0, 10)) : "noch nie"}).
     <div class="aktionen abstand"><button class="knopf mini" data-act="export">Sicherung herunterladen</button></div></div></div>` : ""}
   <div class="titelzeile">
@@ -2003,7 +2010,16 @@ async function ordnerWaehlen() {
     const h = await window.showDirectoryPicker({ id: "klassenrat", mode: "readwrite", startIn: "documents" });
     ordner.handle = h; ordner.status = "aktiv";
     await idb("readwrite", (st) => st.put(h, "ordner"));
+    const vorhanden = await dateiStand(h);
+    if (vorhanden && vorhanden.zeit > (state.gespeichertAm || 0)) {
+      // im Ordner liegen neuere Daten (z. B. von einem anderen Gerät): laden statt überschreiben
+      if (!state.klassen.length || confirm(`Im Ordner liegt eine neuere Sicherung (Stand ${new Date(vorhanden.zeit).toLocaleString("de-DE")}). Jetzt laden?`)) {
+        await dateiLaden(vorhanden.handle, { nurWennNeuer: false });
+      } else ordner.basis = vorhanden.zeit;
+    } else if (vorhanden) ordner.basis = vorhanden.zeit;
+    if (vorhanden) await letzteDateiMerken(vorhanden.handle);
     await sichernInOrdner();
+    if (!vorhanden) { const neu = await dateiStand(h); if (neu) await letzteDateiMerken(neu.handle); }
   } catch (e) {
     if (e.name !== "AbortError") alert("Der Ordner konnte nicht verwendet werden: " + e.message);
   }
@@ -2032,8 +2048,14 @@ function sichernInOrdnerSpaeter() { clearTimeout(ordnerTimer); ordnerTimer = set
 async function sichernInOrdner() {
   if (ordner.status !== "aktiv" || !ordner.handle) return;
   try {
+    // Nicht überschreiben, wenn ein anderes Gerät inzwischen neuere Daten abgelegt hat
+    const vorhanden = await dateiStand(ordner.handle);
+    if (vorhanden && vorhanden.zeit > (ordner.basis || 0) && vorhanden.zeit > (state.gespeichertAm || 0)) {
+      ordner.konflikt = vorhanden; renderCloud(); if (ui.view === "sitzungen") render(); return;
+    }
     const json = JSON.stringify(state, null, 1);
     await schreibeDatei(ordner.handle, "klassenrat-sicherung.json", json);
+    ordner.basis = state.gespeichertAm || Date.now(); ordner.konflikt = null;
     if (ui.view === "sitzung" && sitzung()) {  // Karten der geöffneten Sitzung für einen Tafel-Rechner
       await schreibeDatei(ordner.handle, "klassenrat-tafel.json", JSON.stringify({ typ: "klassenrat-tafel", zeit: Date.now(),
         klasse: klasse().name, sitzungId: sitzung().id, nr: sitzung().nr, stufe: klasse().stufe, karten: modKartenMitBild(),
@@ -2048,14 +2070,75 @@ async function sichernInOrdner() {
   }
   renderCloud();
 }
+// --- Zuletzt geladene Datei merken und beim Start sofort öffnen --------------------------
+async function dateiStand(dir) {  // Stand der Sicherung im Ordner (null, wenn keine da ist)
+  try {
+    const h = await dir.getFileHandle("klassenrat-sicherung.json"), f = await h.getFile();
+    const d = JSON.parse(await f.text());
+    return Array.isArray(d.klassen) ? { handle: h, daten: d, zeit: d.gespeichertAm || f.lastModified } : null;
+  } catch (e) { return null; }
+}
+async function letzteDateiMerken(h) { try { await idb("readwrite", (st) => st.put(h, "letzteDatei")); } catch (e) { /* egal */ } }
+// Lädt eine Sicherungsdatei. nurWennNeuer: nur übernehmen, wenn sie neuer ist als die Daten im Browser.
+async function dateiLaden(h, { nurWennNeuer = true, fragen = false } = {}) {
+  const f = await h.getFile(), neu = JSON.parse(await f.text());
+  if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
+  const zeit = neu.gespeichertAm || f.lastModified;
+  if (nurWennNeuer && zeit <= (state.gespeichertAm || 0)) return false;
+  if (fragen && state.klassen.length && !confirm(`Sicherung vom ${new Date(zeit).toLocaleString("de-DE")} laden? Sie ersetzt die Daten in diesem Browser.`)) return false;
+  const logo = state.logo;
+  state = migrieren(neu);
+  if (!state.logo && logo) state.logo = logo;
+  state.gespeichertAm = zeit;
+  try { localStorage.setItem(SPEICHER, JSON.stringify(state)); } catch (e) { /* voll */ }
+  ordner.basis = zeit; ordner.konflikt = null; ui.ladenHandle = null;
+  if (!state.klassen.some((k) => k.id === state.aktiveKlasse)) state.aktiveKlasse = state.klassen[0]?.id || null;
+  await letzteDateiMerken(h);
+  meldung(`☁ Daten geladen: ${h.name} – Stand ${new Date(zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}`);
+  ui.view = "sitzungen"; render();
+  return true;
+}
+async function autoLaden() {
+  if (!ordnerMoeglich || imTafelFenster()) return;
+  try {
+    let h = await idb("readonly", (st) => st.get("letzteDatei"));
+    if (!h && ordner.handle) h = (await dateiStand(ordner.handle))?.handle;
+    if (!h) return;
+    if ((await h.queryPermission({ mode: "read" })) === "granted") await dateiLaden(h);
+    else { ui.ladenHandle = h; render(); }  // ein Klick nötig (Browser verlangt das nach einem Neustart)
+  } catch (e) { /* Datei nicht mehr da */ }
+}
+async function ladenErlauben() {
+  const h = ui.ladenHandle;
+  if (!h) return;
+  try {
+    if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
+    if (!(await dateiLaden(h))) { ui.ladenHandle = null; meldung("☁ Die Daten in diesem Browser sind bereits aktuell."); render(); }
+    if (ordner.handle && ordner.status !== "aktiv") ordnerFortsetzen();
+  } catch (e) { ui.ladenHandle = null; render(); alert("Die Datei konnte nicht geladen werden: " + e.message); }
+}
+function ladenHinweis() {
+  if (ui.ladenHandle) return `<div class="hinweis-box">${bild("kalender", "m")}<div style="flex:1"><b>Daten aus OneDrive laden?</b>
+    <span class="leise klein">Zuletzt verwendet: ${esc(ui.ladenHandle.name)}. Der Browser braucht nach einem Neustart einmal deine Erlaubnis.</span>
+    <div class="aktionen abstand"><button class="knopf" data-act="laden-erlauben">☁ Jetzt laden</button>
+      <button class="knopf rand" data-act="laden-ignorieren">Nicht jetzt</button></div></div></div>`;
+  if (ordner.konflikt) return `<div class="hinweis-box">${bild("regel", "m")}<div style="flex:1"><b>In OneDrive liegen neuere Daten</b> von einem anderen Gerät
+    (Stand ${new Date(ordner.konflikt.zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}). Die automatische Sicherung ist angehalten, damit nichts überschrieben wird.
+    <div class="aktionen abstand"><button class="knopf" data-act="konflikt-laden">Neuere Daten laden</button>
+      <button class="knopf rand" data-act="konflikt-behalten">Meine Daten behalten und hochladen</button></div></div></div>`;
+  return "";
+}
+function meldung(text) {
+  const el = document.createElement("div");
+  el.className = "meldung"; el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+
 async function ausOrdnerLaden() {
   try {
     if (ordner.status !== "aktiv") await ordnerFortsetzen();
-    const f = await (await ordner.handle.getFileHandle("klassenrat-sicherung.json")).getFile();
-    const neu = JSON.parse(await f.text());
-    if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
-    if (!confirm(`Sicherung vom ${new Date(f.lastModified).toLocaleString("de-DE")} laden? Sie ersetzt die Daten in diesem Browser.`)) return;
-    state = migrieren(neu); ui.view = "sitzungen"; speichern(); render();
+    await dateiLaden(await ordner.handle.getFileHandle("klassenrat-sicherung.json"), { nurWennNeuer: false, fragen: true });
   } catch (e) { alert("Im Ordner wurde keine gültige Sicherung gefunden. " + (e.message || "")); }
 }
 function renderCloud() {
@@ -2063,6 +2146,7 @@ function renderCloud() {
   if (!el) return;
   if (!klasse() || !ordnerMoeglich) { el.innerHTML = ""; return; }
   const zeit = ordner.zuletzt ? new Date(ordner.zuletzt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+  if (ordner.konflikt) { el.innerHTML = `<button class="warn" data-act="view" data-arg="sitzungen">☁ neuere Daten in OneDrive</button>`; return; }
   el.innerHTML = {
     aktiv: `<button class="an" data-act="view" data-arg="daten" title="Automatische Sicherung aktiv">☁ gesichert ${zeit}</button>`,
     pausiert: `<button class="warn" data-act="ordner-fortsetzen" title="Zum Fortsetzen antippen">☁ Sicherung pausiert – fortsetzen</button>`,
@@ -2503,7 +2587,14 @@ const AKTIONEN = {
     ta.value = ta.value.split("\n").map((x) => x.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, "de")).join("\n");
   },
   export: exportieren,
-  import() {
+  async import() {
+    if (window.showOpenFilePicker) {  // mit Dateizugriff: Datei merken und beim nächsten Start wieder öffnen
+      try {
+        const [h] = await window.showOpenFilePicker({ id: "klassenrat-laden", types: [{ description: "Klassenrat-Sicherung", accept: { "application/json": [".json"] } }] });
+        await dateiLaden(h, { nurWennNeuer: false, fragen: true });
+      } catch (e) { if (e.name !== "AbortError") alert("Diese Datei ist keine gültige Klassenrat-Sicherung."); }
+      return;
+    }
     dateiWaehlen(".json,application/json", async (f) => {
       try {
         const neu = JSON.parse(await f.text());
@@ -2529,6 +2620,13 @@ const AKTIONEN = {
     }
   },
   "ordner-waehlen": ordnerWaehlen,
+  "laden-erlauben": ladenErlauben,
+  "laden-ignorieren"() { ui.ladenHandle = null; render(); },
+  async "konflikt-laden"() { if (ordner.konflikt) await dateiLaden(ordner.konflikt.handle, { nurWennNeuer: false }); },
+  async "konflikt-behalten"() {
+    if (!confirm("Deine Daten ersetzen dann die neueren Daten in OneDrive. Fortfahren?")) return;
+    ordner.basis = ordner.konflikt?.zeit || Date.now(); ordner.konflikt = null; await sichernInOrdner(); render();
+  },
   "ordner-fortsetzen": ordnerFortsetzen,
   "ordner-trennen": ordnerTrennen,
   "ordner-laden": ausOrdnerLaden,
@@ -2629,7 +2727,7 @@ window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
 if (location.hash === "#tafel") tafelStarten();
 else {
-  render(); ordnerLaden();
+  render(); ordnerLaden().then(autoLaden);
   // war der Briefkasten offen (z. B. Seite neu geladen), geht es dort weiter
   if (state.briefkastenAktiv && state.klassen.some((k) => k.id === state.briefkastenAktiv)) {
     state.aktiveKlasse = state.briefkastenAktiv; render(); bk.offen = true; renderBriefkasten();

@@ -69,7 +69,12 @@ Sie ist keine Verschlüsselung. Ein vergessenes Passwort lässt sich nicht wiede
 Unter **Daten** einmal einen Ordner im OneDrive-Ordner des PCs wählen. Danach speichert das Tool nach jeder Änderung
 `klassenrat-sicherung.json` dorthin und legt unter `Verlauf/` eine Fassung pro Tag ab. Den Upload übernimmt OneDrive.
 Das funktioniert in Microsoft Edge und Google Chrome am PC oder Mac. Nach einem Browser-Neustart einmal „Sicherung fortsetzen“ antippen.
-Auf einem anderen Gerät denselben Ordner wählen und „Aus diesem Ordner wiederherstellen“ antippen.
+Auf einem neuen Gerät auf der Startseite „☁ Aus OneDrive-Ordner laden …“ wählen.
+
+Das Tool **merkt sich die zuletzt geladene Datei** und öffnet sie beim Start sofort, wenn sie neuer ist als die Daten im
+Browser (z. B. weil ein anderes Gerät inzwischen weitergearbeitet hat). Verlangt der Browser nach einem Neustart eine
+Erlaubnis, genügt ein Klick auf „☁ Jetzt laden“. Liegen in OneDrive neuere Daten als die eigenen, hält die automatische
+Sicherung an und fragt nach, statt etwas zu überschreiben.
 
 ### Offene Beschlüsse
 Ein Beschluss erscheint so lange im Rückblick jeder folgenden Sitzung, bis er dort als **„umgesetzt“** oder
