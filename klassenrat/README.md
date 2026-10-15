@@ -45,7 +45,10 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
   und **Vorschläge aus früheren Beschlüssen** beim Tippen
 - **Moderationskarten**: Sätze zum Vorlesen für die Leitung, passend zu Rollen, Beschlüssen und Anliegen. Wählbar:
   auf dem Gerät im Vollbild, **auf der Tafel** als zweites Fenster (erweiterter Bildschirm, live verbunden, mit Fernbedienung),
-  **über OneDrive an einen Tafel-Rechner** (dort „Diesen Rechner als Tafel nutzen“) oder **als Datei** für ein anderes Gerät.
+  **direkt mit der Tafel verbunden** (Tafel zeigt einen 4-stelligen Code, das Protokollgerät gibt ihn ein; WebRTC,
+  ohne Verzögerung), **über OneDrive an einen Tafel-Rechner** oder **als Datei** für ein anderes Gerät.
+  Die Direktverbindung nutzt zum Finden der Geräte den öffentlichen PeerJS-Vermittlungsdienst (sieht nur Netzwerkadressen
+  und Code, keine Inhalte) und braucht Internet; manche Schulnetze blockieren direkte Verbindungen zwischen Geräten.
   Auf der Tafel **folgen die Karten automatisch dem Protokoll** (neuer Schritt, neues Anliegen). Auf der Blitzlicht-Karte
   startet „Blitzlicht hier starten“ die Abstimmung direkt an der Tafel; die Stimmen landen im Protokoll.
 - **Eigene Satzanfänge** für Positivrunde und Aussagen (unter Klasse oder während der Sitzung über „＋ eigener“)
@@ -104,6 +107,6 @@ Alle Dateien entstehen aus `werkzeuge/` (Python 3 mit `python-docx`, Node mit Pl
 ./bauen.sh
 ```
 
-- `werkzeuge/bilder.py`: Logo, Cliparts und Symbole in den Schulfarben
+- `werkzeuge/bilder.py`: Cliparts, Symbole und App-Symbol in den Schulfarben
 - `werkzeuge/bogen_erzeugen.py`: Inhalt der Bögen. HTML/PDF und Word entstehen aus derselben Beschreibung.
 - `werkzeuge/tool_vorlage.html`: Quelltext des digitalen Tools

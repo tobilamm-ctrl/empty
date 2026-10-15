@@ -69,7 +69,11 @@ h3 { font-size: 1.05rem; margin: 18px 0 8px; display: flex; align-items: center;
 /* Karten & Formular */
 .karte { background: var(--karte); border-radius: var(--radius); padding: 18px 20px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04); margin-bottom: 16px; }
 .karte.akzent { border-top: 5px solid var(--akzent); }
-.raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; }
+.raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 12px 16px; }
+.raster > * { min-width: 0; }
+/* Safari (iPad) gibt Datums-/Zeitfeldern eine eigene Mindestbreite und Höhe – angleichen */
+input[type=date], input[type=time] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; height: 42px; line-height: 24px; text-align: left; }
+input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-and-time-value { text-align: left; min-height: 24px; }
 label.feld, div.feld { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-size: .85rem; color: var(--leise); font-weight: 600; }
 label.feld .zeile, div.feld .zeile { display: flex; align-items: center; gap: 8px; min-height: 32px; }
 .raster > .feld > :first-child:not(.zeile) { min-height: 32px; display: flex; align-items: center; }
@@ -375,6 +379,10 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 body.tafel { background: var(--hg); }
 body.tafel .blitz { position: fixed; }
 
+.blitz .wahl button.leuchtet { animation: leuchten .7s ease-out; }
+.blitz .wahl button.leuchtet.l-1 { animation-name: leuchten2; }  /* gleiche Taste zweimal: Animation neu starten */
+@keyframes leuchten { 0% { background: var(--akzent-hell); box-shadow: 0 0 0 10px var(--akzent); transform: scale(.97); } 100% { background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: none; } }
+@keyframes leuchten2 { 0% { background: var(--akzent-hell); box-shadow: 0 0 0 10px var(--akzent); transform: scale(.97); } 100% { background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: none; } }
 .mod-blitz { margin-top: 2vmin; font-size: clamp(1.1rem, 2.6vmin, 1.6rem); }
 
 /* Briefkasten */
@@ -397,6 +405,9 @@ body.tafel .blitz { position: fixed; }
 .meldung { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 120; background: #2b2b2b; color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 
 .speicher-warnung { display: flex; gap: 12px; align-items: flex-start; background: #fbe4e7; color: #6e1b26; border-bottom: 2px solid #e8a7b0; padding: 12px 20px; }
+
+.code-gross { display: flex; gap: 2vmin; justify-content: center; margin: 3vmin 0; }
+.code-gross span { font-size: clamp(3rem, 16vmin, 9rem); font-weight: 800; width: 1.15em; padding: .1em 0; border-radius: 18px; background: var(--akzent-hell); color: var(--akzent-dunkel); font-variant-numeric: tabular-nums; }
 
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -768,7 +779,7 @@ function nachRender() {
     if (i >= 0) { mod.idx = i; mod.ortIdx = i; }
     if (ordner.status === "aktiv") sichernInOrdnerSpaeter();
   }
-  if (tafelOffen()) tafelSenden();
+  if (tafelOffen() || direktOffen()) tafelSenden();
   document.querySelectorAll("#sperrbereich.gesperrt :is(input, textarea, select)").forEach((el) => (el.disabled = true));
   document.querySelectorAll("#sperrbereich.gesperrt button[data-act]").forEach((b) => { if (!ERLAUBT_GESPERRT.includes(b.dataset.act)) b.disabled = true; });
 }
@@ -851,9 +862,10 @@ function viewWillkommen(zusatz) {
 }
 function tafelKarte() {
   return `<div class="hinweis-box info abstand">${bild("wandzeitung", "m")}<div><b>Tafel-Rechner?</b> Dieser Rechner kann die Moderationskarten zeigen,
-    die das Protokollgerät über OneDrive bereitstellt – ohne eigene Klassen und ohne Schülerdaten zu speichern.
-    <div class="aktionen abstand"><button class="knopf mini" data-act="tafel-ordner">Diesen Rechner als Tafel nutzen …</button>
-      <button class="knopf mini rand" data-act="tafel-ordner-weiter">Letzten Ordner verwenden</button></div></div></div>`;
+    die das Protokollgerät direkt (Code) oder über OneDrive schickt – ohne eigene Klassen und ohne Schülerdaten zu speichern.
+    <div class="aktionen abstand"><button class="knopf mini" data-act="direkt-tafel">Als Tafel nutzen – Direktverbindung (Code)</button>
+      <button class="knopf mini rand" data-act="tafel-ordner">Als Tafel nutzen – über OneDrive …</button>
+      <button class="knopf mini rand" data-act="tafel-ordner-weiter">Letzten OneDrive-Ordner verwenden</button></div></div></div>`;
 }
 function schuljahr() {
   const d = new Date(), j = d.getFullYear(), m = d.getMonth();
@@ -1304,8 +1316,8 @@ function moderationsKarten() {
   add("abschluss", "froh", t.abschluss, gs ? "Wie fandet ihr unseren Klassenrat heute?" : "Zum Schluss das Blitzlicht: Wie fandet ihr die heutige Sitzung?");
   karten.at(-1).blitz = true;
   const neu = ROLLEN.filter(([r]) => s.naechsteRollen[r]).map(([r]) => `${t[r]}: <b>${esc(s.naechsteRollen[r])}</b>`).join("<br>");
-  if (neu) add("abschluss", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
-  add("abschluss", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
+  if (neu) add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
+  add("nach-blitz", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
   return karten;
 }
 // Reine Darstellung (keine Zugriffe auf den Zustand), damit sie auch im Tafel-Fenster
@@ -1333,12 +1345,15 @@ function modHTML(karten, idx, opt) {
   </div>`;
 }
 function modKartenMitBild() {
-  return moderationsKarten().map((k) => ({ ...k, ikon: BILDER[k.icon], schrittNr: SCHRITTE.findIndex(([x]) => x === k.schritt) + 1 }));
+  return moderationsKarten().map((k) => ({ ...k, ikon: BILDER[k.icon], schrittNr: SCHRITTE.findIndex(([x]) => x === (k.schritt === "nach-blitz" ? "abschluss" : k.schritt)) + 1 }));
 }
 // Karte, die zum aktuellen Schritt im Protokoll passt (-1, wenn keine passt, z. B. beim Protokoll)
 function modOrtIdx(karten) {
+  // Nach dem Abschluss (Schritt „Protokoll“): Rollen für die nächste Sitzung bzw. Ende zeigen
+  if (ui.schritt === "protokoll") return karten.findIndex((k) => k.schritt === "nach-blitz");
   return karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
 }
+const nachBlitzIdx = (karten) => karten.findIndex((k) => k.schritt === "nach-blitz");
 function modStartIdx(karten) { return Math.max(0, modOrtIdx(karten)); }
 function renderModeration() {
   const el = $("#moderation");
@@ -1351,28 +1366,154 @@ function renderModeration() {
 // --- Tafel-Fenster: zweites Browserfenster auf dem Tafel-Bildschirm, live verbunden ------
 let tafel = null;
 function tafelOffen() { return tafel && !tafel.closed; }
+const direktOffen = () => direkt.rolle === "protokoll" && direkt.conn?.open;
 function tafelSenden() {
-  if (!tafelOffen() || !sitzung()) return;
+  if ((!tafelOffen() && !direktOffen()) || !sitzung()) return;
   const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
-  tafel.postMessage({ typ: "klassenrat-mod", karten, idx: mod.idx, stufe: klasse().stufe, glocke: BILDER.glocke,
-    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}`, blitz: blitzDaten() }, "*");
-  renderFern(karten.length);
+  const daten = { typ: "klassenrat-mod", karten, idx: mod.idx, stufe: klasse().stufe, glocke: BILDER.glocke,
+    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}`, blitz: blitzDaten() };
+  if (tafelOffen()) tafel.postMessage(daten, "*");
+  if (direktOffen()) { try { direkt.conn.send(daten); } catch (e) { /* getrennt */ } }
+  mod.anzahl = karten.length;
+  renderFern();
 }
-function renderFern(anzahl) {
+function renderFern() {
   const el = $("#tafel-fern");
-  if (!tafelOffen()) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div class="fern">${bild("glocke", "s")} <b>Tafel</b> Karte ${mod.idx + 1}${anzahl ? " / " + anzahl : ""}
-    <button class="knopf mini rand" data-act="fern" data-arg="-1">◀</button><button class="knopf mini" data-act="fern" data-arg="1">▶</button>
-    <button class="x" data-act="tafel-zu" title="Tafel-Fenster schließen">✕</button></div>`;
+  const verbunden = tafelOffen() || direktOffen();
+  if (!verbunden && !(direkt.rolle === "protokoll" && direkt.status !== "aus")) { el.innerHTML = ""; return; }
+  const art = tafelOffen() ? "Tafel" : "Tafel (direkt)";
+  const status = !verbunden ? `<span class="badge offen">${esc(direkt.meldung || "verbinde …")}</span>`
+    : direkt.ping != null && !tafelOffen() ? `<span class="leise klein">${direkt.ping} ms</span>` : "";
+  el.innerHTML = `<div class="fern">${bild("glocke", "s")} <b>${art}</b> ${verbunden ? `Karte ${mod.idx + 1}${mod.anzahl ? " / " + mod.anzahl : ""}` : ""} ${status}
+    ${verbunden ? `<button class="knopf mini rand" data-act="fern" data-arg="-1">◀</button><button class="knopf mini" data-act="fern" data-arg="1">▶</button>` : ""}
+    <button class="x" data-act="tafel-zu" title="Verbindung zur Tafel beenden">✕</button></div>`;
+}
+
+// --- Direktverbindung Protokollgerät ↔ Tafel (WebRTC, Kopplung über einen 4-stelligen Code) ----
+// Karten und Stimmen gehen verschlüsselt direkt von Gerät zu Gerät. Nur zum Finden der Geräte wird der
+// öffentliche PeerJS-Vermittlungsdienst genutzt (er sieht Netzwerkadressen und Code, keine Inhalte).
+const PEERJS_URL = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
+const PEER_PREFIX = "klassenrat-jpw-tafel-";
+const direkt = { rolle: null, peer: null, conn: null, code: "", status: "aus", meldung: "", ping: null, versuche: 0, timer: null };
+function peerLaden() {
+  if (window.Peer) return Promise.resolve();
+  return new Promise((ok, fehler) => {
+    const sc = document.createElement("script");
+    sc.src = PEERJS_URL; sc.onload = () => ok(); sc.onerror = () => fehler(new Error("PeerJS konnte nicht geladen werden (keine Internetverbindung?)"));
+    document.head.appendChild(sc);
+  });
+}
+function direktBeenden() {
+  clearTimeout(direkt.timer);
+  try { direkt.conn?.close(); direkt.peer?.destroy(); } catch (e) { /* egal */ }
+  Object.assign(direkt, { rolle: null, peer: null, conn: null, status: "aus", meldung: "", ping: null, versuche: 0 });
+}
+
+// Protokollgerät: mit der Tafel verbinden
+async function direktVerbinden(code) {
+  direktBeenden();
+  Object.assign(direkt, { rolle: "protokoll", code, status: "verbinde", meldung: "verbinde …" });
+  renderFern();
+  try { await peerLaden(); } catch (e) { direkt.meldung = e.message; direkt.status = "fehler"; renderFern(); return; }
+  const peer = direkt.peer = new window.Peer();
+  const zeitlimit = () => {
+    clearTimeout(direkt.timer);
+    direkt.timer = setTimeout(() => {
+      if (direktOffen()) return;
+      direkt.status = "fehler";
+      direkt.meldung = "keine Verbindung – Code prüfen; evtl. blockiert das Schulnetz direkte Verbindungen";
+      renderFern();
+    }, 15000);
+  };
+  const verbinden = () => {
+    const conn = direkt.conn = peer.connect(PEER_PREFIX + code, { reliable: true });
+    conn.on("open", () => {
+      direkt.status = "verbunden"; direkt.meldung = ""; direkt.versuche = 0;
+      mod.idx = Math.max(0, modOrtIdx(moderationsKarten()));
+      tafelSenden();
+      try { conn.send({ typ: "ping", t: Date.now() }); } catch (e) { /* egal */ }
+      meldung("✓ Mit der Tafel verbunden");
+    });
+    conn.on("data", (d) => { if (d?.typ === "klassenrat-tafel") boardNachricht(d); });
+    conn.on("close", () => {
+      if (direkt.rolle !== "protokoll") return;
+      direkt.status = "verbinde"; direkt.meldung = "Verbindung unterbrochen – verbinde neu …"; renderFern();
+      if (direkt.versuche++ < 20) setTimeout(() => direkt.rolle === "protokoll" && verbinden(), 2000);
+    });
+  };
+  peer.on("open", () => { verbinden(); zeitlimit(); });
+  peer.on("error", (e) => {
+    if (e.type === "peer-unavailable") {
+      direkt.meldung = `Keine Tafel mit Code ${code} gefunden`; direkt.status = "fehler";
+      if (direkt.versuche++ < 20 && direkt.conn) setTimeout(() => direkt.rolle === "protokoll" && verbinden(), 3000);
+    } else { direkt.meldung = "Fehler: " + (e.type || e.message); direkt.status = "fehler"; }
+    renderFern();
+  });
+  peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) { /* egal */ } });
+}
+
+// Tafel: Code anzeigen und auf das Protokollgerät warten
+async function direktTafelStarten() {
+  direktBeenden();
+  Object.assign(direkt, { rolle: "tafel", status: "starte" });
+  tafelDaten = null; mod.offen = true;
+  renderDirektTafel();
+  document.documentElement.requestFullscreen?.().catch(() => {});
+  try { await peerLaden(); } catch (e) { direkt.meldung = e.message; direkt.status = "fehler"; renderDirektTafel(); return; }
+  const starten = () => {
+    direkt.code = String(Math.floor(1000 + Math.random() * 9000));
+    const peer = direkt.peer = new window.Peer(PEER_PREFIX + direkt.code);
+    peer.on("open", () => { direkt.status = "wartet"; renderDirektTafel(); });
+    peer.on("error", (e) => {
+      if (e.type === "unavailable-id") { peer.destroy(); starten(); return; }  // Code schon vergeben → neuer Code
+      direkt.status = "fehler"; direkt.meldung = "Fehler: " + (e.type || e.message); renderDirektTafel();
+    });
+    peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) { /* egal */ } });
+    peer.on("connection", (conn) => {
+      if (direkt.conn?.open) { conn.on("open", () => conn.close()); return; }  // nur ein Protokollgerät
+      direkt.conn = conn;
+      conn.on("open", () => { direkt.status = "verbunden"; renderDirektTafel(); });
+      conn.on("data", (d) => {
+        if (d?.typ === "ping") { conn.send({ typ: "klassenrat-tafel", aktion: "pong", d: d.t }); return; }
+        if (d?.typ !== "klassenrat-mod") return;
+        tafelDaten = d; document.body.dataset.stufe = d.stufe; renderDirektTafel();
+      });
+      conn.on("close", () => { if (direkt.rolle === "tafel") { direkt.conn = null; direkt.status = "wartet"; renderDirektTafel(); } });
+    });
+  };
+  starten();
+}
+function renderDirektTafel() {
+  const el = $("#moderation");
+  if (direkt.rolle !== "tafel") return;
+  const ende = `<button class="knopf" data-act="direkt-ende">Beenden</button>`;
+  if (direkt.status === "verbunden" && tafelDaten) {
+    el.innerHTML = tb.blitz && tafelDaten.blitz ? boardBlitzHTML(tafelDaten.blitz)
+      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "direkt", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true, ende });
+    return;
+  }
+  const text = { starte: "Verbindung wird vorbereitet …", wartet: "Am Protokollgerät „Moderationskarten“ → „Direkt mit der Tafel verbinden“ wählen und diesen Code eingeben:",
+    verbunden: "Verbunden – warte auf die Karten …", fehler: direkt.meldung }[direkt.status] || "";
+  el.innerHTML = `<div class="blitz moderation"><div class="oben">${bild("glocke", "l")}<h2>Tafel – Direktverbindung</h2>
+    <div class="aktionen"><button class="knopf rand" data-act="mod-vollbild">⛶ Vollbild</button>${ende}</div></div>
+    <div class="mod-karte" style="align-items:center;text-align:center"><p class="mod-hinweis">${esc(text)}</p>
+      ${direkt.status === "wartet" ? `<div class="code-gross">${direkt.code.split("").map((z) => `<span>${z}</span>`).join("")}</div>` : ""}
+      ${direkt.status === "fehler" ? `<button class="knopf gross" data-act="direkt-tafel">Neu versuchen</button>` : ""}</div></div>`;
 }
 window.addEventListener("message", (e) => {
   const d = e.data;
   if (!d || d.typ !== "klassenrat-tafel" || e.source !== tafel) return;
-  if (d.aktion === "weiter") mod.idx += d.d;
-  if (d.aktion === "stimme" || d.aktion === "zurueck") { stimmeZaehlen(d.d, d.aktion === "zurueck"); return; }
-  tafelSenden();
+  boardNachricht(d);
 });
+// Nachricht eines Tafel-Bildschirms (Tafel-Fenster oder Direktverbindung) verarbeiten
+function boardNachricht(d) {
+  if (d.aktion === "weiter") mod.idx += d.d;
+  if (d.aktion === "nachBlitz") { const i = nachBlitzIdx(moderationsKarten()); if (i >= 0) mod.idx = i; }
+  if (d.aktion === "stimme" || d.aktion === "zurueck") { stimmeZaehlen(d.d, d.aktion === "zurueck"); return; }
+  if (d.aktion === "pong") { direkt.ping = Date.now() - d.d; renderFern(); return; }
+  tafelSenden();
+}
 // Stimme aus dem Blitzlicht eines Tafel-Bildschirms übernehmen
 function stimmeZaehlen(k, rueck) {
   const s = sitzung();
@@ -1387,39 +1528,51 @@ setInterval(() => { if (tafel && tafel.closed) { tafel = null; renderFern(); } }
 const tb = { blitz: false, zeigen: false, verlauf: [], sperre: false, danke: null };
 let tafelDaten = null;  // im Tafel-Fenster: zuletzt vom Hauptfenster empfangen
 const imTafelFenster = () => location.hash === "#tafel";
-const boardAktiv = () => imTafelFenster() || tafelOrdner.aktiv;
+const boardAktiv = () => imTafelFenster() || tafelOrdner.aktiv || direkt.rolle === "tafel";
+const boardDaten = () => (tafelOrdner.aktiv ? tafelOrdner.daten : tafelDaten);
+// Tafel → Protokollgerät (Tafel-Fenster oder Direktverbindung)
+function boardAnHauptgeraet(aktion, d) {
+  const nachricht = { typ: "klassenrat-tafel", aktion, d };
+  if (imTafelFenster()) { try { window.opener?.postMessage(nachricht, "*"); } catch (e) { /* getrennt */ } }
+  else if (direkt.rolle === "tafel" && direkt.conn?.open) { try { direkt.conn.send(nachricht); } catch (e) { /* getrennt */ } }
+}
 function boardBlitzHTML(b) {
   const zahlen = b.feedback || {};
   return blitzHTML({ ...b, zahlen, zeigen: tb.zeigen, rueckMoeglich: tb.verlauf.length && !tb.sperre, fertigText: "Zurück zu den Karten",
-    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (zahlen[k] || 0), 0), danke: tb.danke });
+    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (zahlen[k] || 0), 0), leuchten: tb.leuchten, leuchtNr: tb.verlauf.length });
 }
-function boardNeuZeichnen() { imTafelFenster() ? tafelZeigen() : renderTafelOrdner(); }
+function boardNeuZeichnen() { imTafelFenster() ? tafelZeigen() : direkt.rolle === "tafel" ? renderDirektTafel() : renderTafelOrdner(); }
 const BOARD_AKTIONEN = {
   "tafel-blitz"() { Object.assign(tb, { blitz: true, zeigen: false, verlauf: [], sperre: false, danke: null }); boardNeuZeichnen(); },
   "blitz-stimme"(k) {
     if (tb.sperre) return;
-    const b = imTafelFenster() ? tafelDaten?.blitz : tafelOrdner.daten?.blitz;
+    const b = boardDaten()?.blitz;
     if (!b) return;
-    tb.verlauf.push(k); tb.sperre = true;
-    tb.danke = b.optionen.find(([x]) => x === k)?.[1];
+    tb.verlauf.push(k); tb.sperre = true; tb.leuchten = k;
     b.feedback[k] = (b.feedback[k] || 0) + 1;  // sofort anzeigen; das Protokollgerät bestätigt
     boardStimmeSenden(k, false);
     boardNeuZeichnen();
-    setTimeout(() => { tb.sperre = false; tb.danke = null; boardNeuZeichnen(); }, 1200);
+    setTimeout(() => { tb.sperre = false; }, BLITZ_PAUSE);
+    clearTimeout(tb.leuchtTimer);
+    tb.leuchtTimer = setTimeout(() => { tb.leuchten = null; boardNeuZeichnen(); }, 700);
   },
   "blitz-zurueck"() {
-    const k = tb.verlauf.pop(), b = imTafelFenster() ? tafelDaten?.blitz : tafelOrdner.daten?.blitz;
+    const k = tb.verlauf.pop(), b = boardDaten()?.blitz;
     if (!k || !b) return;
     b.feedback[k] = Math.max(0, (b.feedback[k] || 0) - 1);
     boardStimmeSenden(k, true); boardNeuZeichnen();
   },
   "blitz-zeigen"() { tb.zeigen = !tb.zeigen; boardNeuZeichnen(); },
-  "blitz-zu"() { tb.blitz = false; boardNeuZeichnen(); },
+  "blitz-zu"() {  // Blitzlicht fertig → gleich die Karte mit den Rollen für die nächste Sitzung
+    tb.blitz = false;
+    if (tafelOrdner.aktiv) { const i = nachBlitzIdx(tafelOrdner.daten?.karten || []); if (i >= 0) tafelOrdner.idx = i; }
+    else boardAnHauptgeraet("nachBlitz");
+    boardNeuZeichnen();
+  },
 };
 function boardStimmeSenden(k, rueck) {
-  if (imTafelFenster()) {
-    try { window.opener?.postMessage({ typ: "klassenrat-tafel", aktion: rueck ? "zurueck" : "stimme", d: k }, "*"); } catch (e) { /* getrennt */ }
-  } else ordnerStimmeSchreiben(k, rueck);
+  if (tafelOrdner.aktiv) ordnerStimmeSchreiben(k, rueck);
+  else boardAnHauptgeraet(rueck ? "zurueck" : "stimme", k);
 }
 
 // Läuft im Tafel-Fenster (#tafel): zeigt nur die Karten, die das Hauptfenster schickt
@@ -1584,10 +1737,9 @@ function blitzHTML(o) {
         <button class="knopf rand" data-act="blitz-zeigen">${o.zeigen ? "Ergebnis verbergen" : "Ergebnis zeigen"}</button>
         <button class="knopf rand" data-act="blitz-zurueck" ${o.rueckMoeglich ? "" : "disabled"}>Letzte Stimme zurücknehmen</button>
         <button class="knopf" data-act="blitz-zu">${o.fertigText || "Fertig"}</button></div></div>
-    <div class="wahl">${o.optionen.map(([k, svg, l]) => `<button data-act="blitz-stimme" data-arg="${k}"><span class="bild">${svg}</span><span>${l}</span>
+    <div class="wahl">${o.optionen.map(([k, svg, l]) => `<button data-act="blitz-stimme" data-arg="${k}" class="${o.leuchten === k ? `leuchtet l-${o.leuchtNr % 2}` : ""}"><span class="bild">${svg}</span><span>${l}</span>
       ${o.zeigen ? `<span class="zahl">${o.zahlen[k] || 0}</span>` : ""}</button>`).join("")}</div>
-    <div class="unten">${o.summe} Stimme${o.summe === 1 ? "" : "n"} abgegeben · Einmal antippen und weitergeben</div>
-    ${o.danke ? `<div class="danke"><span class="bild l">${o.danke}</span>Danke!<small>Bitte weitergeben</small></div>` : ""}
+    <div class="unten">${o.summe} Stimme${o.summe === 1 ? "" : "n"} abgegeben</div>
   </div>`;
 }
 function blitzDaten() {  // was ein Tafel-Bildschirm zum Blitzlicht braucht
@@ -1600,8 +1752,9 @@ function renderBlitz(danke) {
   if (!blitz.offen || !s) { el.innerHTML = ""; return; }
   const d = blitzDaten();
   el.innerHTML = blitzHTML({ ...d, zahlen: s.feedback, zeigen: blitz.zeigen, rueckMoeglich: blitz.verlauf.length,
-    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (s.feedback[k] || 0), 0), danke: danke ? BILDER[danke] : null });
+    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (s.feedback[k] || 0), 0), leuchten: blitz.leuchten, leuchtNr: blitz.verlauf.length });
 }
+const BLITZ_PAUSE = 300;  // ms – verhindert nur versehentliches Doppeltippen
 function schrittProtokoll(s, t) {
   return `<div class="karte akzent">
       <h3 style="margin-top:0">${bild("unterschrift", "m")} Unterschreiben <span class="leise klein">mit Finger, Stift oder Maus ins Feld schreiben</span></h3>
@@ -2344,25 +2497,26 @@ const AKTIONEN = {
     document.documentElement.requestFullscreen?.().catch(() => {});
   },
   "blitz-stimme"(k) {
-    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-stimme"](k);
-    if (blitz.sperre) return;  // kurze Pause verhindert Doppeltipper
+    if (boardAktiv()) return BOARD_AKTIONEN["blitz-stimme"](k);
+    if (blitz.sperre) return;
     const s = sitzung();
     s.feedback[k] = (s.feedback[k] || 0) + 1;
-    blitz.verlauf.push(k); blitz.sperre = true;
-    speichern();
-    renderBlitz(Object.fromEntries(blitzOptionen().map(([x, ic]) => [x, ic]))[k]);
-    setTimeout(() => { blitz.sperre = false; renderBlitz(); }, 1200);
+    blitz.verlauf.push(k); blitz.sperre = true; blitz.leuchten = k;
+    speichern(); renderBlitz();
+    setTimeout(() => { blitz.sperre = false; }, BLITZ_PAUSE);
+    clearTimeout(blitz.leuchtTimer);
+    blitz.leuchtTimer = setTimeout(() => { blitz.leuchten = null; renderBlitz(); }, 700);
   },
   "blitz-zurueck"() {
-    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zurueck"]();
+    if (boardAktiv()) return BOARD_AKTIONEN["blitz-zurueck"]();
     const k = blitz.verlauf.pop(), s = sitzung();
     if (k) { s.feedback[k] = Math.max(0, (s.feedback[k] || 0) - 1); speichern(); }
     renderBlitz();
   },
   "blitz-zeigen"() {
-    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zeigen"](); blitz.zeigen = !blitz.zeigen; renderBlitz(); },
+    if (boardAktiv()) return BOARD_AKTIONEN["blitz-zeigen"](); blitz.zeigen = !blitz.zeigen; renderBlitz(); },
   "blitz-zu"() {
-    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zu"]();
+    if (boardAktiv()) return BOARD_AKTIONEN["blitz-zu"]();
     blitz.offen = false; renderBlitz();
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     render();
@@ -2428,6 +2582,8 @@ const AKTIONEN = {
         <button data-act="mod-hier">${bild("leute", "m")}<span><b>Auf diesem Gerät</b><small>Vollbild – die Leitung liest direkt vom Gerät ab.</small></span></button>
         <button data-act="mod-tafel">${bild("wandzeitung", "m")}<span><b>Auf der Tafel (zweites Fenster)</b><small>Das Gerät ist an die Tafel angeschlossen (erweiterter Bildschirm).
           Die Karten zeigen live die Daten dieser Sitzung, hier bleibt das Protokoll offen.</small></span></button>
+        <button data-act="mod-direkt">${bild("idee", "m")}<span><b>Direkt mit der Tafel verbinden (Code)</b><small>Die Tafel zeigt einen 4-stelligen Code
+          („Diesen Rechner als Tafel nutzen“ → Direktverbindung). Karten und Blitzlicht laufen ohne Verzögerung direkt zwischen den Geräten.</small></span></button>
         <button data-act="mod-onedrive">${bild("kalender", "m")}<span><b>Über OneDrive an einen anderen Rechner</b><small>Die Karten dieser Sitzung werden mit der automatischen Sicherung in den OneDrive-Ordner geschrieben.
           Am Tafel-Rechner im Tool „Diesen Rechner als Tafel nutzen“ wählen. Aktualisiert sich von selbst (mit einigen Sekunden Verzögerung).</small></span></button>
         <button data-act="mod-export">${bild("beschluss", "m")}<span><b>Als Datei für ein anderes Gerät</b><small>Für den Tafel-PC oder das Tablet der Leitung, z. B. über OneDrive oder USB-Stick.
@@ -2452,6 +2608,19 @@ const AKTIONEN = {
     tafel.focus();
     setTimeout(tafelSenden, 400);
   },
+  async "mod-direkt"() {
+    $("#dialog").innerHTML = "";
+    const code = prompt("Code, der auf der Tafel angezeigt wird (4 Ziffern):", direkt.code || "");
+    if (code == null) return;
+    if (!/^\d{4}$/.test(code.trim())) { alert("Bitte die 4 Ziffern von der Tafel eingeben."); return; }
+    direktVerbinden(code.trim());
+  },
+  "direkt-tafel"() { direktTafelStarten(); },
+  "direkt-ende"() {
+    direktBeenden(); mod.offen = false; tafelDaten = null; tb.blitz = false;
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    $("#moderation").innerHTML = ""; render();
+  },
   "mod-onedrive"() {
     $("#dialog").innerHTML = "";
     if (ordner.status !== "aktiv") {
@@ -2462,9 +2631,15 @@ const AKTIONEN = {
   },
   "mod-export"() { $("#dialog").innerHTML = ""; modExportieren(); },
   fern(d) { mod.idx += +d; tafelSenden(); },
-  "tafel-zu"() { if (tafelOffen()) tafel.close(); tafel = null; renderFern(); },
+  "tafel-zu"() {
+    if (tafelOffen()) tafel.close();
+    tafel = null;
+    if (direkt.rolle === "protokoll") direktBeenden();
+    renderFern();
+  },
   "mod-weiter"(d) {
     if (tafelOrdner.aktiv) { tafelOrdner.idx += +d; renderTafelOrdner(); return; }
+    if (direkt.rolle === "tafel") { boardAnHauptgeraet("weiter", +d); return; }
     mod.idx += +d; renderModeration();
   },
   "tafel-blitz"() {
@@ -2480,7 +2655,7 @@ const AKTIONEN = {
     renderTafelOrdner(); render();
   },
   "mod-zu"() {
-    if (tafelOrdner.aktiv) { if (document.fullscreenElement) document.exitFullscreen?.(); return; }
+    if (tafelOrdner.aktiv || direkt.rolle === "tafel") { if (document.fullscreenElement) document.exitFullscreen?.(); return; }
     mod.offen = false; renderModeration(); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); },
   aushang() {
     const k = klasse(), t = T(), offen = beschluesse(k).filter(istOffen);
@@ -2704,7 +2879,7 @@ const AKTIONEN = {
   "timer-setzen"(n) { clearInterval(timer.int); Object.assign(timer, { rest: n * 60, laeuft: false, ende: false }); renderTimer(); },
 };
 
-const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation"];
+const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation", "mod-direkt", "mod-tafel", "mod-hier", "mod-export", "mod-onedrive", "dialog-zu"];
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
   if (!el || (el.tagName === "LABEL")) return;
