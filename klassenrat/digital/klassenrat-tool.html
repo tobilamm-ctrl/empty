@@ -382,6 +382,8 @@ body.tafel .blitz { position: fixed; }
 
 .meldung { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 120; background: #2b2b2b; color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 
+.speicher-warnung { display: flex; gap: 12px; align-items: flex-start; background: #fbe4e7; color: #6e1b26; border-bottom: 2px solid #e8a7b0; padding: 12px 20px; }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -429,6 +431,7 @@ body.tafel .blitz { position: fixed; }
   <div class="cloud" id="cloud"></div>
   <div class="gespeichert" id="gespeichert"></div>
 </header>
+<div id="warnung"></div>
 <main id="app"></main>
 <div id="timer-bereich"></div>
 <div id="druck"></div>
@@ -536,6 +539,12 @@ function migrieren(st) {
   st.gespeichertAm ||= Date.now();  // ältere Stände ohne Zeitstempel gelten als aktuell
   return st;
 }
+// Kann dieser Browser hier dauerhaft speichern? (In Vorschauen von OneDrive/SharePoint oder bei
+// lokal geöffneten Dateien auf dem iPad ist der Speicher gesperrt.)
+const speicherOk = (() => {
+  try { localStorage.setItem("klassenrat-test", "1"); localStorage.removeItem("klassenrat-test"); return true; } catch (e) { return false; }
+})();
+const istIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 let speicherTimer;
 function speichern() {
   clearTimeout(speicherTimer);
@@ -547,8 +556,7 @@ function speichern() {
       localStorage.setItem(SPEICHER, JSON.stringify(state));
       el.textContent = "✓ gespeichert";
     } catch (e) {
-      el.textContent = "⚠ nicht gespeichert";
-      alert("Speichern im Browser ist nicht möglich. Bitte unter „Daten“ eine Sicherung herunterladen.");
+      el.textContent = "⚠ nicht gespeichert";  // Hinweis steht dauerhaft oben (speicherWarnung)
     }
     setTimeout(() => (el.textContent = ""), 1800);
   }, 250);
@@ -712,6 +720,7 @@ function render() {
   const aktivNav = ui.view === "sitzung" ? "sitzungen" : ui.view;
   $("#nav").innerHTML = k ? navs.map(([v, t, b]) => `<button data-act="view" data-arg="${v}" title="${t}" class="${aktivNav === v ? "aktiv" : ""}">${bild(b, "s")}<span class="t">${t}</span></button>`).join("") : "";
 
+  $("#warnung").innerHTML = speicherWarnung();
   const app = $("#app");
   if (!k) app.innerHTML = viewWillkommen();
   else if (ui.view === "sitzung" && sitzung()) app.innerHTML = viewSitzung();
@@ -784,6 +793,17 @@ function padStarten(c) {
   };
   c.addEventListener("pointerup", ende);
   c.addEventListener("pointercancel", ende);
+}
+
+function speicherWarnung() {
+  if (speicherOk) return "";
+  const vorschau = /sharepoint|onedrive|live\.com/i.test(document.referrer + location.href) || window.top !== window;
+  return `<div class="speicher-warnung">${bild("regel", "m")}<div><b>Achtung: In dieser Ansicht kann das Tool nicht speichern.</b><br>
+    ${vorschau ? "Die Datei ist in einer Vorschau (z. B. OneDrive/SharePoint) geöffnet. Dort sind Skripte und Speicher eingeschränkt."
+      : "Der Browser erlaubt hier keinen dauerhaften Speicher (z. B. lokal geöffnete Datei auf dem iPad oder privates Fenster)."}
+    Alles, was du jetzt eingibst, ist beim Schließen verloren.<br>
+    <span class="klein">${istIOS ? "Auf dem iPad: das Tool über eine Web-Adresse öffnen (z. B. GitHub Pages) und in Safari „Zum Home-Bildschirm“ hinzufügen."
+      : "Lösung: Datei herunterladen und direkt in Edge oder Chrome öffnen (Doppelklick)."}</span></div></div>`;
 }
 
 function viewWillkommen(zusatz) {
@@ -1905,7 +1925,9 @@ function viewDaten() {
   <div class="karte">
     <h3 style="margin-top:0">Sicherung als Datei</h3>
     <p class="leise">Die Sicherung enthält alle Klassen und Sitzungen als Datei. Damit kannst du die Daten auch auf ein anderes Gerät übertragen.</p>
-    <div class="aktionen"><button class="knopf" data-act="export">Sicherung herunterladen</button>
+    ${istIOS ? `<p class="leise klein">Auf dem iPad öffnet sich das Teilen-Menü: „In Dateien sichern“ wählen und den OneDrive-Ordner antippen.
+      Zum Laden „Sicherung laden …“ antippen und die Datei in OneDrive auswählen.</p>` : ""}
+    <div class="aktionen"><button class="knopf" data-act="export">${istIOS ? "Sicherung in OneDrive / Dateien sichern" : "Sicherung herunterladen"}</button>
       <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
     <p class="leise klein">Letzte Sicherung: ${state.letzterExport ? new Date(state.letzterExport).toLocaleString("de-DE") : "noch nie"}</p>
   </div>
@@ -2162,9 +2184,15 @@ function dateiWaehlen(accept, cb) {
   inp.onchange = () => inp.files[0] && cb(inp.files[0]);
   inp.click();
 }
-function exportieren() {
+async function exportieren() {
   state.letzterExport = Date.now();
   const blob = new Blob([JSON.stringify(state, null, 1)], { type: "application/json" });
+  // iPad/iPhone: Teilen-Menü öffnen → „In Dateien sichern“ → OneDrive-Ordner wählen
+  const datei = new File([blob], `klassenrat-sicherung-${heute()}.json`, { type: "application/json" });
+  if (istIOS && navigator.canShare?.({ files: [datei] })) {
+    try { await navigator.share({ files: [datei], title: "Klassenrat-Sicherung" }); speichern(); render(); return; }
+    catch (e) { if (e.name === "AbortError") return; }
+  }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `klassenrat-sicherung-${heute()}.json`;
