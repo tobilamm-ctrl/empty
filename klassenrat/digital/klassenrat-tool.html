@@ -2023,31 +2023,44 @@ async function onlineBkStarten(k, { neuerCode = false, behalten = false } = {}) 
   if (!k.onlineCode || neuerCode || (bkEinst(k).wechselCode && !behalten)) k.onlineCode = zufallsCode();
   k.bkOnline = true; speichern();
   onlineBkStoppen(k.id, false);
-  const o = onlineBk[k.id] = { status: "starte", code: k.onlineCode, meldung: "", qr: null };
+  const o = onlineBk[k.id] = { status: "starte", code: k.onlineCode, meldung: "", qr: null, versuche: 0, verbindungen: new Set() };
+  const neuZeichnen = () => { if (["briefkasten", "sitzungen"].includes(ui.view)) render(); };
   qrSvg(postfachLink(o.code)).then((svg) => { o.qr = svg; if (ui.view === "briefkasten") render(); }).catch((e) => { o.qrFehler = e.message; });
-  if (ui.view === "briefkasten" || ui.view === "sitzungen") render();
-  try { await peerLaden(); } catch (e) { o.status = "fehler"; o.meldung = e.message; render(); return; }
-  if (onlineBk[k.id] !== o) return;
-  const peer = o.peer = new window.Peer(BK_PREFIX + o.code);
-  peer.on("open", () => { o.status = "offen"; o.meldung = ""; if (["briefkasten", "sitzungen"].includes(ui.view)) render(); });
-  peer.on("error", (e) => {
-    if (e.type === "unavailable-id") { o.status = "fehler"; o.meldung = "Dieser Briefkasten ist bereits auf einem anderen Gerät geöffnet."; }
-    else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
-      o.status = "starte"; o.meldung = "Verbindungsdienst nicht erreichbar – neuer Versuch …";
-      setTimeout(() => { if (onlineBk[k.id] === o) onlineBkStarten(k, { behalten: true }); }, 15000);
-    } else if (e.type !== "peer-unavailable") o.meldung = "Fehler: " + e.type;
-    if (["briefkasten", "sitzungen"].includes(ui.view)) render();
-  });
-  peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) { /* egal */ } });
-  o.verbindungen = new Set();
-  peer.on("connection", (conn) => {
-    conn.on("open", () => { o.verbindungen.add(conn); conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); });
-    conn.on("close", () => o.verbindungen.delete(conn));
-    conn.on("data", (d) => onlineAnliegen(k, conn, d));
-  });
+  neuZeichnen();
+  try { await peerLaden(); } catch (e) { o.status = "fehler"; o.meldung = e.message; neuZeichnen(); return; }
+  const nochAktuell = () => onlineBk[k.id] === o;
+  const anmelden = () => {
+    if (!nochAktuell()) return;
+    const peer = o.peer = new window.Peer(BK_PREFIX + o.code);
+    peer.on("open", () => { o.status = "offen"; o.meldung = ""; o.versuche = 0; neuZeichnen(); });
+    peer.on("error", (e) => {
+      if (!nochAktuell() || peer !== o.peer) return;
+      if (e.type === "unavailable-id") {
+        // Nach dem Schließen gibt der Vermittlungsdienst die Adresse erst nach einigen Sekunden frei → erneut versuchen
+        try { peer.destroy(); } catch (x) { /* egal */ }
+        if (o.versuche++ < 20) {
+          o.status = "starte"; o.meldung = "Wird geöffnet … (die vorherige Verbindung wird noch freigegeben)";
+          o.timer = setTimeout(anmelden, 3000);
+        } else { o.status = "fehler"; o.meldung = "Dieser Briefkasten ist bereits auf einem anderen Gerät geöffnet."; }
+      } else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
+        try { peer.destroy(); } catch (x) { /* egal */ }
+        o.status = "starte"; o.meldung = "Verbindungsdienst nicht erreichbar – neuer Versuch …";
+        o.timer = setTimeout(anmelden, 15000);
+      } else if (e.type !== "peer-unavailable") o.meldung = "Fehler: " + e.type;
+      neuZeichnen();
+    });
+    peer.on("disconnected", () => { if (nochAktuell() && peer === o.peer) { try { peer.reconnect(); } catch (x) { /* egal */ } } });
+    peer.on("connection", (conn) => {
+      conn.on("open", () => { o.verbindungen.add(conn); conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); });
+      conn.on("close", () => o.verbindungen.delete(conn));
+      conn.on("data", (d) => onlineAnliegen(k, conn, d));
+    });
+  };
+  anmelden();
 }
 function onlineBkStoppen(kid, merken = true) {
-  try { onlineBk[kid]?.peer?.destroy(); } catch (e) { /* egal */ }
+  clearTimeout(onlineBk[kid]?.timer);
+  try { onlineBk[kid]?.peer?.disconnect(); onlineBk[kid]?.peer?.destroy(); } catch (e) { /* egal */ }
   delete onlineBk[kid];
   const k = state.klassen.find((x) => x.id === kid);
   if (merken && k) { k.bkOnline = false; speichern(); }
