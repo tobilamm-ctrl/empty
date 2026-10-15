@@ -135,6 +135,7 @@ textarea { resize: vertical; min-height: 64px; }
 .badge.ja { background: #e1f3ec; color: #22775d; }
 .badge.teils { background: #fff4d1; color: #8a6400; }
 .badge.nein { background: #fbe4e7; color: #a12636; }
+.badge.verworfen { background: #ececec; color: #5c5c5c; }
 .badge.ueberfaellig { background: var(--rot); color: #fff; }
 
 /* Schritte */
@@ -191,7 +192,7 @@ textarea { resize: vertical; min-height: 64px; }
 .rb-frage { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-top: 1px dashed var(--linie); padding-top: 12px; }
 .rb-frage b { font-size: 1.05rem; }
 .rb-frage .status-wahl { margin-left: auto; }
-.status-wahl { display: flex; gap: 6px; }
+.status-wahl { display: flex; gap: 6px; flex-wrap: wrap; }
 .status-wahl button { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2px solid var(--linie); background: #fff; border-radius: 12px; padding: 6px 10px; cursor: pointer; font-size: .8rem; font-weight: 700; color: var(--leise); min-width: 70px; }
 .status-wahl button.an { border-color: var(--akzent); background: var(--akzent-hell); color: var(--akzent-dunkel); }
 
@@ -342,7 +343,7 @@ const TEXTE = {
     worum: "Worum geht es?", aussagen: "Was sagen die Kinder?", aussage: "Das sagt das Kind …",
     vorschlaege: "Unsere Ideen", vorschlag: "Idee", beschluss: "Das machen wir",
     abschluss: "Wie war's?", feedback: "Wie war unser Klassenrat?",
-    status: { ja: "geklappt", teils: "ein bisschen", nein: "nicht geklappt" },
+    status: { ja: "geklappt", teils: "ein bisschen", nein: "nicht geklappt", verworfen: "geht nicht" },
     kind: "Kind", kinder: "Kinder",
     schritt: { positiv: "Das war schön", rueckblick: "Geklappt?", anliegen: "Themen", abschluss: "Wie war's?" },
   },
@@ -355,7 +356,7 @@ const TEXTE = {
     worum: "Worum geht es? (in eigenen Worten)", aussagen: "Aussagen / Sichtweisen", aussage: "Aussage (sinngemäß)",
     vorschlaege: "Lösungsvorschläge & Abstimmung", vorschlag: "Vorschlag", beschluss: "Beschluss",
     abschluss: "Abschluss", feedback: "Blitzlicht: Wie war die Sitzung?",
-    status: { ja: "umgesetzt", teils: "teilweise", nein: "nicht umgesetzt" },
+    status: { ja: "umgesetzt", teils: "teilweise", nein: "nicht umgesetzt", verworfen: "nicht umsetzbar" },
     kind: "Schüler/in", kinder: "Schüler/innen",
   },
 };
@@ -497,7 +498,7 @@ function beschluesse(k) {
 }
 // Beschlüsse, die in Sitzung s überprüft werden: aus früheren Sitzungen, vorher nicht als umgesetzt markiert.
 function offeneFuer(s) {
-  return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && v.status === "ja"));
+  return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && ABGESCHLOSSEN.includes(v.status)));
 }
 // --- Sperre abgeschlossener Sitzungen --------------------------------------------
 // Schutz vor versehentlichen oder unbefugten Änderungen in der Oberfläche (keine Verschlüsselung).
@@ -550,7 +551,10 @@ async function passwortAbfragen(text) {
 }
 
 const namenText = (x) => (Array.isArray(x) ? x.join(", ") : x || "");
-function ueberfaellig(b) { return b.status !== "ja" && b.anliegen.bisWann && b.anliegen.bisWann < heute(); }
+// "umgesetzt" und "nicht umsetzbar" beenden die Überprüfung; alles andere bleibt offen
+const ABGESCHLOSSEN = ["ja", "verworfen"];
+const istOffen = (b) => !ABGESCHLOSSEN.includes(b.status);
+function ueberfaellig(b) { return istOffen(b) && b.anliegen.bisWann && b.anliegen.bisWann < heute(); }
 
 function neuesAnliegen(vorlage) {
   return {
@@ -671,7 +675,7 @@ function schuljahr() {
 function viewSitzungen() {
   const k = klasse();
   const liste = sortiert(k).reverse();
-  const offen = beschluesse(k).filter((b) => b.status !== "ja");
+  const offen = beschluesse(k).filter(istOffen);
   const exportAlt = ordner.status !== "aktiv" && (!state.letzterExport || (Date.now() - state.letzterExport) / 864e5 > 14);
   return `
   ${k.sitzungen.length && exportAlt ? `<div class="hinweis-box">${bild("wandzeitung", "m")}<div><b>Tipp:</b> Sichere die Daten regelmäßig (zuletzt: ${state.letzterExport ? datum(new Date(state.letzterExport).toISOString().slice(0, 10)) : "noch nie"}).
@@ -866,20 +870,21 @@ function schrittPositiv(s, t) {
 function schrittRueckblick(s, t) {
   const offen = offeneFuer(s);
   if (!offen.length) return `<div class="karte leer">${bild("haken", "l")}<p><b>Keine offenen Beschlüsse.</b><br>Aus früheren Sitzungen ist nichts zu überprüfen.</p></div>`;
-  const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"]];
+  const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"], ["verworfen", "nicht_moeglich"]];
   const vor = (d) => {
     const tage = Math.round((new Date(heute() + "T00:00") - new Date(d + "T00:00")) / 864e5);
     return tage <= 0 ? "heute" : tage === 1 ? "gestern" : tage < 14 ? `vor ${tage} Tagen` : `vor ${Math.round(tage / 7)} Wochen`;
   };
   return `<div class="karte akzent">
     <h3 style="margin-top:0">${bild("zurueck", "m")} ${t.rueckblick} <span class="leise klein">${t.rueckblickTipp}</span></h3>
-    <p class="leise klein" style="margin-top:-4px">Nur „${t.status.ja}“ schließt einen Beschluss ab. „${t.status.teils}“ und „${t.status.nein}“ lassen ihn offen.</p>
+    <p class="leise klein" style="margin-top:-4px">„${t.status.ja}“ und „${t.status.verworfen}“ schließen einen Beschluss ab. „${t.status.teils}“ und „${t.status.nein}“ lassen ihn offen – er erscheint beim nächsten Mal wieder.</p>
     ${offen.map((b) => {
       const r = s.rueckblick[b.id] || {}, a = b.anliegen;
       const frueher = b.verlauf.filter((v) => v.nr < s.nr);
       const faellig = a.bisWann && a.bisWann < s.datum;
       const stimmen = a.vorschlaege?.find((v) => v.text === a.beschluss);
-      return `<div class="rb-karte ${r.status === "ja" ? "erledigt" : ""}">
+      const zu = ABGESCHLOSSEN.includes(r.status);
+      return `<div class="rb-karte ${zu ? "erledigt" : ""}">
         <div class="rb-kopf">${bild("kalender")} <span class="datum-gross">Beschluss vom ${datum(b.sitzung.datum, true)}</span>
           <span class="alter">· Sitzung Nr. ${b.sitzung.nr} · ${vor(b.sitzung.datum)}</span>
           ${frueher.length ? `<span class="badge ${frueher.at(-1).status}">zuletzt: ${t.status[frueher.at(-1).status]} (Nr. ${frueher.at(-1).nr})</span>` : `<span class="badge offen">erstmals im Rückblick</span>`}</div>
@@ -890,17 +895,19 @@ function schrittRueckblick(s, t) {
               ${a.worum ? `<p>${esc(a.worum)}</p>` : ""}${a.von?.length ? `<p>${t.von}: ${esc(namenText(a.von))}</p>` : ""}</div>
             <div class="rb-fakt"><small>${bild("leute")} Zuständig</small>
               <div>${a.wer?.length ? a.wer.map((n) => `<span class="nchip">${esc(n)}</span>`).join("") : "–"}</div></div>
-            <div class="rb-fakt ${faellig && r.status !== "ja" ? "warn" : ""}"><small>${bild("uhr")} Bis wann?</small>
-              <div>${a.bisWann ? datum(a.bisWann, true) : "ohne Frist"}</div>${faellig && r.status !== "ja" ? `<p>Frist ist abgelaufen</p>` : ""}</div>
+            <div class="rb-fakt ${faellig && !zu ? "warn" : ""}"><small>${bild("uhr")} Bis wann?</small>
+              <div>${a.bisWann ? datum(a.bisWann, true) : "ohne Frist"}</div>${faellig && !zu ? `<p>Frist ist abgelaufen</p>` : ""}</div>
             ${stimmen ? `<div class="rb-fakt"><small>${bild("hand")} Abstimmung</small><div>${stimmen.ja || 0} dafür · ${stimmen.nein || 0} dagegen${stimmen.enth ? ` · ${stimmen.enth} Enth.` : ""}</div>
               ${a.einstimmig ? `<p>${esc(a.einstimmig)}</p>` : ""}</div>` : ""}
           </div>
           ${frueher.length ? `<p class="leise klein" style="margin:-4px 0 10px">Bisherige Überprüfungen: ${frueher.map((v) => `Nr. ${v.nr} ${t.status[v.status]}${v.notiz ? ` („${esc(v.notiz)}“)` : ""}`).join(" · ")}</p>` : ""}
           <div class="rb-frage"><b>${klasse().stufe === "gs" ? "Hat es geklappt?" : "Wurde der Beschluss umgesetzt?"}</b>
             <div class="status-wahl">${opt.map(([st, ic]) => `<button class="${r.status === st ? "an" : ""}" data-act="rb-status" data-arg="${b.id}|${st}">${bild(ic, "m")}${t.status[st]}</button>`).join("")}</div></div>
-          <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="Bemerkung / wie geht es weiter?" ${r.status ? "" : "disabled"}>
+          <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="${r.status === "verworfen" ? "Warum ist der Beschluss nicht umsetzbar?" : "Bemerkung / wie geht es weiter?"}" ${r.status ? "" : "disabled"}>
           <p class="leise klein" style="margin:6px 0 0">${r.status === "ja"
             ? `${bild("haken", "s")} Erledigt – erscheint in künftigen Sitzungen nicht mehr.`
+            : r.status === "verworfen"
+            ? `${bild("nicht_moeglich", "s")} Abgeschlossen als „${t.status.verworfen}“ – erscheint nicht mehr. Bitte kurz den Grund notieren.`
             : `${bild("zurueck", "s")} Bleibt offen und wird in der nächsten Sitzung wieder zur Überprüfung aufgelistet${r.status ? "" : " (auch wenn nichts angetippt wird)"}.`}</p>
         </div>
       </div>`;
@@ -1066,7 +1073,7 @@ function protokollHTML(s) {
   <h4>${bild("zurueck")} 2 · ${t.rueckblick}</h4>
   ${tab(["Beschluss vom", "Worum ging es?", "Beschluss", "zuständig", "Ergebnis", "Bemerkung"], offen.map((b) => {
     const r = s.rueckblick[b.id] || {};
-    return [`${datum(b.sitzung.datum)}<br><small>Nr. ${b.sitzung.nr}</small>`, esc(b.anliegen.thema), esc(b.anliegen.beschluss), esc(namenText(b.anliegen.wer)), r.status === "ja" ? t.status.ja : (r.status ? t.status[r.status] : "nicht besprochen") + " – bleibt offen", esc(r.notiz)];
+    return [`${datum(b.sitzung.datum)}<br><small>Nr. ${b.sitzung.nr}</small>`, esc(b.anliegen.thema), esc(b.anliegen.beschluss), esc(namenText(b.anliegen.wer)), r.status === "ja" ? t.status.ja : r.status === "verworfen" ? t.status.verworfen + " – abgeschlossen" : (r.status ? t.status[r.status] : "nicht besprochen") + " – bleibt offen", esc(r.notiz)];
   }))}
 
   <h4>${bild("sprechen")} 3 · ${t.anliegen}</h4>
@@ -1109,14 +1116,14 @@ function drucken(html) {
 function viewBeschluesse() {
   const k = klasse(), t = T();
   const alle = beschluesse(k).reverse();
-  const filter = { offen: (b) => b.status !== "ja", erledigt: (b) => b.status === "ja", alle: () => true }[ui.filter];
+  const filter = { offen: istOffen, erledigt: (b) => b.status === "ja", verworfen: (b) => b.status === "verworfen", alle: () => true }[ui.filter];
   const liste = alle.filter(filter);
   const zahl = (f) => alle.filter(f).length;
   return `
   <div class="titelzeile"><h2>${bild("beschluss", "m")} Beschlüsse ${esc(k.name)}</h2>
     <button class="knopf rand" data-act="beschluesse-drucken" style="margin-left:auto">Liste drucken</button></div>
   <div class="chips" style="margin-bottom:14px">
-    ${[["offen", "offen", (b) => b.status !== "ja"], ["erledigt", t.status.ja, (b) => b.status === "ja"], ["alle", "alle", () => true]]
+    ${[["offen", "offen", istOffen], ["erledigt", t.status.ja, (b) => b.status === "ja"], ["verworfen", t.status.verworfen, (b) => b.status === "verworfen"], ["alle", "alle", () => true]]
       .map(([f, l, fn]) => `<button class="chip ${ui.filter === f ? "an" : ""}" data-act="filter" data-arg="${f}">${l} (${zahl(fn)})</button>`).join("")}
   </div>
   <div class="karte">${liste.length ? beschlussTabelle(liste, t) : `<div class="leer">${bild("haken", "l")}<p>Keine Beschlüsse in dieser Ansicht.</p></div>`}</div>`;

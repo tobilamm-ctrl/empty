@@ -179,6 +179,8 @@ ICONS = {
     "schloss_offen": _icon(f'<path d="M20 28v-9a12 12 0 0123.5-3.4" stroke="{GRAU}" stroke-width="6" fill="none" stroke-linecap="round"/>'
                            f'<rect x="12" y="27" width="40" height="31" rx="6" fill="#BFE0D4" stroke="{GRUEN}" stroke-width="3"/>'
                            f'<circle cx="32" cy="40" r="4.5" fill="{DUNKEL}"/><path d="M32 42v8" stroke="{DUNKEL}" stroke-width="4" stroke-linecap="round"/>'),
+    "nicht_moeglich": _icon(f'<circle cx="32" cy="32" r="27" fill="#EDEDED" stroke="{GRAU}" stroke-width="5"/>'
+                            f'<path d="M22 22l20 20M42 22L22 42" stroke="#7C7A7B" stroke-width="6" stroke-linecap="round"/>'),
     "unterschrift": _icon(f'<path d="M6 46c6-14 10-26 14-26s-2 26 4 26 8-18 12-18-1 14 4 14 6-6 9-8" stroke="{DUNKEL}" '
                           f'stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
                           f'<path d="M6 54h52" stroke="{GRAU}" stroke-width="3" stroke-linecap="round"/>'),

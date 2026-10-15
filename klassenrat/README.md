@@ -53,8 +53,9 @@ Das funktioniert in Microsoft Edge und Google Chrome am PC oder Mac. Nach einem 
 Auf einem anderen Gerät denselben Ordner wählen und „Aus diesem Ordner wiederherstellen“ antippen.
 
 ### Offene Beschlüsse
-Ein Beschluss erscheint so lange im Rückblick jeder folgenden Sitzung, bis er dort als **„umgesetzt“** markiert wird.
-„teilweise“, „nicht umgesetzt“ oder gar keine Auswahl lassen ihn offen.
+Ein Beschluss erscheint so lange im Rückblick jeder folgenden Sitzung, bis er dort als **„umgesetzt“** oder
+**„nicht umsetzbar“** markiert wird (Grundschule: „geklappt“ / „geht nicht“). „teilweise“, „nicht umgesetzt“ oder gar keine
+Auswahl lassen ihn offen. Bei „nicht umsetzbar“ fragt das Bemerkungsfeld nach dem Grund.
 
 ### Datenschutz
 Alle Daten werden **nur im Browser des jeweiligen Geräts** gespeichert (localStorage). Nichts wird ins Internet übertragen.
