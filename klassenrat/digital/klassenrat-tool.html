@@ -409,6 +409,18 @@ body.tafel .blitz { position: fixed; }
 .code-gross { display: flex; gap: 2vmin; justify-content: center; margin: 3vmin 0; }
 .code-gross span { font-size: clamp(3rem, 16vmin, 9rem); font-weight: 800; width: 1.15em; padding: .1em 0; border-radius: 18px; background: var(--akzent-hell); color: var(--akzent-dunkel); font-variant-numeric: tabular-nums; }
 
+/* Online-Briefkasten */
+.qr-bereich { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin: 10px 0; }
+.qr { width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1.5px solid var(--linie); border-radius: 12px; padding: 6px; }
+.qr svg { width: 100%; height: 100%; }
+.link-text { word-break: break-all; font-family: ui-monospace, Menlo, monospace; font-size: .8rem; color: var(--leise); }
+.qr-aushang { text-align: center; }
+.qr-text { font-size: 18pt; line-height: 1.4; margin: 20px 0; }
+.qr-gross { width: 120mm; height: 120mm; margin: 0 auto; } .qr-gross svg { width: 100%; height: 100%; }
+.postfach { max-width: 760px; margin: 0 auto; padding: 18px 16px 60px; display: flex; flex-direction: column; gap: 16px; }
+.pf-kopf { display: flex; align-items: center; gap: 14px; }
+.pf-kopf h1 { margin: 0; color: var(--akzent); font-size: 1.6rem; } .pf-kopf p { margin: 2px 0 0; color: var(--leise); font-weight: 600; }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -1396,14 +1408,15 @@ function renderFern() {
 const PEERJS_URL = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
 const PEER_PREFIX = "klassenrat-jpw-tafel-";
 const direkt = { rolle: null, peer: null, conn: null, code: "", status: "aus", meldung: "", ping: null, versuche: 0, timer: null };
-function peerLaden() {
-  if (window.Peer) return Promise.resolve();
+function skriptLaden(url, globalName, name) {
+  if (window[globalName]) return Promise.resolve();
   return new Promise((ok, fehler) => {
     const sc = document.createElement("script");
-    sc.src = PEERJS_URL; sc.onload = () => ok(); sc.onerror = () => fehler(new Error("PeerJS konnte nicht geladen werden (keine Internetverbindung?)"));
+    sc.src = url; sc.onload = () => ok(); sc.onerror = () => fehler(new Error(`${name} konnte nicht geladen werden (keine Internetverbindung?)`));
     document.head.appendChild(sc);
   });
 }
+const peerLaden = () => skriptLaden(PEERJS_URL, "Peer", "Der Verbindungsdienst");
 function direktBeenden() {
   clearTimeout(direkt.timer);
   try { direkt.conn?.close(); direkt.peer?.destroy(); } catch (e) { /* egal */ }
@@ -1939,7 +1952,7 @@ function viewAuswertung() {
 
 // --- Briefkasten: Kinder werfen Anliegen vor der Sitzung selbst ein ------------------
 // Daten je Klasse: k.briefkasten = [{ id, namen, art, thema, worum, zeit }], Einstellungen in k.bkEinst
-const bkEinst = (k = klasse()) => ({ anonym: false, proTag: 0, ...(k?.bkEinst || {}) });
+const bkEinst = (k = klasse()) => ({ anonym: false, proTag: 0, proGeraet: 3, wechselCode: false, ...(k?.bkEinst || {}) });
 const datumKurz = (z) => new Date(z).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const bk = { offen: false, name: null, art: "", thema: "", worum: "", danke: false, meldung: "" };
 
@@ -1947,7 +1960,8 @@ function briefkastenKarte(k) {
   const n = (k.briefkasten || []).length;
   return `<div class="hinweis-box info">${bild("briefkasten", "m")}<div style="flex:1"><b>Briefkasten</b>
     ${n ? `<span class="badge offen">${n} Anliegen</span>` : `<span class="leise klein">leer</span>`}
-    <span class="leise klein">· Die Kinder werfen Anliegen vor der Sitzung selbst ein.</span>
+    ${onlineBk[k.id]?.status === "offen" ? `<span class="badge ja">📬 online geöffnet</span>` : ""}
+    <span class="leise klein">· Die Kinder werfen Anliegen vor der Sitzung selbst ein – am Klassen-Tablet oder per QR-Code am eigenen iPad.</span>
     <div class="aktionen abstand"><button class="knopf mini" data-act="bk-start">${bild("brief", "s")} Briefkasten für die Klasse öffnen</button>
       <button class="knopf mini zweit" data-act="view" data-arg="briefkasten">Einträge & Einstellungen</button></div></div></div>`;
 }
@@ -1962,11 +1976,12 @@ function viewBriefkasten() {
     <p class="leise klein">Die Anliegen werden in der Sitzung beim Schritt „${T().anliegen}“ übernommen. Unpassende Einträge hier vorher löschen.</p>
     ${liste.length ? `<table class="uebersicht"><tr><th>Eingeworfen</th><th>Von</th><th>Art</th><th>Anliegen</th><th></th></tr>
       ${liste.map((x) => `<tr><td class="leise">${datumKurz(x.zeit)}</td><td>${x.namen.length ? esc(namenText(x.namen)) : "<i>ohne Namen</i>"}</td>
-        <td>${esc(x.art || "–")}</td><td><b>${esc(x.thema)}</b>${x.worum ? `<br><span class="leise klein">${esc(x.worum)}</span>` : ""}</td>
+        <td>${esc(x.art || "–")}</td><td>${x.quelle === "online" ? `<span class="badge">online</span> ` : ""}<b>${esc(x.thema)}</b>${x.worum ? `<br><span class="leise klein">${esc(x.worum)}</span>` : ""}</td>
         <td><button class="x" data-act="bk-loeschen" data-arg="${x.id}" title="Eintrag löschen">✕</button></td></tr>`).join("")}</table>
       <div class="aktionen abstand"><button class="knopf gefahr" data-act="bk-leeren">Briefkasten leeren</button></div>`
       : `<div class="leer">${bild("briefkasten", "l")}<p>Der Briefkasten ist leer.</p></div>`}
   </div>
+  ${onlineBkKarte(k, e)}
   <div class="karte">
     <h3 style="margin-top:0">Einstellungen</h3>
     <div class="ergebnis">
@@ -1977,6 +1992,183 @@ function viewBriefkasten() {
       <input type="number" min="0" max="10" data-bk="proTag" value="${e.proTag}"></label>
     <p class="leise klein">Das Verlassen des Briefkastens ist nur mit dem Passwort der Lehrkraft möglich (dasselbe wie bei der Sperre).</p>
   </div>`;
+}
+
+// --- Online-Briefkasten: Kinder schicken Anliegen per QR-Code vom eigenen iPad ----------
+// Das Tool der Lehrkraft ist der Briefkasten (direkte Verbindung über WebRTC/PeerJS, keine Daten auf Servern).
+// Die Kinder bekommen keine Klassenliste zu sehen; sie tippen ihren Namen selbst.
+const QR_URL = "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js";
+const BK_PREFIX = "klassenrat-jpw-bk-";
+const onlineBk = {};  // Klassen-ID → { peer, status, code, meldung, qr }
+function zufallsCode(n = 12) {
+  const zeichen = "abcdefghjkmnpqrstuvwxyz23456789";
+  return [...crypto.getRandomValues(new Uint8Array(n))].map((x) => zeichen[x % zeichen.length]).join("");
+}
+const postfachLink = (code) => location.href.split("#")[0] + "#postfach=" + code;
+async function qrSvg(text) {
+  await skriptLaden(QR_URL, "qrcode", "Der QR-Code-Baustein");
+  const qr = window.qrcode(0, "M"); qr.addData(text); qr.make();
+  return qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+}
+async function onlineBkStarten(k, { neuerCode = false, behalten = false } = {}) {
+  // fester Code (QR-Code kann dauerhaft hängen) – außer „bei jedem Öffnen neuer Code“ ist eingestellt
+  if (!k.onlineCode || neuerCode || (bkEinst(k).wechselCode && !behalten)) k.onlineCode = zufallsCode();
+  k.bkOnline = true; speichern();
+  onlineBkStoppen(k.id, false);
+  const o = onlineBk[k.id] = { status: "starte", code: k.onlineCode, meldung: "", qr: null };
+  qrSvg(postfachLink(o.code)).then((svg) => { o.qr = svg; if (ui.view === "briefkasten") render(); }).catch((e) => { o.qrFehler = e.message; });
+  if (ui.view === "briefkasten" || ui.view === "sitzungen") render();
+  try { await peerLaden(); } catch (e) { o.status = "fehler"; o.meldung = e.message; render(); return; }
+  if (onlineBk[k.id] !== o) return;
+  const peer = o.peer = new window.Peer(BK_PREFIX + o.code);
+  peer.on("open", () => { o.status = "offen"; o.meldung = ""; if (["briefkasten", "sitzungen"].includes(ui.view)) render(); });
+  peer.on("error", (e) => {
+    if (e.type === "unavailable-id") { o.status = "fehler"; o.meldung = "Dieser Briefkasten ist bereits auf einem anderen Gerät geöffnet."; }
+    else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
+      o.status = "starte"; o.meldung = "Verbindungsdienst nicht erreichbar – neuer Versuch …";
+      setTimeout(() => { if (onlineBk[k.id] === o) onlineBkStarten(k, { behalten: true }); }, 15000);
+    } else if (e.type !== "peer-unavailable") o.meldung = "Fehler: " + e.type;
+    if (["briefkasten", "sitzungen"].includes(ui.view)) render();
+  });
+  peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) { /* egal */ } });
+  peer.on("connection", (conn) => {
+    conn.on("open", () => conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }));
+    conn.on("data", (d) => onlineAnliegen(k, conn, d));
+  });
+}
+function onlineBkStoppen(kid, merken = true) {
+  try { onlineBk[kid]?.peer?.destroy(); } catch (e) { /* egal */ }
+  delete onlineBk[kid];
+  const k = state.klassen.find((x) => x.id === kid);
+  if (merken && k) { k.bkOnline = false; speichern(); }
+}
+function onlineAnliegen(k, conn, d) {
+  if (d?.typ !== "bk-anliegen") return;
+  const e = bkEinst(k), text = (x, n) => String(x || "").trim().slice(0, n);
+  const name = text(d.name, 60), thema = text(d.thema, 200), worum = text(d.worum, 1000);
+  const art = arten(k).includes(d.art) ? d.art : "", geraet = text(d.geraet, 40), eid = text(d.id, 30) || id();
+  const antwort = (ok, grund) => { try { conn.send({ typ: ok ? "bk-ok" : "bk-fehler", id: d.id, grund }); } catch (x) { /* weg */ } };
+  if (!thema || (!name && !e.anonym)) return antwort(false, "Bitte deinen Namen und dein Anliegen eintragen.");
+  if ((k.briefkasten || []).some((x) => x.id === eid)) return antwort(true);  // doppelt geschickt
+  const heute = new Date().toDateString();
+  k.bkLog = (k.bkLog || []).filter((x) => new Date(x.zeit).toDateString() === heute);
+  if (e.proGeraet > 0 && geraet && k.bkLog.filter((x) => x.g === geraet).length >= e.proGeraet)
+    return antwort(false, `Von diesem Gerät sind heute schon ${e.proGeraet === 1 ? "ein Anliegen" : e.proGeraet + " Anliegen"} gekommen. Mehr geht heute nicht – sprich sonst mit deiner Lehrkraft.`);
+  if (e.proTag > 0 && name && k.bkLog.filter((x) => x.n === name.toLowerCase()).length >= e.proTag)
+    return antwort(false, "Du hast heute schon genug Anliegen eingeworfen. Sprich sonst mit deiner Lehrkraft.");
+  (k.briefkasten ||= []).push({ id: eid, namen: name ? [name] : [], art, thema, worum, zeit: Date.now(), quelle: "online" });
+  k.bkLog.push({ g: geraet, n: name.toLowerCase(), zeit: Date.now() });
+  speichern(); antwort(true);
+  meldung(`📬 Neues Anliegen${name ? " von " + name : ""} – Klasse ${k.name}`);
+  if (["sitzungen", "briefkasten"].includes(ui.view)) render();
+}
+function onlineBkKarte(k, e) {
+  const o = onlineBk[k.id], offen = o?.status === "offen";
+  return `<div class="karte akzent">
+    <h3 style="margin-top:0">📬 Online-Briefkasten (QR-Code) <span class="badge ${offen ? "ja" : o ? "offen" : ""}">${offen ? "geöffnet" : o ? (o.status === "fehler" ? "Fehler" : "startet …") : "geschlossen"}</span></h3>
+    <p class="leise">Die Kinder scannen den QR-Code mit ihrem iPad und schicken ihr Anliegen direkt hierher. Das geht, solange das Tool auf diesem
+      Gerät geöffnet ist – sonst sehen sie „Briefkasten geschlossen“. Beim nächsten Start öffnet das Tool den Briefkasten automatisch wieder.</p>
+    ${location.protocol === "file:" ? `<p class="bk-meldung">Das Tool ist als Datei geöffnet. Damit der QR-Code auf den iPads der Kinder funktioniert,
+      das Tool über seine Web-Adresse (GitHub Pages) öffnen und den Online-Briefkasten dort starten.</p>` : ""}
+    ${o?.meldung ? `<p class="bk-meldung">${esc(o.meldung)}</p>` : ""}
+    ${o ? `<div class="qr-bereich"><div class="qr">${o.qr || `<span class="leise klein">${esc(o.qrFehler || "QR-Code wird erstellt …")}</span>`}</div>
+      <div><p><b>Link:</b><br><span class="link-text">${esc(postfachLink(o.code))}</span></p>
+        <div class="aktionen"><button class="knopf zweit mini" data-act="bk-qr-drucken">QR-Code drucken</button>
+          <button class="knopf rand mini" data-act="bk-link-kopieren">Link kopieren</button>
+          <button class="knopf rand mini" data-act="bk-neuer-code">Neuen Code erzeugen</button></div>
+        <p class="leise klein">Ein neuer Code macht den bisherigen QR-Code ungültig.</p></div></div>` : ""}
+    <div class="aktionen abstand">${o ? `<button class="knopf gefahr" data-act="bk-online-zu">Online-Briefkasten schließen</button>`
+      : `<button class="knopf" data-act="bk-online-auf">Online-Briefkasten öffnen</button>`}</div>
+    <div class="ergebnis abstand"><label><input type="checkbox" data-bk="wechselCode" ${e.wechselCode ? "checked" : ""}> Bei jedem Öffnen einen neuen Zufallscode erzeugen</label></div>
+    <p class="leise klein">Aus: Der QR-Code bleibt gültig und kann dauerhaft im Klassenzimmer hängen. An: sicherer, der QR-Code muss aber jedes Mal neu gezeigt werden.</p>
+    <label class="feld" style="max-width:360px">Höchstens so viele Anliegen pro Gerät und Tag (0 = unbegrenzt)
+      <input type="number" min="0" max="20" data-bk="proGeraet" value="${e.proGeraet}"></label>
+  </div>`;
+}
+
+// Seite für die Kinder (Link aus dem QR-Code: …#postfach=CODE)
+function postfachStarten(code) {
+  document.title = "Klassenrat-Briefkasten";
+  document.body.innerHTML = `<div class="streifen"></div><main id="postfach" class="postfach"></main>`;
+  const lsGet = (x) => { try { return localStorage.getItem(x); } catch (e) { return null; } };
+  const lsSet = (x, v) => { try { localStorage.setItem(x, v); } catch (e) { /* egal */ } };
+  let geraet = lsGet("klassenrat-geraet");
+  if (!geraet) { geraet = zufallsCode(16); lsSet("klassenrat-geraet", geraet); }
+  const pf = window.pf = { status: "verbinde", info: null, conn: null, peer: null, name: lsGet("klassenrat-name") || "", art: "", thema: "", worum: "",
+    meldung: "", danke: false, sendet: null, versuche: 0 };
+  const merken = () => { for (const f of ["name", "thema", "worum"]) { const el = document.getElementById("pf-" + f); if (el) pf[f] = el.value; } };
+  const zeichnen = () => {
+    const el = document.getElementById("postfach"), i = pf.info, gs = i?.stufe === "gs";
+    if (i) document.body.dataset.stufe = i.stufe;
+    const kopf = `<div class="pf-kopf">${bild("briefkasten", "l")}<div><h1>Klassenrat-Briefkasten</h1>${i ? `<p>Klasse ${esc(i.klasse)}</p>` : ""}</div></div>`;
+    if (pf.status !== "offen") {
+      el.innerHTML = kopf + `<div class="karte leer">${bild(pf.status === "geschlossen" ? "schloss" : "uhr", "l")}
+        <p><b>${pf.status === "geschlossen" ? "Der Briefkasten ist gerade geschlossen." : "Verbinde mit dem Briefkasten …"}</b><br>
+        ${pf.status === "geschlossen" ? "Deine Lehrkraft hat das Klassenrat-Tool gerade nicht geöffnet. Versuche es später noch einmal." : ""}
+        ${pf.meldung ? `<br><span class="leise klein">${esc(pf.meldung)}</span>` : ""}</p>
+        ${pf.status === "geschlossen" ? `<button class="knopf" data-act="pf-neu">Erneut versuchen</button>` : ""}</div>`;
+      return;
+    }
+    if (pf.danke) {
+      el.innerHTML = kopf + `<div class="karte leer">${bild("brief", "l")}<p><b>Danke! Dein Anliegen ist angekommen.</b><br>Es wird im nächsten Klassenrat besprochen.</p>
+        <button class="knopf" data-act="pf-weiteres">Noch ein Anliegen</button></div>`;
+      return;
+    }
+    const bereit = (pf.name.trim() || i.anonym) && pf.thema.trim() && !pf.sendet;
+    el.innerHTML = kopf + `<div class="bk-form">
+      <section><h3><span class="n">1</span> Dein Name ${i.anonym ? `<span class="leise klein">(freiwillig)</span>` : ""}</h3>
+        <input type="text" id="pf-name" maxlength="60" autocomplete="name" value="${esc(pf.name)}" placeholder="Vor- und Nachname"></section>
+      <section><h3><span class="n">2</span> ${gs ? "Was für ein Thema ist es?" : "Was für ein Anliegen ist es?"} <span class="leise klein">(freiwillig)</span></h3>
+        <div class="chips gross">${i.arten.map((x) => `<button class="chip ${pf.art === x ? "an" : ""}" data-act="pf-art" data-arg="${esc(x)}">${esc(x)}</button>`).join("")}</div></section>
+      <section><h3><span class="n">3</span> ${gs ? "Worum geht es? Schreibe einen Satz." : "Dein Anliegen in einem Satz"}</h3>
+        <input type="text" id="pf-thema" maxlength="200" value="${esc(pf.thema)}" placeholder="z. B. In der Pause ist es im Klassenzimmer zu laut.">
+        <textarea id="pf-worum" rows="3" maxlength="1000" placeholder="Möchtest du noch etwas erklären? (freiwillig)">${esc(pf.worum)}</textarea></section>
+      ${pf.meldung ? `<p class="bk-meldung">${esc(pf.meldung)}</p>` : ""}
+      <div class="bk-senden"><button class="knopf gross" data-act="pf-senden" ${bereit ? "" : "disabled"}>${bild("brief", "s")} ${pf.sendet ? "Wird gesendet …" : "Abschicken"}</button></div>
+    </div>`;
+  };
+  const verbinden = async () => {
+    pf.status = "verbinde"; pf.meldung = ""; zeichnen();
+    try { await peerLaden(); } catch (e) { pf.status = "geschlossen"; pf.meldung = e.message; zeichnen(); return; }
+    try { pf.peer?.destroy(); } catch (e) { /* egal */ }
+    const peer = pf.peer = new window.Peer();
+    peer.on("open", () => {
+      const conn = pf.conn = peer.connect(BK_PREFIX + code, { reliable: true });
+      conn.on("data", (d) => {
+        if (d?.typ === "bk-info") { pf.info = d; pf.status = "offen"; zeichnen(); }
+        if (d?.typ === "bk-ok" && d.id === pf.sendet) { clearTimeout(pf.zeit); pf.sendet = null; pf.danke = true; pf.art = ""; pf.thema = ""; pf.worum = ""; pf.meldung = ""; zeichnen(); }
+        if (d?.typ === "bk-fehler" && d.id === pf.sendet) { clearTimeout(pf.zeit); pf.sendet = null; pf.meldung = d.grund; zeichnen(); }
+      });
+      conn.on("close", () => { pf.status = "geschlossen"; zeichnen(); });
+    });
+    peer.on("error", (e) => {
+      pf.status = "geschlossen";
+      if (e.type !== "peer-unavailable") pf.meldung = "Verbindung nicht möglich (" + e.type + ")";
+      zeichnen();
+      if (pf.versuche++ < 40) setTimeout(() => { if (pf.status === "geschlossen") verbinden(); }, 15000);
+    });
+  };
+  Object.assign(AKTIONEN, {
+    "pf-neu"() { pf.versuche = 0; verbinden(); },
+    "pf-art"(x) { merken(); pf.art = pf.art === x ? "" : x; zeichnen(); },
+    "pf-weiteres"() { pf.danke = false; zeichnen(); },
+    "pf-senden"() {
+      merken();
+      if (!pf.conn?.open) { pf.status = "geschlossen"; zeichnen(); return; }
+      lsSet("klassenrat-name", pf.name.trim());
+      pf.sendet = id(); pf.meldung = "";
+      pf.conn.send({ typ: "bk-anliegen", id: pf.sendet, name: pf.name, art: pf.art, thema: pf.thema, worum: pf.worum, geraet });
+      zeichnen();
+      pf.zeit = setTimeout(() => { if (pf.sendet) { pf.sendet = null; pf.meldung = "Keine Antwort vom Briefkasten – bitte noch einmal abschicken."; zeichnen(); } }, 10000);
+    },
+  });
+  document.addEventListener("input", (e) => {
+    if (!e.target.id?.startsWith("pf-")) return;
+    merken();
+    const knopf = document.querySelector("[data-act=pf-senden]");
+    if (knopf && pf.info) knopf.disabled = !((pf.name.trim() || pf.info.anonym) && pf.thema.trim() && !pf.sendet);
+  });
+  verbinden();
 }
 
 function renderBriefkasten() {
@@ -2722,6 +2914,24 @@ const AKTIONEN = {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     renderBriefkasten(); render();
   },
+  "bk-online-auf"() { onlineBkStarten(klasse()); },
+  "bk-online-zu"() { if (confirm("Online-Briefkasten schließen? Die Kinder sehen dann „Briefkasten geschlossen“.")) { onlineBkStoppen(klasse().id); render(); } },
+  "bk-neuer-code"() {
+    if (!confirm("Neuen Code erzeugen? Der bisherige QR-Code funktioniert dann nicht mehr und muss ersetzt werden.")) return;
+    onlineBkStarten(klasse(), { neuerCode: true });
+  },
+  async "bk-link-kopieren"() {
+    const link = postfachLink(onlineBk[klasse().id].code);
+    try { await navigator.clipboard.writeText(link); meldung("Link kopiert"); } catch (e) { prompt("Link zum Kopieren:", link); }
+  },
+  "bk-qr-drucken"() {
+    const k = klasse(), o = onlineBk[k.id];
+    if (!o?.qr) { alert("Der QR-Code ist noch nicht fertig."); return; }
+    drucken(`<div class="qr-aushang"><div class="prot-kopf">${logoBlock()}<div><h1>Klassenrat-Briefkasten</h1><div>Klasse ${esc(k.name)}</div></div>
+        <div class="illu-k">${BILDER.klassenrat}</div></div>
+      <p class="qr-text">Hast du ein Anliegen für den Klassenrat?<br><b>QR-Code mit deinem iPad scannen</b>, Namen und Anliegen eintragen, abschicken.</p>
+      <div class="qr-gross">${o.qr}</div><p class="link-text">${esc(postfachLink(o.code))}</p></div>`);
+  },
   "bk-loeschen"(bid) {
     const k = klasse(), x = k.briefkasten.find((y) => y.id === bid);
     if (x && confirm(`Anliegen „${x.thema}“ löschen?`)) { k.briefkasten = k.briefkasten.filter((y) => y.id !== bid); speichern(); render(); }
@@ -2963,8 +3173,11 @@ window.addEventListener("resize", () => document.documentElement.style.setProper
 window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
 if (location.hash === "#tafel") tafelStarten();
+else if (location.hash.startsWith("#postfach=")) postfachStarten(decodeURIComponent(location.hash.slice(10)).replace(/[^a-z0-9]/gi, ""));
 else {
   render(); ordnerLaden().then(autoLaden);
+  // Online-Briefkästen, die offen waren, wieder öffnen
+  for (const k of state.klassen) if (k.bkOnline) onlineBkStarten(k);
   // war der Briefkasten offen (z. B. Seite neu geladen), geht es dort weiter
   if (state.briefkastenAktiv && state.klassen.some((k) => k.id === state.briefkastenAktiv)) {
     state.aktiveKlasse = state.briefkastenAktiv; render(); bk.offen = true; renderBriefkasten();

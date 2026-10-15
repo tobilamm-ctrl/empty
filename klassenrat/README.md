@@ -57,6 +57,12 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
   nach einem Neuladen bleibt der Briefkasten offen. In der Sitzung werden die Anliegen per Antippen übernommen.
   Einstellbar: Anliegen ohne Namen erlauben, Höchstzahl pro Kind und Tag. Für ein wirklich abgeschlossenes Gerät zusätzlich
   „Geführter Zugriff“ (iPad), „Zugewiesener Zugriff“ (Windows) oder „App-Fixierung“ (Android) nutzen.
+- **Online-Briefkasten (QR-Code):** Die Lehrkraft öffnet ihn im Tool (Briefkasten → „Online-Briefkasten öffnen“). Die Kinder
+  scannen den QR-Code mit dem eigenen iPad, tragen Namen und Anliegen ein, und es landet direkt im Briefkasten des Tools.
+  Der QR-Code bleibt standardmäßig gültig und kann dauerhaft aushängen (optional: neuer Zufallscode bei jedem Öffnen).
+  Ist das Tool der Lehrkraft nicht geöffnet, sehen die Kinder „Briefkasten geschlossen“; beim nächsten Start öffnet es sich
+  automatisch wieder. Begrenzung pro Gerät und Tag einstellbar; die Klassenliste wird nie an die Geräte der Kinder geschickt.
+  Läuft über dieselbe Direktverbindung (WebRTC/PeerJS) wie die Tafel; das Tool muss dafür über seine Web-Adresse geöffnet sein.
 - **Fristen:** Die Startseite zeigt, welche Beschlüsse in den nächsten 7 Tagen fällig sind oder schon überfällig sind.
 - **Auswertung** (mit Passwort): Rollen-Übersicht pro Kind und Jahresüberblick (Sitzungen, Arten der Anliegen,
   Stand der Beschlüsse, Blitzlicht je Sitzung)
