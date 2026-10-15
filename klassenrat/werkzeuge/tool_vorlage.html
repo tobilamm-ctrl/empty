@@ -58,7 +58,7 @@ h3 { font-size: 1.05rem; margin: 18px 0 8px; display: flex; align-items: center;
 label.feld, div.feld { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-size: .85rem; color: var(--leise); font-weight: 600; }
 label.feld .zeile, div.feld .zeile { display: flex; align-items: center; gap: 8px; min-height: 32px; }
 .raster > .feld > :first-child:not(.zeile) { min-height: 32px; display: flex; align-items: center; }
-input[type=text], input[type=date], input[type=time], input[type=number], textarea, select.feld {
+input[type=text], input[type=password], input[type=date], input[type=time], input[type=number], textarea, select.feld {
   width: 100%; border: 1.5px solid var(--linie); border-radius: 10px; padding: 8px 10px; background: #fff; font-weight: 400; color: var(--text); font-size: 1rem;
 }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-hell); }
@@ -217,6 +217,26 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 .prot-unterschriften .linie { border-top: 1px solid #555; font-size: 8pt; color: #555; padding-top: 3px; }
 .prot-fuss { margin-top: 18px; font-size: 7.5pt; color: #888; border-top: 1px solid #ddd; padding-top: 4px; }
 
+/* Sperre */
+.gesperrt input:disabled, .gesperrt textarea:disabled, .gesperrt select:disabled { background: #faf9f6; color: var(--text); opacity: 1; }
+.gesperrt button:disabled { opacity: .35; cursor: not-allowed; }
+.gesperrt button.an:disabled, .gesperrt .status-wahl button.an:disabled { opacity: 1; }
+.gesperrt .x, .gesperrt [data-act="zeile-neu"], .gesperrt [data-act="vorschlag-neu"], .gesperrt .reiter .neu,
+.gesperrt .nchip button, .gesperrt [data-act="beste-idee"], .gesperrt [data-act="rollen-vorschlag"], .gesperrt [data-act="zeit"],
+.gesperrt [data-act="unterschrift-weg"], .gesperrt [data-act="timer-start"] { display: none; }
+.gesperrt .namensfeld { cursor: default; border-style: solid; background: #faf9f6; }
+.gesperrt canvas { cursor: not-allowed; }
+.sperr-box { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; background: #fff8e1; border: 1px solid #f3e1a6; }
+.sperr-box.offen { background: #eef8f4; border-color: #bfe0d4; }
+.sperr-box .knopf { margin-left: auto; }
+
+/* Dialog */
+.dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
+.dialog h3 { margin: 0 0 8px; }
+.dialog .fehler { color: var(--rot); font-weight: 700; font-size: .9rem; min-height: 1.2em; margin: 6px 0 0; }
+.dialog form { display: flex; flex-direction: column; gap: 10px; }
+
 #druck { display: none; }
 @media print {
   @page { size: A4; margin: 12mm; }
@@ -260,6 +280,7 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 <main id="app"></main>
 <div id="timer-bereich"></div>
 <div id="druck"></div>
+<div id="dialog"></div>
 
 <script>
 /*__BILDER__*/
@@ -431,6 +452,56 @@ function beschluesse(k) {
 function offeneFuer(s) {
   return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && v.status === "ja"));
 }
+// --- Sperre abgeschlossener Sitzungen --------------------------------------------
+// Schutz vor versehentlichen oder unbefugten Änderungen in der Oberfläche (keine Verschlüsselung).
+const istGesperrt = (s) => !!s?.gesperrt && ui.entsperrt !== s.id;
+async function pwHash(pw, salz) {
+  const text = salz + "|" + pw;
+  if (window.crypto?.subtle) {
+    const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 2166136261;  // Ersatz, falls der Browser kein SHA-256 anbietet
+  for (const c of text) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return "fnv" + (h >>> 0).toString(16);
+}
+async function pwPruefen(pw) { return !!state.sperre && (await pwHash(pw, state.sperre.salz)) === state.sperre.hash; }
+async function pwSetzen(pw) { const salz = id() + id(); state.sperre = { salz, hash: await pwHash(pw, salz) }; speichern(); }
+
+// Kleiner Dialog mit Passwortfeldern. Liefert die Eingaben oder null (abgebrochen / zweiter Knopf).
+function dialog({ titel, text, felder, knopf, zweitKnopf, pruefen }) {
+  return new Promise((fertig) => {
+    const box = $("#dialog");
+    box.innerHTML = `<div class="dialog-hg"><div class="dialog" role="dialog" aria-modal="true">
+      <h3>${bild("schloss", "m")} ${titel}</h3><p class="leise">${text}</p>
+      <form>${felder.map((f, i) => `<label class="feld">${f}<input type="password" name="f${i}" autocomplete="off"></label>`).join("")}
+        <p class="fehler"></p>
+        <div class="aktionen"><button class="knopf" type="submit">${knopf}</button>
+          ${zweitKnopf ? `<button class="knopf rand" type="button" data-wahl="zweit">${zweitKnopf}</button>` : ""}
+          <button class="knopf rand" type="button" data-wahl="abbrechen">Abbrechen</button></div></form></div></div>`;
+    const form = box.querySelector("form");
+    const zu = (wert) => { box.innerHTML = ""; fertig(wert); };
+    form.querySelector("input")?.focus();
+    box.querySelectorAll("[data-wahl]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); zu(b.dataset.wahl === "zweit" ? "zweit" : null); }));
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const werte = felder.map((_, i) => form.elements["f" + i].value);
+      const fehler = pruefen ? await pruefen(werte) : "";
+      if (fehler) { form.querySelector(".fehler").textContent = fehler; return; }
+      zu(werte);
+    });
+  });
+}
+async function neuesPasswortDialog(titel, text, zweitKnopf, knopf = "Passwort speichern") {
+  return dialog({ titel, text, felder: ["Neues Passwort (mind. 4 Zeichen)", "Passwort wiederholen"], knopf, zweitKnopf,
+    pruefen: ([a, b]) => (a.length < 4 ? "Bitte mindestens 4 Zeichen." : a !== b ? "Die Passwörter stimmen nicht überein." : "") });
+}
+async function passwortAbfragen(text) {
+  const r = await dialog({ titel: "Passwort eingeben", text, felder: ["Passwort"], knopf: "Bestätigen",
+    pruefen: async ([pw]) => ((await pwPruefen(pw)) ? "" : "Das Passwort ist falsch.") });
+  return Array.isArray(r);
+}
+
 const namenText = (x) => (Array.isArray(x) ? x.join(", ") : x || "");
 function ueberfaellig(b) { return b.status !== "ja" && b.anliegen.bisWann && b.anliegen.bisWann < heute(); }
 
@@ -479,6 +550,8 @@ function nachRender() {
     if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(el.value.length, el.value.length); }
   }
   document.querySelectorAll("canvas[data-pad]").forEach(padStarten);
+  document.querySelectorAll("#sperrbereich.gesperrt :is(input, textarea, select)").forEach((el) => (el.disabled = true));
+  document.querySelectorAll("#sperrbereich.gesperrt button[data-act]").forEach((b) => { if (!ERLAUBT_GESPERRT.includes(b.dataset.act)) b.disabled = true; });
 }
 function hoeheAnpassen(ta) { ta.style.height = "auto"; ta.style.height = Math.max(ta.scrollHeight + 3, 44) + "px"; }
 
@@ -502,7 +575,7 @@ function padStarten(c) {
   if (alt) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, c.clientWidth, c.clientHeight); img.src = alt.bild; }
   let zeichnet = false, gezeichnet = false;
   const punkt = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  c.addEventListener("pointerdown", (e) => { zeichnet = true; c.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...punkt(e)); e.preventDefault(); });
+  c.addEventListener("pointerdown", (e) => { if (istGesperrt(s)) return; zeichnet = true; c.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...punkt(e)); e.preventDefault(); });
   c.addEventListener("pointermove", (e) => { if (!zeichnet) return; ctx.lineTo(...punkt(e)); ctx.stroke(); gezeichnet = true; });
   const ende = () => {
     if (!zeichnet) return;
@@ -570,7 +643,8 @@ function viewSitzungen() {
     const anz = s.anliegen.length, besch = s.anliegen.filter((a) => a.ergebnis === "beschluss").length;
     return `<div class="karte sitzung-karte">
       <div class="datum-kachel">${d ? d.getDate() : "–"}<small>${d ? d.toLocaleDateString("de-DE", { month: "short" }) : ""}</small></div>
-      <div><b>Sitzung Nr. ${s.nr}</b> <span class="leise">· ${datum(s.datum, true)}</span><br>
+      <div><b>Sitzung Nr. ${s.nr}</b> <span class="leise">· ${datum(s.datum, true)}</span>
+        ${s.gesperrt ? ` <span class="badge" title="abgeschlossen am ${new Date(s.gesperrt).toLocaleString("de-DE")}">${bild("schloss", "s")} abgeschlossen</span>` : ""}<br>
         <span class="leise klein">${anz} ${anz === 1 ? T().einAnliegen : T().mehrere} · ${besch} Beschl${besch === 1 ? "uss" : "üsse"}${s.rollen.leitung ? " · " + T().leitung + ": " + esc(s.rollen.leitung) : ""}</span></div>
       <div class="aktionen">
         <button class="knopf zweit" data-act="oeffnen" data-arg="${s.id}">Öffnen</button>
@@ -595,17 +669,27 @@ function viewSitzung() {
     <button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>
     <h2>Sitzung Nr. ${s.nr} <span class="leise klein">${datum(s.datum, true)}</span></h2>
     ${Object.keys(s.unterschriften || {}).length ? `<span class="badge ja">${bild("unterschrift", "s")} unterschrieben</span>` : ""}
+    ${s.gesperrt ? `<span class="badge">${bild(istGesperrt(s) ? "schloss" : "schloss_offen", "s")} ${istGesperrt(s) ? "gesperrt" : "entsperrt"}</span>` : ""}
   </div>
   <div class="schritte">${SCHRITTE.map(([key, x, b], i) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${i + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}
-    <button class="schritt beenden" data-act="beenden"><span class="n">${SCHRITTE.length + 1}</span>${bild("haken", "s")}Sitzung beenden</button></div>
+    <button class="schritt beenden" data-act="beenden"><span class="n">${SCHRITTE.length + 1}</span>${bild(istGesperrt(s) ? "schloss" : "haken", "s")}${istGesperrt(s) ? "Zur Übersicht" : "Sitzung beenden"}</button></div>
+  ${s.gesperrt ? (istGesperrt(s)
+    ? `<div class="sperr-box">${bild("schloss", "m")}<div><b>Abgeschlossen und gesperrt</b> seit ${new Date(s.gesperrt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}.<br>
+        <span class="leise klein">Ansehen und Drucken ist möglich. Zum Ändern wird das Passwort benötigt.</span></div>
+        <button class="knopf" data-act="entsperren">Entsperren …</button></div>`
+    : `<div class="sperr-box offen">${bild("schloss_offen", "m")}<div><b>Vorübergehend entsperrt.</b><br>
+        <span class="leise klein">Nachträgliche Änderungen werden im Protokoll vermerkt. Beim Verlassen wird die Sitzung wieder gesperrt.</span></div>
+        <button class="knopf" data-act="sperren">Wieder sperren</button></div>`) : ""}
+  <div id="sperrbereich" class="${istGesperrt(s) ? "gesperrt" : ""}">
   ${ui.schritt === "anliegen" ? anliegenReiter(s, t) : ""}
-  ${mitNamen ? namenLeiste() : ""}
+  ${mitNamen && !istGesperrt(s) ? namenLeiste() : ""}
   ${inhalt}
+  </div>
   ${ui.schritt !== "protokoll" ? `<div class="fusszeile">
     ${schrittNachbar(-1) ? `<button class="knopf rand" data-act="schritt" data-arg="${schrittNachbar(-1)}">← Zurück</button>` : "<span></span>"}
     <button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button></div>`
     : `<div class="fusszeile"><button class="knopf rand" data-act="schritt" data-arg="abschluss">← Zurück</button>
-       <button class="knopf" data-act="beenden">${bild("haken", "s")} Sitzung beenden</button></div>`}`;
+       <button class="knopf" data-act="beenden">${bild(istGesperrt(s) ? "schloss" : "haken", "s")} ${istGesperrt(s) ? "Zur Übersicht" : "Sitzung beenden"}</button></div>`}`;
 }
 function schrittNachbar(d) {
   const i = SCHRITTE.findIndex(([k]) => k === ui.schritt) + d;
@@ -919,7 +1003,10 @@ function protokollHTML(s) {
     return `<div>${u ? `<img src="${u.bild}" alt="Unterschrift">` : `<div class="platz"></div>`}
       <div class="linie">${unterschriftName(s, r, t)}${u ? ` · unterschrieben ${new Date(u.zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}` : ""}</div></div>`;
   }).join("")}</div>
-  <div class="prot-fuss">Klassenrat ${esc(k.name)} · Sitzung ${s.nr} · erstellt am ${datum(heute())}</div>`;
+  <div class="prot-fuss">Klassenrat ${esc(k.name)} · Sitzung ${s.nr}
+    ${s.gesperrt ? ` · abgeschlossen am ${new Date(s.gesperrt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}` : ""}
+    ${s.nachtraeglich?.length ? ` · nachträglich geöffnet am ${s.nachtraeglich.map((z) => new Date(z).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })).join(", ")}` : ""}
+    · gedruckt am ${datum(heute())}</div>`;
 }
 
 function drucken(html) {
@@ -1022,6 +1109,15 @@ function viewDaten() {
     <div class="aktionen"><button class="knopf" data-act="export">Sicherung herunterladen</button>
       <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
     <p class="leise klein">Letzte Sicherung: ${state.letzterExport ? new Date(state.letzterExport).toLocaleString("de-DE") : "noch nie"}</p>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("schloss", "m")} Passwort für abgeschlossene Sitzungen</h3>
+    <p class="leise">Mit „Sitzung beenden“ wird eine Sitzung gesperrt. Ansehen und Drucken bleibt möglich.
+      Ändern oder Löschen geht nur noch mit diesem Passwort. Jede nachträgliche Öffnung wird im Protokoll vermerkt.</p>
+    <p><b>Status:</b> ${state.sperre ? `<span class="badge ja">Passwort festgelegt</span>` : `<span class="badge">kein Passwort</span> Sitzungen werden nicht gesperrt.`}</p>
+    <div class="aktionen"><button class="knopf zweit" data-act="passwort-setzen">${state.sperre ? "Passwort ändern …" : "Passwort festlegen …"}</button></div>
+    <p class="leise klein">Ein vergessenes Passwort lässt sich nicht wiederherstellen. Die Sperre schützt vor versehentlichen
+      oder unbefugten Änderungen im Tool. Sie ist keine Verschlüsselung der gespeicherten Daten.</p>
   </div>
   <div class="karte">
     <h3 style="margin-top:0">${bild("logo", "m")} Schullogo</h3>
@@ -1194,9 +1290,13 @@ function exportieren() {
 // Ereignisse
 // ---------------------------------------------------------------------------
 const AKTIONEN = {
-  view(v) { ui.view = v; render(); scrollTo(0, 0); },
+  view(v) { ui.view = v; ui.entsperrt = null; render(); scrollTo(0, 0); },
   "neue-sitzung": neueSitzung,
-  oeffnen(sid) { Object.assign(ui, { sitzungId: sid, schritt: "start", view: "sitzung", ziel: null, anliegenIdx: 0 }); render(); scrollTo(0, 0); },
+  oeffnen(sid) {
+    const s = klasse().sitzungen.find((x) => x.id === sid);
+    Object.assign(ui, { sitzungId: sid, schritt: s.gesperrt ? "protokoll" : "start", view: "sitzung", ziel: null, anliegenIdx: 0, entsperrt: null });
+    render(); scrollTo(0, 0);
+  },
   schritt(s) { ui.schritt = s; ui.ziel = null; render(); scrollTo(0, 0); },
   ziel(pfad) {
     ui.ziel = pfad;
@@ -1234,17 +1334,41 @@ const AKTIONEN = {
     ui.ziel = pfad;  // gleich einen anderen Namen wählen können
     speichern(); render();
   },
-  // Trägt die Endzeit ein (falls leer) und kehrt zur Übersicht zurück
-  beenden() {
+  // Trägt die Endzeit ein (falls leer), sperrt die Sitzung und kehrt zur Übersicht zurück
+  async beenden() {
     const s = sitzung();
-    if (!s.ende) s.ende = jetzt();
-    ui.view = "sitzungen"; ui.ziel = null;
+    if (!istGesperrt(s)) {
+      if (!s.ende) s.ende = jetzt();
+      if (!state.sperre) {
+        const r = await neuesPasswortDialog("Sitzung sperren?",
+          "Abgeschlossene Sitzungen können mit einem Passwort gegen Änderungen geschützt werden. Lege dafür einmalig ein Passwort fest.",
+          "Ohne Sperre beenden", "Speichern & sperren");
+        if (r === null) return;
+        if (Array.isArray(r)) await pwSetzen(r[0]);
+      }
+      if (state.sperre) s.gesperrt ||= Date.now();
+    }
+    ui.view = "sitzungen"; ui.ziel = null; ui.entsperrt = null;
     speichern(); render(); scrollTo(0, 0);
+  },
+  async entsperren() {
+    const s = sitzung();
+    if (!(await passwortAbfragen(`Sitzung Nr. ${s.nr} zum Ändern entsperren.`))) return;
+    ui.entsperrt = s.id;
+    (s.nachtraeglich ||= []).push(Date.now());
+    speichern(); render();
+  },
+  sperren() { ui.entsperrt = null; render(); },
+  async "passwort-setzen"() {
+    if (state.sperre && !(await passwortAbfragen("Zum Ändern zuerst das bisherige Passwort eingeben."))) return;
+    const r = await neuesPasswortDialog(state.sperre ? "Passwort ändern" : "Passwort festlegen", "Dieses Passwort schützt abgeschlossene Sitzungen.");
+    if (Array.isArray(r)) { await pwSetzen(r[0]); render(); }
   },
   "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
   "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
-  "sitzung-loeschen"(sid) {
+  async "sitzung-loeschen"(sid) {
     const k = klasse(), s = k.sitzungen.find((x) => x.id === sid);
+    if (s.gesperrt && !(await passwortAbfragen(`Sitzung Nr. ${s.nr} ist abgeschlossen. Zum Löschen das Passwort eingeben.`))) return;
     if (confirm(`Sitzung Nr. ${s.nr} vom ${datum(s.datum)} wirklich löschen?`)) { k.sitzungen = k.sitzungen.filter((x) => x.id !== sid); speichern(); render(); }
   },
   drucken(sid) { const s = klasse().sitzungen.find((x) => x.id === sid); drucken(protokollHTML(s)); },
@@ -1380,11 +1504,13 @@ const AKTIONEN = {
   "timer-setzen"(n) { clearInterval(timer.int); Object.assign(timer, { rest: n * 60, laeuft: false, ende: false }); renderTimer(); },
 };
 
+const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren"];
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
   if (!el || (el.tagName === "LABEL")) return;
   e.preventDefault();
   e.stopPropagation();
+  if (el.closest("#sperrbereich.gesperrt") && !ERLAUBT_GESPERRT.includes(el.dataset.act)) return;
   AKTIONEN[el.dataset.act]?.(el.dataset.arg);
 });
 document.addEventListener("input", (e) => {

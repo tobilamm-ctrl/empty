@@ -40,6 +40,12 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
 - **Beschlussübersicht** über das ganze Schuljahr, mit Hinweis auf überfällige Beschlüsse
 - Mehrere Klassen in einem Tool. Die Schulart steuert Farben und Begriffe.
 
+### Abgeschlossene Sitzungen sperren
+„Sitzung beenden“ sperrt die Sitzung, sobald unter **Daten** ein Passwort festgelegt ist. Beim ersten Beenden fragt das Tool danach.
+Ansehen und Drucken bleibt möglich, Ändern und Löschen nur nach Eingabe des Passworts. Jede nachträgliche Öffnung
+wird im Protokoll vermerkt. Beim Verlassen ist die Sitzung wieder gesperrt. Die Sperre schützt vor Änderungen im Tool.
+Sie ist keine Verschlüsselung. Ein vergessenes Passwort lässt sich nicht wiederherstellen.
+
 ### Automatische Sicherung in OneDrive
 Unter **Daten** einmal einen Ordner im OneDrive-Ordner des PCs wählen. Danach speichert das Tool nach jeder Änderung
 `klassenrat-sicherung.json` dorthin und legt unter `Verlauf/` eine Fassung pro Tag ab. Den Upload übernimmt OneDrive.

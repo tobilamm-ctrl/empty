@@ -173,6 +173,12 @@ ICONS = {
                       + "".join(f'<rect x="{x}" y="{y}" width="8" height="7" rx="1.5" fill="{c}"/>'
                                 for x, y, c in ((14, 30, "#E5E5E5"), (28, 30, "#E5E5E5"), (42, 30, GELB),
                                                 (14, 43, "#E5E5E5"), (28, 43, GRUEN), (42, 43, "#E5E5E5")))),
+    "schloss": _icon(f'<path d="M20 28v-7a12 12 0 0124 0v7" stroke="{GRAU}" stroke-width="6" fill="none"/>'
+                     f'<rect x="12" y="27" width="40" height="31" rx="6" fill="{GELB}" stroke="#D9B33A" stroke-width="3"/>'
+                     f'<circle cx="32" cy="40" r="4.5" fill="{DUNKEL}"/><path d="M32 42v8" stroke="{DUNKEL}" stroke-width="4" stroke-linecap="round"/>'),
+    "schloss_offen": _icon(f'<path d="M20 28v-9a12 12 0 0123.5-3.4" stroke="{GRAU}" stroke-width="6" fill="none" stroke-linecap="round"/>'
+                           f'<rect x="12" y="27" width="40" height="31" rx="6" fill="#BFE0D4" stroke="{GRUEN}" stroke-width="3"/>'
+                           f'<circle cx="32" cy="40" r="4.5" fill="{DUNKEL}"/><path d="M32 42v8" stroke="{DUNKEL}" stroke-width="4" stroke-linecap="round"/>'),
     "unterschrift": _icon(f'<path d="M6 46c6-14 10-26 14-26s-2 26 4 26 8-18 12-18-1 14 4 14 6-6 9-8" stroke="{DUNKEL}" '
                           f'stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
                           f'<path d="M6 54h52" stroke="{GRAU}" stroke-width="3" stroke-linecap="round"/>'),
