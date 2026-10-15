@@ -317,8 +317,9 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 
 /* Moderationskarten */
 .moderation .mod-karte { flex: 1; background: #fff; border-radius: 28px; box-shadow: 0 6px 24px rgba(0,0,0,.08); padding: clamp(20px, 5vmin, 60px); display: flex; flex-direction: column; justify-content: center; gap: 2vmin; border-top: 10px solid var(--akzent); }
-.mod-schritt { display: flex; align-items: center; gap: 12px; font-size: clamp(1rem, 2.6vmin, 1.5rem); font-weight: 800; color: var(--akzent-dunkel); }
-.mod-schritt .n { display: inline-flex; width: 2em; height: 2em; border-radius: 50%; align-items: center; justify-content: center; background: var(--akzent); color: #fff; }
+.mod-schritt { display: flex; align-items: center; gap: 14px; font-size: clamp(1.5rem, 4.6vmin, 3rem); font-weight: 800; color: var(--akzent-dunkel); line-height: 1.15; }
+.mod-schritt .bild.m { width: 1.4em; height: 1.4em; }
+.mod-schritt .n { display: inline-flex; flex: none; font-size: .7em; width: 2em; height: 2em; border-radius: 50%; align-items: center; justify-content: center; background: var(--akzent); color: #fff; }
 .mod-text { font-size: clamp(1.6rem, 5.2vmin, 3.4rem); font-weight: 700; line-height: 1.3; margin: 0; }
 .mod-hinweis { font-size: clamp(1.1rem, 3vmin, 1.9rem); color: var(--leise); margin: 0; line-height: 1.4; }
 .mod-nav { display: flex; align-items: center; gap: 12px; }
@@ -1308,12 +1309,25 @@ function blitzOptionen() {
 
 // --- Moderationskarten: Sätze zum Vorlesen für die Leitung -----------------------
 const mod = { offen: false, idx: 0 };
+// Auf den Moderationskarten (Tafel!) nur Vorname + Anfangsbuchstabe des Nachnamens, z. B. „Peter T.“
+// Bei gleichen Kürzeln in der Klasse werden so viele Buchstaben genommen, bis es eindeutig ist.
+function kartenName(name, alle = klasse()?.schueler || []) {
+  const teile = String(name || "").trim().split(/\s+/);
+  if (teile.length < 2 || ["ganze Klasse", "Lehrkraft"].includes(name)) return name;
+  const zerlegt = (x) => { const p = x.trim().split(/\s+/); return [p[0], p.at(-1)]; };
+  const [vor, nach] = [teile[0], teile.at(-1)];
+  for (let l = 1; l <= nach.length; l++) {
+    const gleich = alle.some((x) => { if (x === name) return false; const [v, n] = zerlegt(x); return v === vor && n.slice(0, l) === nach.slice(0, l); });
+    if (!gleich) return `${vor} ${nach.slice(0, l)}.`;
+  }
+  return name;
+}
 function moderationsKarten() {
   const s = sitzung(), k = klasse(), t = T(), gs = k.stufe === "gs";
-  const n = (x) => esc(namenText(x) || "");
+  const n = (x) => esc((Array.isArray(x) ? x : x ? [x] : []).map((y) => kartenName(y)).join(", "));
   const karten = [];
   const add = (schritt, icon, titel, text, hinweis = "") => karten.push({ schritt, icon, titel, text, hinweis });
-  const rollen = ROLLEN.slice(1).filter(([r]) => s.rollen[r]).map(([r]) => `${t[r]}: <b>${esc(s.rollen[r])}</b>`).join(" · ");
+  const rollen = ROLLEN.slice(1).filter(([r]) => s.rollen[r]).map(([r]) => `${t[r]}: <b>${n(s.rollen[r])}</b>`).join(" · ");
   add("start", "glocke", "Eröffnung", gs ? "Ich begrüße euch zu unserem Klassenrat!" : `Ich eröffne den Klassenrat. Heute ist unsere Sitzung Nr. ${s.nr}.`,
     rollen ? `Heute helfen mit: ${rollen}` : "");
   add("start", "regel", "Unsere Regeln", gs ? "Wir hören einander zu. Wir lassen andere ausreden. Wir sind freundlich zueinander."
@@ -1337,8 +1351,9 @@ function moderationsKarten() {
   });
   add("abschluss", "froh", t.abschluss, gs ? "Wie fandet ihr unseren Klassenrat heute?" : "Zum Schluss das Blitzlicht: Wie fandet ihr die heutige Sitzung?");
   karten.at(-1).blitz = true;
-  const neu = ROLLEN.filter(([r]) => s.naechsteRollen[r]).map(([r]) => `${t[r]}: <b>${esc(s.naechsteRollen[r])}</b>`).join("<br>");
-  if (neu) add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
+  // immer zeigen – die Namen erscheinen, sobald sie im Protokoll eingetragen werden
+  const neu = ROLLEN.map(([r]) => `${t[r]}: <b>${s.naechsteRollen[r] ? n(s.naechsteRollen[r]) : "…"}</b>`).join("<br>");
+  add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
   add("nach-blitz", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
   return karten;
 }
