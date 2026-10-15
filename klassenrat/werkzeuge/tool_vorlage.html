@@ -108,6 +108,8 @@ textarea { resize: vertical; min-height: 64px; }
 .redeliste .rl-knoepfe { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
 .bausteine { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--linie); font-size: .85rem; color: var(--leise); }
 .bausteine > span { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.unterkopf { margin: 14px 0 6px; font-size: .95rem; color: var(--akzent-dunkel); }
+.namenleiste .chip.baustein.neu { font-style: normal; border-style: dashed; background: #fff; color: var(--leise); }
 .namenleiste .chip.baustein { font-weight: 500; font-style: italic; padding: 5px 11px; background: #fffdf3; border-color: #efe3b4; }
 .schnell { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
 .schnell button:disabled { opacity: .45; cursor: not-allowed; }
@@ -347,6 +349,18 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 .st-zahlen { color: var(--leise); font-size: .85rem; font-variant-numeric: tabular-nums; text-align: right; }
 @media (max-width: 720px) { .st-zeile { grid-template-columns: 80px 1fr; } .st-zahlen { display: none; } }
 
+/* Moderation: Satz je Zeile, Auswahl, Tafel-Fernbedienung */
+.satz { display: block; }
+.satz + .satz { margin-top: .3em; }
+.wahl-liste { display: flex; flex-direction: column; gap: 8px; }
+.wahl-liste button { display: flex; gap: 12px; align-items: flex-start; text-align: left; border: 1.5px solid var(--linie); background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; }
+.wahl-liste button:hover { border-color: var(--akzent); background: var(--akzent-hell); }
+.wahl-liste small { display: block; color: var(--leise); margin-top: 2px; line-height: 1.35; }
+.dialog:has(.wahl-liste) { width: min(520px, 100%); }
+.fern { position: fixed; left: 18px; bottom: 18px; z-index: 45; background: #fff; border-radius: 999px; padding: 6px 8px 6px 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.18); border: 2px solid var(--akzent); }
+body.tafel { background: var(--hg); }
+body.tafel .blitz { position: fixed; }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -400,6 +414,7 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 <div id="dialog"></div>
 <div id="blitz"></div>
 <div id="moderation"></div>
+<div id="tafel-fern"></div>
 
 <script>
 /*__BILDER__*/
@@ -452,6 +467,16 @@ function unterschriftName(s, r, t) {
 const ARTEN = ["Kritik", "Wunsch", "Vorschlag", "Konflikt", "Information"];
 // Arten von Anliegen: Standard oder in den Klasseneinstellungen angepasst
 const arten = (k = klasse()) => (k?.arten?.length ? k.arten : ARTEN);
+// Satzanfänge: Standard je Schulart oder in den Klasseneinstellungen angepasst
+const bausteineFuer = (art, k = klasse()) => (k?.bausteine?.[art]?.length ? k.bausteine[art] : TEXTE[k?.stufe || "ms"].bausteine[art]);
+function bausteinHinzufuegen(art, text) {
+  const k = klasse(), x = text.trim();
+  if (!x) return false;
+  k.bausteine ||= {};
+  k.bausteine[art] = [...bausteineFuer(art, k)];
+  if (!k.bausteine[art].some((y) => y.trim() === x)) k.bausteine[art].push(x + " ");
+  return true;
+}
 const ERGEBNISSE = [["beschluss", "Beschluss"], ["vertagt", "vertagt"], ["keine", "keine Einigung"], ["weiter", "weitergeben"]];
 const SCHRITTE = [
   ["start", "Start", "leute"], ["positiv", null, "stern"], ["rueckblick", null, "zurueck"],
@@ -685,6 +710,7 @@ function nachRender() {
     if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(el.value.length, el.value.length); }
   }
   document.querySelectorAll("canvas[data-pad]").forEach(padStarten);
+  if (tafelOffen()) tafelSenden();
   document.querySelectorAll("#sperrbereich.gesperrt :is(input, textarea, select)").forEach((el) => (el.disabled = true));
   document.querySelectorAll("#sperrbereich.gesperrt button[data-act]").forEach((b) => { if (!ERLAUBT_GESPERRT.includes(b.dataset.act)) b.disabled = true; });
 }
@@ -749,7 +775,14 @@ function viewWillkommen(zusatz) {
       <button class="knopf gross" data-act="klasse-anlegen">Klasse anlegen</button>
       ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `<button class="knopf rand" data-act="import">Sicherung laden …</button>`}
     </div>
+    ${zusatz ? "" : tafelKarte()}
   </div>`;
+}
+function tafelKarte() {
+  return `<div class="hinweis-box info abstand">${bild("wandzeitung", "m")}<div><b>Tafel-Rechner?</b> Dieser Rechner kann die Moderationskarten zeigen,
+    die das Protokollgerät über OneDrive bereitstellt – ohne eigene Klassen und ohne Schülerdaten zu speichern.
+    <div class="aktionen abstand"><button class="knopf mini" data-act="tafel-ordner">Diesen Rechner als Tafel nutzen …</button>
+      <button class="knopf mini rand" data-act="tafel-ordner-weiter">Letzten Ordner verwenden</button></div></div></div>`;
 }
 function schuljahr() {
   const d = new Date(), j = d.getFullYear(), m = d.getMonth();
@@ -897,7 +930,7 @@ function namenLeiste() {
     mehrere: z?.endsWith(".redeliste") ? "Wer sich meldet, antippen – die Reihenfolge bleibt erhalten." : "Namen an- oder abwählen.",
     einzeln: "Einen Namen antippen." }[art] || "";
   const bausteinArt = z && (art === "liste" || art === "zeile") ? (z.startsWith("positiv") ? "positiv" : "aussagen") : null;
-  const bausteine = bausteinArt ? T().bausteine[bausteinArt] : [];
+  const bausteine = bausteinArt ? bausteineFuer(bausteinArt) : [];
   const listePfad = art === "zeile" ? z.split(".").slice(0, -1).join(".") : null;
   const extras = art === "einzeln" ? [] : ["ganze Klasse", "Lehrkraft"];
   if (!k.schueler.length) return `<div class="namenleiste"><div class="ziel-info">Keine Klassenliste hinterlegt.
@@ -907,7 +940,8 @@ function namenLeiste() {
       ${listePfad ? `<button class="knopf mini zweit" data-act="ziel" data-arg="${listePfad}" style="margin-left:auto">＋ neue Zeile</button>` : ""}</div>
     <div class="chips">${anwesend.map((n) => `<button class="chip ${gewaehlt.includes(n) ? "an" : ""}" data-act="name" data-arg="${esc(n)}" title="${esc(n)}">${esc(kurzname(n, k.schueler))}</button>`).join("")}
       ${z?.endsWith(".redeliste") ? "" : extras.map((n) => `<button class="chip extra ${gewaehlt.includes(n) ? "an" : ""}" data-act="name" data-arg="${n}">${n}</button>`).join("")}</div>
-    ${bausteine.length ? `<div class="bausteine"><span>${bild("stift", "s")} Satzanfänge:</span>${bausteine.map((x) => `<button class="chip baustein" data-act="baustein" data-arg="${esc(x)}">${esc(x.trim())} …</button>`).join("")}</div>` : ""}
+    ${bausteinArt ? `<div class="bausteine"><span>${bild("stift", "s")} Satzanfänge:</span>${bausteine.map((x) => `<button class="chip baustein" data-act="baustein" data-arg="${esc(x)}">${esc(x.trim())} …</button>`).join("")}
+      <button class="chip baustein neu" data-act="baustein-neu" data-arg="${bausteinArt}" title="eigenen Satzanfang ergänzen">＋ eigener</button></div>` : ""}
   </div>`;
 }
 function namensFeld(pfad, werte, text) {
@@ -1195,26 +1229,177 @@ function moderationsKarten() {
   add("abschluss", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
   return karten;
 }
+// Reine Darstellung (keine Zugriffe auf den Zustand), damit sie auch im Tafel-Fenster
+// und in der exportierten Karten-Datei funktioniert.
+function modHTML(karten, idx, opt) {
+  const saetze = (h) => h.split(/(?<=[^\d\s][.!?])\s+(?=[A-ZÄÖÜ„<])/).map((x) => `<span class="satz">${x}</span>`).join("");
+  const k = karten[idx];
+  const knoepfe = opt.modus === "lokal"
+    ? `<button class="knopf" data-act="mod-zu">Schließen</button>`
+    : `<button class="knopf rand" data-act="mod-vollbild">⛶ Vollbild</button>${opt.ende || ""}`;
+  return `<div class="blitz moderation">
+    <div class="oben"><span class="bild l">${opt.glocke}</span><h2>Moderationskarte</h2>
+      <span class="badge">${idx + 1} / ${karten.length}</span>
+      ${opt.hinweis ? `<span class="leise klein">${opt.hinweis}</span>` : ""}
+      <div class="aktionen">${knoepfe}</div></div>
+    <div class="mod-karte">
+      <div class="mod-schritt"><span class="n">${k.schrittNr}</span><span class="bild m">${k.ikon}</span> ${k.titel}</div>
+      <p class="mod-text">${saetze(k.text)}</p>
+      ${k.hinweis ? `<p class="mod-hinweis">${saetze(k.hinweis)}</p>` : ""}
+    </div>
+    <div class="mod-nav"><button class="knopf rand gross" data-act="mod-weiter" data-arg="-1" ${idx ? "" : "disabled"}>← Zurück</button>
+      <div class="mod-punkte">${karten.map((x, i) => `<span class="${i === idx ? "an" : ""}"></span>`).join("")}</div>
+      <button class="knopf gross" data-act="mod-weiter" data-arg="1" ${idx < karten.length - 1 ? "" : "disabled"}>Weiter →</button></div>
+  </div>`;
+}
+function modKartenMitBild() {
+  return moderationsKarten().map((k) => ({ ...k, ikon: BILDER[k.icon], schrittNr: SCHRITTE.findIndex(([x]) => x === k.schritt) + 1 }));
+}
+function modStartIdx(karten) {
+  const i = karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
+  return Math.max(0, i);
+}
 function renderModeration() {
   const el = $("#moderation");
   if (!mod.offen || !sitzung()) { el.innerHTML = ""; return; }
-  const karten = moderationsKarten();
+  const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
-  const k = karten[mod.idx];
-  const schrittNr = SCHRITTE.findIndex(([x]) => x === k.schritt) + 1;
-  el.innerHTML = `<div class="blitz moderation">
-    <div class="oben">${bild("glocke", "l")}<h2>Moderationskarte</h2>
-      <span class="badge">${mod.idx + 1} / ${karten.length}</span>
-      <div class="aktionen"><button class="knopf" data-act="mod-zu">Schließen</button></div></div>
-    <div class="mod-karte">
-      <div class="mod-schritt"><span class="n">${schrittNr}</span>${bild(k.icon, "m")} ${k.titel}</div>
-      <p class="mod-text">${k.text}</p>
-      ${k.hinweis ? `<p class="mod-hinweis">${k.hinweis}</p>` : ""}
-    </div>
-    <div class="mod-nav"><button class="knopf rand gross" data-act="mod-weiter" data-arg="-1" ${mod.idx ? "" : "disabled"}>← Zurück</button>
-      <div class="mod-punkte">${karten.map((x, i) => `<span class="${i === mod.idx ? "an" : ""}"></span>`).join("")}</div>
-      <button class="knopf gross" data-act="mod-weiter" data-arg="1" ${mod.idx < karten.length - 1 ? "" : "disabled"}>Weiter →</button></div>
-  </div>`;
+  el.innerHTML = modHTML(karten, mod.idx, { modus: "lokal", glocke: BILDER.glocke });
+}
+
+// --- Tafel-Fenster: zweites Browserfenster auf dem Tafel-Bildschirm, live verbunden ------
+let tafel = null;
+function tafelOffen() { return tafel && !tafel.closed; }
+function tafelSenden() {
+  if (!tafelOffen() || !sitzung()) return;
+  const karten = modKartenMitBild();
+  mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
+  tafel.postMessage({ typ: "klassenrat-mod", karten, idx: mod.idx, stufe: klasse().stufe, glocke: BILDER.glocke,
+    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}` }, "*");
+  renderFern(karten.length);
+}
+function renderFern(anzahl) {
+  const el = $("#tafel-fern");
+  if (!tafelOffen()) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="fern">${bild("glocke", "s")} <b>Tafel</b> Karte ${mod.idx + 1}${anzahl ? " / " + anzahl : ""}
+    <button class="knopf mini rand" data-act="fern" data-arg="-1">◀</button><button class="knopf mini" data-act="fern" data-arg="1">▶</button>
+    <button class="x" data-act="tafel-zu" title="Tafel-Fenster schließen">✕</button></div>`;
+}
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.typ !== "klassenrat-tafel" || e.source !== tafel) return;
+  if (d.aktion === "weiter") mod.idx += d.d;
+  tafelSenden();
+});
+setInterval(() => { if (tafel && tafel.closed) { tafel = null; renderFern(); } }, 1500);
+
+// Läuft im Tafel-Fenster (#tafel): zeigt nur die Karten, die das Hauptfenster schickt
+function tafelStarten() {
+  document.body.innerHTML = `<div id="tafel-ansicht"><div class="karte leer" style="margin:40px auto;max-width:560px">${bild("glocke", "l")}
+    <p><b>Warte auf das Klassenrat-Tool …</b><br>Dieses Fenster auf den Tafel-Bildschirm ziehen und „⛶ Vollbild“ antippen.</p></div></div>`;
+  document.body.classList.add("tafel");
+  let letzte = null;
+  const senden = (aktion, d) => { try { window.opener?.postMessage({ typ: "klassenrat-tafel", aktion, d }, "*"); } catch (e) { /* getrennt */ } };
+  window.addEventListener("message", (e) => {
+    const d = e.data;
+    if (!d || d.typ !== "klassenrat-mod") return;
+    letzte = d;
+    document.body.dataset.stufe = d.stufe;
+    document.title = "Klassenrat – Tafel";
+    $("#tafel-ansicht").innerHTML = modHTML(d.karten, d.idx, { modus: "tafel", glocke: d.glocke, hinweis: d.hinweis });
+  });
+  mod.offen = true;  // Pfeiltasten blättern
+  AKTIONEN["mod-weiter"] = (d) => senden("weiter", +d);
+  AKTIONEN["mod-vollbild"] = () => document.documentElement.requestFullscreen?.().catch(() => {});
+  AKTIONEN["mod-zu"] = () => { if (document.fullscreenElement) document.exitFullscreen?.(); };
+  setInterval(() => {
+    if (!window.opener || window.opener.closed) $("#tafel-ansicht").innerHTML = `<div class="karte leer" style="margin:40px auto;max-width:560px">
+      <p><b>Verbindung zum Klassenrat-Tool getrennt.</b><br>Bitte das Tafel-Fenster im Tool neu öffnen.</p></div>`;
+  }, 2000);
+  senden("bereit");
+}
+
+// --- Tafel-Rechner über OneDrive: liest die Karten, die das Protokollgerät in den Ordner schreibt ---
+const tafelOrdner = { aktiv: false, handle: null, zeit: 0, daten: null, idx: 0, timer: null, fehler: "" };
+async function tafelOrdnerWaehlen() {
+  if (!ordnerMoeglich) { alert("Dafür wird Microsoft Edge oder Google Chrome am PC benötigt."); return; }
+  try {
+    const h = await window.showDirectoryPicker({ id: "klassenrat-tafel", mode: "read" });
+    await idb("readwrite", (st) => st.put(h, "tafelordner"));
+    tafelOrdnerStarten(h);
+  } catch (e) { if (e.name !== "AbortError") alert("Der Ordner konnte nicht geöffnet werden: " + e.message); }
+}
+async function tafelOrdnerFortsetzen() {
+  try {
+    const h = await idb("readonly", (st) => st.get("tafelordner"));
+    if (!h) return tafelOrdnerWaehlen();
+    if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
+    tafelOrdnerStarten(h);
+  } catch (e) { tafelOrdnerWaehlen(); }
+}
+function tafelOrdnerStarten(h) {
+  Object.assign(tafelOrdner, { aktiv: true, handle: h, zeit: 0, daten: null, idx: 0, fehler: "" });
+  mod.offen = true;
+  clearInterval(tafelOrdner.timer);
+  tafelOrdner.timer = setInterval(tafelOrdnerLesen, 3000);
+  tafelOrdnerLesen();
+  document.documentElement.requestFullscreen?.().catch(() => {});
+}
+async function tafelOrdnerLesen() {
+  try {
+    const f = await (await tafelOrdner.handle.getFileHandle("klassenrat-tafel.json")).getFile();
+    if (f.lastModified !== tafelOrdner.zeit) {
+      const d = JSON.parse(await f.text());
+      if (d.sitzungId !== tafelOrdner.daten?.sitzungId) tafelOrdner.idx = 0;
+      Object.assign(tafelOrdner, { daten: d, zeit: f.lastModified, fehler: "" });
+    }
+  } catch (e) { tafelOrdner.fehler = e.name === "NotFoundError" ? "leer" : e.message; }
+  renderTafelOrdner();
+}
+function renderTafelOrdner() {
+  const el = $("#moderation"), d = tafelOrdner.daten;
+  if (!tafelOrdner.aktiv) { el.innerHTML = ""; return; }
+  const ende = `<button class="knopf" data-act="tafel-ordner-ende">Beenden</button>`;
+  if (!d) {
+    el.innerHTML = `<div class="blitz moderation"><div class="oben">${bild("glocke", "l")}<h2>Tafel</h2><div class="aktionen">${ende}</div></div>
+      <div class="mod-karte"><p class="mod-text"><span class="satz">Warte auf das Protokollgerät …</span></p>
+      <p class="mod-hinweis"><span class="satz">${tafelOrdner.fehler && tafelOrdner.fehler !== "leer" ? esc(tafelOrdner.fehler)
+        : "Am Protokollgerät die automatische OneDrive-Sicherung einrichten und eine Sitzung öffnen."}</span>
+      <span class="satz">Die Karten erscheinen hier, sobald OneDrive die Datei übertragen hat.</span></p></div></div>`;
+    return;
+  }
+  tafelOrdner.idx = Math.max(0, Math.min(tafelOrdner.idx, d.karten.length - 1));
+  document.body.dataset.stufe = d.stufe;
+  const alt = (Date.now() - d.zeit) / 6e4;
+  el.innerHTML = modHTML(d.karten, tafelOrdner.idx, { modus: "ordner", glocke: BILDER.glocke, ende,
+    hinweis: `Klasse ${esc(d.klasse)} · Sitzung ${d.nr} · Stand ${new Date(d.zeit).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}${alt > 30 ? " (älter als 30 Minuten)" : ""}` });
+}
+
+// Eigenständige Datei mit den Karten dieser Sitzung (für Tafel-PC oder ein zweites Tablet)
+function modExportieren() {
+  const k = klasse(), s = sitzung(), karten = modKartenMitBild();
+  const stand = `Klasse ${k.name} · Sitzung ${s.nr} · Stand ${new Date().toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}`;
+  const json = (x) => JSON.stringify(x).replace(/</g, "\\u003c");
+  const css = document.querySelector("style").textContent;
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moderationskarten ${esc(k.name)} – Sitzung ${s.nr}</title><style>${css}</style></head>
+<body data-stufe="${k.stufe}" class="tafel"><div id="m"></div><script>
+const karten = ${json(karten)}, GLOCKE = ${json(BILDER.glocke)}, STAND = ${json(stand)};
+let idx = 0;
+${modHTML.toString()}
+function zeigen() { document.getElementById("m").innerHTML = modHTML(karten, idx, { modus: "export", glocke: GLOCKE, hinweis: STAND }); }
+function weiter(d) { idx = Math.max(0, Math.min(karten.length - 1, idx + d)); zeigen(); }
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "mod-weiter") weiter(+b.dataset.arg);
+  if (b.dataset.act === "mod-vollbild") document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); });
+document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); weiter(1); } if (e.key === "ArrowLeft") weiter(-1); });
+zeigen();
+<\/script></body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  a.download = `moderationskarten-${k.name}-sitzung-${s.nr}.html`.replace(/[^\w.\-äöüÄÖÜß]+/g, "-");
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 // --- Blitzlicht im Vollbild: Tablet herumgeben oder an der Tafel antippen --------------
@@ -1443,6 +1628,18 @@ function viewKlasse() {
       <button class="knopf rand" data-act="schueler-sortieren">Alphabetisch sortieren</button></div>
   </div>
   <div class="karte">
+    <h3 style="margin-top:0">${bild("stift")} Satzanfänge</h3>
+    <p class="leise">Erscheinen beim Protokollieren zum Antippen. Neue Satzanfänge lassen sich auch während der Sitzung über „＋ eigener“ ergänzen.</p>
+    ${[["positiv", T().positiv], ["aussagen", T().aussagen]].map(([art, titel]) => `
+      <h4 class="unterkopf">${titel}</h4>
+      <div class="chips art-liste">${bausteineFuer(art, k).map((x, n) => `<span class="chip">${esc(x.trim())} …<button data-act="baustein-weg" data-arg="${art}|${n}" title="entfernen">✕</button></span>`).join("")}</div>
+      <div class="aktionen abstand">
+        <input type="text" id="neu-baustein-${art}" placeholder="neuer Satzanfang, z. B. Ich bin stolz auf" style="max-width:340px">
+        <button class="knopf zweit" data-act="baustein-neu" data-arg="${art}">＋ Hinzufügen</button>
+        ${k.bausteine?.[art]?.length ? `<button class="knopf rand" data-act="baustein-standard" data-arg="${art}">Standard wiederherstellen</button>` : ""}
+      </div>`).join("")}
+  </div>
+  <div class="karte">
     <h3 style="margin-top:0">${bild("wandzeitung")} Arten von Anliegen</h3>
     <p class="leise">Diese Begriffe stehen beim Anliegen zum Antippen bereit. Bereits protokollierte Anliegen behalten ihre Art, auch wenn ein Begriff entfernt wird.</p>
     <div class="chips art-liste">${arten(k).map((x) => `<span class="chip">${esc(x)}<button data-act="art-weg" data-arg="${esc(x)}" title="${esc(x)} entfernen">✕</button></span>`).join("")}</div>
@@ -1494,6 +1691,12 @@ function viewDaten() {
     <div class="aktionen"><button class="knopf" data-act="export">Sicherung herunterladen</button>
       <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
     <p class="leise klein">Letzte Sicherung: ${state.letzterExport ? new Date(state.letzterExport).toLocaleString("de-DE") : "noch nie"}</p>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("wandzeitung", "m")} Moderationskarten auf einem Tafel-Rechner</h3>
+    <p class="leise">Ist hier die automatische OneDrive-Sicherung aktiv, schreibt das Tool die Karten der geöffneten Sitzung zusätzlich in
+      <code>klassenrat-tafel.json</code>. Ein anderer Rechner mit Zugriff auf denselben OneDrive-Ordner zeigt sie an.</p>
+    ${tafelKarte()}
   </div>
   <div class="karte">
     <h3 style="margin-top:0">${bild("schloss", "m")} Passwort für abgeschlossene Sitzungen</h3>
@@ -1621,6 +1824,10 @@ async function sichernInOrdner() {
   try {
     const json = JSON.stringify(state, null, 1);
     await schreibeDatei(ordner.handle, "klassenrat-sicherung.json", json);
+    if (ui.view === "sitzung" && sitzung()) {  // Karten der geöffneten Sitzung für einen Tafel-Rechner
+      await schreibeDatei(ordner.handle, "klassenrat-tafel.json", JSON.stringify({ typ: "klassenrat-tafel", zeit: Date.now(),
+        klasse: klasse().name, sitzungId: sitzung().id, nr: sitzung().nr, stufe: klasse().stufe, karten: modKartenMitBild() }));
+    }
     const verlauf = await ordner.handle.getDirectoryHandle("Verlauf", { create: true });
     await schreibeDatei(verlauf, `klassenrat-${heute()}.json`, json);  // eine Fassung pro Tag
     ordner.zuletzt = Date.now(); ordner.fehler = "";
@@ -1686,6 +1893,7 @@ const AKTIONEN = {
   },
   "neue-sitzung": neueSitzung,
   oeffnen(sid) {
+    sichernInOrdnerSpaeter();
     const s = klasse().sitzungen.find((x) => x.id === sid);
     Object.assign(ui, { sitzungId: sid, schritt: s.gesperrt ? "protokoll" : "start", view: "sitzung", ziel: null, anliegenIdx: 0, entsperrt: null });
     render(); scrollTo(0, 0);
@@ -1809,6 +2017,7 @@ const AKTIONEN = {
     speichern(); render();
   },
   baustein(x) {
+    x = x.trimEnd() + " ";
     const z = ui.ziel, art = zielArt(z);
     if (art === "liste") {
       const l = wertAn(z); l.push({ namen: [], text: x });
@@ -1836,14 +2045,62 @@ const AKTIONEN = {
     pfadSetzen(sitzung(), pfad, text); speichern(); render();
   },
   moderation() {
-    const karten = moderationsKarten();
-    const i = karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
-    Object.assign(mod, { offen: true, idx: Math.max(0, i) });
+    $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog">
+      <h3>${bild("glocke", "m")} Moderationskarten</h3><p class="leise">Wo sollen die Karten erscheinen?</p>
+      <div class="wahl-liste">
+        <button data-act="mod-hier">${bild("leute", "m")}<span><b>Auf diesem Gerät</b><small>Vollbild – die Leitung liest direkt vom Gerät ab.</small></span></button>
+        <button data-act="mod-tafel">${bild("wandzeitung", "m")}<span><b>Auf der Tafel (zweites Fenster)</b><small>Das Gerät ist an die Tafel angeschlossen (erweiterter Bildschirm).
+          Die Karten zeigen live die Daten dieser Sitzung, hier bleibt das Protokoll offen.</small></span></button>
+        <button data-act="mod-onedrive">${bild("kalender", "m")}<span><b>Über OneDrive an einen anderen Rechner</b><small>Die Karten dieser Sitzung werden mit der automatischen Sicherung in den OneDrive-Ordner geschrieben.
+          Am Tafel-Rechner im Tool „Diesen Rechner als Tafel nutzen“ wählen. Aktualisiert sich von selbst (mit einigen Sekunden Verzögerung).</small></span></button>
+        <button data-act="mod-export">${bild("beschluss", "m")}<span><b>Als Datei für ein anderes Gerät</b><small>Für den Tafel-PC oder das Tablet der Leitung, z. B. über OneDrive oder USB-Stick.
+          Stand: jetzt – später ergänzte Anliegen fehlen darin.</small></span></button>
+      </div>
+      <div class="aktionen abstand"><button class="knopf rand" data-act="dialog-zu">Abbrechen</button></div></div></div>`;
+  },
+  "dialog-zu"() { $("#dialog").innerHTML = ""; },
+  "mod-hier"() {
+    $("#dialog").innerHTML = "";
+    Object.assign(mod, { offen: true, idx: modStartIdx(moderationsKarten()) });
     renderModeration();
     document.documentElement.requestFullscreen?.().catch(() => {});
   },
-  "mod-weiter"(d) { mod.idx += +d; renderModeration(); },
-  "mod-zu"() { mod.offen = false; renderModeration(); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); },
+  "mod-tafel"() {
+    $("#dialog").innerHTML = "";
+    if (!tafelOffen()) {
+      tafel = window.open(location.href.split("#")[0] + "#tafel", "klassenrat-tafel", "popup=yes,width=1280,height=800");
+      if (!tafel) { alert("Das Fenster wurde blockiert. Bitte Pop-ups für diese Datei erlauben."); return; }
+      mod.idx = modStartIdx(moderationsKarten());
+    }
+    tafel.focus();
+    setTimeout(tafelSenden, 400);
+  },
+  "mod-onedrive"() {
+    $("#dialog").innerHTML = "";
+    if (ordner.status !== "aktiv") {
+      if (confirm("Dafür muss die automatische OneDrive-Sicherung eingerichtet sein. Jetzt zu den Einstellungen wechseln?")) AKTIONEN.view("daten");
+      return;
+    }
+    sichernInOrdner().then(() => alert("Die Karten liegen jetzt im OneDrive-Ordner (klassenrat-tafel.json) und werden bei jeder Änderung aktualisiert.\n\nAm Tafel-Rechner: Tool öffnen → „Diesen Rechner als Tafel nutzen“ → denselben OneDrive-Ordner wählen."));
+  },
+  "mod-export"() { $("#dialog").innerHTML = ""; modExportieren(); },
+  fern(d) { mod.idx += +d; tafelSenden(); },
+  "tafel-zu"() { if (tafelOffen()) tafel.close(); tafel = null; renderFern(); },
+  "mod-weiter"(d) {
+    if (tafelOrdner.aktiv) { tafelOrdner.idx += +d; renderTafelOrdner(); return; }
+    mod.idx += +d; renderModeration();
+  },
+  "mod-vollbild"() { document.documentElement.requestFullscreen?.().catch(() => {}); },
+  "tafel-ordner": tafelOrdnerWaehlen,
+  "tafel-ordner-weiter": tafelOrdnerFortsetzen,
+  "tafel-ordner-ende"() {
+    clearInterval(tafelOrdner.timer); tafelOrdner.aktiv = false; mod.offen = false;
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    renderTafelOrdner(); render();
+  },
+  "mod-zu"() {
+    if (tafelOrdner.aktiv) { if (document.fullscreenElement) document.exitFullscreen?.(); return; }
+    mod.offen = false; renderModeration(); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); },
   aushang() {
     const k = klasse(), t = T(), offen = beschluesse(k).filter(istOffen);
     if (!offen.length) { alert("Zurzeit gibt es keine offenen Beschlüsse für den Aushang."); return; }
@@ -1857,6 +2114,20 @@ const AKTIONEN = {
         &nbsp; <span>beschlossen am ${datum(b.sitzung.datum)}</span></div></div></div>`).join("")}
     </div>`);
   },
+  "baustein-neu"(art) {
+    const feld = $(`#neu-baustein-${art}`);
+    const text = feld ? feld.value : prompt(`Neuer Satzanfang für ${art === "positiv" ? "die " + T().positiv : "die Aussagen"}:`, "");
+    if (text == null || !bausteinHinzufuegen(art, text)) { feld?.focus(); return; }
+    speichern(); render(); $(`#neu-baustein-${art}`)?.focus();
+  },
+  "baustein-weg"(arg) {
+    const [art, i] = arg.split("|"), k = klasse();
+    k.bausteine ||= {};
+    k.bausteine[art] = bausteineFuer(art, k).filter((_, n) => n !== +i);
+    if (!k.bausteine[art].length) { alert("Mindestens ein Satzanfang muss bleiben."); delete k.bausteine[art]; }
+    speichern(); render();
+  },
+  "baustein-standard"(art) { if (klasse().bausteine) delete klasse().bausteine[art]; speichern(); render(); },
   "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
   "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
   async "sitzung-loeschen"(sid) {
@@ -2048,6 +2319,7 @@ document.addEventListener("keydown", (e) => {
   }
   const z = e.target.dataset?.ziel;
   if (e.target.id === "neue-art" && e.key === "Enter") { e.preventDefault(); AKTIONEN["art-neu"](); return; }
+  if (e.target.id?.startsWith("neu-baustein-") && e.key === "Enter") { e.preventDefault(); AKTIONEN["baustein-neu"](e.target.id.slice(13)); return; }
   if (z && e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     ui.ziel = z.split(".").slice(0, -1).join(".");
@@ -2059,8 +2331,8 @@ document.addEventListener("pointerdown", (e) => { if (e.target.closest(".namenle
 window.addEventListener("resize", () => document.documentElement.style.setProperty("--kopfhoehe", document.querySelector(".app-kopf").offsetHeight + "px"));
 window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
-render();
-ordnerLaden();
+if (location.hash === "#tafel") tafelStarten();
+else { render(); ordnerLaden(); }
 </script>
 </body>
 </html>

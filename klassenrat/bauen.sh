@@ -5,5 +5,6 @@ cd "$(dirname "$0")"
 python3 werkzeuge/bilder.py
 node werkzeuge/rendern.mjs png
 python3 werkzeuge/bogen_erzeugen.py
+python3 werkzeuge/karten_erzeugen.py
 node werkzeuge/rendern.mjs pdf
 python3 werkzeuge/tool_erzeugen.py

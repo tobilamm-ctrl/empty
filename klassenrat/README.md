@@ -12,6 +12,7 @@ Für die Johann-Peter-Wagner-Grund- und Mittelschule Theres. Es gibt zwei Fassun
 | `druck/protokoll-mittelschule.pdf` | Protokollbogen zum Ausdrucken, Kl. 5–9 (3 Seiten) |
 | `word/protokoll-*.docx` | dieselben Bögen als Word-Datei zum Anpassen |
 | `digital/klassenrat-tool.html` | digitales Tool – Doppelklick öffnet es im Browser |
+| `druck/moderationskarten-*.pdf` | allgemeine Moderationskarten zum Ausdrucken (A5, 2 pro Seite, 13 Karten inkl. Zeit- und Regelwächter) |
 
 ### Aufbau der Bögen (nach dem üblichen Klassenrat-Ablauf)
 1. **Seite 1:** Kopf (Klasse, Datum, Nr.), Rollen, Anwesenheit, Positivrunde, Rückblick auf die
@@ -42,7 +43,10 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
 - **Redeliste:** Wortmeldungen antippen, „▶ … ist dran“ legt gleich die Aussage-Zeile mit dem Namen an.
 - **Satzanfänge** zum Antippen („Mich stört, wenn …“), **schnelle Abstimmung** („alle dafür“, „übrige dagegen“)
   und **Vorschläge aus früheren Beschlüssen** beim Tippen
-- **Moderationskarten** im Vollbild: Sätze zum Vorlesen für die Leitung, passend zu Rollen, Beschlüssen und Anliegen
+- **Moderationskarten**: Sätze zum Vorlesen für die Leitung, passend zu Rollen, Beschlüssen und Anliegen. Wählbar:
+  auf dem Gerät im Vollbild, **auf der Tafel** als zweites Fenster (erweiterter Bildschirm, live verbunden, mit Fernbedienung),
+  **über OneDrive an einen Tafel-Rechner** (dort „Diesen Rechner als Tafel nutzen“) oder **als Datei** für ein anderes Gerät
+- **Eigene Satzanfänge** für Positivrunde und Aussagen (unter Klasse oder während der Sitzung über „＋ eigener“)
 - **Fristen:** Die Startseite zeigt, welche Beschlüsse in den nächsten 7 Tagen fällig sind oder schon überfällig sind.
 - **Auswertung** (mit Passwort): Rollen-Übersicht pro Kind und Jahresüberblick (Sitzungen, Arten der Anliegen,
   Stand der Beschlüsse, Blitzlicht je Sitzung)
