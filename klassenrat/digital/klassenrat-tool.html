@@ -1354,8 +1354,10 @@ function moderationsKarten() {
   karten.at(-1).blitz = true;
   // immer zeigen – die Namen erscheinen, sobald sie im Protokoll eingetragen werden
   const neu = ROLLEN.map(([r]) => `${t[r]}: <b>${s.naechsteRollen[r] ? n(s.naechsteRollen[r]) : "…"}</b>`).join("<br>");
-  add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
+  const termin = s.naechsterTermin ? `<br>${gs ? "Der nächste Klassenrat ist am" : "Nächster Klassenrat:"} <b>${datum(s.naechsterTermin, true)}</b>` : "";
+  add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu + termin);
   add("nach-blitz", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
+  karten.at(-1).ende = true;
   return karten;
 }
 // Reine Darstellung (keine Zugriffe auf den Zustand), damit sie auch im Tafel-Fenster
@@ -1801,6 +1803,8 @@ function schrittProtokoll(s, t) {
         <canvas data-pad="${r}"></canvas>
         <div class="unter"><span>${unterschriftName(s, r, t)}</span><button class="knopf mini rand" data-act="unterschrift-weg" data-arg="${r}">löschen</button></div></div>`).join("")}</div>
       <p class="leise klein">Die Unterschriften erscheinen automatisch im Protokoll. Bitte erst unterschreiben, wenn das Protokoll fertig ist.</p>
+      ${istGesperrt(s) ? "" : `<div class="aktionen abstand"><button class="knopf gross" data-act="beenden">${bild("haken", "s")} Sitzung beenden</button>
+        <span class="leise klein">Auf der Tafel erscheint dann die Karte „Ende“.</span></div>`}
     </div>
     <div class="aktionen" style="margin-bottom:14px">
       <button class="knopf gross" data-act="drucken" data-arg="${s.id}">Drucken / als PDF speichern</button>
@@ -2729,6 +2733,13 @@ const AKTIONEN = {
         if (Array.isArray(r)) await pwSetzen(r[0]);
       }
       if (state.sperre) s.gesperrt ||= Date.now();
+    }
+    // Moderationskarten (Tafel) auf „Ende“ stellen, bevor die Übersicht erscheint
+    const ende = moderationsKarten().findIndex((k) => k.ende);
+    if (ende >= 0) {
+      mod.idx = mod.ortIdx = ende; mod.ort = `${s.id}:ende`;
+      tafelSenden();
+      if (ordner.status === "aktiv") await sichernInOrdner();
     }
     ui.view = "sitzungen"; ui.ziel = null; ui.entsperrt = null;
     speichern(); render(); scrollTo(0, 0);
