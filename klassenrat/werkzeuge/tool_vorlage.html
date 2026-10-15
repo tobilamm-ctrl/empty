@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Klassenrat</title>
+<style>
+:root {
+  --rot: #B32D3B; --gruen: #3B9B7F; --gelb: #F2CC3D; --grau: #9C9C9C;
+  --text: #2b2b2b; --leise: #6b6b6b; --linie: #e3e0d8; --hg: #f6f4ef; --karte: #fff;
+  --akzent: var(--gruen); --akzent-hell: #E3F3EE; --akzent-dunkel: #2A7A63;
+  --radius: 14px;
+}
+body[data-stufe="gs"] { --akzent: var(--rot); --akzent-hell: #FBEAEC; --akzent-dunkel: #8E1F2C; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text); background: var(--hg); font-size: 16px; line-height: 1.4; }
+body[data-stufe="gs"] { font-size: 17px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.streifen { height: 6px; background: linear-gradient(90deg, var(--rot) 0 40%, var(--gelb) 40% 50%, var(--grau) 50% 60%, var(--gruen) 60% 100%); }
+
+/* Kopfleiste */
+.app-kopf { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--linie); flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+.app-kopf .logo { width: 120px; flex: none; }
+.app-kopf .logo svg, .app-kopf .logo img { width: 100%; height: auto; display: block; max-height: 64px; object-fit: contain; }
+.app-titel { display: flex; flex-direction: column; gap: 2px; }
+.app-titel h1 { margin: 0; font-size: 1.4rem; color: var(--akzent); }
+.app-titel select { border: 1px solid var(--linie); border-radius: 8px; padding: 3px 6px; background: #fff; font-size: .9rem; }
+nav.haupt { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+nav.haupt button { display: flex; align-items: center; gap: 6px; border: 0; background: transparent; padding: 8px 12px; border-radius: 999px; cursor: pointer; color: var(--leise); font-weight: 600; }
+nav.haupt button:hover { background: var(--hg); }
+nav.haupt button.aktiv { background: var(--akzent-hell); color: var(--akzent-dunkel); }
+.gespeichert { font-size: .8rem; color: var(--leise); min-width: 80px; text-align: right; }
+
+main { max-width: 1060px; margin: 0 auto; padding: 22px 18px 120px; }
+h2 { font-size: 1.35rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+h3 { font-size: 1.05rem; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; color: var(--akzent-dunkel); }
+.leise { color: var(--leise); }
+.klein { font-size: .85rem; }
+
+/* Bilder */
+.bild { display: inline-flex; flex: none; width: 1.6em; height: 1.6em; }
+.bild svg, .bild img { width: 100%; height: 100%; display: block; }
+.bild.m { width: 2.2em; height: 2.2em; }
+.bild.l { width: 3.2em; height: 3.2em; }
+.bild.s { width: 1.25em; height: 1.25em; }
+.illu { max-width: 360px; margin: 0 auto 6px; }
+.illu svg { width: 100%; height: auto; display: block; }
+
+/* Karten & Formular */
+.karte { background: var(--karte); border-radius: var(--radius); padding: 18px 20px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04); margin-bottom: 16px; }
+.karte.akzent { border-top: 5px solid var(--akzent); }
+.raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; }
+label.feld { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--leise); font-weight: 600; }
+label.feld .zeile { display: flex; align-items: center; gap: 8px; }
+input[type=text], input[type=date], input[type=time], input[type=number], textarea, select.feld {
+  width: 100%; border: 1.5px solid var(--linie); border-radius: 10px; padding: 8px 10px; background: #fff; font-weight: 400; color: var(--text); font-size: 1rem;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-hell); }
+textarea { resize: vertical; min-height: 64px; }
+.knopf { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 700; background: var(--akzent); color: #fff; text-decoration: none; }
+.knopf:hover { background: var(--akzent-dunkel); }
+.knopf.zweit { background: var(--akzent-hell); color: var(--akzent-dunkel); }
+.knopf.zweit:hover { filter: brightness(.96); }
+.knopf.rand { background: #fff; color: var(--text); border: 1.5px solid var(--linie); }
+.knopf.gefahr { background: #fff; color: var(--rot); border: 1.5px solid #f0c9ce; }
+.knopf.gross { padding: 13px 22px; font-size: 1.05rem; }
+.knopf.mini { padding: 4px 10px; font-size: .85rem; }
+.x { border: 0; background: transparent; color: var(--grau); cursor: pointer; font-size: 1.3rem; line-height: 1; padding: 4px 8px; border-radius: 8px; }
+.x:hover { color: var(--rot); background: #fbeaec; }
+.aktionen { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.abstand { margin-top: 14px; }
+
+/* Listen-Zeilen (Name + Aussage) */
+.zeilen { display: flex; flex-direction: column; gap: 8px; }
+.zeilen .z { display: grid; grid-template-columns: minmax(130px, 1fr) 3fr auto; gap: 8px; align-items: start; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: .9rem; }
+.chip.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.chip.fehlt { background: #fff3f4; border-color: #f0c9ce; color: var(--rot); text-decoration: line-through; }
+
+/* Sitzungsliste */
+.liste-sitzungen { display: grid; gap: 12px; }
+.sitzung-karte { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
+.datum-kachel { width: 64px; text-align: center; border-radius: 12px; background: var(--akzent-hell); color: var(--akzent-dunkel); padding: 6px 0; font-weight: 800; line-height: 1.1; }
+.datum-kachel small { display: block; font-weight: 600; font-size: .75rem; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: #eee; color: #555; }
+.badge.offen { background: #fff4d1; color: #8a6400; }
+.badge.ja { background: #e1f3ec; color: #22775d; }
+.badge.teils { background: #fff4d1; color: #8a6400; }
+.badge.nein { background: #fbe4e7; color: #a12636; }
+.badge.ueberfaellig { background: var(--rot); color: #fff; }
+
+/* Schritte */
+.schritte { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+.schritt { display: flex; align-items: center; gap: 8px; border: 0; background: #fff; border-radius: 999px; padding: 7px 14px 7px 8px; cursor: pointer; white-space: nowrap; font-weight: 700; color: var(--leise); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.schritt .n { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; background: var(--hg); font-size: .85rem; }
+.schritt.aktiv { background: var(--akzent); color: #fff; }
+.schritt.aktiv .n { background: #fff; color: var(--akzent); }
+.fusszeile { display: flex; justify-content: space-between; margin-top: 18px; }
+.titelzeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.titelzeile h2 { margin: 0; }
+
+/* Anliegen */
+.anliegen { border-left: 6px solid var(--akzent); }
+.anliegen-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.anliegen-kopf .nr { background: var(--akzent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex: none; }
+.anliegen-kopf input { font-size: 1.1rem; font-weight: 700; }
+.vorschlag { display: grid; grid-template-columns: 3fr minmax(110px, 1fr) auto auto; gap: 8px; align-items: center; }
+.zaehler { display: inline-flex; align-items: center; border: 1.5px solid var(--linie); border-radius: 999px; overflow: hidden; background: #fff; }
+.zaehler button { border: 0; background: transparent; width: 30px; height: 34px; cursor: pointer; font-size: 1.1rem; font-weight: 700; color: var(--leise); }
+.zaehler button:hover { background: var(--hg); }
+.zaehler b { min-width: 26px; text-align: center; }
+.zaehler .bild { width: 1.3em; height: 1.3em; margin-left: 6px; }
+.zaehler-gruppe { display: flex; gap: 6px; flex-wrap: wrap; }
+.ergebnis { display: flex; gap: 6px; flex-wrap: wrap; }
+.ergebnis label { display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--linie); border-radius: 999px; padding: 6px 12px; cursor: pointer; background: #fff; font-weight: 600; font-size: .92rem; }
+.ergebnis input { accent-color: var(--akzent); }
+.ergebnis label:has(input:checked) { border-color: var(--akzent); background: var(--akzent-hell); color: var(--akzent-dunkel); }
+.beschluss-box { background: var(--akzent-hell); border-radius: 12px; padding: 12px 14px; margin-top: 10px; }
+
+/* Rückblick */
+.rb { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; align-items: center; }
+.status-wahl { display: flex; gap: 6px; }
+.status-wahl button { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2px solid var(--linie); background: #fff; border-radius: 12px; padding: 6px 10px; cursor: pointer; font-size: .8rem; font-weight: 700; color: var(--leise); min-width: 70px; }
+.status-wahl button.an { border-color: var(--akzent); background: var(--akzent-hell); color: var(--akzent-dunkel); }
+
+/* Feedback */
+.feedback { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.fb { border: 2px solid var(--linie); border-radius: 16px; background: #fff; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+.fb:hover { border-color: var(--akzent); }
+.fb .bild { width: 64px; height: 64px; }
+.fb b { font-size: 1.8rem; }
+.fb .x { font-size: .85rem; }
+
+.leer { text-align: center; padding: 26px 10px; color: var(--leise); }
+.leer .bild { width: 64px; height: 64px; margin-bottom: 6px; }
+.hinweis-box { display: flex; gap: 12px; align-items: flex-start; background: #fff8e1; border: 1px solid #f3e1a6; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.hinweis-box.info { background: var(--akzent-hell); border-color: transparent; }
+
+table.uebersicht { width: 100%; border-collapse: collapse; }
+table.uebersicht th, table.uebersicht td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--linie); vertical-align: top; }
+table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: uppercase; letter-spacing: .03em; }
+
+/* Timer */
+.timer { position: fixed; right: 18px; bottom: 18px; z-index: 50; background: #fff; border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,.18); padding: 12px 14px; width: 230px; border-top: 5px solid var(--akzent); }
+.timer .zeit { font-size: 2.6rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.timer .kopf { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.timer .kopf .x { margin-left: auto; }
+.timer .reihe { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+.timer.ende { animation: blink 0.8s infinite; }
+@keyframes blink { 50% { background: #fbe4e7; } }
+.timer-knopf { position: fixed; right: 18px; bottom: 18px; z-index: 40; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+/* Protokoll (Vorschau & Druck) */
+.papier { background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.1); padding: 14mm 13mm; max-width: 210mm; margin: 0 auto; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; }
+.prot-kopf { display: flex; align-items: center; gap: 14px; border-bottom: 2.5px solid var(--akzent); padding-bottom: 8px; margin-bottom: 8px; }
+.prot-kopf .logo { width: 150px; flex: none; }
+.prot-kopf .logo svg, .prot-kopf .logo img { width: 100%; height: auto; display: block; max-height: 80px; object-fit: contain; }
+.prot-kopf h1 { margin: 0; color: var(--akzent); font-size: 20pt; }
+.prot-kopf .illu-k { width: 170px; margin-left: auto; flex: none; }
+.prot-kopf .illu-k svg { width: 100%; height: auto; display: block; }
+.prot-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 12px; margin: 8px 0; }
+.prot-meta div { border-bottom: 1px solid #bbb; padding: 2px 0; }
+.prot-meta small { color: #666; display: block; font-size: 7.5pt; }
+.papier h4 { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; padding: 5px 8px; background: var(--akzent-hell); border-left: 4px solid var(--akzent); color: var(--akzent-dunkel); font-size: 11.5pt; break-after: avoid; }
+.papier h4 .bild { width: 1.5em; height: 1.5em; }
+.papier table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; }
+.papier th, .papier td { border: 1px solid #888; padding: 4px 6px; text-align: left; vertical-align: top; }
+.papier th { background: #f2f2f2; font-size: 8.5pt; }
+.prot-block { border: 1.5px solid var(--akzent); border-radius: 6px; padding: 0 10px 8px; margin: 10px 0; break-inside: avoid; }
+.prot-block .bt { background: var(--akzent); color: #fff; margin: 0 -10px 6px; padding: 5px 10px; font-weight: 700; border-radius: 4px 4px 0 0; display: flex; gap: 8px; align-items: center; }
+.prot-block p { margin: 4px 0; }
+.prot-unterschriften { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 34px; }
+.prot-unterschriften div { border-top: 1px solid #555; font-size: 8pt; color: #555; padding-top: 3px; }
+.prot-fuss { margin-top: 18px; font-size: 7.5pt; color: #888; border-top: 1px solid #ddd; padding-top: 4px; }
+
+#druck { display: none; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; }
+  body > *:not(#druck) { display: none !important; }
+  #druck { display: block; }
+  #druck .papier { box-shadow: none; padding: 0; max-width: none; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (max-width: 720px) {
+  .app-kopf { padding: 8px 12px; }
+  .app-kopf .logo { width: 84px; }
+  nav.haupt { margin-left: 0; width: 100%; }
+  nav.haupt button span.t { display: none; }
+  main { padding: 16px 12px 120px; }
+  .zeilen .z { grid-template-columns: 1fr auto; }
+  .zeilen .z > :nth-child(2) { grid-column: 1 / 2; }
+  .vorschlag { grid-template-columns: 1fr; }
+  .sitzung-karte { grid-template-columns: auto 1fr; }
+  .sitzung-karte .aktionen { grid-column: 1 / -1; }
+  .feedback { grid-template-columns: 1fr; }
+  .rb { grid-template-columns: 1fr; }
+  .prot-meta { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body data-stufe="ms">
+<div class="streifen"></div>
+<header class="app-kopf">
+  <div class="logo" id="logo"></div>
+  <div class="app-titel">
+    <h1>Klassenrat</h1>
+    <select id="klassenwahl" aria-label="Klasse wählen"></select>
+  </div>
+  <nav class="haupt" id="nav"></nav>
+  <div class="gespeichert" id="gespeichert"></div>
+</header>
+<main id="app"></main>
+<div id="timer-bereich"></div>
+<div id="druck"></div>
+<datalist id="namen"></datalist>
+
+<script>
+/*__BILDER__*/
+
+// ---------------------------------------------------------------------------
+// Texte je Schulart
+// ---------------------------------------------------------------------------
+const TEXTE = {
+  gs: {
+    titel: "Unser Klassenrat", stufe: "Grundschule (Kl. 1–4)",
+    leitung: "Leitung", protokoll: "Schreiber/in", zeit: "Zeitwächter/in", regel: "Regelwächter/in",
+    positiv: "Das war schön", positivTipp: "„Ich fand schön, dass …“",
+    rueckblick: "Hat es geklappt?", rueckblickTipp: "Das hatten wir beschlossen. Hat es geklappt?",
+    anliegen: "Unsere Themen", einAnliegen: "Thema", mehrere: "Themen", von: "Wer hat das Thema?",
+    worum: "Worum geht es?", aussagen: "Was sagen die Kinder?", aussage: "Das sagt das Kind …",
+    vorschlaege: "Unsere Ideen", vorschlag: "Idee", beschluss: "Das machen wir",
+    abschluss: "Wie war's?", feedback: "Wie war unser Klassenrat?",
+    status: { ja: "geklappt", teils: "ein bisschen", nein: "nicht geklappt" },
+    kind: "Kind", kinder: "Kinder",
+  },
+  ms: {
+    titel: "Klassenrat – Protokoll", stufe: "Mittelschule (Kl. 5–9)",
+    leitung: "Präsident/in", protokoll: "Protokollant/in", zeit: "Zeitwächter/in", regel: "Regelwächter/in",
+    positiv: "Positivrunde", positivTipp: "„Mir hat gefallen, dass …“ · „Ich bedanke mich bei …, weil …“",
+    rueckblick: "Rückblick", rueckblickTipp: "Wurden die Beschlüsse der letzten Sitzungen umgesetzt?",
+    anliegen: "Anliegen", einAnliegen: "Anliegen", mehrere: "Anliegen", von: "eingebracht von",
+    worum: "Worum geht es? (in eigenen Worten)", aussagen: "Aussagen / Sichtweisen", aussage: "Aussage (sinngemäß)",
+    vorschlaege: "Lösungsvorschläge & Abstimmung", vorschlag: "Vorschlag", beschluss: "Beschluss",
+    abschluss: "Abschluss", feedback: "Blitzlicht: Wie war die Sitzung?",
+    status: { ja: "umgesetzt", teils: "teilweise", nein: "nicht umgesetzt" },
+    kind: "Schüler/in", kinder: "Schüler/innen",
+  },
+};
+const ROLLEN = [["leitung", "glocke"], ["protokoll", "stift"], ["zeit", "uhr"], ["regel", "regel"]];
+const ARTEN = ["Kritik", "Wunsch", "Vorschlag", "Konflikt", "Information"];
+const ERGEBNISSE = [["beschluss", "Beschluss"], ["vertagt", "vertagt"], ["keine", "keine Einigung"], ["weiter", "weitergeben"]];
+const SCHRITTE = [
+  ["start", "Start & Rollen", "leute"], ["positiv", null, "stern"], ["rueckblick", null, "zurueck"],
+  ["anliegen", null, "sprechen"], ["abschluss", null, "froh"], ["protokoll", "Protokoll", "beschluss"],
+];
+
+// ---------------------------------------------------------------------------
+// Speicher
+// ---------------------------------------------------------------------------
+const SPEICHER = "klassenrat-jpw-v1";
+let state = laden();
+const ui = { view: "sitzungen", sitzungId: null, schritt: "start", filter: "offen" };
+
+function laden() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SPEICHER));
+    if (s && Array.isArray(s.klassen)) return s;
+  } catch (e) { /* leer oder gesperrt */ }
+  return { version: 1, klassen: [], aktiveKlasse: null, logo: null, letzterExport: null };
+}
+let speicherTimer;
+function speichern() {
+  clearTimeout(speicherTimer);
+  speicherTimer = setTimeout(() => {
+    const el = document.getElementById("gespeichert");
+    try {
+      localStorage.setItem(SPEICHER, JSON.stringify(state));
+      el.textContent = "✓ gespeichert";
+    } catch (e) {
+      el.textContent = "⚠ nicht gespeichert";
+      alert("Speichern im Browser ist nicht möglich. Bitte unter „Daten“ eine Sicherung herunterladen.");
+    }
+    setTimeout(() => (el.textContent = ""), 1800);
+  }, 250);
+}
+
+// ---------------------------------------------------------------------------
+// Hilfen
+// ---------------------------------------------------------------------------
+const $ = (s) => document.querySelector(s);
+const id = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const heute = () => new Date().toISOString().slice(0, 10);
+const jetzt = () => new Date().toTimeString().slice(0, 5);
+function datum(d, lang) {
+  if (!d) return "–";
+  const opt = lang ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { day: "2-digit", month: "2-digit", year: "numeric" };
+  return new Date(d + "T00:00").toLocaleDateString("de-DE", opt);
+}
+function bild(name, kl = "") {
+  if (name === "logo" && state.logo) return `<span class="bild ${kl}"><img src="${state.logo}" alt="Schullogo"></span>`;
+  return `<span class="bild ${kl}">${BILDER[name] || ""}</span>`;
+}
+function logoHTML() { return state.logo ? `<img src="${state.logo}" alt="Schullogo">` : BILDER.logo; }
+const klasse = () => state.klassen.find((k) => k.id === state.aktiveKlasse);
+const sitzung = () => klasse()?.sitzungen.find((s) => s.id === ui.sitzungId);
+const T = () => TEXTE[klasse()?.stufe || "ms"];
+const sortiert = (k) => [...k.sitzungen].sort((a, b) => a.nr - b.nr);
+
+function pfadSetzen(obj, pfad, wert) {
+  const teile = pfad.split(".");
+  let o = obj;
+  for (let i = 0; i < teile.length - 1; i++) o = o[teile[i]];
+  o[teile.at(-1)] = wert;
+}
+
+// ---------------------------------------------------------------------------
+// Fachlogik
+// ---------------------------------------------------------------------------
+function neueSitzung() {
+  const k = klasse();
+  const liste = sortiert(k);
+  const letzte = liste.at(-1);
+  const s = {
+    id: id(), nr: (letzte?.nr || 0) + 1, datum: heute(), beginn: "", ende: "",
+    rollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, fehlend: [],
+    positiv: [], rueckblick: {}, anliegen: [],
+    feedback: { gut: 0, mittel: 0, schlecht: 0 }, vorsatz: "",
+    naechsteRollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, naechsterTermin: "",
+  };
+  if (letzte && Object.values(letzte.naechsteRollen || {}).some(Boolean)) s.rollen = { ...letzte.naechsteRollen };
+  else s.rollen = rollenVorschlag(k, []);
+  k.sitzungen.push(s);
+  ui.sitzungId = s.id; ui.schritt = "start"; ui.view = "sitzung";
+  speichern(); render();
+}
+
+// Wer am seltensten (und am längsten nicht) eine Rolle hatte, ist als Nächstes dran.
+function rollenVorschlag(k, fehlend) {
+  const stat = Object.fromEntries(k.schueler.map((n) => [n, { anzahl: 0, zuletzt: 0 }]));
+  for (const s of k.sitzungen) for (const n of Object.values(s.rollen)) if (stat[n]) { stat[n].anzahl++; stat[n].zuletzt = Math.max(stat[n].zuletzt, s.nr); }
+  const kandidaten = k.schueler.filter((n) => !fehlend.includes(n))
+    .sort((a, b) => stat[a].anzahl - stat[b].anzahl || stat[a].zuletzt - stat[b].zuletzt || Math.random() - .5);
+  const r = {};
+  ROLLEN.forEach(([rolle], i) => (r[rolle] = kandidaten[i] || ""));
+  return r;
+}
+
+// Alle Beschlüsse einer Klasse mit Verlauf der Überprüfungen.
+function beschluesse(k) {
+  const liste = [];
+  const sitz = sortiert(k);
+  for (const s of sitz) for (const a of s.anliegen) {
+    if (a.ergebnis !== "beschluss" || !a.beschluss) continue;
+    const verlauf = sitz.filter((x) => x.nr > s.nr && x.rueckblick?.[a.id]?.status)
+      .map((x) => ({ nr: x.nr, datum: x.datum, ...x.rueckblick[a.id] }));
+    liste.push({ id: a.id, sitzung: s, anliegen: a, verlauf, status: verlauf.at(-1)?.status || "offen" });
+  }
+  return liste;
+}
+// Beschlüsse, die in Sitzung s überprüft werden: aus früheren Sitzungen, vorher nicht als umgesetzt markiert.
+function offeneFuer(s) {
+  return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && v.status === "ja"));
+}
+function ueberfaellig(b) { return b.status !== "ja" && b.anliegen.bisWann && b.anliegen.bisWann < heute(); }
+
+function neuesAnliegen(vorlage) {
+  return {
+    id: id(), thema: "", von: "", art: "", worum: "", aussagen: [{ name: "", text: "" }],
+    vorschlaege: [{ text: "", von: "", ja: 0, nein: 0, enth: 0 }],
+    ergebnis: "", weiterAn: "", beschluss: "", wer: "", bisWann: "", ueberpruefung: "", einstimmig: "",
+    ...(vorlage || {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Darstellung
+// ---------------------------------------------------------------------------
+function render() {
+  const k = klasse();
+  document.body.dataset.stufe = k?.stufe || "ms";
+  document.title = k ? `Klassenrat ${k.name}` : "Klassenrat";
+  $("#logo").innerHTML = logoHTML();
+  $("#klassenwahl").innerHTML = state.klassen.map((x) => `<option value="${x.id}" ${x.id === state.aktiveKlasse ? "selected" : ""}>Klasse ${esc(x.name)}</option>`).join("")
+    + `<option value="__neu">+ Klasse anlegen …</option>`;
+  $("#klassenwahl").hidden = !state.klassen.length;
+  const navs = [["sitzungen", "Sitzungen", "kalender"], ["beschluesse", "Beschlüsse", "beschluss"], ["klasse", "Klasse", "leute"], ["daten", "Daten", "wandzeitung"]];
+  const aktivNav = ui.view === "sitzung" ? "sitzungen" : ui.view;
+  $("#nav").innerHTML = k ? navs.map(([v, t, b]) => `<button data-act="view" data-arg="${v}" class="${aktivNav === v ? "aktiv" : ""}">${bild(b, "s")}<span class="t">${t}</span></button>`).join("") : "";
+  $("#namen").innerHTML = (k?.schueler || []).map((n) => `<option value="${esc(n)}">`).join("");
+
+  const app = $("#app");
+  if (!k) app.innerHTML = viewWillkommen();
+  else if (ui.view === "sitzung" && sitzung()) app.innerHTML = viewSitzung();
+  else if (ui.view === "beschluesse") app.innerHTML = viewBeschluesse();
+  else if (ui.view === "klasse") app.innerHTML = viewKlasse();
+  else if (ui.view === "daten") app.innerHTML = viewDaten();
+  else { ui.view = "sitzungen"; app.innerHTML = viewSitzungen(); }
+  renderTimer();
+}
+
+function viewWillkommen(zusatz) {
+  return `
+  <div class="karte akzent" style="max-width:640px;margin:20px auto">
+    <div class="illu">${BILDER.klassenrat}</div>
+    <h2 style="justify-content:center">${zusatz ? "Weitere Klasse anlegen" : "Willkommen beim digitalen Klassenrat!"}</h2>
+    <p class="leise" style="text-align:center">Lege eine Klasse an. Danach kannst du jede Sitzung Schritt für Schritt protokollieren.
+    Alle Daten bleiben auf diesem Gerät.</p>
+    <div class="raster abstand">
+      <label class="feld">Klasse<input type="text" id="nk-name" placeholder="z. B. 3a oder 7b"></label>
+      <label class="feld">Schuljahr<input type="text" id="nk-jahr" value="${schuljahr()}"></label>
+    </div>
+    <h3>Schulart</h3>
+    <div class="ergebnis">
+      <label>${bild("froh", "s")}<input type="radio" name="nk-stufe" value="gs"> Grundschule (Kl. 1–4)</label>
+      <label>${bild("leute", "s")}<input type="radio" name="nk-stufe" value="ms" checked> Mittelschule (Kl. 5–9)</label>
+    </div>
+    <h3>${bild("leute", "s")} Klassenliste</h3>
+    <label class="feld">Ein Name pro Zeile (Vor- und Nachname)<textarea id="nk-schueler" rows="8" placeholder="Anna Beispiel&#10;Ben Muster&#10;…"></textarea></label>
+    <div class="aktionen abstand">
+      <button class="knopf gross" data-act="klasse-anlegen">Klasse anlegen</button>
+      ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `<button class="knopf rand" data-act="import">Sicherung laden …</button>`}
+    </div>
+  </div>`;
+}
+function schuljahr() {
+  const d = new Date(), j = d.getFullYear(), m = d.getMonth();
+  return m >= 7 ? `${j}/${String(j + 1).slice(2)}` : `${j - 1}/${String(j).slice(2)}`;
+}
+
+function viewSitzungen() {
+  const k = klasse();
+  const liste = sortiert(k).reverse();
+  const offen = beschluesse(k).filter((b) => b.status !== "ja");
+  const exportAlt = !state.letzterExport || (Date.now() - state.letzterExport) / 864e5 > 14;
+  return `
+  ${k.sitzungen.length && exportAlt ? `<div class="hinweis-box">${bild("wandzeitung", "m")}<div><b>Tipp:</b> Sichere die Daten regelmäßig (zuletzt: ${state.letzterExport ? datum(new Date(state.letzterExport).toISOString().slice(0, 10)) : "noch nie"}).
+    <div class="aktionen abstand"><button class="knopf mini" data-act="export">Sicherung herunterladen</button></div></div></div>` : ""}
+  <div class="titelzeile">
+    <h2>${bild("kalender", "m")} Klassenrat ${esc(k.name)} <span class="leise klein">${esc(k.schuljahr || "")} · ${T().stufe}</span></h2>
+    <button class="knopf gross" data-act="neue-sitzung" style="margin-left:auto">＋ Neue Sitzung</button>
+  </div>
+  ${offen.length ? `<div class="hinweis-box info">${bild("beschluss", "m")}<div><b>${offen.length} offene${offen.length === 1 ? "r" : ""} Beschl${offen.length === 1 ? "uss" : "üsse"}</b> – werden in der nächsten Sitzung im ${T().rueckblick} überprüft.
+     ${offen.some(ueberfaellig) ? `<span class="badge ueberfaellig">${offen.filter(ueberfaellig).length} überfällig</span>` : ""}
+     <div class="aktionen abstand"><button class="knopf mini zweit" data-act="view" data-arg="beschluesse">Beschlüsse ansehen</button></div></div></div>` : ""}
+  ${!k.schueler.length ? `<div class="hinweis-box">${bild("leute", "m")}<div>Noch keine Klassenliste hinterlegt. <button class="knopf mini" data-act="view" data-arg="klasse">Jetzt eintragen</button></div></div>` : ""}
+  <div class="liste-sitzungen">
+  ${liste.length ? liste.map((s) => {
+    const d = s.datum ? new Date(s.datum + "T00:00") : null;
+    const anz = s.anliegen.length, besch = s.anliegen.filter((a) => a.ergebnis === "beschluss").length;
+    return `<div class="karte sitzung-karte">
+      <div class="datum-kachel">${d ? d.getDate() : "–"}<small>${d ? d.toLocaleDateString("de-DE", { month: "short" }) : ""}</small></div>
+      <div><b>Sitzung Nr. ${s.nr}</b> <span class="leise">· ${datum(s.datum, true)}</span><br>
+        <span class="leise klein">${anz} ${anz === 1 ? T().einAnliegen : T().mehrere} · ${besch} Beschl${besch === 1 ? "uss" : "üsse"}${s.rollen.leitung ? " · " + T().leitung + ": " + esc(s.rollen.leitung) : ""}</span></div>
+      <div class="aktionen">
+        <button class="knopf zweit" data-act="oeffnen" data-arg="${s.id}">Öffnen</button>
+        <button class="knopf rand" data-act="drucken" data-arg="${s.id}" title="Protokoll drucken / als PDF speichern">Drucken</button>
+        <button class="x" data-act="sitzung-loeschen" data-arg="${s.id}" title="Sitzung löschen">✕</button>
+      </div></div>`;
+  }).join("") : `<div class="karte leer"><div class="illu">${BILDER.klassenrat}</div><p>Noch keine Sitzung protokolliert.<br>Starte mit „Neue Sitzung“.</p></div>`}
+  </div>`;
+}
+
+// --- Sitzung -----------------------------------------------------------------
+function viewSitzung() {
+  const s = sitzung(), t = T();
+  const titel = (n, x) => x || t[n];
+  return `
+  <div class="titelzeile">
+    <button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>
+    <h2>Sitzung Nr. ${s.nr} <span class="leise klein">${datum(s.datum, true)}</span></h2>
+  </div>
+  <div class="schritte">${SCHRITTE.map(([key, x, b], i) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${i + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}</div>
+  ${{ start: schrittStart, positiv: schrittPositiv, rueckblick: schrittRueckblick, anliegen: schrittAnliegen, abschluss: schrittAbschluss, protokoll: schrittProtokoll }[ui.schritt](s, t)}
+  ${ui.schritt !== "protokoll" ? `<div class="fusszeile">
+    ${schrittNachbar(-1) ? `<button class="knopf rand" data-act="schritt" data-arg="${schrittNachbar(-1)}">← Zurück</button>` : "<span></span>"}
+    <button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button></div>` : ""}`;
+}
+function schrittNachbar(d) {
+  const i = SCHRITTE.findIndex(([k]) => k === ui.schritt) + d;
+  return SCHRITTE[i]?.[0];
+}
+function rollenFelder(obj, pfad, t) {
+  return `<div class="raster">${ROLLEN.map(([r, b]) => `<label class="feld"><span class="zeile">${bild(b)} ${t[r]}</span>
+    <input type="text" list="namen" data-k="${pfad}.${r}" value="${esc(obj[r])}" placeholder="Name"></label>`).join("")}</div>`;
+}
+function namenZeilen(liste, pfad, platzhalter, t) {
+  return `<div class="zeilen">${liste.map((z, i) => `<div class="z">
+    <input type="text" list="namen" data-k="${pfad}.${i}.name" value="${esc(z.name)}" placeholder="Name">
+    <textarea rows="1" data-k="${pfad}.${i}.text" placeholder="${esc(platzhalter)}">${esc(z.text)}</textarea>
+    <button class="x" data-act="zeile-weg" data-arg="${pfad}.${i}" title="Zeile entfernen">✕</button></div>`).join("")}</div>
+    <div class="aktionen abstand"><button class="knopf mini zweit" data-act="zeile-neu" data-arg="${pfad}">＋ Zeile</button></div>`;
+}
+
+function schrittStart(s, t) {
+  const k = klasse();
+  const anw = k.schueler.length - s.fehlend.length;
+  return `
+  <div class="karte akzent">
+    <h3 style="margin-top:0">${bild("kalender")} Sitzung</h3>
+    <div class="raster">
+      <label class="feld">Datum<input type="date" data-k="datum" value="${esc(s.datum)}"></label>
+      <label class="feld">Sitzung Nr.<input type="number" min="1" data-k="nr" data-typ="zahl" value="${s.nr}"></label>
+      <label class="feld"><span class="zeile">Beginn <button class="knopf mini rand" data-act="zeit" data-arg="beginn">jetzt</button></span><input type="time" data-k="beginn" value="${esc(s.beginn)}"></label>
+      <label class="feld"><span class="zeile">Ende <button class="knopf mini rand" data-act="zeit" data-arg="ende">jetzt</button></span><input type="time" data-k="ende" value="${esc(s.ende)}"></label>
+    </div>
+  </div>
+  <div class="karte">
+    <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("leute")} Rollen</h3>
+      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="rollen" style="margin-left:auto">Rollen vorschlagen</button></div>
+    ${rollenFelder(s.rollen, "rollen", t)}
+    <p class="leise klein">Der Vorschlag wählt die ${t.kinder}, die bisher am seltensten eine Rolle hatten.</p>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("haken")} Anwesenheit <span class="leise klein">${k.schueler.length ? `${anw} von ${k.schueler.length} anwesend – zum Abmelden antippen` : ""}</span></h3>
+    ${k.schueler.length ? `<div class="chips">${k.schueler.map((n) => `<button class="chip ${s.fehlend.includes(n) ? "fehlt" : ""}" data-act="fehlt" data-arg="${esc(n)}">${esc(n)}</button>`).join("")}</div>`
+      : `<p class="leise">Keine Klassenliste hinterlegt. <button class="knopf mini" data-act="view" data-arg="klasse">Klassenliste eintragen</button></p>`}
+  </div>`;
+}
+
+function schrittPositiv(s, t) {
+  return `<div class="karte akzent">
+    <h3 style="margin-top:0">${bild("stern", "m")} ${t.positiv} <span class="leise klein">${t.positivTipp}</span></h3>
+    ${namenZeilen(s.positiv, "positiv", "Was wurde gesagt?", t)}
+  </div>`;
+}
+
+function schrittRueckblick(s, t) {
+  const offen = offeneFuer(s);
+  if (!offen.length) return `<div class="karte leer">${bild("haken", "l")}<p><b>Keine offenen Beschlüsse.</b><br>Aus früheren Sitzungen ist nichts zu überprüfen.</p></div>`;
+  const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"]];
+  return `<div class="karte akzent">
+    <h3 style="margin-top:0">${bild("zurueck", "m")} ${t.rueckblick} <span class="leise klein">${t.rueckblickTipp}</span></h3>
+    ${offen.map((b) => {
+      const r = s.rueckblick[b.id] || {};
+      return `<div class="karte" style="box-shadow:none;border:1.5px solid var(--linie)">
+        <div class="rb">
+          <div><b>${esc(b.anliegen.beschluss)}</b><br>
+          <span class="leise klein">aus Sitzung ${b.sitzung.nr} (${datum(b.sitzung.datum)}) · ${esc(b.anliegen.thema || "")}
+          ${b.anliegen.wer ? " · zuständig: " + esc(b.anliegen.wer) : ""}${b.anliegen.bisWann ? " · bis " + datum(b.anliegen.bisWann) : ""}</span>
+          ${b.verlauf.filter((v) => v.nr < s.nr).map((v) => ` <span class="badge ${v.status}">Nr. ${v.nr}: ${t.status[v.status]}</span>`).join("")}</div>
+          <div class="status-wahl">${opt.map(([st, ic]) => `<button class="${r.status === st ? "an" : ""}" data-act="rb-status" data-arg="${b.id}|${st}">${bild(ic, "m")}${t.status[st]}</button>`).join("")}</div>
+        </div>
+        <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="Bemerkung / wie geht es weiter?" ${r.status ? "" : "disabled"}>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function schrittAnliegen(s, t) {
+  const k = klasse();
+  const vorher = sortiert(k).filter((x) => x.nr < s.nr).at(-1);
+  const vertagt = (vorher?.anliegen || []).filter((a) => a.ergebnis === "vertagt" && !s.anliegen.some((b) => b.aus === a.id));
+  return `
+  <div class="titelzeile">
+    <h2 style="margin:0">${bild("wandzeitung", "m")} ${t.anliegen}</h2>
+    <button class="knopf" data-act="anliegen-neu" style="margin-left:auto">＋ ${t.einAnliegen}</button>
+  </div>
+  ${vertagt.length ? `<div class="hinweis-box info">${bild("zurueck", "m")}<div><b>Vertagt aus Sitzung ${vorher.nr}:</b> ${vertagt.map((a) => esc(a.thema || "ohne Thema")).join(", ")}
+    <div class="aktionen abstand"><button class="knopf mini" data-act="vertagt-uebernehmen">Übernehmen</button></div></div></div>` : ""}
+  ${s.anliegen.length ? s.anliegen.map((a, i) => anliegenKarte(a, i, t, k)).join("")
+    : `<div class="karte leer">${bild("sprechen", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.anliegen} von der Wandzeitung ein.</p></div>`}`;
+}
+
+function anliegenKarte(a, i, t, k) {
+  const p = `anliegen.${i}`;
+  const gs = k.stufe === "gs";
+  return `<div class="karte anliegen">
+    <div class="anliegen-kopf">
+      <span class="nr">${i + 1}</span>
+      <input type="text" data-k="${p}.thema" value="${esc(a.thema)}" placeholder="${t.einAnliegen}: Worum geht es in einem Satz?">
+      <button class="knopf mini zweit" data-act="timer-start" title="Timer für dieses ${t.einAnliegen} starten">${bild("uhr", "s")} Timer</button>
+      <button class="x" data-act="anliegen-weg" data-arg="${i}" title="${t.einAnliegen} löschen">✕</button>
+    </div>
+    <div class="raster">
+      <label class="feld">${t.von}<input type="text" list="namen" data-k="${p}.von" value="${esc(a.von)}" placeholder="Name"></label>
+      <label class="feld">Art<select class="feld" data-k="${p}.art"><option value="">–</option>${ARTEN.map((x) => `<option ${a.art === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+    </div>
+    <label class="feld abstand">${t.worum}<textarea rows="2" data-k="${p}.worum">${esc(a.worum)}</textarea></label>
+
+    <h3>${bild("sprechen")} ${t.aussagen} <span class="leise klein">${gs ? "" : "Betroffene zuerst, dann die Klasse"}</span></h3>
+    ${namenZeilen(a.aussagen, p + ".aussagen", t.aussage, t)}
+
+    <h3>${bild(gs ? "idee" : "hand")} ${t.vorschlaege}</h3>
+    <div class="zeilen">${a.vorschlaege.map((v, j) => `<div class="vorschlag">
+      <input type="text" data-k="${p}.vorschlaege.${j}.text" value="${esc(v.text)}" placeholder="${t.vorschlag}">
+      <input type="text" list="namen" data-k="${p}.vorschlaege.${j}.von" value="${esc(v.von)}" placeholder="von">
+      <div class="zaehler-gruppe">
+        ${zaehler(`${p}.vorschlaege.${j}.ja`, v.ja, "daumen_hoch", "dafür")}
+        ${zaehler(`${p}.vorschlaege.${j}.nein`, v.nein, "daumen_runter", "dagegen")}
+        ${gs ? "" : zaehler(`${p}.vorschlaege.${j}.enth`, v.enth, null, "Enthaltung")}
+      </div>
+      <button class="x" data-act="zeile-weg" data-arg="${p}.vorschlaege.${j}" title="Vorschlag entfernen">✕</button>
+    </div>`).join("")}</div>
+    <div class="aktionen abstand"><button class="knopf mini zweit" data-act="vorschlag-neu" data-arg="${i}">＋ ${t.vorschlag}</button></div>
+
+    <h3>${bild("beschluss")} Ergebnis</h3>
+    <div class="ergebnis">${ERGEBNISSE.map(([v, l]) => `<label><input type="radio" name="erg-${a.id}" data-k="${p}.ergebnis" data-neu-zeichnen value="${v}" ${a.ergebnis === v ? "checked" : ""}> ${v === "beschluss" ? t.beschluss : l}</label>`).join("")}</div>
+    ${a.ergebnis === "beschluss" ? `<div class="beschluss-box">
+      <label class="feld"><span class="zeile">${bild("haken")} ${t.beschluss}
+        ${a.vorschlaege.some((v) => v.text) ? `<button class="knopf mini rand" data-act="beste-idee" data-arg="${i}">Vorschlag mit den meisten Stimmen übernehmen</button>` : ""}</span>
+        <textarea rows="2" data-k="${p}.beschluss">${esc(a.beschluss)}</textarea></label>
+      <div class="raster abstand">
+        <label class="feld">Wer?<input type="text" list="namen" data-k="${p}.wer" value="${esc(a.wer)}" placeholder="Name(n) oder „alle“"></label>
+        <label class="feld">Bis wann?<input type="date" data-k="${p}.bisWann" value="${esc(a.bisWann)}"></label>
+        ${gs ? "" : `<label class="feld">Abstimmung<select class="feld" data-k="${p}.einstimmig"><option value="">–</option>
+          <option ${a.einstimmig === "einstimmig" ? "selected" : ""}>einstimmig</option><option ${a.einstimmig === "mit Mehrheit" ? "selected" : ""}>mit Mehrheit</option></select></label>`}
+      </div></div>` : ""}
+    ${a.ergebnis === "weiter" ? `<div class="beschluss-box"><label class="feld">Weitergeben an<input type="text" data-k="${p}.weiterAn" value="${esc(a.weiterAn)}" placeholder="${gs ? "Lehrkraft, Schulleitung …" : "Lehrkraft, SMV, Schulleitung …"}"></label></div>` : ""}
+    ${a.ergebnis === "vertagt" ? `<p class="leise klein">Wird in der nächsten Sitzung zur Übernahme vorgeschlagen.</p>` : ""}
+  </div>`;
+}
+function zaehler(pfad, wert, icon, titel) {
+  return `<span class="zaehler" title="${titel}">${icon ? bild(icon) : `<span class="klein leise" style="margin-left:8px">Enth.</span>`}
+    <button data-act="zaehlen" data-arg="${pfad}|-1" aria-label="${titel} weniger">−</button><b>${wert || 0}</b>
+    <button data-act="zaehlen" data-arg="${pfad}|1" aria-label="${titel} mehr">+</button></span>`;
+}
+
+function schrittAbschluss(s, t) {
+  const fb = [["gut", "froh", "gut"], ["mittel", "mittel", klasse().stufe === "gs" ? "geht so" : "mittel"], ["schlecht", "traurig", klasse().stufe === "gs" ? "nicht gut" : "schlecht"]];
+  return `
+  <div class="karte akzent">
+    <h3 style="margin-top:0">${bild("froh", "m")} ${t.feedback} <span class="leise klein">antippen zum Zählen</span></h3>
+    <div class="feedback">${fb.map(([k, ic, l]) => `<div class="fb" data-act="zaehlen" data-arg="feedback.${k}|1">${bild(ic)}<b>${s.feedback[k] || 0}</b><span>${l}</span>
+      <button class="x" data-act="zaehlen" data-arg="feedback.${k}|-1" title="einen abziehen">− 1</button></div>`).join("")}</div>
+    <label class="feld abstand">${bild("idee", "s")} Das nehmen wir uns für die nächste Sitzung vor<input type="text" data-k="vorsatz" value="${esc(s.vorsatz)}"></label>
+  </div>
+  <div class="karte">
+    <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("kalender")} Nächste Sitzung</h3>
+      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="naechsteRollen" style="margin-left:auto">Rollen vorschlagen</button></div>
+    ${rollenFelder(s.naechsteRollen, "naechsteRollen", t)}
+    <div class="raster abstand"><label class="feld">Nächster Klassenrat am<input type="date" data-k="naechsterTermin" value="${esc(s.naechsterTermin)}"></label>
+    <label class="feld"><span class="zeile">Ende der Sitzung <button class="knopf mini rand" data-act="zeit" data-arg="ende">jetzt</button></span><input type="time" data-k="ende" value="${esc(s.ende)}"></label></div>
+  </div>
+  <div class="aktionen"><button class="knopf gross" data-act="schritt" data-arg="protokoll">${bild("beschluss", "s")} Protokoll ansehen</button></div>`;
+}
+
+function schrittProtokoll(s) {
+  return `<div class="aktionen" style="margin-bottom:14px">
+      <button class="knopf gross" data-act="drucken" data-arg="${s.id}">Drucken / als PDF speichern</button>
+      <span class="leise klein">Tipp: Im Druckdialog „Als PDF speichern“ wählen, um das Protokoll abzulegen.</span></div>
+    <div class="papier">${protokollHTML(s)}</div>`;
+}
+
+// --- Protokoll (Vorschau und Druck) -------------------------------------------
+function protokollHTML(s) {
+  const k = klasse(), t = TEXTE[k.stufe];
+  const anw = k.schueler.length ? `${k.schueler.length - s.fehlend.length} von ${k.schueler.length}` : "–";
+  const tab = (kopf, zeilen) => zeilen.length
+    ? `<table><tr>${kopf.map((h) => `<th>${h}</th>`).join("")}</tr>${zeilen.map((z) => `<tr>${z.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>`
+    : `<p class="leise">–</p>`;
+  const offen = offeneFuer(s);
+  const voll = (l) => l.filter((z) => z.name || z.text);
+  return `
+  <div class="prot-kopf"><div class="logo">${logoHTML()}</div>
+    <div><h1>${esc(t.titel)}</h1><div>Klasse <b>${esc(k.name)}</b> · ${esc(k.schuljahr || "")}</div></div>
+    <div class="illu-k">${BILDER.klassenrat}</div></div>
+  <div class="prot-meta">
+    <div><small>Datum</small>${datum(s.datum, true)}</div><div><small>Sitzung Nr.</small>${s.nr}</div>
+    <div><small>Beginn – Ende</small>${esc(s.beginn || "–")} – ${esc(s.ende || "–")}</div><div><small>Anwesend</small>${anw}</div>
+    ${ROLLEN.map(([r]) => `<div><small>${t[r]}</small>${esc(s.rollen[r] || "–")}</div>`).join("")}
+  </div>
+  ${s.fehlend.length ? `<p><b>Es fehlen:</b> ${s.fehlend.map(esc).join(", ")}</p>` : ""}
+
+  <h4>${bild("stern")} 1 · ${t.positiv}</h4>
+  ${tab(["Name", "Aussage"], voll(s.positiv).map((z) => [esc(z.name), esc(z.text)]))}
+
+  <h4>${bild("zurueck")} 2 · ${t.rueckblick}</h4>
+  ${tab(["Beschluss", "aus Nr.", "zuständig", "Ergebnis", "Bemerkung"], offen.map((b) => {
+    const r = s.rueckblick[b.id] || {};
+    return [esc(b.anliegen.beschluss), b.sitzung.nr, esc(b.anliegen.wer), r.status ? t.status[r.status] : "nicht besprochen", esc(r.notiz)];
+  }))}
+
+  <h4>${bild("sprechen")} 3 · ${t.anliegen}</h4>
+  ${s.anliegen.length ? s.anliegen.map((a, i) => {
+    const vs = a.vorschlaege.filter((v) => v.text);
+    const erg = { beschluss: t.beschluss, vertagt: "vertagt", keine: "keine Einigung", weiter: "weitergegeben an " + (a.weiterAn || "…") }[a.ergebnis] || "–";
+    return `<div class="prot-block"><div class="bt">${t.einAnliegen} ${i + 1}: ${esc(a.thema || "")}</div>
+      <p><b>${t.von}:</b> ${esc(a.von || "–")}${a.art ? ` &nbsp;·&nbsp; <b>Art:</b> ${esc(a.art)}` : ""}</p>
+      ${a.worum ? `<p><b>${t.worum.replace(/ \(.*\)/, "")}</b> ${esc(a.worum)}</p>` : ""}
+      ${voll(a.aussagen).length ? `<p><b>${t.aussagen}</b></p>` + tab(["Name", "Aussage"], voll(a.aussagen).map((z) => [esc(z.name), esc(z.text)])) : ""}
+      ${vs.length ? `<p><b>${t.vorschlaege}</b></p>` + tab([t.vorschlag, "von", "dafür", "dagegen", ...(k.stufe === "gs" ? [] : ["Enth."])],
+        vs.map((v) => [esc(v.text), esc(v.von), v.ja || 0, v.nein || 0, ...(k.stufe === "gs" ? [] : [v.enth || 0])])) : ""}
+      <p><b>Ergebnis:</b> ${erg}${a.einstimmig ? ` (${esc(a.einstimmig)})` : ""}</p>
+      ${a.ergebnis === "beschluss" ? `<p><b>${t.beschluss}:</b> ${esc(a.beschluss)}<br><b>Wer?</b> ${esc(a.wer || "–")} &nbsp;·&nbsp; <b>Bis wann?</b> ${datum(a.bisWann)}</p>` : ""}
+    </div>`;
+  }).join("") : `<p class="leise">–</p>`}
+
+  <h4>${bild("froh")} 4 · ${t.abschluss}</h4>
+  <p><b>${t.feedback}</b> &nbsp; ${bild("froh", "s")} ${s.feedback.gut || 0} &nbsp; ${bild("mittel", "s")} ${s.feedback.mittel || 0} &nbsp; ${bild("traurig", "s")} ${s.feedback.schlecht || 0}</p>
+  ${s.vorsatz ? `<p><b>Vorsatz:</b> ${esc(s.vorsatz)}</p>` : ""}
+  <p><b>Rollen nächste Sitzung:</b> ${ROLLEN.map(([r]) => `${t[r]}: ${esc(s.naechsteRollen[r] || "–")}`).join(" · ")}</p>
+  <p><b>Nächster Klassenrat:</b> ${datum(s.naechsterTermin, true)}</p>
+  <div class="prot-unterschriften"><div>${t.leitung}</div><div>${t.protokoll}</div><div>Lehrkraft</div></div>
+  <div class="prot-fuss">Klassenrat ${esc(k.name)} · Sitzung ${s.nr} · erstellt am ${datum(heute())}</div>`;
+}
+
+function drucken(html) {
+  $("#druck").innerHTML = `<div class="papier">${html}</div>`;
+  setTimeout(() => window.print(), 50);
+}
+
+// --- Beschlüsse ----------------------------------------------------------------
+function viewBeschluesse() {
+  const k = klasse(), t = T();
+  const alle = beschluesse(k).reverse();
+  const filter = { offen: (b) => b.status !== "ja", erledigt: (b) => b.status === "ja", alle: () => true }[ui.filter];
+  const liste = alle.filter(filter);
+  const zahl = (f) => alle.filter(f).length;
+  return `
+  <div class="titelzeile"><h2>${bild("beschluss", "m")} Beschlüsse ${esc(k.name)}</h2>
+    <button class="knopf rand" data-act="beschluesse-drucken" style="margin-left:auto">Liste drucken</button></div>
+  <div class="chips" style="margin-bottom:14px">
+    ${[["offen", "offen", (b) => b.status !== "ja"], ["erledigt", t.status.ja, (b) => b.status === "ja"], ["alle", "alle", () => true]]
+      .map(([f, l, fn]) => `<button class="chip ${ui.filter === f ? "an" : ""}" data-act="filter" data-arg="${f}">${l} (${zahl(fn)})</button>`).join("")}
+  </div>
+  <div class="karte">${liste.length ? beschlussTabelle(liste, t) : `<div class="leer">${bild("haken", "l")}<p>Keine Beschlüsse in dieser Ansicht.</p></div>`}</div>`;
+}
+function beschlussTabelle(liste, t) {
+  return `<table class="uebersicht"><tr><th>Beschluss</th><th>Sitzung</th><th>Wer?</th><th>Bis wann?</th><th>Stand</th></tr>
+    ${liste.map((b) => `<tr>
+      <td><b>${esc(b.anliegen.beschluss)}</b><br><span class="leise klein">${esc(b.anliegen.thema)}</span></td>
+      <td>Nr. ${b.sitzung.nr}<br><span class="leise klein">${datum(b.sitzung.datum)}</span></td>
+      <td>${esc(b.anliegen.wer || "–")}</td>
+      <td>${datum(b.anliegen.bisWann)} ${ueberfaellig(b) ? `<span class="badge ueberfaellig">überfällig</span>` : ""}</td>
+      <td><span class="badge ${b.status}">${b.status === "offen" ? "noch offen" : t.status[b.status]}</span>
+        ${b.verlauf.map((v) => `<div class="leise klein">Nr. ${v.nr}: ${t.status[v.status]}${v.notiz ? " – " + esc(v.notiz) : ""}</div>`).join("")}</td>
+    </tr>`).join("")}</table>`;
+}
+
+// --- Klasse & Daten ------------------------------------------------------------
+function viewKlasse() {
+  const k = klasse();
+  return `
+  <h2>${bild("leute", "m")} Klasse ${esc(k.name)}</h2>
+  <div class="karte akzent">
+    <div class="raster">
+      <label class="feld">Klasse<input type="text" data-kk="name" value="${esc(k.name)}"></label>
+      <label class="feld">Schuljahr<input type="text" data-kk="schuljahr" value="${esc(k.schuljahr)}"></label>
+      <label class="feld">Klassenlehrkraft<input type="text" data-kk="lehrkraft" value="${esc(k.lehrkraft)}"></label>
+      <label class="feld">Timer-Vorgabe (Minuten)<input type="number" min="1" max="60" data-kk="timer" data-typ="zahl" value="${k.timer || 10}"></label>
+    </div>
+    <h3>Schulart</h3>
+    <div class="ergebnis">
+      <label><input type="radio" name="stufe" data-kk="stufe" data-neu-zeichnen value="gs" ${k.stufe === "gs" ? "checked" : ""}> Grundschule (Kl. 1–4)</label>
+      <label><input type="radio" name="stufe" data-kk="stufe" data-neu-zeichnen value="ms" ${k.stufe === "ms" ? "checked" : ""}> Mittelschule (Kl. 5–9)</label>
+    </div>
+    <p class="leise klein">Die Schulart legt Farben und Begriffe fest (z. B. „Schreiber/in“ und „Unsere Ideen“ in der Grundschule).</p>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("leute")} Klassenliste <span class="leise klein">${k.schueler.length} ${T().kinder}</span></h3>
+    <label class="feld">Ein Name pro Zeile<textarea id="schuelerliste" rows="12">${esc(k.schueler.join("\n"))}</textarea></label>
+    <div class="aktionen abstand"><button class="knopf" data-act="schueler-speichern">Klassenliste übernehmen</button>
+      <button class="knopf rand" data-act="schueler-sortieren">Alphabetisch sortieren</button></div>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">Weitere Klassen</h3>
+    <div class="aktionen"><button class="knopf zweit" data-act="klasse-neu">＋ Klasse anlegen</button>
+      <button class="knopf gefahr" data-act="klasse-loeschen">Diese Klasse löschen</button></div>
+  </div>`;
+}
+
+function viewDaten() {
+  return `
+  <h2>${bild("wandzeitung", "m")} Daten & Einstellungen</h2>
+  <div class="hinweis-box info">${bild("regel", "m")}<div><b>Datenschutz:</b> Alle Eingaben werden <b>nur in diesem Browser auf diesem Gerät</b> gespeichert.
+    Es wird nichts ins Internet übertragen. Wenn Browserdaten gelöscht werden, sind auch die Protokolle weg. Lade deshalb regelmäßig eine Sicherung herunter.
+    Nutze das Tool nicht auf Geräten, an denen andere Personen mit deinem Browserprofil arbeiten. Beachte die Vorgaben eurer Schule zum Umgang mit Schülerdaten.</div></div>
+  <div class="karte akzent">
+    <h3 style="margin-top:0">Sicherung</h3>
+    <p class="leise">Die Sicherung enthält alle Klassen und Sitzungen als Datei. Damit kannst du die Daten auch auf ein anderes Gerät übertragen.</p>
+    <div class="aktionen"><button class="knopf" data-act="export">Sicherung herunterladen</button>
+      <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
+    <p class="leise klein">Letzte Sicherung: ${state.letzterExport ? new Date(state.letzterExport).toLocaleString("de-DE") : "noch nie"}</p>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("logo", "m")} Schullogo</h3>
+    <p class="leise">Das Logo erscheint oben und auf jedem Protokoll. Du kannst die Originaldatei (PNG, JPG oder SVG) hochladen.</p>
+    <div class="aktionen"><button class="knopf zweit" data-act="logo-laden">Logo-Datei wählen …</button>
+      ${state.logo ? `<button class="knopf rand" data-act="logo-zuruecksetzen">Standardlogo verwenden</button>` : ""}</div>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">Alles löschen</h3>
+    <p class="leise">Entfernt alle Klassen, Sitzungen und Einstellungen aus diesem Browser, zum Beispiel am Schuljahresende.</p>
+    <button class="knopf gefahr" data-act="alles-loeschen">Alle Daten löschen</button>
+  </div>`;
+}
+
+// --- Timer ---------------------------------------------------------------------
+const timer = { offen: false, rest: 600, laeuft: false, int: null, ende: false };
+function renderTimer() {
+  const b = $("#timer-bereich");
+  if (!klasse()) { b.innerHTML = ""; return; }
+  if (!timer.offen) { b.innerHTML = `<button class="knopf timer-knopf" data-act="timer-auf">${bild("uhr", "s")} Timer</button>`; return; }
+  const m = Math.floor(timer.rest / 60), s = timer.rest % 60;
+  b.innerHTML = `<div class="timer ${timer.ende ? "ende" : ""}">
+    <div class="kopf">${bild("uhr")} Zeitwächter/in <button class="x" data-act="timer-zu" title="Timer schließen">✕</button></div>
+    <div class="zeit">${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}</div>
+    <div class="reihe"><button class="knopf mini rand" data-act="timer-plus" data-arg="-60">−1</button>
+      <button class="knopf mini" data-act="timer-los">${timer.laeuft ? "Pause" : "Start"}</button>
+      <button class="knopf mini rand" data-act="timer-plus" data-arg="60">+1</button></div>
+    <div class="reihe">${[2, 5, 10, 15].map((n) => `<button class="knopf mini zweit" data-act="timer-setzen" data-arg="${n}">${n}′</button>`).join("")}</div>
+  </div>`;
+}
+function timerTick() {
+  timer.rest = Math.max(0, timer.rest - 1);
+  if (timer.rest === 0) { clearInterval(timer.int); timer.laeuft = false; timer.ende = true; piep(); }
+  renderTimer();
+}
+function piep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, .35, .7].forEach((t) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(.25, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .3);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .3);
+    });
+  } catch (e) { /* kein Ton möglich */ }
+}
+function timerStarten(min) {
+  clearInterval(timer.int);
+  Object.assign(timer, { offen: true, rest: min * 60, laeuft: true, ende: false });
+  timer.int = setInterval(timerTick, 1000);
+  renderTimer();
+}
+
+// --- Dateien -------------------------------------------------------------------
+function dateiWaehlen(accept, cb) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = accept;
+  inp.onchange = () => inp.files[0] && cb(inp.files[0]);
+  inp.click();
+}
+function exportieren() {
+  state.letzterExport = Date.now();
+  const blob = new Blob([JSON.stringify(state, null, 1)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `klassenrat-sicherung-${heute()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  speichern(); render();
+}
+
+// ---------------------------------------------------------------------------
+// Ereignisse
+// ---------------------------------------------------------------------------
+const AKTIONEN = {
+  view(v) { ui.view = v; render(); scrollTo(0, 0); },
+  "neue-sitzung": neueSitzung,
+  oeffnen(sid) { ui.sitzungId = sid; ui.schritt = "start"; ui.view = "sitzung"; render(); scrollTo(0, 0); },
+  schritt(s) { ui.schritt = s; render(); scrollTo(0, 0); },
+  "sitzung-loeschen"(sid) {
+    const k = klasse(), s = k.sitzungen.find((x) => x.id === sid);
+    if (confirm(`Sitzung Nr. ${s.nr} vom ${datum(s.datum)} wirklich löschen?`)) { k.sitzungen = k.sitzungen.filter((x) => x.id !== sid); speichern(); render(); }
+  },
+  drucken(sid) { const s = klasse().sitzungen.find((x) => x.id === sid); drucken(protokollHTML(s)); },
+  "beschluesse-drucken"() {
+    const k = klasse();
+    drucken(`<div class="prot-kopf"><div class="logo">${logoHTML()}</div><div><h1>Beschlüsse</h1><div>Klassenrat ${esc(k.name)} · ${esc(k.schuljahr || "")} · Stand ${datum(heute())}</div></div></div>`
+      + beschlussTabelle(beschluesse(k).reverse(), T()).replace('class="uebersicht"', ""));
+  },
+  zeit(feld) { sitzung()[feld] = jetzt(); speichern(); render(); },
+  fehlt(name) {
+    const s = sitzung();
+    s.fehlend = s.fehlend.includes(name) ? s.fehlend.filter((n) => n !== name) : [...s.fehlend, name];
+    speichern(); render();
+  },
+  "rollen-vorschlag"(pfad) {
+    const s = sitzung();
+    s[pfad] = rollenVorschlag(klasse(), pfad === "rollen" ? s.fehlend : []);
+    speichern(); render();
+  },
+  "zeile-neu"(pfad) {
+    const liste = pfad.split(".").reduce((o, k) => o[k], sitzung());
+    liste.push({ name: "", text: "" }); speichern(); render();
+    const felder = document.querySelectorAll(`[data-k^="${pfad}."][list]`);
+    felder[felder.length - 1]?.focus();
+  },
+  "zeile-weg"(pfad) {
+    const teile = pfad.split("."), i = +teile.pop();
+    teile.reduce((o, k) => o[k], sitzung()).splice(i, 1); speichern(); render();
+  },
+  "rb-status"(arg) {
+    const [bid, st] = arg.split("|"), s = sitzung();
+    const r = s.rueckblick[bid] || (s.rueckblick[bid] = {});
+    r.status = r.status === st ? "" : st;
+    if (!r.status) delete s.rueckblick[bid];
+    speichern(); render();
+  },
+  "anliegen-neu"() { sitzung().anliegen.push(neuesAnliegen()); speichern(); render(); document.querySelectorAll(".anliegen-kopf input")[sitzung().anliegen.length - 1]?.focus(); },
+  "anliegen-weg"(i) {
+    const s = sitzung();
+    if (confirm(`${T().einAnliegen} „${s.anliegen[i].thema || "ohne Thema"}“ löschen?`)) { s.anliegen.splice(+i, 1); speichern(); render(); }
+  },
+  "vertagt-uebernehmen"() {
+    const s = sitzung(), vorher = sortiert(klasse()).filter((x) => x.nr < s.nr).at(-1);
+    for (const a of vorher.anliegen.filter((a) => a.ergebnis === "vertagt" && !s.anliegen.some((b) => b.aus === a.id))) {
+      s.anliegen.push(neuesAnliegen({ aus: a.id, thema: a.thema, von: a.von, art: a.art, worum: a.worum + (a.worum ? "\n" : "") + `(vertagt aus Sitzung ${vorher.nr})` }));
+    }
+    speichern(); render();
+  },
+  "vorschlag-neu"(i) { sitzung().anliegen[i].vorschlaege.push({ text: "", von: "", ja: 0, nein: 0, enth: 0 }); speichern(); render(); },
+  "beste-idee"(i) {
+    const a = sitzung().anliegen[i];
+    const beste = a.vorschlaege.filter((v) => v.text).sort((x, y) => (y.ja || 0) - (x.ja || 0))[0];
+    if (beste) { a.beschluss = beste.text; speichern(); render(); }
+  },
+  zaehlen(arg) {
+    const [pfad, d] = arg.split("|"), teile = pfad.split("."), feld = teile.pop();
+    const o = teile.reduce((x, k) => x[k], sitzung());
+    o[feld] = Math.max(0, (o[feld] || 0) + +d); speichern(); render();
+  },
+  filter(f) { ui.filter = f; render(); },
+  "klasse-anlegen"() {
+    const name = $("#nk-name").value.trim();
+    if (!name) { $("#nk-name").focus(); return; }
+    const k = { id: id(), name, schuljahr: $("#nk-jahr").value.trim(), lehrkraft: "", timer: 10,
+      stufe: document.querySelector("[name=nk-stufe]:checked").value,
+      schueler: $("#nk-schueler").value.split("\n").map((x) => x.trim()).filter(Boolean), sitzungen: [] };
+    state.klassen.push(k); state.aktiveKlasse = k.id; ui.view = "sitzungen"; speichern(); render();
+  },
+  "klasse-neu"() { $("#app").innerHTML = viewWillkommen(true); },
+  "klasse-loeschen"() {
+    const k = klasse();
+    if (confirm(`Klasse ${k.name} mit allen ${k.sitzungen.length} Sitzungen löschen? Das kann nicht rückgängig gemacht werden.`)) {
+      state.klassen = state.klassen.filter((x) => x.id !== k.id); state.aktiveKlasse = state.klassen[0]?.id || null;
+      ui.view = "sitzungen"; speichern(); render();
+    }
+  },
+  "schueler-speichern"() {
+    klasse().schueler = [...new Set($("#schuelerliste").value.split("\n").map((x) => x.trim()).filter(Boolean))];
+    speichern(); render();
+  },
+  "schueler-sortieren"() {
+    const ta = $("#schuelerliste");
+    ta.value = ta.value.split("\n").map((x) => x.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, "de")).join("\n");
+  },
+  export: exportieren,
+  import() {
+    dateiWaehlen(".json,application/json", async (f) => {
+      try {
+        const neu = JSON.parse(await f.text());
+        if (!Array.isArray(neu.klassen)) throw new Error();
+        if (state.klassen.length && !confirm("Die Sicherung ersetzt alle Daten in diesem Browser. Fortfahren?")) return;
+        state = neu; ui.view = "sitzungen"; speichern(); render();
+      } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung."); }
+    });
+  },
+  "logo-laden"() {
+    dateiWaehlen("image/*", (f) => {
+      if (f.size > 1.5e6) { alert("Die Datei ist zu groß (max. 1,5 MB)."); return; }
+      const r = new FileReader();
+      r.onload = () => { state.logo = r.result; speichern(); render(); };
+      r.readAsDataURL(f);
+    });
+  },
+  "logo-zuruecksetzen"() { state.logo = null; speichern(); render(); },
+  "alles-loeschen"() {
+    if (confirm("Wirklich ALLE Daten löschen? Lade vorher eine Sicherung herunter, wenn du sie noch brauchst.")) {
+      try { localStorage.removeItem(SPEICHER); } catch (e) { /* egal */ }
+      state = laden(); ui.view = "sitzungen"; render();
+    }
+  },
+  "timer-auf"() { timer.offen = true; timer.rest = (klasse()?.timer || 10) * 60; timer.ende = false; renderTimer(); },
+  "timer-zu"() { clearInterval(timer.int); timer.offen = false; timer.laeuft = false; timer.ende = false; renderTimer(); },
+  "timer-start"() { timerStarten(klasse()?.timer || 10); },
+  "timer-los"() {
+    if (timer.laeuft) { clearInterval(timer.int); timer.laeuft = false; }
+    else if (timer.rest > 0) { timer.ende = false; timer.laeuft = true; timer.int = setInterval(timerTick, 1000); }
+    renderTimer();
+  },
+  "timer-plus"(d) { timer.rest = Math.max(0, timer.rest + +d); timer.ende = false; renderTimer(); },
+  "timer-setzen"(n) { clearInterval(timer.int); Object.assign(timer, { rest: n * 60, laeuft: false, ende: false }); renderTimer(); },
+};
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el || (el.tagName === "LABEL")) return;
+  e.preventDefault();
+  e.stopPropagation();
+  AKTIONEN[el.dataset.act]?.(el.dataset.arg);
+});
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  const wert = el.dataset.typ === "zahl" ? (+el.value || 0) : el.value;
+  if (el.dataset.k && sitzung()) {
+    if (el.dataset.k.startsWith("rueckblick.")) { /* Notiz nur bei gesetztem Status */
+      const [, bid] = el.dataset.k.split(".");
+      if (!sitzung().rueckblick[bid]) return;
+    }
+    pfadSetzen(sitzung(), el.dataset.k, wert);
+  } else if (el.dataset.kk && klasse()) {
+    pfadSetzen(klasse(), el.dataset.kk, wert);
+  } else return;
+  speichern();
+  if ("neuZeichnen" in el.dataset) render();
+});
+document.addEventListener("change", (e) => {
+  if (e.target.id === "klassenwahl") {
+    if (e.target.value === "__neu") { $("#app").innerHTML = viewWillkommen(true); return; }
+    state.aktiveKlasse = e.target.value; ui.view = "sitzungen"; speichern(); render();
+  }
+});
+// Textfelder wachsen mit dem Inhalt
+document.addEventListener("input", (e) => {
+  if (e.target.tagName === "TEXTAREA" && e.target.rows === 1) { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }
+});
+window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
+
+render();
+</script>
+</body>
+</html>
