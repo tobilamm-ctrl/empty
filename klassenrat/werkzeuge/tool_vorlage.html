@@ -361,6 +361,8 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 body.tafel { background: var(--hg); }
 body.tafel .blitz { position: fixed; }
 
+.mod-blitz { margin-top: 2vmin; font-size: clamp(1.1rem, 2.6vmin, 1.6rem); }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -710,6 +712,14 @@ function nachRender() {
     if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(el.value.length, el.value.length); }
   }
   document.querySelectorAll("canvas[data-pad]").forEach(padStarten);
+  // Moderationskarten folgen dem Protokoll: neuer Schritt / neues Anliegen → passende Karte
+  const ort = ui.view === "sitzung" && sitzung() ? `${ui.sitzungId}:${ui.schritt}:${ui.anliegenIdx}` : null;
+  if (ort && ort !== mod.ort) {
+    mod.ort = ort;
+    const i = modOrtIdx(moderationsKarten());
+    if (i >= 0) { mod.idx = i; mod.ortIdx = i; }
+    if (ordner.status === "aktiv") sichernInOrdnerSpaeter();
+  }
   if (tafelOffen()) tafelSenden();
   document.querySelectorAll("#sperrbereich.gesperrt :is(input, textarea, select)").forEach((el) => (el.disabled = true));
   document.querySelectorAll("#sperrbereich.gesperrt button[data-act]").forEach((b) => { if (!ERLAUBT_GESPERRT.includes(b.dataset.act)) b.disabled = true; });
@@ -1224,6 +1234,7 @@ function moderationsKarten() {
       gs ? "Wir stimmen ab: Wer ist dafür? Wer ist dagegen?" : "Wir stimmen ab: Wer ist dafür? Wer ist dagegen? Wer enthält sich? – Wer übernimmt das, und bis wann?");
   });
   add("abschluss", "froh", t.abschluss, gs ? "Wie fandet ihr unseren Klassenrat heute?" : "Zum Schluss das Blitzlicht: Wie fandet ihr die heutige Sitzung?");
+  karten.at(-1).blitz = true;
   const neu = ROLLEN.filter(([r]) => s.naechsteRollen[r]).map(([r]) => `${t[r]}: <b>${esc(s.naechsteRollen[r])}</b>`).join("<br>");
   if (neu) add("abschluss", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu);
   add("abschluss", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
@@ -1246,6 +1257,7 @@ function modHTML(karten, idx, opt) {
       <div class="mod-schritt"><span class="n">${k.schrittNr}</span><span class="bild m">${k.ikon}</span> ${k.titel}</div>
       <p class="mod-text">${saetze(k.text)}</p>
       ${k.hinweis ? `<p class="mod-hinweis">${saetze(k.hinweis)}</p>` : ""}
+      ${k.blitz && opt.blitzKnopf ? `<div><button class="knopf gross mod-blitz" data-act="tafel-blitz"><span class="bild m">${k.ikon}</span> Blitzlicht hier starten</button></div>` : ""}
     </div>
     <div class="mod-nav"><button class="knopf rand gross" data-act="mod-weiter" data-arg="-1" ${idx ? "" : "disabled"}>← Zurück</button>
       <div class="mod-punkte">${karten.map((x, i) => `<span class="${i === idx ? "an" : ""}"></span>`).join("")}</div>
@@ -1255,16 +1267,17 @@ function modHTML(karten, idx, opt) {
 function modKartenMitBild() {
   return moderationsKarten().map((k) => ({ ...k, ikon: BILDER[k.icon], schrittNr: SCHRITTE.findIndex(([x]) => x === k.schritt) + 1 }));
 }
-function modStartIdx(karten) {
-  const i = karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
-  return Math.max(0, i);
+// Karte, die zum aktuellen Schritt im Protokoll passt (-1, wenn keine passt, z. B. beim Protokoll)
+function modOrtIdx(karten) {
+  return karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
 }
+function modStartIdx(karten) { return Math.max(0, modOrtIdx(karten)); }
 function renderModeration() {
   const el = $("#moderation");
   if (!mod.offen || !sitzung()) { el.innerHTML = ""; return; }
   const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
-  el.innerHTML = modHTML(karten, mod.idx, { modus: "lokal", glocke: BILDER.glocke });
+  el.innerHTML = modHTML(karten, mod.idx, { modus: "lokal", glocke: BILDER.glocke, blitzKnopf: true });
 }
 
 // --- Tafel-Fenster: zweites Browserfenster auf dem Tafel-Bildschirm, live verbunden ------
@@ -1275,7 +1288,7 @@ function tafelSenden() {
   const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
   tafel.postMessage({ typ: "klassenrat-mod", karten, idx: mod.idx, stufe: klasse().stufe, glocke: BILDER.glocke,
-    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}` }, "*");
+    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}`, blitz: blitzDaten() }, "*");
   renderFern(karten.length);
 }
 function renderFern(anzahl) {
@@ -1289,9 +1302,57 @@ window.addEventListener("message", (e) => {
   const d = e.data;
   if (!d || d.typ !== "klassenrat-tafel" || e.source !== tafel) return;
   if (d.aktion === "weiter") mod.idx += d.d;
+  if (d.aktion === "stimme" || d.aktion === "zurueck") { stimmeZaehlen(d.d, d.aktion === "zurueck"); return; }
   tafelSenden();
 });
+// Stimme aus dem Blitzlicht eines Tafel-Bildschirms übernehmen
+function stimmeZaehlen(k, rueck) {
+  const s = sitzung();
+  if (!s || istGesperrt(s) || !["gut", "mittel", "schlecht"].includes(k)) return;
+  s.feedback[k] = Math.max(0, (s.feedback[k] || 0) + (rueck ? -1 : 1));
+  speichern();
+  if (ui.view === "sitzung" && ui.schritt === "abschluss") render(); else tafelSenden();
+}
 setInterval(() => { if (tafel && tafel.closed) { tafel = null; renderFern(); } }, 1500);
+
+// --- Tafel-Bildschirm (Tafel-Fenster oder Tafel-Rechner): Karten oder Blitzlicht ---------
+const tb = { blitz: false, zeigen: false, verlauf: [], sperre: false, danke: null };
+let tafelDaten = null;  // im Tafel-Fenster: zuletzt vom Hauptfenster empfangen
+const imTafelFenster = () => location.hash === "#tafel";
+const boardAktiv = () => imTafelFenster() || tafelOrdner.aktiv;
+function boardBlitzHTML(b) {
+  const zahlen = b.feedback || {};
+  return blitzHTML({ ...b, zahlen, zeigen: tb.zeigen, rueckMoeglich: tb.verlauf.length && !tb.sperre, fertigText: "Zurück zu den Karten",
+    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (zahlen[k] || 0), 0), danke: tb.danke });
+}
+function boardNeuZeichnen() { imTafelFenster() ? tafelZeigen() : renderTafelOrdner(); }
+const BOARD_AKTIONEN = {
+  "tafel-blitz"() { Object.assign(tb, { blitz: true, zeigen: false, verlauf: [], sperre: false, danke: null }); boardNeuZeichnen(); },
+  "blitz-stimme"(k) {
+    if (tb.sperre) return;
+    const b = imTafelFenster() ? tafelDaten?.blitz : tafelOrdner.daten?.blitz;
+    if (!b) return;
+    tb.verlauf.push(k); tb.sperre = true;
+    tb.danke = b.optionen.find(([x]) => x === k)?.[1];
+    b.feedback[k] = (b.feedback[k] || 0) + 1;  // sofort anzeigen; das Protokollgerät bestätigt
+    boardStimmeSenden(k, false);
+    boardNeuZeichnen();
+    setTimeout(() => { tb.sperre = false; tb.danke = null; boardNeuZeichnen(); }, 1200);
+  },
+  "blitz-zurueck"() {
+    const k = tb.verlauf.pop(), b = imTafelFenster() ? tafelDaten?.blitz : tafelOrdner.daten?.blitz;
+    if (!k || !b) return;
+    b.feedback[k] = Math.max(0, (b.feedback[k] || 0) - 1);
+    boardStimmeSenden(k, true); boardNeuZeichnen();
+  },
+  "blitz-zeigen"() { tb.zeigen = !tb.zeigen; boardNeuZeichnen(); },
+  "blitz-zu"() { tb.blitz = false; boardNeuZeichnen(); },
+};
+function boardStimmeSenden(k, rueck) {
+  if (imTafelFenster()) {
+    try { window.opener?.postMessage({ typ: "klassenrat-tafel", aktion: rueck ? "zurueck" : "stimme", d: k }, "*"); } catch (e) { /* getrennt */ }
+  } else ordnerStimmeSchreiben(k, rueck);
+}
 
 // Läuft im Tafel-Fenster (#tafel): zeigt nur die Karten, die das Hauptfenster schickt
 function tafelStarten() {
@@ -1299,15 +1360,21 @@ function tafelStarten() {
     <p><b>Warte auf das Klassenrat-Tool …</b><br>Dieses Fenster auf den Tafel-Bildschirm ziehen und „⛶ Vollbild“ antippen.</p></div></div>`;
   document.body.classList.add("tafel");
   let letzte = null;
+  window.tafelZeigen = () => {
+    if (!tafelDaten) return;
+    $("#tafel-ansicht").innerHTML = tb.blitz && tafelDaten.blitz ? boardBlitzHTML(tafelDaten.blitz)
+      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "tafel", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true });
+  };
   const senden = (aktion, d) => { try { window.opener?.postMessage({ typ: "klassenrat-tafel", aktion, d }, "*"); } catch (e) { /* getrennt */ } };
   window.addEventListener("message", (e) => {
     const d = e.data;
     if (!d || d.typ !== "klassenrat-mod") return;
-    letzte = d;
+    letzte = tafelDaten = d;
     document.body.dataset.stufe = d.stufe;
     document.title = "Klassenrat – Tafel";
-    $("#tafel-ansicht").innerHTML = modHTML(d.karten, d.idx, { modus: "tafel", glocke: d.glocke, hinweis: d.hinweis });
+    tafelZeigen();
   });
+  Object.assign(AKTIONEN, BOARD_AKTIONEN);
   mod.offen = true;  // Pfeiltasten blättern
   AKTIONEN["mod-weiter"] = (d) => senden("weiter", +d);
   AKTIONEN["mod-vollbild"] = () => document.documentElement.requestFullscreen?.().catch(() => {});
@@ -1324,7 +1391,7 @@ const tafelOrdner = { aktiv: false, handle: null, zeit: 0, daten: null, idx: 0, 
 async function tafelOrdnerWaehlen() {
   if (!ordnerMoeglich) { alert("Dafür wird Microsoft Edge oder Google Chrome am PC benötigt."); return; }
   try {
-    const h = await window.showDirectoryPicker({ id: "klassenrat-tafel", mode: "read" });
+    const h = await window.showDirectoryPicker({ id: "klassenrat-tafel", mode: "readwrite" });
     await idb("readwrite", (st) => st.put(h, "tafelordner"));
     tafelOrdnerStarten(h);
   } catch (e) { if (e.name !== "AbortError") alert("Der Ordner konnte nicht geöffnet werden: " + e.message); }
@@ -1333,7 +1400,7 @@ async function tafelOrdnerFortsetzen() {
   try {
     const h = await idb("readonly", (st) => st.get("tafelordner"));
     if (!h) return tafelOrdnerWaehlen();
-    if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
+    if ((await h.requestPermission({ mode: "readwrite" })) !== "granted") return;
     tafelOrdnerStarten(h);
   } catch (e) { tafelOrdnerWaehlen(); }
 }
@@ -1351,6 +1418,10 @@ async function tafelOrdnerLesen() {
     if (f.lastModified !== tafelOrdner.zeit) {
       const d = JSON.parse(await f.text());
       if (d.sitzungId !== tafelOrdner.daten?.sitzungId) tafelOrdner.idx = 0;
+      if (d.ort && d.ort !== tafelOrdner.ort) { tafelOrdner.ort = d.ort; tafelOrdner.idx = d.idx || 0; }  // folgt dem Protokoll
+      if (tb.blitz && tafelOrdner.daten?.blitz && d.blitz) {  // eigene, noch nicht bestätigte Stimmen nicht überschreiben
+        for (const k of ["gut", "mittel", "schlecht"]) d.blitz.feedback[k] = Math.max(d.blitz.feedback[k] || 0, tafelOrdner.daten.blitz.feedback[k] || 0);
+      }
       Object.assign(tafelOrdner, { daten: d, zeit: f.lastModified, fehler: "" });
     }
   } catch (e) { tafelOrdner.fehler = e.name === "NotFoundError" ? "leer" : e.message; }
@@ -1371,9 +1442,42 @@ function renderTafelOrdner() {
   tafelOrdner.idx = Math.max(0, Math.min(tafelOrdner.idx, d.karten.length - 1));
   document.body.dataset.stufe = d.stufe;
   const alt = (Date.now() - d.zeit) / 6e4;
-  el.innerHTML = modHTML(d.karten, tafelOrdner.idx, { modus: "ordner", glocke: BILDER.glocke, ende,
+  if (tb.blitz && d.blitz) { el.innerHTML = boardBlitzHTML(d.blitz); return; }
+  el.innerHTML = modHTML(d.karten, tafelOrdner.idx, { modus: "ordner", glocke: BILDER.glocke, ende, blitzKnopf: true,
     hinweis: `Klasse ${esc(d.klasse)} · Sitzung ${d.nr} · Stand ${new Date(d.zeit).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}${alt > 30 ? " (älter als 30 Minuten)" : ""}` });
 }
+
+// Blitzlicht-Stimmen vom Tafel-Rechner: in klassenrat-blitzlicht.json anhängen …
+async function ordnerStimmeSchreiben(k, rueck) {
+  const h = tafelOrdner.handle, sid = tafelOrdner.daten?.sitzungId;
+  try {
+    let stimmen = [];
+    try {
+      const alt = JSON.parse(await (await (await h.getFileHandle("klassenrat-blitzlicht.json")).getFile()).text());
+      if (alt.sitzungId === sid) stimmen = alt.stimmen || [];
+    } catch (e) { /* noch keine Datei */ }
+    stimmen.push({ id: id(), k, rueck: !!rueck });
+    await schreibeDatei(h, "klassenrat-blitzlicht.json", JSON.stringify({ sitzungId: sid, stimmen }));
+  } catch (e) { tafelOrdner.fehler = "Stimme nicht gespeichert: " + e.message; }
+}
+// … und am Protokollgerät einsammeln (jede Stimme zählt nur einmal)
+let ordnerBlitzZeit = 0;
+setInterval(async () => {
+  if (imTafelFenster() || tafelOrdner.aktiv || ordner.status !== "aktiv" || ui.view !== "sitzung" || !sitzung()) return;
+  try {
+    const f = await (await ordner.handle.getFileHandle("klassenrat-blitzlicht.json")).getFile();
+    if (f.lastModified === ordnerBlitzZeit) return;
+    ordnerBlitzZeit = f.lastModified;
+    const d = JSON.parse(await f.text()), s = sitzung();
+    if (d.sitzungId !== s.id || istGesperrt(s)) return;
+    s.blitzIds ||= [];
+    let neu = false;
+    for (const st of d.stimmen || []) if (!s.blitzIds.includes(st.id) && ["gut", "mittel", "schlecht"].includes(st.k)) {
+      s.blitzIds.push(st.id); s.feedback[st.k] = Math.max(0, (s.feedback[st.k] || 0) + (st.rueck ? -1 : 1)); neu = true;
+    }
+    if (neu) { speichern(); if (ui.schritt === "abschluss") render(); }
+  } catch (e) { /* keine Stimmen */ }
+}, 3000);
 
 // Eigenständige Datei mit den Karten dieser Sitzung (für Tafel-PC oder ein zweites Tablet)
 function modExportieren() {
@@ -1404,21 +1508,31 @@ zeigen();
 
 // --- Blitzlicht im Vollbild: Tablet herumgeben oder an der Tafel antippen --------------
 const blitz = { offen: false, zeigen: false, verlauf: [], sperre: false };
+// Reine Darstellung des Blitzlichts (auch im Tafel-Fenster / auf dem Tafel-Rechner verwendet)
+function blitzHTML(o) {
+  return `<div class="blitz">
+    <div class="oben"><span class="bild l">${o.kopfBild}</span><h2>${o.titel}</h2>
+      <div class="aktionen">
+        <button class="knopf rand" data-act="blitz-zeigen">${o.zeigen ? "Ergebnis verbergen" : "Ergebnis zeigen"}</button>
+        <button class="knopf rand" data-act="blitz-zurueck" ${o.rueckMoeglich ? "" : "disabled"}>Letzte Stimme zurücknehmen</button>
+        <button class="knopf" data-act="blitz-zu">${o.fertigText || "Fertig"}</button></div></div>
+    <div class="wahl">${o.optionen.map(([k, svg, l]) => `<button data-act="blitz-stimme" data-arg="${k}"><span class="bild">${svg}</span><span>${l}</span>
+      ${o.zeigen ? `<span class="zahl">${o.zahlen[k] || 0}</span>` : ""}</button>`).join("")}</div>
+    <div class="unten">${o.summe} Stimme${o.summe === 1 ? "" : "n"} abgegeben · Einmal antippen und weitergeben</div>
+    ${o.danke ? `<div class="danke"><span class="bild l">${o.danke}</span>Danke!<small>Bitte weitergeben</small></div>` : ""}
+  </div>`;
+}
+function blitzDaten() {  // was ein Tafel-Bildschirm zum Blitzlicht braucht
+  const s = sitzung();
+  return { sitzungId: s.id, titel: T().feedback, kopfBild: BILDER.froh, feedback: { ...s.feedback },
+    optionen: blitzOptionen().map(([k, ic, l]) => [k, BILDER[ic], l]) };
+}
 function renderBlitz(danke) {
   const el = $("#blitz"), s = sitzung();
   if (!blitz.offen || !s) { el.innerHTML = ""; return; }
-  const summe = ["gut", "mittel", "schlecht"].reduce((n, k) => n + (s.feedback[k] || 0), 0);
-  el.innerHTML = `<div class="blitz">
-    <div class="oben">${bild("froh", "l")}<h2>${T().feedback}</h2>
-      <div class="aktionen">
-        <button class="knopf rand" data-act="blitz-zeigen">${blitz.zeigen ? "Ergebnis verbergen" : "Ergebnis zeigen"}</button>
-        <button class="knopf rand" data-act="blitz-zurueck" ${blitz.verlauf.length ? "" : "disabled"}>Letzte Stimme zurücknehmen</button>
-        <button class="knopf" data-act="blitz-zu">Fertig</button></div></div>
-    <div class="wahl">${blitzOptionen().map(([k, ic, l]) => `<button data-act="blitz-stimme" data-arg="${k}">${bild(ic)}<span>${l}</span>
-      ${blitz.zeigen ? `<span class="zahl">${s.feedback[k] || 0}</span>` : ""}</button>`).join("")}</div>
-    <div class="unten">${summe} Stimme${summe === 1 ? "" : "n"} abgegeben · Einmal antippen und weitergeben</div>
-    ${danke ? `<div class="danke">${bild(danke, "l")}Danke!<small>Bitte weitergeben</small></div>` : ""}
-  </div>`;
+  const d = blitzDaten();
+  el.innerHTML = blitzHTML({ ...d, zahlen: s.feedback, zeigen: blitz.zeigen, rueckMoeglich: blitz.verlauf.length,
+    summe: ["gut", "mittel", "schlecht"].reduce((n, k) => n + (s.feedback[k] || 0), 0), danke: danke ? BILDER[danke] : null });
 }
 function schrittProtokoll(s, t) {
   return `<div class="karte akzent">
@@ -1826,7 +1940,8 @@ async function sichernInOrdner() {
     await schreibeDatei(ordner.handle, "klassenrat-sicherung.json", json);
     if (ui.view === "sitzung" && sitzung()) {  // Karten der geöffneten Sitzung für einen Tafel-Rechner
       await schreibeDatei(ordner.handle, "klassenrat-tafel.json", JSON.stringify({ typ: "klassenrat-tafel", zeit: Date.now(),
-        klasse: klasse().name, sitzungId: sitzung().id, nr: sitzung().nr, stufe: klasse().stufe, karten: modKartenMitBild() }));
+        klasse: klasse().name, sitzungId: sitzung().id, nr: sitzung().nr, stufe: klasse().stufe, karten: modKartenMitBild(),
+        ort: mod.ort, idx: mod.ortIdx ?? 0, blitz: blitzDaten() }));
     }
     const verlauf = await ordner.handle.getDirectoryHandle("Verlauf", { create: true });
     await schreibeDatei(verlauf, `klassenrat-${heute()}.json`, json);  // eine Fassung pro Tag
@@ -1971,6 +2086,7 @@ const AKTIONEN = {
     document.documentElement.requestFullscreen?.().catch(() => {});
   },
   "blitz-stimme"(k) {
+    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-stimme"](k);
     if (blitz.sperre) return;  // kurze Pause verhindert Doppeltipper
     const s = sitzung();
     s.feedback[k] = (s.feedback[k] || 0) + 1;
@@ -1980,12 +2096,15 @@ const AKTIONEN = {
     setTimeout(() => { blitz.sperre = false; renderBlitz(); }, 1200);
   },
   "blitz-zurueck"() {
+    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zurueck"]();
     const k = blitz.verlauf.pop(), s = sitzung();
     if (k) { s.feedback[k] = Math.max(0, (s.feedback[k] || 0) - 1); speichern(); }
     renderBlitz();
   },
-  "blitz-zeigen"() { blitz.zeigen = !blitz.zeigen; renderBlitz(); },
+  "blitz-zeigen"() {
+    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zeigen"](); blitz.zeigen = !blitz.zeigen; renderBlitz(); },
   "blitz-zu"() {
+    if (tafelOrdner.aktiv) return BOARD_AKTIONEN["blitz-zu"]();
     blitz.offen = false; renderBlitz();
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     render();
@@ -2089,6 +2208,10 @@ const AKTIONEN = {
   "mod-weiter"(d) {
     if (tafelOrdner.aktiv) { tafelOrdner.idx += +d; renderTafelOrdner(); return; }
     mod.idx += +d; renderModeration();
+  },
+  "tafel-blitz"() {
+    if (boardAktiv()) return BOARD_AKTIONEN["tafel-blitz"]();
+    mod.offen = false; renderModeration(); AKTIONEN["blitz-vollbild"]();
   },
   "mod-vollbild"() { document.documentElement.requestFullscreen?.().catch(() => {}); },
   "tafel-ordner": tafelOrdnerWaehlen,

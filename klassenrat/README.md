@@ -45,7 +45,9 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
   und **Vorschläge aus früheren Beschlüssen** beim Tippen
 - **Moderationskarten**: Sätze zum Vorlesen für die Leitung, passend zu Rollen, Beschlüssen und Anliegen. Wählbar:
   auf dem Gerät im Vollbild, **auf der Tafel** als zweites Fenster (erweiterter Bildschirm, live verbunden, mit Fernbedienung),
-  **über OneDrive an einen Tafel-Rechner** (dort „Diesen Rechner als Tafel nutzen“) oder **als Datei** für ein anderes Gerät
+  **über OneDrive an einen Tafel-Rechner** (dort „Diesen Rechner als Tafel nutzen“) oder **als Datei** für ein anderes Gerät.
+  Auf der Tafel **folgen die Karten automatisch dem Protokoll** (neuer Schritt, neues Anliegen). Auf der Blitzlicht-Karte
+  startet „Blitzlicht hier starten“ die Abstimmung direkt an der Tafel; die Stimmen landen im Protokoll.
 - **Eigene Satzanfänge** für Positivrunde und Aussagen (unter Klasse oder während der Sitzung über „＋ eigener“)
 - **Fristen:** Die Startseite zeigt, welche Beschlüsse in den nächsten 7 Tagen fällig sind oder schon überfällig sind.
 - **Auswertung** (mit Passwort): Rollen-Übersicht pro Kind und Jahresüberblick (Sitzungen, Arten der Anliegen,
