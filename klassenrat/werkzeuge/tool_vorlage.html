@@ -410,6 +410,13 @@ body.tafel .blitz { position: fixed; }
 .code-gross span { font-size: clamp(3rem, 16vmin, 9rem); font-weight: 800; width: 1.15em; padding: .1em 0; border-radius: 18px; background: var(--akzent-hell); color: var(--akzent-dunkel); font-variant-numeric: tabular-nums; }
 
 /* Online-Briefkasten */
+.schalter { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 3px 12px 3px 4px; cursor: pointer; font-weight: 700; font-size: .85rem; color: var(--leise); vertical-align: middle; }
+.schalter .knubbel { width: 34px; height: 20px; border-radius: 999px; background: #d6d3cb; position: relative; transition: background .2s; flex: none; }
+.schalter .knubbel::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .2s; }
+.schalter.an { border-color: #bfe0d4; color: #2f7660; background: #eef8f4; }
+.schalter.an .knubbel { background: var(--gruen); }
+.schalter.an .knubbel::after { left: 16px; }
+.schalter.fehler { border-color: #f0c9ce; color: var(--rot); background: #fff3f4; }
 .qr-bereich { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin: 10px 0; }
 .qr { width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1.5px solid var(--linie); border-radius: 12px; padding: 6px; }
 .qr svg { width: 100%; height: 100%; }
@@ -1960,7 +1967,7 @@ function briefkastenKarte(k) {
   const n = (k.briefkasten || []).length;
   return `<div class="hinweis-box info">${bild("briefkasten", "m")}<div style="flex:1"><b>Briefkasten</b>
     ${n ? `<span class="badge offen">${n} Anliegen</span>` : `<span class="leise klein">leer</span>`}
-    ${onlineBk[k.id]?.status === "offen" ? `<span class="badge ja">📬 online geöffnet</span>` : ""}
+    ${onlineSchalter(k)}
     <span class="leise klein">· Die Kinder werfen Anliegen vor der Sitzung selbst ein – am Klassen-Tablet oder per QR-Code am eigenen iPad.</span>
     <div class="aktionen abstand"><button class="knopf mini" data-act="bk-start">${bild("brief", "s")} Briefkasten für die Klasse öffnen</button>
       <button class="knopf mini zweit" data-act="view" data-arg="briefkasten">Einträge & Einstellungen</button></div></div></div>`;
@@ -2061,6 +2068,12 @@ function onlineAnliegen(k, conn, d) {
   speichern(); antwort(true);
   meldung(`📬 Neues Anliegen${name ? " von " + name : ""} – Klasse ${k.name}`);
   if (["sitzungen", "briefkasten"].includes(ui.view)) render();
+}
+// Schalter „online geöffnet / geschlossen“ (Startseite)
+function onlineSchalter(k) {
+  const o = onlineBk[k.id], an = !!o, text = !o ? "online geschlossen" : o.status === "offen" ? "online geöffnet" : o.status === "fehler" ? "online: Fehler" : "online: startet …";
+  return `<button class="schalter ${an ? "an" : ""} ${o?.status === "fehler" ? "fehler" : ""}" data-act="bk-online-umschalten" role="switch" aria-checked="${an}"
+    title="${an ? "Online-Briefkasten schließen" : "Online-Briefkasten öffnen (QR-Code)"}${o?.meldung ? " – " + esc(o.meldung) : ""}"><span class="knubbel"></span>📬 ${text}</button>`;
 }
 function onlineBkKarte(k, e) {
   const o = onlineBk[k.id], offen = o?.status === "offen";
@@ -2915,6 +2928,11 @@ const AKTIONEN = {
     renderBriefkasten(); render();
   },
   "bk-online-auf"() { onlineBkStarten(klasse()); },
+  "bk-online-umschalten"() {
+    const k = klasse();
+    if (onlineBk[k.id]) { onlineBkStoppen(k.id); meldung("📬 Online-Briefkasten geschlossen"); render(); }
+    else { onlineBkStarten(k); meldung("📬 Online-Briefkasten wird geöffnet …"); }
+  },
   "bk-online-zu"() { if (confirm("Online-Briefkasten schließen? Die Kinder sehen dann „Briefkasten geschlossen“.")) { onlineBkStoppen(klasse().id); render(); } },
   "bk-neuer-code"() {
     if (!confirm("Neuen Code erzeugen? Der bisherige QR-Code funktioniert dann nicht mehr und muss ersetzt werden.")) return;
