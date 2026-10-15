@@ -37,7 +37,15 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
 - **Unterschriften direkt am Gerät** (Finger, Stift oder Maus). Sie werden ins Protokoll übernommen.
 - **Protokoll drucken oder als PDF speichern**, im Design der Papierbögen
 - **„7 Sitzung beenden“** trägt die Endzeit ein (falls leer) und führt zur Übersicht zurück.
-- **Beschlussübersicht** über das ganze Schuljahr, mit Hinweis auf überfällige Beschlüsse
+- **Beschlussübersicht** über das ganze Schuljahr, mit Hinweis auf überfällige Beschlüsse und
+  einem **Aushang „Unsere Beschlüsse“** zum Ausdrucken fürs Klassenzimmer
+- **Redeliste:** Wortmeldungen antippen, „▶ … ist dran“ legt gleich die Aussage-Zeile mit dem Namen an.
+- **Satzanfänge** zum Antippen („Mich stört, wenn …“), **schnelle Abstimmung** („alle dafür“, „übrige dagegen“)
+  und **Vorschläge aus früheren Beschlüssen** beim Tippen
+- **Moderationskarten** im Vollbild: Sätze zum Vorlesen für die Leitung, passend zu Rollen, Beschlüssen und Anliegen
+- **Fristen:** Die Startseite zeigt, welche Beschlüsse in den nächsten 7 Tagen fällig sind oder schon überfällig sind.
+- **Auswertung** (mit Passwort): Rollen-Übersicht pro Kind und Jahresüberblick (Sitzungen, Arten der Anliegen,
+  Stand der Beschlüsse, Blitzlicht je Sitzung)
 - Mehrere Klassen in einem Tool. Die Schulart steuert Farben und Begriffe.
 
 ### Abgeschlossene Sitzungen sperren
