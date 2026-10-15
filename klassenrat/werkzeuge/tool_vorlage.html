@@ -36,7 +36,7 @@ nav.haupt button.aktiv { background: var(--akzent-hell); color: var(--akzent-dun
 .cloud .an { border-color: #bfe0d4; color: #2f7660; background: #eef8f4; }
 .cloud .warn { border-color: #f3d9a0; color: #8a6400; background: #fff8e1; }
 
-main { max-width: 1060px; margin: 0 auto; padding: 22px 18px 120px; }
+main { max-width: 1140px; margin: 0 auto; padding: 22px 18px 120px; }
 h2 { font-size: 1.35rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
 h3 { font-size: 1.05rem; margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; color: var(--akzent-dunkel); }
 .leise { color: var(--leise); }
@@ -133,8 +133,11 @@ textarea { resize: vertical; min-height: 64px; }
 .badge.ueberfaellig { background: var(--rot); color: #fff; }
 
 /* Schritte */
-.schritte { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 4px; margin-bottom: 16px; }
-.schritt { display: flex; align-items: center; gap: 8px; border: 0; background: #fff; border-radius: 999px; padding: 7px 14px 7px 8px; cursor: pointer; white-space: nowrap; font-weight: 700; color: var(--leise); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.schritte { display: flex; flex-wrap: nowrap; gap: 5px; overflow-x: auto; padding: 2px 2px 4px; margin-bottom: 16px; container-type: inline-size; scrollbar-width: thin; }
+.schritt { flex: 1 1 auto; justify-content: center; display: flex; align-items: center; gap: 6px; border: 0; background: #fff; border-radius: 999px; padding: 6px 11px 6px 6px; cursor: pointer; white-space: nowrap; font-weight: 700; font-size: .92rem; color: var(--leise); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.schritt .bild { width: 1.15em; height: 1.15em; }
+@container (max-width: 1060px) { .schritt .bild { display: none; } }
+@container (max-width: 860px) { .schritt { font-size: .85rem; padding-right: 9px; } }
 .schritt .n { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; background: var(--hg); font-size: .85rem; }
 .schritt.aktiv { background: var(--akzent); color: #fff; }
 .schritt.aktiv .n { background: #fff; color: var(--akzent); }
@@ -148,7 +151,7 @@ textarea { resize: vertical; min-height: 64px; }
 .anliegen-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .anliegen-kopf .nr { background: var(--akzent); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex: none; }
 .anliegen-kopf input { font-size: 1.1rem; font-weight: 700; }
-.vorschlag { display: grid; grid-template-columns: 3fr minmax(110px, 1fr) auto auto; gap: 8px; align-items: center; }
+.vorschlag { display: grid; grid-template-columns: minmax(150px, 1fr) 3fr auto auto; gap: 8px; align-items: center; }
 .zaehler { display: inline-flex; align-items: center; border: 1.5px solid var(--linie); border-radius: 999px; overflow: hidden; background: #fff; }
 .zaehler button { border: 0; background: transparent; width: 30px; height: 34px; cursor: pointer; font-size: 1.1rem; font-weight: 700; color: var(--leise); }
 .zaehler button:hover { background: var(--hg); }
@@ -230,6 +233,21 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 .sperr-box.offen { background: #eef8f4; border-color: #bfe0d4; }
 .sperr-box .knopf { margin-left: auto; }
 
+/* Blitzlicht im Vollbild */
+.blitz { position: fixed; inset: 0; z-index: 90; background: var(--hg); display: flex; flex-direction: column; padding: 18px; gap: 14px; }
+.blitz .oben { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.blitz h2 { margin: 0; font-size: clamp(1.4rem, 4vw, 2.4rem); color: var(--akzent-dunkel); }
+.blitz .oben .aktionen { margin-left: auto; }
+.blitz .wahl { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5vmin; }
+.blitz .wahl button { border: 0; border-radius: 28px; background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.08); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; cursor: pointer; font-size: clamp(1.2rem, 3.4vmin, 2.2rem); font-weight: 800; color: var(--text); transition: transform .08s; touch-action: manipulation; }
+.blitz .wahl button:active { transform: scale(.97); }
+.blitz .wahl .bild { width: 34vmin; height: 34vmin; max-width: 300px; max-height: 300px; }
+.blitz .wahl .zahl { font-size: clamp(1.6rem, 6vmin, 3.6rem); color: var(--akzent-dunkel); }
+.blitz .unten { text-align: center; color: var(--leise); font-weight: 600; }
+.blitz .danke { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(255,255,255,.93); font-size: clamp(2rem, 8vmin, 5rem); font-weight: 800; color: var(--akzent-dunkel); }
+.blitz .danke small { font-size: clamp(1rem, 3vmin, 1.6rem); color: var(--leise); font-weight: 600; }
+@media (orientation: portrait) and (max-width: 700px) { .blitz .wahl { grid-template-columns: 1fr; } .blitz .wahl .bild { width: 18vh; height: 18vh; } .blitz .wahl button { flex-direction: row; } }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -281,6 +299,7 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 <div id="timer-bereich"></div>
 <div id="druck"></div>
 <div id="dialog"></div>
+<div id="blitz"></div>
 
 <script>
 /*__BILDER__*/
@@ -300,6 +319,7 @@ const TEXTE = {
     abschluss: "Wie war's?", feedback: "Wie war unser Klassenrat?",
     status: { ja: "geklappt", teils: "ein bisschen", nein: "nicht geklappt" },
     kind: "Kind", kinder: "Kinder",
+    schritt: { positiv: "Das war schön", rueckblick: "Geklappt?", anliegen: "Themen", abschluss: "Wie war's?" },
   },
   ms: {
     titel: "Klassenrat – Protokoll", stufe: "Mittelschule (Kl. 5–9)",
@@ -323,7 +343,7 @@ function unterschriftName(s, r, t) {
 const ARTEN = ["Kritik", "Wunsch", "Vorschlag", "Konflikt", "Information"];
 const ERGEBNISSE = [["beschluss", "Beschluss"], ["vertagt", "vertagt"], ["keine", "keine Einigung"], ["weiter", "weitergeben"]];
 const SCHRITTE = [
-  ["start", "Start & Rollen", "leute"], ["positiv", null, "stern"], ["rueckblick", null, "zurueck"],
+  ["start", "Start", "leute"], ["positiv", null, "stern"], ["rueckblick", null, "zurueck"],
   ["anliegen", null, "sprechen"], ["abschluss", null, "froh"], ["protokoll", "Protokoll", "beschluss"],
 ];
 
@@ -658,12 +678,12 @@ function viewSitzungen() {
 // --- Sitzung -----------------------------------------------------------------
 function viewSitzung() {
   const s = sitzung(), t = T();
-  const titel = (n, x) => x || t[n];
+  const titel = (n, x) => x || t.schritt?.[n] || t[n];
   zielTexte = {};
   if (s.anliegen.length && ui.anliegenIdx >= s.anliegen.length) ui.anliegenIdx = s.anliegen.length - 1;
   if (!zielGueltig()) ui.ziel = standardZiel();
   const inhalt = { start: schrittStart, positiv: schrittPositiv, rueckblick: schrittRueckblick, anliegen: schrittAnliegen, abschluss: schrittAbschluss, protokoll: schrittProtokoll }[ui.schritt](s, t);
-  const mitNamen = ["positiv", "abschluss"].includes(ui.schritt) || (ui.schritt === "anliegen" && s.anliegen.length);
+  const mitNamen = ui.schritt === "positiv" || (ui.schritt === "anliegen" && s.anliegen.length);
   return `
   <div class="titelzeile">
     <button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>
@@ -761,7 +781,7 @@ function namensFeld(pfad, werte, text) {
   const liste = Array.isArray(werte) ? werte : werte ? [werte] : [];
   return `<div class="namensfeld ${ui.ziel === pfad ? "ziel" : ""}" data-act="ziel" data-arg="${pfad}" title="antippen, dann oben Namen wählen">
     ${liste.length ? liste.map((n) => `<span class="nchip">${esc(n)}<button data-act="name-weg" data-arg="${pfad}|${esc(n)}" aria-label="${esc(n)} entfernen">✕</button></span>`).join("")
-      : `<span class="leer-hinweis">antippen, dann Namen wählen</span>`}</div>`;
+      : `<span class="leer-hinweis">antippen, Namen wählen</span>`}</div>`;
 }
 function rollenFelder(obj, pfad, t) {
   return `<div class="raster">${ROLLEN.map(([r, b]) => `<div class="feld"><span class="zeile">${bild(b)} ${t[r]}</span>
@@ -882,8 +902,8 @@ function anliegenKarte(a, i, t, k) {
 
     <h3>${bild(gs ? "idee" : "hand")} ${t.vorschlaege}</h3>
     <div class="zeilen">${a.vorschlaege.map((v, j) => `<div class="vorschlag">
-      <input type="text" data-k="${p}.vorschlaege.${j}.text" value="${esc(v.text)}" placeholder="${t.vorschlag}">
       ${namensFeld(`${p}.vorschlaege.${j}.von`, v.von, nr(`${t.vorschlag} ${j + 1} – von`))}
+      <input type="text" data-k="${p}.vorschlaege.${j}.text" value="${esc(v.text)}" placeholder="${t.vorschlag}">
       <div class="zaehler-gruppe">
         ${zaehler(`${p}.vorschlaege.${j}.ja`, v.ja, "daumen_hoch", "dafür")}
         ${zaehler(`${p}.vorschlaege.${j}.nein`, v.nein, "daumen_runter", "dagegen")}
@@ -917,24 +937,48 @@ function zaehler(pfad, wert, icon, titel) {
 }
 
 function schrittAbschluss(s, t) {
-  const fb = [["gut", "froh", "gut"], ["mittel", "mittel", klasse().stufe === "gs" ? "geht so" : "mittel"], ["schlecht", "traurig", klasse().stufe === "gs" ? "nicht gut" : "schlecht"]];
+  const fb = blitzOptionen();
+  const rollen = rollenFelder(s.naechsteRollen, "naechsteRollen", t);
   return `
   <div class="karte akzent">
-    <h3 style="margin-top:0">${bild("froh", "m")} ${t.feedback} <span class="leise klein">antippen zum Zählen</span></h3>
+    <div class="titelzeile" style="margin-bottom:8px"><h3 style="margin:0">${bild("froh", "m")} ${t.feedback} <span class="leise klein">antippen zum Zählen</span></h3>
+      <button class="knopf zweit" data-act="blitz-vollbild" style="margin-left:auto">⛶ Vollbild zum Herumgeben</button></div>
     <div class="feedback">${fb.map(([k, ic, l]) => `<div class="fb" data-act="zaehlen" data-arg="feedback.${k}|1">${bild(ic)}<b>${s.feedback[k] || 0}</b><span>${l}</span>
       <button class="x" data-act="zaehlen" data-arg="feedback.${k}|-1" title="einen abziehen">− 1</button></div>`).join("")}</div>
     <label class="feld abstand">${bild("idee", "s")} Das nehmen wir uns für die nächste Sitzung vor<input type="text" data-k="vorsatz" value="${esc(s.vorsatz)}"></label>
   </div>
+  ${istGesperrt(s) ? "" : namenLeiste()}
   <div class="karte">
     <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("kalender")} Nächste Sitzung</h3>
       <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="naechsteRollen" style="margin-left:auto">Rollen vorschlagen</button></div>
-    ${rollenFelder(s.naechsteRollen, "naechsteRollen", t)}
+    ${rollen}
     <div class="raster abstand"><label class="feld">Nächster Klassenrat am<input type="date" data-k="naechsterTermin" value="${esc(s.naechsterTermin)}"></label>
     <label class="feld"><span class="zeile">Ende der Sitzung <button class="knopf mini rand" data-act="zeit" data-arg="ende">jetzt</button></span><input type="time" data-k="ende" value="${esc(s.ende)}"></label></div>
-  </div>
-  <div class="aktionen"><button class="knopf gross" data-act="schritt" data-arg="protokoll">${bild("beschluss", "s")} Protokoll ansehen</button></div>`;
+  </div>`;
+}
+function blitzOptionen() {
+  const gs = klasse().stufe === "gs";
+  return [["gut", "froh", "gut"], ["mittel", "mittel", gs ? "geht so" : "mittel"], ["schlecht", "traurig", gs ? "nicht gut" : "schlecht"]];
 }
 
+// --- Blitzlicht im Vollbild: Tablet herumgeben oder an der Tafel antippen --------------
+const blitz = { offen: false, zeigen: false, verlauf: [], sperre: false };
+function renderBlitz(danke) {
+  const el = $("#blitz"), s = sitzung();
+  if (!blitz.offen || !s) { el.innerHTML = ""; return; }
+  const summe = ["gut", "mittel", "schlecht"].reduce((n, k) => n + (s.feedback[k] || 0), 0);
+  el.innerHTML = `<div class="blitz">
+    <div class="oben">${bild("froh", "l")}<h2>${T().feedback}</h2>
+      <div class="aktionen">
+        <button class="knopf rand" data-act="blitz-zeigen">${blitz.zeigen ? "Ergebnis verbergen" : "Ergebnis zeigen"}</button>
+        <button class="knopf rand" data-act="blitz-zurueck" ${blitz.verlauf.length ? "" : "disabled"}>Letzte Stimme zurücknehmen</button>
+        <button class="knopf" data-act="blitz-zu">Fertig</button></div></div>
+    <div class="wahl">${blitzOptionen().map(([k, ic, l]) => `<button data-act="blitz-stimme" data-arg="${k}">${bild(ic)}<span>${l}</span>
+      ${blitz.zeigen ? `<span class="zahl">${s.feedback[k] || 0}</span>` : ""}</button>`).join("")}</div>
+    <div class="unten">${summe} Stimme${summe === 1 ? "" : "n"} abgegeben · Einmal antippen und weitergeben</div>
+    ${danke ? `<div class="danke">${bild(danke, "l")}Danke!<small>Bitte weitergeben</small></div>` : ""}
+  </div>`;
+}
 function schrittProtokoll(s, t) {
   return `<div class="karte akzent">
       <h3 style="margin-top:0">${bild("unterschrift", "m")} Unterschreiben <span class="leise klein">mit Finger, Stift oder Maus ins Feld schreiben</span></h3>
@@ -1363,6 +1407,31 @@ const AKTIONEN = {
     if (state.sperre && !(await passwortAbfragen("Zum Ändern zuerst das bisherige Passwort eingeben."))) return;
     const r = await neuesPasswortDialog(state.sperre ? "Passwort ändern" : "Passwort festlegen", "Dieses Passwort schützt abgeschlossene Sitzungen.");
     if (Array.isArray(r)) { await pwSetzen(r[0]); render(); }
+  },
+  "blitz-vollbild"() {
+    Object.assign(blitz, { offen: true, zeigen: false, verlauf: [], sperre: false });
+    renderBlitz();
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  },
+  "blitz-stimme"(k) {
+    if (blitz.sperre) return;  // kurze Pause verhindert Doppeltipper
+    const s = sitzung();
+    s.feedback[k] = (s.feedback[k] || 0) + 1;
+    blitz.verlauf.push(k); blitz.sperre = true;
+    speichern();
+    renderBlitz(Object.fromEntries(blitzOptionen().map(([x, ic]) => [x, ic]))[k]);
+    setTimeout(() => { blitz.sperre = false; renderBlitz(); }, 1200);
+  },
+  "blitz-zurueck"() {
+    const k = blitz.verlauf.pop(), s = sitzung();
+    if (k) { s.feedback[k] = Math.max(0, (s.feedback[k] || 0) - 1); speichern(); }
+    renderBlitz();
+  },
+  "blitz-zeigen"() { blitz.zeigen = !blitz.zeigen; renderBlitz(); },
+  "blitz-zu"() {
+    blitz.offen = false; renderBlitz();
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    render();
   },
   "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
   "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
