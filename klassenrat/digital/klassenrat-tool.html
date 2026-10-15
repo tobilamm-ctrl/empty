@@ -425,6 +425,7 @@ body.tafel .blitz { position: fixed; }
 .qr-text { font-size: 18pt; line-height: 1.4; margin: 20px 0; }
 .qr-gross { width: 120mm; height: 120mm; margin: 0 auto; } .qr-gross svg { width: 100%; height: 100%; }
 .postfach { max-width: 760px; margin: 0 auto; padding: 18px 16px 60px; display: flex; flex-direction: column; gap: 16px; }
+.pf-anonym { display: flex; align-items: center; gap: 8px; background: var(--akzent-hell); border-radius: 12px; padding: 10px 14px; margin: 0; }
 .pf-kopf { display: flex; align-items: center; gap: 14px; }
 .pf-kopf h1 { margin: 0; color: var(--akzent); font-size: 1.6rem; } .pf-kopf p { margin: 2px 0 0; color: var(--leise); font-weight: 600; }
 
@@ -2038,8 +2039,10 @@ async function onlineBkStarten(k, { neuerCode = false, behalten = false } = {}) 
     if (["briefkasten", "sitzungen"].includes(ui.view)) render();
   });
   peer.on("disconnected", () => { try { peer.reconnect(); } catch (e) { /* egal */ } });
+  o.verbindungen = new Set();
   peer.on("connection", (conn) => {
-    conn.on("open", () => conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }));
+    conn.on("open", () => { o.verbindungen.add(conn); conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); });
+    conn.on("close", () => o.verbindungen.delete(conn));
     conn.on("data", (d) => onlineAnliegen(k, conn, d));
   });
 }
@@ -2092,6 +2095,8 @@ function onlineBkKarte(k, e) {
         <p class="leise klein">Ein neuer Code macht den bisherigen QR-Code ungültig.</p></div></div>` : ""}
     <div class="aktionen abstand">${o ? `<button class="knopf gefahr" data-act="bk-online-zu">Online-Briefkasten schließen</button>`
       : `<button class="knopf" data-act="bk-online-auf">Online-Briefkasten öffnen</button>`}</div>
+    <div class="ergebnis abstand"><label><input type="checkbox" data-bk="anonym" ${e.anonym ? "checked" : ""}> Anliegen ohne Namen erlauben</label></div>
+    <p class="leise klein">Die Kinder sehen dann den Knopf „Ohne Namen abschicken“. Du siehst bei diesen Anliegen keinen Absender; die Begrenzung pro Gerät gilt trotzdem.</p>
     <div class="ergebnis abstand"><label><input type="checkbox" data-bk="wechselCode" ${e.wechselCode ? "checked" : ""}> Bei jedem Öffnen einen neuen Zufallscode erzeugen</label></div>
     <p class="leise klein">Aus: Der QR-Code bleibt gültig und kann dauerhaft im Klassenzimmer hängen. An: sicherer, der QR-Code muss aber jedes Mal neu gezeigt werden.</p>
     <label class="feld" style="max-width:360px">Höchstens so viele Anliegen pro Gerät und Tag (0 = unbegrenzt)
@@ -2127,10 +2132,13 @@ function postfachStarten(code) {
         <button class="knopf" data-act="pf-weiteres">Noch ein Anliegen</button></div>`;
       return;
     }
-    const bereit = (pf.name.trim() || i.anonym) && pf.thema.trim() && !pf.sendet;
+    const anonym = i.anonym && pf.anonym;
+    const bereit = (pf.name.trim() || anonym) && pf.thema.trim() && !pf.sendet;
     el.innerHTML = kopf + `<div class="bk-form">
-      <section><h3><span class="n">1</span> Dein Name ${i.anonym ? `<span class="leise klein">(freiwillig)</span>` : ""}</h3>
-        <input type="text" id="pf-name" maxlength="60" autocomplete="name" value="${esc(pf.name)}" placeholder="Vor- und Nachname"></section>
+      <section><h3><span class="n">1</span> Dein Name</h3>
+        ${anonym ? `<p class="pf-anonym">${bild("schloss", "s")} Dein Anliegen wird <b>ohne Namen</b> abgeschickt.</p>`
+          : `<input type="text" id="pf-name" maxlength="60" autocomplete="name" value="${esc(pf.name)}" placeholder="Vor- und Nachname">`}
+        ${i.anonym ? `<div class="chips abstand"><button class="chip ${anonym ? "an" : ""}" data-act="pf-anonym">${anonym ? "✓ ohne Namen" : "Ohne Namen abschicken"}</button></div>` : ""}</section>
       <section><h3><span class="n">2</span> ${gs ? "Was für ein Thema ist es?" : "Was für ein Anliegen ist es?"} <span class="leise klein">(freiwillig)</span></h3>
         <div class="chips gross">${i.arten.map((x) => `<button class="chip ${pf.art === x ? "an" : ""}" data-act="pf-art" data-arg="${esc(x)}">${esc(x)}</button>`).join("")}</div></section>
       <section><h3><span class="n">3</span> ${gs ? "Worum geht es? Schreibe einen Satz." : "Dein Anliegen in einem Satz"}</h3>
@@ -2164,13 +2172,15 @@ function postfachStarten(code) {
   Object.assign(AKTIONEN, {
     "pf-neu"() { pf.versuche = 0; verbinden(); },
     "pf-art"(x) { merken(); pf.art = pf.art === x ? "" : x; zeichnen(); },
+    "pf-anonym"() { merken(); pf.anonym = !pf.anonym; zeichnen(); },
     "pf-weiteres"() { pf.danke = false; zeichnen(); },
     "pf-senden"() {
       merken();
       if (!pf.conn?.open) { pf.status = "geschlossen"; zeichnen(); return; }
-      lsSet("klassenrat-name", pf.name.trim());
+      const anonym = pf.info?.anonym && pf.anonym;
+      if (!anonym) lsSet("klassenrat-name", pf.name.trim());
       pf.sendet = id(); pf.meldung = "";
-      pf.conn.send({ typ: "bk-anliegen", id: pf.sendet, name: pf.name, art: pf.art, thema: pf.thema, worum: pf.worum, geraet });
+      pf.conn.send({ typ: "bk-anliegen", id: pf.sendet, name: anonym ? "" : pf.name, art: pf.art, thema: pf.thema, worum: pf.worum, geraet });
       zeichnen();
       pf.zeit = setTimeout(() => { if (pf.sendet) { pf.sendet = null; pf.meldung = "Keine Antwort vom Briefkasten – bitte noch einmal abschicken."; zeichnen(); } }, 10000);
     },
@@ -2179,7 +2189,7 @@ function postfachStarten(code) {
     if (!e.target.id?.startsWith("pf-")) return;
     merken();
     const knopf = document.querySelector("[data-act=pf-senden]");
-    if (knopf && pf.info) knopf.disabled = !((pf.name.trim() || pf.info.anonym) && pf.thema.trim() && !pf.sendet);
+    if (knopf && pf.info) knopf.disabled = !((pf.name.trim() || (pf.info.anonym && pf.anonym)) && pf.thema.trim() && !pf.sendet);
   });
   verbinden();
 }
@@ -3155,6 +3165,11 @@ document.addEventListener("input", (e) => {
     const k = klasse(), key = e.target.dataset.bk;
     k.bkEinst = { ...bkEinst(k), [key]: e.target.type === "checkbox" ? e.target.checked : Math.max(0, +e.target.value || 0) };
     speichern();
+    document.querySelectorAll(`[data-bk="${key}"]`).forEach((x) => { if (x !== e.target && x.type === "checkbox") x.checked = e.target.checked; });
+    // verbundene Kinder-iPads sofort informieren (z. B. „ohne Namen“ erlaubt)
+    for (const c of onlineBk[k.id]?.verbindungen || []) {
+      try { if (c.open) c.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); } catch (x) { /* weg */ }
+    }
   }
 });
 // Textfelder wachsen mit dem Inhalt; Reiter zeigt das Thema sofort
