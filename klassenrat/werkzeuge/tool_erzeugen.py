@@ -26,6 +26,8 @@ def main():
     ziel = ROOT / "digital" / "klassenrat-tool.html"
     ziel.parent.mkdir(exist_ok=True)
     ziel.write_text(html, encoding="utf-8")
+    # gleiche Datei als index.html – für GitHub Pages (Start-Adresse der installierbaren App)
+    (ziel.parent / "index.html").write_text(html, encoding="utf-8")
     print("geschrieben:", ziel.relative_to(ROOT.parent))
 
 

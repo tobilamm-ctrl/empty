@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Klassenrat">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#4E927C">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,__APP_ICON__">
 <link rel="icon" type="image/png" href="data:image/png;base64,__FAVICON__">
@@ -3258,6 +3259,8 @@ document.addEventListener("pointerdown", (e) => { if (e.target.closest(".namenle
 window.addEventListener("resize", () => document.documentElement.style.setProperty("--kopfhoehe", document.querySelector(".app-kopf").offsetHeight + "px"));
 window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
+// Installierbare App (Chrome/Edge): Hintergrunddienst nur über https (GitHub Pages)
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
 if (location.hash === "#tafel") tafelStarten();
 else if (location.hash.startsWith("#postfach=")) postfachStarten(decodeURIComponent(location.hash.slice(10)).replace(/[^a-z0-9]/gi, ""));
 else {

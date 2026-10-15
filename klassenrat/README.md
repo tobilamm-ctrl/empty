@@ -102,9 +102,13 @@ Das Schullogo ist **nicht** Teil des Repositorys und des Tools, damit es nicht �
 - **Druckbögen/Karten mit Logo:** das Logo lokal als `bilder/logo.png` ablegen und `./bauen.sh` ausführen.
   Die Datei ist per `.gitignore` von Commits ausgeschlossen – die so erzeugten Dateien mit Logo bitte nicht hochladen.
 
-## App-Symbol
-`digital/apple-touch-icon.png` (iPad/iPhone), `app-icon-192.png`/`app-icon-512.png` und `favicon.png`; das Symbol ist
-zusätzlich im Tool eingebettet. Auf GitHub Pages die PNG-Dateien neben `klassenrat-tool.html` hochladen.
+## App-Symbol und Installation
+Für GitHub Pages **alle Dateien aus `digital/`** in denselben Ordner hochladen: `index.html` (= `klassenrat-tool.html`),
+`manifest.webmanifest`, `sw.js`, `apple-touch-icon.png`, `app-icon-192.png`, `app-icon-512.png`, `favicon.png`.
+- **iPad/iPhone:** in Safari Teilen → „Zum Home-Bildschirm“.
+- **Chrome/Edge am PC:** Installations-Symbol rechts in der Adressleiste (oder Menü ⋮ → „Streamen, speichern und teilen“ →
+  „Seite als App installieren“). Voraussetzung: Manifest und `sw.js` liegen neben `index.html`, Aufruf über https.
+  Die installierte App lädt immer die neueste Fassung und startet ohne Internet aus dem Zwischenspeicher.
 
 ## Neu erzeugen
 Alle Dateien entstehen aus `werkzeuge/` (Python 3 mit `python-docx`, Node mit Playwright/Chromium):
