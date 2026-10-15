@@ -118,6 +118,11 @@ textarea { resize: vertical; min-height: 64px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: .9rem; }
 .chip.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.art-wahl { min-height: 42px; align-items: center; }
+.art-wahl .chip { font-weight: 600; padding: 7px 13px; }
+.art-liste .chip { display: inline-flex; align-items: center; gap: 4px; cursor: default; padding-right: 4px; }
+.art-liste .chip button { border: 0; background: transparent; cursor: pointer; color: var(--grau); font-size: 1rem; padding: 0 6px; border-radius: 50%; }
+.art-liste .chip button:hover { color: var(--rot); background: #fbeaec; }
 .chip.fehlt { background: #fff3f4; border-color: #f0c9ce; color: var(--rot); text-decoration: line-through; }
 
 /* Sitzungsliste */
@@ -361,6 +366,8 @@ function unterschriftName(s, r, t) {
   return t[r] + (s.rollen[r] ? ": " + esc(s.rollen[r]) : "");
 }
 const ARTEN = ["Kritik", "Wunsch", "Vorschlag", "Konflikt", "Information"];
+// Arten von Anliegen: Standard oder in den Klasseneinstellungen angepasst
+const arten = (k = klasse()) => (k?.arten?.length ? k.arten : ARTEN);
 const ERGEBNISSE = [["beschluss", "Beschluss"], ["vertagt", "vertagt"], ["keine", "keine Einigung"], ["weiter", "weitergeben"]];
 const SCHRITTE = [
   ["start", "Start", "leute"], ["positiv", null, "stern"], ["rueckblick", null, "zurueck"],
@@ -932,8 +939,9 @@ function anliegenKarte(a, i, t, k) {
     </div>
     <div class="raster">
       <div class="feld"><span class="zeile">${t.von}</span>${namensFeld(`${p}.von`, a.von, nr(t.von))}</div>
-      <label class="feld"><span class="zeile">Art</span><select class="feld" data-k="${p}.art"><option value="">–</option>${ARTEN.map((x) => `<option ${a.art === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
     </div>
+    <div class="feld abstand"><span class="zeile">Art</span><div class="chips art-wahl">
+      ${[...arten(k), ...(a.art && !arten(k).includes(a.art) ? [a.art] : [])].map((x) => `<button class="chip ${a.art === x ? "an" : ""}" data-act="art" data-arg="${i}|${esc(x)}">${esc(x)}</button>`).join("")}</div></div>
     <label class="feld abstand">${t.worum}<textarea rows="2" data-k="${p}.worum">${esc(a.worum)}</textarea></label>
 
     <h3>${bild("sprechen")} ${t.aussagen} <span class="leise klein">${gs ? "" : "Betroffene zuerst, dann die Klasse"}</span></h3>
@@ -1149,6 +1157,16 @@ function viewKlasse() {
     <label class="feld">Ein Name pro Zeile<textarea id="schuelerliste" rows="12">${esc(k.schueler.join("\n"))}</textarea></label>
     <div class="aktionen abstand"><button class="knopf" data-act="schueler-speichern">Klassenliste übernehmen</button>
       <button class="knopf rand" data-act="schueler-sortieren">Alphabetisch sortieren</button></div>
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">${bild("wandzeitung")} Arten von Anliegen</h3>
+    <p class="leise">Diese Begriffe stehen beim Anliegen zum Antippen bereit. Bereits protokollierte Anliegen behalten ihre Art, auch wenn ein Begriff entfernt wird.</p>
+    <div class="chips art-liste">${arten(k).map((x) => `<span class="chip">${esc(x)}<button data-act="art-weg" data-arg="${esc(x)}" title="${esc(x)} entfernen">✕</button></span>`).join("")}</div>
+    <div class="aktionen abstand">
+      <input type="text" id="neue-art" placeholder="neuer Begriff, z. B. Lob oder Klassenfahrt" style="max-width:340px">
+      <button class="knopf zweit" data-act="art-neu">＋ Hinzufügen</button>
+      ${k.arten?.length ? `<button class="knopf rand" data-act="art-standard">Standard wiederherstellen</button>` : ""}
+    </div>
   </div>
   <div class="karte">
     <h3 style="margin-top:0">Weitere Klassen</h3>
@@ -1472,6 +1490,25 @@ const AKTIONEN = {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     render();
   },
+  art(arg) {
+    const [i, x] = arg.split("|"), a = sitzung().anliegen[i];
+    a.art = a.art === x ? "" : x;
+    speichern(); render();
+  },
+  "art-neu"() {
+    const k = klasse(), x = $("#neue-art").value.trim();
+    if (!x) { $("#neue-art").focus(); return; }
+    k.arten = [...arten(k)];
+    if (!k.arten.includes(x)) k.arten.push(x);
+    speichern(); render(); $("#neue-art")?.focus();
+  },
+  "art-weg"(x) {
+    const k = klasse();
+    k.arten = arten(k).filter((y) => y !== x);
+    if (!k.arten.length) { alert("Mindestens ein Begriff muss bleiben."); k.arten = [x]; }
+    speichern(); render();
+  },
+  "art-standard"() { delete klasse().arten; speichern(); render(); },
   "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
   "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
   async "sitzung-loeschen"(sid) {
@@ -1655,6 +1692,7 @@ document.addEventListener("focusin", (e) => {
 // Enter beendet die Zeile – der nächste Name beginnt eine neue
 document.addEventListener("keydown", (e) => {
   const z = e.target.dataset?.ziel;
+  if (e.target.id === "neue-art" && e.key === "Enter") { e.preventDefault(); AKTIONEN["art-neu"](); return; }
   if (z && e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     ui.ziel = z.split(".").slice(0, -1).join(".");
