@@ -40,7 +40,7 @@ footer {
 
 .seite::before {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2.2mm;
-  background: linear-gradient(90deg, #B32D3B 0 40%, #F2CC3D 40% 50%, #9C9C9C 50% 60%, #3B9B7F 60% 100%);
+  background: linear-gradient(90deg, #B4595E 0 40%, #F1D766 40% 50%, #B9BABE 50% 60%, #65A690 60% 100%);
 }
 .kopf { display: flex; align-items: center; gap: 4mm; border-bottom: .7mm solid var(--akzent); padding-bottom: 1.5mm; margin-bottom: 1mm; }
 .kopf .logo { width: 44mm; flex: none; }

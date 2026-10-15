@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 0 216 108">
-<path d="M14,104 A82,74 0 0 1 100,30 L100,38.5 A75.5,65.5 0 0 0 21,104 Z" fill="#B32D3B"/>
-<path d="M100,30 A82,74 0 0 1 186,104 L179,104 A75.5,65.5 0 0 0 100,38.5 Z" fill="#3B9B7F"/>
+<path d="M14,104 A82,74 0 0 1 100,30 L100,38.5 A75.5,65.5 0 0 0 21,104 Z" fill="#B4595E"/>
+<path d="M100,30 A82,74 0 0 1 186,104 L179,104 A75.5,65.5 0 0 0 100,38.5 Z" fill="#65A690"/>
 <path d="M4,99 A92,84 0 0 1 100,19" fill="none" id="lg-a"/>
 <path d="M100,19 A92,84 0 0 1 196,99" fill="none" id="lg-b"/>
-<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#B32D3B" letter-spacing=".3">
+<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#B4595E" letter-spacing=".3">
   <textPath href="#lg-a" startOffset="7%">GRUNDSCHULE</textPath></text>
-<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#3B9B7F" letter-spacing=".3">
+<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#65A690" letter-spacing=".3">
   <textPath href="#lg-b" startOffset="3%">MITTELSCHULE</textPath></text>
-<circle cx="40" cy="12" r="8" fill="#F2CC3D"/>
+<circle cx="40" cy="12" r="8" fill="#F1D766"/>
 <circle cx="168" cy="12" r="8" fill="#B5B5B5"/>
 <text x="100" y="62" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#7A7A7A">Johann-Peter-Wagner</text>
 <text x="178" y="100" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#7A7A7A">Theres</text>

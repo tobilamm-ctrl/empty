@@ -7,6 +7,7 @@ Aufruf:  python3 klassenrat/werkzeuge/bogen_erzeugen.py
 Danach:  node klassenrat/werkzeuge/pdf_erzeugen.mjs   (HTML -> PDF)
 """
 
+import base64
 from html import escape
 from pathlib import Path
 
@@ -30,8 +31,9 @@ EIGENES_LOGO = ROOT / "bilder" / "logo.png"  # optional: Originallogo der Schule
 
 # Akzentfarben je Schulart (aus dem Logo)
 FARBEN = {
-    "gs": {"akzent": bilder.ROT, "hell": "#FBEAEC", "zweit": bilder.GELB},
-    "ms": {"akzent": bilder.GRUEN, "hell": "#E3F3EE", "zweit": bilder.GRAU},
+    # Akzent etwas dunkler als die Logofarbe, damit Schrift darauf gut lesbar bleibt
+    "gs": {"akzent": "#A64A50", "hell": "#F8E9EA", "zweit": bilder.GELB},
+    "ms": {"akzent": "#4E927C", "hell": "#E6F2EE", "zweit": bilder.GRAU},
 }
 
 
@@ -53,7 +55,8 @@ class HtmlBogen:
 
     def kopf(self, felder):
         if EIGENES_LOGO.exists():
-            logo = f'<img src="../bilder/logo.png" alt="Schullogo">'
+            daten = base64.b64encode(EIGENES_LOGO.read_bytes()).decode()
+            logo = f'<img src="data:image/png;base64,{daten}" alt="Schullogo">'
         else:
             logo = ICONS["logo"]
         self._add(

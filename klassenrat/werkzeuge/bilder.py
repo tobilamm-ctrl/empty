@@ -7,10 +7,10 @@ eingebettet werden können) und werden zusätzlich nach klassenrat/bilder/ gesch
 from pathlib import Path
 
 # Farben aus dem Schullogo
-ROT = "#B32D3B"
-GRUEN = "#3B9B7F"
-GELB = "#F2CC3D"
-GRAU = "#9C9C9C"
+ROT = "#B4595E"
+GRUEN = "#65A690"
+GELB = "#F1D766"
+GRAU = "#B9BABE"
 DUNKEL = "#3A3A3A"
 
 HAUT = ["#F6D3B3", "#E8B48A", "#C68B5E", "#8E5B3A"]
@@ -23,7 +23,7 @@ def _svg(viewbox, inhalt, breite=None, hoehe=None):
 
 
 # ---------------------------------------------------------------------------
-# Schullogo (Nachzeichnung – kann durch bilder/logo.png ersetzt werden)
+# Schullogo (Nachzeichnung – nur Ersatz, falls bilder/logo.png fehlt)
 # ---------------------------------------------------------------------------
 
 LOGO = _svg("-8 0 216 108", f"""
