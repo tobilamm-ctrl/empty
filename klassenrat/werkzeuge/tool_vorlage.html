@@ -31,6 +31,10 @@ nav.haupt button { display: flex; align-items: center; gap: 6px; border: 0; back
 nav.haupt button:hover { background: var(--hg); }
 nav.haupt button.aktiv { background: var(--akzent-hell); color: var(--akzent-dunkel); }
 .gespeichert { font-size: .8rem; color: var(--leise); min-width: 80px; text-align: right; }
+.cloud { font-size: .8rem; }
+.cloud button { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; color: var(--leise); }
+.cloud .an { border-color: #bfe0d4; color: #2f7660; background: #eef8f4; }
+.cloud .warn { border-color: #f3d9a0; color: #8a6400; background: #fff8e1; }
 
 main { max-width: 1060px; margin: 0 auto; padding: 22px 18px 120px; }
 h2 { font-size: 1.35rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
@@ -51,8 +55,9 @@ h3 { font-size: 1.05rem; margin: 18px 0 8px; display: flex; align-items: center;
 .karte { background: var(--karte); border-radius: var(--radius); padding: 18px 20px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04); margin-bottom: 16px; }
 .karte.akzent { border-top: 5px solid var(--akzent); }
 .raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; }
-label.feld { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--leise); font-weight: 600; }
-label.feld .zeile { display: flex; align-items: center; gap: 8px; }
+label.feld, div.feld { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-size: .85rem; color: var(--leise); font-weight: 600; }
+label.feld .zeile, div.feld .zeile { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.raster > .feld > :first-child:not(.zeile) { min-height: 32px; display: flex; align-items: center; }
 input[type=text], input[type=date], input[type=time], input[type=number], textarea, select.feld {
   width: 100%; border: 1.5px solid var(--linie); border-radius: 10px; padding: 8px 10px; background: #fff; font-weight: 400; color: var(--text); font-size: 1rem;
 }
@@ -71,9 +76,45 @@ textarea { resize: vertical; min-height: 64px; }
 .aktionen { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .abstand { margin-top: 14px; }
 
-/* Listen-Zeilen (Name + Aussage) */
+/* Listen-Zeilen (Namen + Aussage) */
 .zeilen { display: flex; flex-direction: column; gap: 8px; }
-.zeilen .z { display: grid; grid-template-columns: minmax(130px, 1fr) 3fr auto; gap: 8px; align-items: start; }
+.zeilen .z { display: grid; grid-template-columns: minmax(150px, 1fr) 3fr auto; gap: 8px; align-items: stretch; border-radius: 12px; padding: 4px; margin: -4px; }
+.zeilen .z.ziel { background: var(--akzent-hell); }
+
+/* Namen antippen */
+.namenleiste { position: sticky; top: var(--kopfhoehe, 80px); z-index: 15; background: #fff; border-radius: var(--radius); padding: 10px 14px 12px; margin-bottom: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.08); border-left: 6px solid var(--akzent); }
+.namenleiste .ziel-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .85rem; color: var(--leise); margin-bottom: 8px; }
+.namenleiste .ziel-info b { color: var(--akzent-dunkel); }
+.namenleiste .chips { max-height: 132px; overflow-y: auto; }
+.namenleiste .chip { font-weight: 600; padding: 7px 13px; user-select: none; }
+.namenleiste .chip.extra { border-style: dashed; color: var(--leise); }
+.namensfeld { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-height: 42px; border: 1.5px dashed var(--linie); border-radius: 10px; padding: 5px 8px; background: #fff; cursor: pointer; font-weight: 400; color: var(--text); }
+.namensfeld:hover { border-color: var(--akzent); }
+.namensfeld.ziel { border-style: solid; border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-hell); }
+.namensfeld .leer-hinweis { color: #9a9a9a; font-size: .9rem; }
+.nchip { display: inline-flex; align-items: center; gap: 2px; background: var(--akzent); color: #fff; border-radius: 999px; padding: 3px 4px 3px 10px; font-size: .88rem; font-weight: 600; }
+.nchip button { border: 0; background: transparent; color: #fff; cursor: pointer; font-size: .95rem; line-height: 1; padding: 2px 5px; border-radius: 50%; opacity: .8; }
+.nchip button:hover { opacity: 1; background: rgba(255,255,255,.2); }
+
+/* Reiter für Anliegen */
+.reiter { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; margin-bottom: 10px; }
+.reiter button { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--linie); background: #fff; border-radius: 12px; padding: 8px 14px 8px 8px; cursor: pointer; white-space: nowrap; font-weight: 700; color: var(--leise); max-width: 260px; }
+.reiter button span.t { overflow: hidden; text-overflow: ellipsis; }
+.reiter button .n { display: inline-flex; flex: none; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; background: var(--hg); font-size: .85rem; }
+.reiter button.aktiv { border-color: var(--akzent); background: var(--akzent); color: #fff; }
+.reiter button.aktiv .n { background: #fff; color: var(--akzent); }
+.reiter button.neu { border-style: dashed; color: var(--akzent-dunkel); padding-left: 14px; }
+.reiter .erg { width: 9px; height: 9px; border-radius: 50%; flex: none; background: #ddd; }
+.reiter .erg.beschluss { background: var(--gruen); } .reiter .erg.vertagt { background: var(--gelb); } .reiter .erg.keine { background: var(--rot); } .reiter .erg.weiter { background: var(--grau); }
+
+/* Unterschriften */
+.pads { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.pad { display: flex; flex-direction: column; gap: 6px; }
+.pad canvas { width: 100%; height: 130px; border: 1.5px dashed var(--grau); border-radius: 12px; background: #fff; touch-action: none; cursor: crosshair; }
+.pad.fertig canvas { border-style: solid; border-color: var(--akzent); }
+.pad .unter { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: var(--leise); }
+.prot-unterschriften img { display: block; height: 52px; max-width: 100%; object-fit: contain; margin-bottom: 2px; }
+.prot-unterschriften .platz { height: 52px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: .9rem; }
 .chip.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
@@ -92,11 +133,12 @@ textarea { resize: vertical; min-height: 64px; }
 .badge.ueberfaellig { background: var(--rot); color: #fff; }
 
 /* Schritte */
-.schritte { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+.schritte { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 4px; margin-bottom: 16px; }
 .schritt { display: flex; align-items: center; gap: 8px; border: 0; background: #fff; border-radius: 999px; padding: 7px 14px 7px 8px; cursor: pointer; white-space: nowrap; font-weight: 700; color: var(--leise); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 .schritt .n { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; background: var(--hg); font-size: .85rem; }
 .schritt.aktiv { background: var(--akzent); color: #fff; }
 .schritt.aktiv .n { background: #fff; color: var(--akzent); }
+.schritt.beenden { background: var(--akzent-hell); color: var(--akzent-dunkel); }
 .fusszeile { display: flex; justify-content: space-between; margin-top: 18px; }
 .titelzeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .titelzeile h2 { margin: 0; }
@@ -171,8 +213,8 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 .prot-block { border: 1.5px solid var(--akzent); border-radius: 6px; padding: 0 10px 8px; margin: 10px 0; break-inside: avoid; }
 .prot-block .bt { background: var(--akzent); color: #fff; margin: 0 -10px 6px; padding: 5px 10px; font-weight: 700; border-radius: 4px 4px 0 0; display: flex; gap: 8px; align-items: center; }
 .prot-block p { margin: 4px 0; }
-.prot-unterschriften { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 34px; }
-.prot-unterschriften div { border-top: 1px solid #555; font-size: 8pt; color: #555; padding-top: 3px; }
+.prot-unterschriften { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 18px; break-inside: avoid; }
+.prot-unterschriften .linie { border-top: 1px solid #555; font-size: 8pt; color: #555; padding-top: 3px; }
 .prot-fuss { margin-top: 18px; font-size: 7.5pt; color: #888; border-top: 1px solid #ddd; padding-top: 4px; }
 
 #druck { display: none; }
@@ -193,6 +235,7 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
   main { padding: 16px 12px 120px; }
   .zeilen .z { grid-template-columns: 1fr auto; }
   .zeilen .z > :nth-child(2) { grid-column: 1 / 2; }
+  .namenleiste .chips { max-height: 96px; }
   .vorschlag { grid-template-columns: 1fr; }
   .sitzung-karte { grid-template-columns: auto 1fr; }
   .sitzung-karte .aktionen { grid-column: 1 / -1; }
@@ -211,12 +254,12 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
     <select id="klassenwahl" aria-label="Klasse wählen"></select>
   </div>
   <nav class="haupt" id="nav"></nav>
+  <div class="cloud" id="cloud"></div>
   <div class="gespeichert" id="gespeichert"></div>
 </header>
 <main id="app"></main>
 <div id="timer-bereich"></div>
 <div id="druck"></div>
-<datalist id="namen"></datalist>
 
 <script>
 /*__BILDER__*/
@@ -251,6 +294,11 @@ const TEXTE = {
   },
 };
 const ROLLEN = [["leitung", "glocke"], ["protokoll", "stift"], ["zeit", "uhr"], ["regel", "regel"]];
+const UNTERSCHRIFTEN = [["leitung"], ["protokoll"], ["lehrkraft"]];
+function unterschriftName(s, r, t) {
+  if (r === "lehrkraft") return "Lehrkraft" + (klasse().lehrkraft ? ": " + esc(klasse().lehrkraft) : "");
+  return t[r] + (s.rollen[r] ? ": " + esc(s.rollen[r]) : "");
+}
 const ARTEN = ["Kritik", "Wunsch", "Vorschlag", "Konflikt", "Information"];
 const ERGEBNISSE = [["beschluss", "Beschluss"], ["vertagt", "vertagt"], ["keine", "keine Einigung"], ["weiter", "weitergeben"]];
 const SCHRITTE = [
@@ -263,20 +311,37 @@ const SCHRITTE = [
 // ---------------------------------------------------------------------------
 const SPEICHER = "klassenrat-jpw-v1";
 let state = laden();
-const ui = { view: "sitzungen", sitzungId: null, schritt: "start", filter: "offen" };
+const ui = { view: "sitzungen", sitzungId: null, schritt: "start", filter: "offen", ziel: null, anliegenIdx: 0, fokus: null };
 
 function laden() {
   try {
     const s = JSON.parse(localStorage.getItem(SPEICHER));
-    if (s && Array.isArray(s.klassen)) return s;
+    if (s && Array.isArray(s.klassen)) return migrieren(s);
   } catch (e) { /* leer oder gesperrt */ }
-  return { version: 1, klassen: [], aktiveKlasse: null, logo: null, letzterExport: null };
+  return { version: 2, klassen: [], aktiveKlasse: null, logo: null, letzterExport: null };
+}
+// Version 1 speicherte einen Namen als Text, ab Version 2 sind es Listen (mehrere Namen je Aussage).
+function migrieren(st) {
+  const liste = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+  for (const k of st.klassen) for (const s of k.sitzungen) {
+    for (const z of [...(s.positiv || []), ...s.anliegen.flatMap((a) => a.aussagen || [])]) {
+      if (!z.namen) { z.namen = liste(z.name); delete z.name; }
+    }
+    for (const a of s.anliegen) {
+      a.von = liste(a.von); a.wer = liste(a.wer);
+      for (const v of a.vorschlaege || []) v.von = liste(v.von);
+    }
+    s.unterschriften ||= {};
+  }
+  st.version = 2;
+  return st;
 }
 let speicherTimer;
 function speichern() {
   clearTimeout(speicherTimer);
   speicherTimer = setTimeout(() => {
     const el = document.getElementById("gespeichert");
+    sichernInOrdnerSpaeter();
     try {
       localStorage.setItem(SPEICHER, JSON.stringify(state));
       el.textContent = "✓ gespeichert";
@@ -330,12 +395,12 @@ function neueSitzung() {
     rollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, fehlend: [],
     positiv: [], rueckblick: {}, anliegen: [],
     feedback: { gut: 0, mittel: 0, schlecht: 0 }, vorsatz: "",
-    naechsteRollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, naechsterTermin: "",
+    naechsteRollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, naechsterTermin: "", unterschriften: {},
   };
   if (letzte && Object.values(letzte.naechsteRollen || {}).some(Boolean)) s.rollen = { ...letzte.naechsteRollen };
   else s.rollen = rollenVorschlag(k, []);
   k.sitzungen.push(s);
-  ui.sitzungId = s.id; ui.schritt = "start"; ui.view = "sitzung";
+  ui.sitzungId = s.id; ui.schritt = "start"; ui.view = "sitzung"; ui.ziel = null; ui.anliegenIdx = 0;
   speichern(); render();
 }
 
@@ -366,13 +431,14 @@ function beschluesse(k) {
 function offeneFuer(s) {
   return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && v.status === "ja"));
 }
+const namenText = (x) => (Array.isArray(x) ? x.join(", ") : x || "");
 function ueberfaellig(b) { return b.status !== "ja" && b.anliegen.bisWann && b.anliegen.bisWann < heute(); }
 
 function neuesAnliegen(vorlage) {
   return {
-    id: id(), thema: "", von: "", art: "", worum: "", aussagen: [{ name: "", text: "" }],
-    vorschlaege: [{ text: "", von: "", ja: 0, nein: 0, enth: 0 }],
-    ergebnis: "", weiterAn: "", beschluss: "", wer: "", bisWann: "", ueberpruefung: "", einstimmig: "",
+    id: id(), thema: "", von: [], art: "", worum: "", aussagen: [],
+    vorschlaege: [{ text: "", von: [], ja: 0, nein: 0, enth: 0 }],
+    ergebnis: "", weiterAn: "", beschluss: "", wer: [], bisWann: "", ueberpruefung: "", einstimmig: "",
     ...(vorlage || {}),
   };
 }
@@ -391,7 +457,6 @@ function render() {
   const navs = [["sitzungen", "Sitzungen", "kalender"], ["beschluesse", "Beschlüsse", "beschluss"], ["klasse", "Klasse", "leute"], ["daten", "Daten", "wandzeitung"]];
   const aktivNav = ui.view === "sitzung" ? "sitzungen" : ui.view;
   $("#nav").innerHTML = k ? navs.map(([v, t, b]) => `<button data-act="view" data-arg="${v}" class="${aktivNav === v ? "aktiv" : ""}">${bild(b, "s")}<span class="t">${t}</span></button>`).join("") : "";
-  $("#namen").innerHTML = (k?.schueler || []).map((n) => `<option value="${esc(n)}">`).join("");
 
   const app = $("#app");
   if (!k) app.innerHTML = viewWillkommen();
@@ -401,6 +466,57 @@ function render() {
   else if (ui.view === "daten") app.innerHTML = viewDaten();
   else { ui.view = "sitzungen"; app.innerHTML = viewSitzungen(); }
   renderTimer();
+  renderCloud();
+  nachRender();
+}
+
+function nachRender() {
+  document.documentElement.style.setProperty("--kopfhoehe", document.querySelector(".app-kopf").offsetHeight + "px");
+  document.querySelectorAll("textarea[rows='1']").forEach(hoeheAnpassen);
+  if (ui.fokus) {
+    const el = document.querySelector(`[data-k="${ui.fokus}"]`);
+    ui.fokus = null;
+    if (el) { el.focus({ preventScroll: true }); el.setSelectionRange?.(el.value.length, el.value.length); }
+  }
+  document.querySelectorAll("canvas[data-pad]").forEach(padStarten);
+}
+function hoeheAnpassen(ta) { ta.style.height = "auto"; ta.style.height = Math.max(ta.scrollHeight + 3, 44) + "px"; }
+
+// Ziel wechseln, ohne neu zu zeichnen (z. B. beim Klick in ein Textfeld)
+function zielAnzeigen() {
+  document.querySelectorAll(".zeilen .z").forEach((z) => z.classList.toggle("ziel", z.querySelector("[data-ziel]")?.dataset.ziel === ui.ziel));
+  document.querySelectorAll(".namensfeld").forEach((f) => f.classList.toggle("ziel", f.dataset.arg === ui.ziel));
+  const leiste = document.querySelector(".namenleiste");
+  if (leiste) leiste.outerHTML = namenLeiste();
+}
+
+// --- Unterschriften -------------------------------------------------------------
+function padStarten(c) {
+  const rolle = c.dataset.pad, s = sitzung();
+  const dpr = window.devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  const ctx = c.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#1d2b4f";
+  const alt = s.unterschriften?.[rolle];
+  if (alt) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, c.clientWidth, c.clientHeight); img.src = alt.bild; }
+  let zeichnet = false, gezeichnet = false;
+  const punkt = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  c.addEventListener("pointerdown", (e) => { zeichnet = true; c.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...punkt(e)); e.preventDefault(); });
+  c.addEventListener("pointermove", (e) => { if (!zeichnet) return; ctx.lineTo(...punkt(e)); ctx.stroke(); gezeichnet = true; });
+  const ende = () => {
+    if (!zeichnet) return;
+    zeichnet = false;
+    if (!gezeichnet) return;
+    s.unterschriften ||= {};
+    s.unterschriften[rolle] = { bild: c.toDataURL("image/png"), zeit: Date.now() };
+    c.parentElement.classList.add("fertig");
+    const papier = document.querySelector("#app .papier");
+    if (papier) papier.innerHTML = protokollHTML(s);
+    speichern();
+  };
+  c.addEventListener("pointerup", ende);
+  c.addEventListener("pointercancel", ende);
 }
 
 function viewWillkommen(zusatz) {
@@ -436,7 +552,7 @@ function viewSitzungen() {
   const k = klasse();
   const liste = sortiert(k).reverse();
   const offen = beschluesse(k).filter((b) => b.status !== "ja");
-  const exportAlt = !state.letzterExport || (Date.now() - state.letzterExport) / 864e5 > 14;
+  const exportAlt = ordner.status !== "aktiv" && (!state.letzterExport || (Date.now() - state.letzterExport) / 864e5 > 14);
   return `
   ${k.sitzungen.length && exportAlt ? `<div class="hinweis-box">${bild("wandzeitung", "m")}<div><b>Tipp:</b> Sichere die Daten regelmäßig (zuletzt: ${state.letzterExport ? datum(new Date(state.letzterExport).toISOString().slice(0, 10)) : "noch nie"}).
     <div class="aktionen abstand"><button class="knopf mini" data-act="export">Sicherung herunterladen</button></div></div></div>` : ""}
@@ -469,36 +585,122 @@ function viewSitzungen() {
 function viewSitzung() {
   const s = sitzung(), t = T();
   const titel = (n, x) => x || t[n];
+  zielTexte = {};
+  if (s.anliegen.length && ui.anliegenIdx >= s.anliegen.length) ui.anliegenIdx = s.anliegen.length - 1;
+  if (!zielGueltig()) ui.ziel = standardZiel();
+  const inhalt = { start: schrittStart, positiv: schrittPositiv, rueckblick: schrittRueckblick, anliegen: schrittAnliegen, abschluss: schrittAbschluss, protokoll: schrittProtokoll }[ui.schritt](s, t);
+  const mitNamen = ["positiv", "abschluss"].includes(ui.schritt) || (ui.schritt === "anliegen" && s.anliegen.length);
   return `
   <div class="titelzeile">
     <button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>
     <h2>Sitzung Nr. ${s.nr} <span class="leise klein">${datum(s.datum, true)}</span></h2>
+    ${Object.keys(s.unterschriften || {}).length ? `<span class="badge ja">${bild("unterschrift", "s")} unterschrieben</span>` : ""}
   </div>
-  <div class="schritte">${SCHRITTE.map(([key, x, b], i) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${i + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}</div>
-  ${{ start: schrittStart, positiv: schrittPositiv, rueckblick: schrittRueckblick, anliegen: schrittAnliegen, abschluss: schrittAbschluss, protokoll: schrittProtokoll }[ui.schritt](s, t)}
+  <div class="schritte">${SCHRITTE.map(([key, x, b], i) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${i + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}
+    <button class="schritt beenden" data-act="beenden"><span class="n">${SCHRITTE.length + 1}</span>${bild("haken", "s")}Sitzung beenden</button></div>
+  ${ui.schritt === "anliegen" ? anliegenReiter(s, t) : ""}
+  ${mitNamen ? namenLeiste() : ""}
+  ${inhalt}
   ${ui.schritt !== "protokoll" ? `<div class="fusszeile">
     ${schrittNachbar(-1) ? `<button class="knopf rand" data-act="schritt" data-arg="${schrittNachbar(-1)}">← Zurück</button>` : "<span></span>"}
-    <button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button></div>` : ""}`;
+    <button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button></div>`
+    : `<div class="fusszeile"><button class="knopf rand" data-act="schritt" data-arg="abschluss">← Zurück</button>
+       <button class="knopf" data-act="beenden">${bild("haken", "s")} Sitzung beenden</button></div>`}`;
 }
 function schrittNachbar(d) {
   const i = SCHRITTE.findIndex(([k]) => k === ui.schritt) + d;
   return SCHRITTE[i]?.[0];
 }
-function rollenFelder(obj, pfad, t) {
-  return `<div class="raster">${ROLLEN.map(([r, b]) => `<label class="feld"><span class="zeile">${bild(b)} ${t[r]}</span>
-    <input type="text" list="namen" data-k="${pfad}.${r}" value="${esc(obj[r])}" placeholder="Name"></label>`).join("")}</div>`;
+// --- Namen antippen ------------------------------------------------------------
+// Ein "Ziel" ist der Pfad, dem angetippte Namen zugeordnet werden:
+//  Liste von Zeilen  -> neue Zeile mit dem Namen   ·  Zeile -> Name dazu/weg
+//  Liste von Namen   -> Name dazu/weg              ·  Text (Rolle) -> Name setzen
+let zielTexte = {};
+function wertAn(pfad) { return pfad.split(".").reduce((o, k) => (o == null ? o : o[k]), sitzung()); }
+function zielArt(pfad) {
+  const w = pfad && wertAn(pfad);
+  if (w === undefined || w === null) return null;
+  if (typeof w === "string") return "einzeln";
+  if (Array.isArray(w)) return /^(positiv|anliegen\.\d+\.aussagen)$/.test(pfad) ? "liste" : "mehrere";
+  if (typeof w === "object" && Array.isArray(w.namen)) return "zeile";
+  return null;
 }
-function namenZeilen(liste, pfad, platzhalter, t) {
-  return `<div class="zeilen">${liste.map((z, i) => `<div class="z">
-    <input type="text" list="namen" data-k="${pfad}.${i}.name" value="${esc(z.name)}" placeholder="Name">
-    <textarea rows="1" data-k="${pfad}.${i}.text" placeholder="${esc(platzhalter)}">${esc(z.text)}</textarea>
-    <button class="x" data-act="zeile-weg" data-arg="${pfad}.${i}" title="Zeile entfernen">✕</button></div>`).join("")}</div>
-    <div class="aktionen abstand"><button class="knopf mini zweit" data-act="zeile-neu" data-arg="${pfad}">＋ Zeile</button></div>`;
+function kurzname(n, alle) {
+  const teile = n.trim().split(/\s+/);
+  if (teile.length < 2) return n;
+  const kurz = `${teile[0]} ${teile.at(-1)[0]}.`;
+  return alle.filter((x) => x !== n && x.startsWith(teile[0] + " ") && x.trim().split(/\s+/).at(-1)[0] === teile.at(-1)[0]).length ? n : kurz;
+}
+function standardZiel() {
+  const s = sitzung();
+  if (ui.schritt === "positiv") return "positiv";
+  if (ui.schritt === "anliegen") return s.anliegen[ui.anliegenIdx] ? `anliegen.${ui.anliegenIdx}.aussagen` : null;
+  if (ui.schritt === "start" || ui.schritt === "abschluss") {
+    const basis = ui.schritt === "start" ? "rollen" : "naechsteRollen";
+    const frei = ROLLEN.find(([r]) => !s[basis][r]);
+    return `${basis}.${(frei || ROLLEN[0])[0]}`;
+  }
+  return null;
+}
+function zielGueltig() {
+  const z = ui.ziel;
+  if (!z || !zielArt(z)) return false;
+  if (ui.schritt === "positiv") return z.startsWith("positiv");
+  if (ui.schritt === "anliegen") return z.startsWith(`anliegen.${ui.anliegenIdx}.`);
+  if (ui.schritt === "start") return z.startsWith("rollen.");
+  if (ui.schritt === "abschluss") return z.startsWith("naechsteRollen.");
+  return false;
+}
+function namenLeiste() {
+  const k = klasse(), s = sitzung();
+  const z = ui.ziel, art = zielArt(z);
+  const w = z ? wertAn(z) : null;
+  const gewaehlt = art === "zeile" ? w.namen : art === "mehrere" ? w : art === "einzeln" ? [w] : [];
+  const anwesend = k.schueler.filter((n) => !s.fehlend.includes(n));
+  const info = zielTexte[z]?.text || "";
+  const hinweis = { liste: "Name antippen → neue Zeile, dann den Text eingeben.",
+    zeile: "Weitere Namen antippen, um sie derselben Zeile zuzuordnen.",
+    mehrere: "Namen an- oder abwählen.", einzeln: "Einen Namen antippen." }[art] || "";
+  const listePfad = art === "zeile" ? z.split(".").slice(0, -1).join(".") : null;
+  const extras = art === "einzeln" ? [] : ["ganze Klasse", "Lehrkraft"];
+  if (!k.schueler.length) return `<div class="namenleiste"><div class="ziel-info">Keine Klassenliste hinterlegt.
+    <button class="knopf mini" data-act="view" data-arg="klasse">Klassenliste eintragen</button></div></div>`;
+  return `<div class="namenleiste">
+    <div class="ziel-info">${bild("leute", "s")} <span>Namen für: <b>${esc(info)}</b></span><span>· ${hinweis}</span>
+      ${listePfad ? `<button class="knopf mini zweit" data-act="ziel" data-arg="${listePfad}" style="margin-left:auto">＋ neue Zeile</button>` : ""}</div>
+    <div class="chips">${anwesend.map((n) => `<button class="chip ${gewaehlt.includes(n) ? "an" : ""}" data-act="name" data-arg="${esc(n)}" title="${esc(n)}">${esc(kurzname(n, k.schueler))}</button>`).join("")}
+      ${extras.map((n) => `<button class="chip extra ${gewaehlt.includes(n) ? "an" : ""}" data-act="name" data-arg="${n}">${n}</button>`).join("")}</div>
+  </div>`;
+}
+function namensFeld(pfad, werte, text) {
+  if (!zielTexte[pfad]) zielTexte[pfad] = { text };
+  const liste = Array.isArray(werte) ? werte : werte ? [werte] : [];
+  return `<div class="namensfeld ${ui.ziel === pfad ? "ziel" : ""}" data-act="ziel" data-arg="${pfad}" title="antippen, dann oben Namen wählen">
+    ${liste.length ? liste.map((n) => `<span class="nchip">${esc(n)}<button data-act="name-weg" data-arg="${pfad}|${esc(n)}" aria-label="${esc(n)} entfernen">✕</button></span>`).join("")
+      : `<span class="leer-hinweis">antippen, dann Namen wählen</span>`}</div>`;
+}
+function rollenFelder(obj, pfad, t) {
+  return `<div class="raster">${ROLLEN.map(([r, b]) => `<div class="feld"><span class="zeile">${bild(b)} ${t[r]}</span>
+    ${namensFeld(`${pfad}.${r}`, obj[r], t[r])}</div>`).join("")}</div>`;
+}
+function namenZeilen(liste, pfad, platzhalter, titel) {
+  zielTexte[pfad] = { text: `${titel} – neue Zeile`, liste: true };
+  return `<div class="zeilen">${liste.map((z, i) => {
+    const zp = `${pfad}.${i}`;
+    zielTexte[zp] = { text: `${titel} – Zeile ${i + 1}` };
+    return `<div class="z ${ui.ziel === zp ? "ziel" : ""}">
+    ${namensFeld(zp, z.namen, "")}
+    <textarea rows="1" data-k="${zp}.text" data-ziel="${zp}" placeholder="${esc(platzhalter)}">${esc(z.text)}</textarea>
+    <button class="x" data-act="zeile-weg" data-arg="${zp}" title="Zeile entfernen">✕</button></div>`;
+  }).join("")}</div>
+    ${liste.length ? "" : `<p class="leise klein">Noch keine Einträge – oben einen Namen antippen.</p>`}
+    <div class="aktionen abstand"><button class="knopf mini zweit" data-act="zeile-neu" data-arg="${pfad}">＋ Zeile ohne Namen</button></div>`;
 }
 
 function schrittStart(s, t) {
   const k = klasse();
   const anw = k.schueler.length - s.fehlend.length;
+  const rollen = rollenFelder(s.rollen, "rollen", t);
   return `
   <div class="karte akzent">
     <h3 style="margin-top:0">${bild("kalender")} Sitzung</h3>
@@ -510,22 +712,23 @@ function schrittStart(s, t) {
     </div>
   </div>
   <div class="karte">
-    <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("leute")} Rollen</h3>
-      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="rollen" style="margin-left:auto">Rollen vorschlagen</button></div>
-    ${rollenFelder(s.rollen, "rollen", t)}
-    <p class="leise klein">Der Vorschlag wählt die ${t.kinder}, die bisher am seltensten eine Rolle hatten.</p>
-  </div>
-  <div class="karte">
     <h3 style="margin-top:0">${bild("haken")} Anwesenheit <span class="leise klein">${k.schueler.length ? `${anw} von ${k.schueler.length} anwesend – zum Abmelden antippen` : ""}</span></h3>
     ${k.schueler.length ? `<div class="chips">${k.schueler.map((n) => `<button class="chip ${s.fehlend.includes(n) ? "fehlt" : ""}" data-act="fehlt" data-arg="${esc(n)}">${esc(n)}</button>`).join("")}</div>`
       : `<p class="leise">Keine Klassenliste hinterlegt. <button class="knopf mini" data-act="view" data-arg="klasse">Klassenliste eintragen</button></p>`}
+  </div>
+  ${namenLeiste()}
+  <div class="karte">
+    <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("leute")} Rollen</h3>
+      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="rollen" style="margin-left:auto">Rollen vorschlagen</button></div>
+    ${rollen}
+    <p class="leise klein">Der Vorschlag wählt die ${t.kinder}, die bisher am seltensten eine Rolle hatten.</p>
   </div>`;
 }
 
 function schrittPositiv(s, t) {
   return `<div class="karte akzent">
     <h3 style="margin-top:0">${bild("stern", "m")} ${t.positiv} <span class="leise klein">${t.positivTipp}</span></h3>
-    ${namenZeilen(s.positiv, "positiv", "Was wurde gesagt?", t)}
+    ${namenZeilen(s.positiv, "positiv", "Was wurde gesagt?", t.positiv)}
   </div>`;
 }
 
@@ -535,20 +738,30 @@ function schrittRueckblick(s, t) {
   const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"]];
   return `<div class="karte akzent">
     <h3 style="margin-top:0">${bild("zurueck", "m")} ${t.rueckblick} <span class="leise klein">${t.rueckblickTipp}</span></h3>
+    <p class="leise klein" style="margin-top:-4px">Nur „${t.status.ja}“ schließt einen Beschluss ab. „${t.status.teils}“ und „${t.status.nein}“ lassen ihn offen.</p>
     ${offen.map((b) => {
       const r = s.rueckblick[b.id] || {};
       return `<div class="karte" style="box-shadow:none;border:1.5px solid var(--linie)">
         <div class="rb">
           <div><b>${esc(b.anliegen.beschluss)}</b><br>
           <span class="leise klein">aus Sitzung ${b.sitzung.nr} (${datum(b.sitzung.datum)}) · ${esc(b.anliegen.thema || "")}
-          ${b.anliegen.wer ? " · zuständig: " + esc(b.anliegen.wer) : ""}${b.anliegen.bisWann ? " · bis " + datum(b.anliegen.bisWann) : ""}</span>
+          ${b.anliegen.wer?.length ? " · zuständig: " + esc(namenText(b.anliegen.wer)) : ""}${b.anliegen.bisWann ? " · bis " + datum(b.anliegen.bisWann) : ""}</span>
           ${b.verlauf.filter((v) => v.nr < s.nr).map((v) => ` <span class="badge ${v.status}">Nr. ${v.nr}: ${t.status[v.status]}</span>`).join("")}</div>
           <div class="status-wahl">${opt.map(([st, ic]) => `<button class="${r.status === st ? "an" : ""}" data-act="rb-status" data-arg="${b.id}|${st}">${bild(ic, "m")}${t.status[st]}</button>`).join("")}</div>
         </div>
         <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="Bemerkung / wie geht es weiter?" ${r.status ? "" : "disabled"}>
+        <p class="leise klein" style="margin:6px 0 0">${r.status === "ja"
+          ? `${bild("haken", "s")} Erledigt – erscheint in künftigen Sitzungen nicht mehr.`
+          : `${bild("zurueck", "s")} Bleibt offen und wird in der nächsten Sitzung wieder zur Überprüfung aufgelistet${r.status ? "" : " (auch wenn nichts angetippt wird)"}.`}</p>
       </div>`;
     }).join("")}
   </div>`;
+}
+
+function anliegenReiter(s, t) {
+  return `<div class="reiter">${s.anliegen.map((a, i) => `<button class="${i === ui.anliegenIdx ? "aktiv" : ""}" data-act="anliegen-tab" data-arg="${i}" title="${esc(a.thema)}">
+      <span class="n">${i + 1}</span><span class="t">${esc(a.thema || t.einAnliegen + " " + (i + 1))}</span><span class="erg ${a.ergebnis}"></span></button>`).join("")}
+    <button class="neu" data-act="anliegen-neu">＋ ${t.einAnliegen}</button></div>`;
 }
 
 function schrittAnliegen(s, t) {
@@ -556,39 +769,37 @@ function schrittAnliegen(s, t) {
   const vorher = sortiert(k).filter((x) => x.nr < s.nr).at(-1);
   const vertagt = (vorher?.anliegen || []).filter((a) => a.ergebnis === "vertagt" && !s.anliegen.some((b) => b.aus === a.id));
   return `
-  <div class="titelzeile">
-    <h2 style="margin:0">${bild("wandzeitung", "m")} ${t.anliegen}</h2>
-    <button class="knopf" data-act="anliegen-neu" style="margin-left:auto">＋ ${t.einAnliegen}</button>
-  </div>
   ${vertagt.length ? `<div class="hinweis-box info">${bild("zurueck", "m")}<div><b>Vertagt aus Sitzung ${vorher.nr}:</b> ${vertagt.map((a) => esc(a.thema || "ohne Thema")).join(", ")}
     <div class="aktionen abstand"><button class="knopf mini" data-act="vertagt-uebernehmen">Übernehmen</button></div></div></div>` : ""}
-  ${s.anliegen.length ? s.anliegen.map((a, i) => anliegenKarte(a, i, t, k)).join("")
-    : `<div class="karte leer">${bild("sprechen", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.anliegen} von der Wandzeitung ein.</p></div>`}`;
+  ${s.anliegen.length ? anliegenKarte(s.anliegen[ui.anliegenIdx], ui.anliegenIdx, t, k)
+    : `<div class="karte leer">${bild("wandzeitung", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.anliegen} von der Wandzeitung ein.</p>
+       <button class="knopf" data-act="anliegen-neu">＋ ${t.einAnliegen}</button></div>`}`;
 }
 
 function anliegenKarte(a, i, t, k) {
   const p = `anliegen.${i}`;
   const gs = k.stufe === "gs";
+  const nr = (x) => `${t.einAnliegen} ${i + 1}: ${x}`;
   return `<div class="karte anliegen">
     <div class="anliegen-kopf">
       <span class="nr">${i + 1}</span>
-      <input type="text" data-k="${p}.thema" value="${esc(a.thema)}" placeholder="${t.einAnliegen}: Worum geht es in einem Satz?">
+      <input type="text" data-k="${p}.thema" data-reiter value="${esc(a.thema)}" placeholder="${t.einAnliegen}: Worum geht es in einem Satz?">
       <button class="knopf mini zweit" data-act="timer-start" title="Timer für dieses ${t.einAnliegen} starten">${bild("uhr", "s")} Timer</button>
       <button class="x" data-act="anliegen-weg" data-arg="${i}" title="${t.einAnliegen} löschen">✕</button>
     </div>
     <div class="raster">
-      <label class="feld">${t.von}<input type="text" list="namen" data-k="${p}.von" value="${esc(a.von)}" placeholder="Name"></label>
-      <label class="feld">Art<select class="feld" data-k="${p}.art"><option value="">–</option>${ARTEN.map((x) => `<option ${a.art === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+      <div class="feld"><span class="zeile">${t.von}</span>${namensFeld(`${p}.von`, a.von, nr(t.von))}</div>
+      <label class="feld"><span class="zeile">Art</span><select class="feld" data-k="${p}.art"><option value="">–</option>${ARTEN.map((x) => `<option ${a.art === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
     </div>
     <label class="feld abstand">${t.worum}<textarea rows="2" data-k="${p}.worum">${esc(a.worum)}</textarea></label>
 
     <h3>${bild("sprechen")} ${t.aussagen} <span class="leise klein">${gs ? "" : "Betroffene zuerst, dann die Klasse"}</span></h3>
-    ${namenZeilen(a.aussagen, p + ".aussagen", t.aussage, t)}
+    ${namenZeilen(a.aussagen, p + ".aussagen", t.aussage, nr(t.aussagen))}
 
     <h3>${bild(gs ? "idee" : "hand")} ${t.vorschlaege}</h3>
     <div class="zeilen">${a.vorschlaege.map((v, j) => `<div class="vorschlag">
       <input type="text" data-k="${p}.vorschlaege.${j}.text" value="${esc(v.text)}" placeholder="${t.vorschlag}">
-      <input type="text" list="namen" data-k="${p}.vorschlaege.${j}.von" value="${esc(v.von)}" placeholder="von">
+      ${namensFeld(`${p}.vorschlaege.${j}.von`, v.von, nr(`${t.vorschlag} ${j + 1} – von`))}
       <div class="zaehler-gruppe">
         ${zaehler(`${p}.vorschlaege.${j}.ja`, v.ja, "daumen_hoch", "dafür")}
         ${zaehler(`${p}.vorschlaege.${j}.nein`, v.nein, "daumen_runter", "dagegen")}
@@ -605,14 +816,15 @@ function anliegenKarte(a, i, t, k) {
         ${a.vorschlaege.some((v) => v.text) ? `<button class="knopf mini rand" data-act="beste-idee" data-arg="${i}">Vorschlag mit den meisten Stimmen übernehmen</button>` : ""}</span>
         <textarea rows="2" data-k="${p}.beschluss">${esc(a.beschluss)}</textarea></label>
       <div class="raster abstand">
-        <label class="feld">Wer?<input type="text" list="namen" data-k="${p}.wer" value="${esc(a.wer)}" placeholder="Name(n) oder „alle“"></label>
-        <label class="feld">Bis wann?<input type="date" data-k="${p}.bisWann" value="${esc(a.bisWann)}"></label>
-        ${gs ? "" : `<label class="feld">Abstimmung<select class="feld" data-k="${p}.einstimmig"><option value="">–</option>
+        <div class="feld"><span class="zeile">Wer?</span>${namensFeld(`${p}.wer`, a.wer, nr("Wer setzt den Beschluss um?"))}</div>
+        <label class="feld"><span class="zeile">Bis wann?</span><input type="date" data-k="${p}.bisWann" value="${esc(a.bisWann)}"></label>
+        ${gs ? "" : `<label class="feld"><span class="zeile">Abstimmung</span><select class="feld" data-k="${p}.einstimmig"><option value="">–</option>
           <option ${a.einstimmig === "einstimmig" ? "selected" : ""}>einstimmig</option><option ${a.einstimmig === "mit Mehrheit" ? "selected" : ""}>mit Mehrheit</option></select></label>`}
       </div></div>` : ""}
     ${a.ergebnis === "weiter" ? `<div class="beschluss-box"><label class="feld">Weitergeben an<input type="text" data-k="${p}.weiterAn" value="${esc(a.weiterAn)}" placeholder="${gs ? "Lehrkraft, Schulleitung …" : "Lehrkraft, SMV, Schulleitung …"}"></label></div>` : ""}
     ${a.ergebnis === "vertagt" ? `<p class="leise klein">Wird in der nächsten Sitzung zur Übernahme vorgeschlagen.</p>` : ""}
-  </div>`;
+  </div>
+  ${ui.anliegenIdx < sitzung().anliegen.length - 1 ? `<div class="aktionen"><button class="knopf zweit" data-act="anliegen-tab" data-arg="${i + 1}">Nächstes ${t.einAnliegen} →</button></div>` : ""}`;
 }
 function zaehler(pfad, wert, icon, titel) {
   return `<span class="zaehler" title="${titel}">${icon ? bild(icon) : `<span class="klein leise" style="margin-left:8px">Enth.</span>`}
@@ -639,8 +851,15 @@ function schrittAbschluss(s, t) {
   <div class="aktionen"><button class="knopf gross" data-act="schritt" data-arg="protokoll">${bild("beschluss", "s")} Protokoll ansehen</button></div>`;
 }
 
-function schrittProtokoll(s) {
-  return `<div class="aktionen" style="margin-bottom:14px">
+function schrittProtokoll(s, t) {
+  return `<div class="karte akzent">
+      <h3 style="margin-top:0">${bild("unterschrift", "m")} Unterschreiben <span class="leise klein">mit Finger, Stift oder Maus ins Feld schreiben</span></h3>
+      <div class="pads">${UNTERSCHRIFTEN.map(([r]) => `<div class="pad ${s.unterschriften?.[r] ? "fertig" : ""}">
+        <canvas data-pad="${r}"></canvas>
+        <div class="unter"><span>${unterschriftName(s, r, t)}</span><button class="knopf mini rand" data-act="unterschrift-weg" data-arg="${r}">löschen</button></div></div>`).join("")}</div>
+      <p class="leise klein">Die Unterschriften erscheinen automatisch im Protokoll. Bitte erst unterschreiben, wenn das Protokoll fertig ist.</p>
+    </div>
+    <div class="aktionen" style="margin-bottom:14px">
       <button class="knopf gross" data-act="drucken" data-arg="${s.id}">Drucken / als PDF speichern</button>
       <span class="leise klein">Tipp: Im Druckdialog „Als PDF speichern“ wählen, um das Protokoll abzulegen.</span></div>
     <div class="papier">${protokollHTML(s)}</div>`;
@@ -654,7 +873,7 @@ function protokollHTML(s) {
     ? `<table><tr>${kopf.map((h) => `<th>${h}</th>`).join("")}</tr>${zeilen.map((z) => `<tr>${z.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>`
     : `<p class="leise">–</p>`;
   const offen = offeneFuer(s);
-  const voll = (l) => l.filter((z) => z.name || z.text);
+  const voll = (l) => l.filter((z) => z.namen.length || z.text);
   return `
   <div class="prot-kopf"><div class="logo">${logoHTML()}</div>
     <div><h1>${esc(t.titel)}</h1><div>Klasse <b>${esc(k.name)}</b> · ${esc(k.schuljahr || "")}</div></div>
@@ -667,12 +886,12 @@ function protokollHTML(s) {
   ${s.fehlend.length ? `<p><b>Es fehlen:</b> ${s.fehlend.map(esc).join(", ")}</p>` : ""}
 
   <h4>${bild("stern")} 1 · ${t.positiv}</h4>
-  ${tab(["Name", "Aussage"], voll(s.positiv).map((z) => [esc(z.name), esc(z.text)]))}
+  ${tab(["Name", "Aussage"], voll(s.positiv).map((z) => [esc(namenText(z.namen)), esc(z.text)]))}
 
   <h4>${bild("zurueck")} 2 · ${t.rueckblick}</h4>
   ${tab(["Beschluss", "aus Nr.", "zuständig", "Ergebnis", "Bemerkung"], offen.map((b) => {
     const r = s.rueckblick[b.id] || {};
-    return [esc(b.anliegen.beschluss), b.sitzung.nr, esc(b.anliegen.wer), r.status ? t.status[r.status] : "nicht besprochen", esc(r.notiz)];
+    return [esc(b.anliegen.beschluss), b.sitzung.nr, esc(namenText(b.anliegen.wer)), r.status === "ja" ? t.status.ja : (r.status ? t.status[r.status] : "nicht besprochen") + " – bleibt offen", esc(r.notiz)];
   }))}
 
   <h4>${bild("sprechen")} 3 · ${t.anliegen}</h4>
@@ -680,13 +899,13 @@ function protokollHTML(s) {
     const vs = a.vorschlaege.filter((v) => v.text);
     const erg = { beschluss: t.beschluss, vertagt: "vertagt", keine: "keine Einigung", weiter: "weitergegeben an " + (a.weiterAn || "…") }[a.ergebnis] || "–";
     return `<div class="prot-block"><div class="bt">${t.einAnliegen} ${i + 1}: ${esc(a.thema || "")}</div>
-      <p><b>${t.von}:</b> ${esc(a.von || "–")}${a.art ? ` &nbsp;·&nbsp; <b>Art:</b> ${esc(a.art)}` : ""}</p>
+      <p><b>${t.von}:</b> ${esc(namenText(a.von) || "–")}${a.art ? ` &nbsp;·&nbsp; <b>Art:</b> ${esc(a.art)}` : ""}</p>
       ${a.worum ? `<p><b>${t.worum.replace(/ \(.*\)/, "")}</b> ${esc(a.worum)}</p>` : ""}
-      ${voll(a.aussagen).length ? `<p><b>${t.aussagen}</b></p>` + tab(["Name", "Aussage"], voll(a.aussagen).map((z) => [esc(z.name), esc(z.text)])) : ""}
+      ${voll(a.aussagen).length ? `<p><b>${t.aussagen}</b></p>` + tab(["Name", "Aussage"], voll(a.aussagen).map((z) => [esc(namenText(z.namen)), esc(z.text)])) : ""}
       ${vs.length ? `<p><b>${t.vorschlaege}</b></p>` + tab([t.vorschlag, "von", "dafür", "dagegen", ...(k.stufe === "gs" ? [] : ["Enth."])],
-        vs.map((v) => [esc(v.text), esc(v.von), v.ja || 0, v.nein || 0, ...(k.stufe === "gs" ? [] : [v.enth || 0])])) : ""}
+        vs.map((v) => [esc(v.text), esc(namenText(v.von)), v.ja || 0, v.nein || 0, ...(k.stufe === "gs" ? [] : [v.enth || 0])])) : ""}
       <p><b>Ergebnis:</b> ${erg}${a.einstimmig ? ` (${esc(a.einstimmig)})` : ""}</p>
-      ${a.ergebnis === "beschluss" ? `<p><b>${t.beschluss}:</b> ${esc(a.beschluss)}<br><b>Wer?</b> ${esc(a.wer || "–")} &nbsp;·&nbsp; <b>Bis wann?</b> ${datum(a.bisWann)}</p>` : ""}
+      ${a.ergebnis === "beschluss" ? `<p><b>${t.beschluss}:</b> ${esc(a.beschluss)}<br><b>Wer?</b> ${esc(namenText(a.wer) || "–")} &nbsp;·&nbsp; <b>Bis wann?</b> ${datum(a.bisWann)}</p>` : ""}
     </div>`;
   }).join("") : `<p class="leise">–</p>`}
 
@@ -695,7 +914,11 @@ function protokollHTML(s) {
   ${s.vorsatz ? `<p><b>Vorsatz:</b> ${esc(s.vorsatz)}</p>` : ""}
   <p><b>Rollen nächste Sitzung:</b> ${ROLLEN.map(([r]) => `${t[r]}: ${esc(s.naechsteRollen[r] || "–")}`).join(" · ")}</p>
   <p><b>Nächster Klassenrat:</b> ${datum(s.naechsterTermin, true)}</p>
-  <div class="prot-unterschriften"><div>${t.leitung}</div><div>${t.protokoll}</div><div>Lehrkraft</div></div>
+  <div class="prot-unterschriften">${UNTERSCHRIFTEN.map(([r]) => {
+    const u = s.unterschriften?.[r];
+    return `<div>${u ? `<img src="${u.bild}" alt="Unterschrift">` : `<div class="platz"></div>`}
+      <div class="linie">${unterschriftName(s, r, t)}${u ? ` · unterschrieben ${new Date(u.zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}` : ""}</div></div>`;
+  }).join("")}</div>
   <div class="prot-fuss">Klassenrat ${esc(k.name)} · Sitzung ${s.nr} · erstellt am ${datum(heute())}</div>`;
 }
 
@@ -725,7 +948,7 @@ function beschlussTabelle(liste, t) {
     ${liste.map((b) => `<tr>
       <td><b>${esc(b.anliegen.beschluss)}</b><br><span class="leise klein">${esc(b.anliegen.thema)}</span></td>
       <td>Nr. ${b.sitzung.nr}<br><span class="leise klein">${datum(b.sitzung.datum)}</span></td>
-      <td>${esc(b.anliegen.wer || "–")}</td>
+      <td>${esc(namenText(b.anliegen.wer) || "–")}</td>
       <td>${datum(b.anliegen.bisWann)} ${ueberfaellig(b) ? `<span class="badge ueberfaellig">überfällig</span>` : ""}</td>
       <td><span class="badge ${b.status}">${b.status === "offen" ? "noch offen" : t.status[b.status]}</span>
         ${b.verlauf.map((v) => `<div class="leise klein">Nr. ${v.nr}: ${t.status[v.status]}${v.notiz ? " – " + esc(v.notiz) : ""}</div>`).join("")}</td>
@@ -771,7 +994,30 @@ function viewDaten() {
     Es wird nichts ins Internet übertragen. Wenn Browserdaten gelöscht werden, sind auch die Protokolle weg. Lade deshalb regelmäßig eine Sicherung herunter.
     Nutze das Tool nicht auf Geräten, an denen andere Personen mit deinem Browserprofil arbeiten. Beachte die Vorgaben eurer Schule zum Umgang mit Schülerdaten.</div></div>
   <div class="karte akzent">
-    <h3 style="margin-top:0">Sicherung</h3>
+    <h3 style="margin-top:0">☁ Automatische Sicherung in OneDrive</h3>
+    ${ordnerMoeglich ? `
+      <p class="leise">Wähle einmal einen Ordner <b>innerhalb deines OneDrive-Ordners</b> auf diesem PC
+      (z. B. <i>OneDrive – Schule › Klassenrat</i>). Das Tool speichert dann nach jeder Änderung automatisch
+      <code>klassenrat-sicherung.json</code> dorthin und legt im Unterordner <i>Verlauf</i> eine Fassung pro Tag ab.
+      OneDrive lädt die Dateien selbstständig in die Cloud.</p>
+      <p><b>Status:</b> ${{ aktiv: `<span class="badge ja">aktiv</span> Ordner „${esc(ordner.handle?.name)}“${ordner.zuletzt ? ` · zuletzt gesichert ${new Date(ordner.zuletzt).toLocaleString("de-DE")}` : ""}`,
+        pausiert: `<span class="badge teils">pausiert</span> Der Browser fragt nach einem Neustart einmal nach der Erlaubnis.`,
+        fehler: `<span class="badge nein">Fehler</span> ${esc(ordner.fehler)}`,
+        aus: `<span class="badge">nicht eingerichtet</span>` }[ordner.status]}</p>
+      <div class="aktionen">
+        ${ordner.status === "aus" ? `<button class="knopf" data-act="ordner-waehlen">OneDrive-Ordner wählen …</button>` : ""}
+        ${ordner.status === "pausiert" || ordner.status === "fehler" ? `<button class="knopf" data-act="ordner-fortsetzen">Sicherung fortsetzen</button>` : ""}
+        ${ordner.status !== "aus" ? `<button class="knopf rand" data-act="ordner-laden">Aus diesem Ordner wiederherstellen</button>
+          <button class="knopf rand" data-act="ordner-waehlen">Anderen Ordner wählen …</button>
+          <button class="knopf gefahr" data-act="ordner-trennen">Beenden</button>` : ""}
+      </div>
+      <p class="leise klein">Auf einem neuen Gerät: denselben OneDrive-Ordner wählen und „Aus diesem Ordner wiederherstellen“ antippen.</p>`
+    : `<div class="hinweis-box">${bild("regel", "m")}<div>Dieser Browser kann nicht automatisch in einen Ordner speichern.
+      Nutze dafür <b>Microsoft Edge</b> oder <b>Google Chrome</b> am Windows-PC oder Mac. Auf iPad und in Firefox/Safari:
+      Sicherung unten herunterladen und in OneDrive ablegen.</div></div>`}
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">Sicherung als Datei</h3>
     <p class="leise">Die Sicherung enthält alle Klassen und Sitzungen als Datei. Damit kannst du die Daten auch auf ein anderes Gerät übertragen.</p>
     <div class="aktionen"><button class="knopf" data-act="export">Sicherung herunterladen</button>
       <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
@@ -829,6 +1075,103 @@ function timerStarten(min) {
   renderTimer();
 }
 
+// --- Automatische Sicherung in einen Ordner (z. B. OneDrive) ---------------------
+// Der Browser schreibt die Sicherung in einen einmal gewählten Ordner. Liegt dieser im
+// OneDrive-Ordner des PCs, lädt OneDrive die Datei automatisch hoch.
+const ordner = { handle: null, status: "aus", zuletzt: null, fehler: "" };
+const ordnerMoeglich = "showDirectoryPicker" in window;
+function idb(modus, fn) {
+  return new Promise((ok, fehler) => {
+    const r = indexedDB.open("klassenrat-jpw", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onerror = () => fehler(r.error);
+    r.onsuccess = () => {
+      const tx = r.result.transaction("kv", modus), q = fn(tx.objectStore("kv"));
+      tx.oncomplete = () => ok(q?.result);
+      tx.onerror = () => fehler(tx.error);
+    };
+  });
+}
+async function ordnerLaden() {
+  if (!ordnerMoeglich) return;
+  try {
+    ordner.handle = await idb("readonly", (st) => st.get("ordner"));
+    if (ordner.handle) {
+      ordner.status = (await ordner.handle.queryPermission({ mode: "readwrite" })) === "granted" ? "aktiv" : "pausiert";
+      ordner.zuletzt = (await idb("readonly", (st) => st.get("zuletzt"))) || null;
+    }
+  } catch (e) { ordner.status = "aus"; }
+  renderCloud();
+  if (ui.view === "daten") render();
+}
+async function ordnerWaehlen() {
+  try {
+    const h = await window.showDirectoryPicker({ id: "klassenrat", mode: "readwrite", startIn: "documents" });
+    ordner.handle = h; ordner.status = "aktiv";
+    await idb("readwrite", (st) => st.put(h, "ordner"));
+    await sichernInOrdner();
+  } catch (e) {
+    if (e.name !== "AbortError") alert("Der Ordner konnte nicht verwendet werden: " + e.message);
+  }
+  render();
+}
+async function ordnerFortsetzen() {
+  try {
+    ordner.status = (await ordner.handle.requestPermission({ mode: "readwrite" })) === "granted" ? "aktiv" : "pausiert";
+    if (ordner.status === "aktiv") await sichernInOrdner();
+  } catch (e) { ordner.status = "fehler"; ordner.fehler = e.message; }
+  render();
+}
+async function ordnerTrennen() {
+  if (!confirm("Automatische Sicherung beenden? Die Dateien im Ordner bleiben erhalten.")) return;
+  ordner.handle = null; ordner.status = "aus";
+  try { await idb("readwrite", (st) => st.delete("ordner")); } catch (e) { /* egal */ }
+  render();
+}
+async function schreibeDatei(dir, name, text) {
+  const f = await dir.getFileHandle(name, { create: true });
+  const w = await f.createWritable();
+  await w.write(text); await w.close();
+}
+let ordnerTimer;
+function sichernInOrdnerSpaeter() { clearTimeout(ordnerTimer); ordnerTimer = setTimeout(sichernInOrdner, 2000); }
+async function sichernInOrdner() {
+  if (ordner.status !== "aktiv" || !ordner.handle) return;
+  try {
+    const json = JSON.stringify(state, null, 1);
+    await schreibeDatei(ordner.handle, "klassenrat-sicherung.json", json);
+    const verlauf = await ordner.handle.getDirectoryHandle("Verlauf", { create: true });
+    await schreibeDatei(verlauf, `klassenrat-${heute()}.json`, json);  // eine Fassung pro Tag
+    ordner.zuletzt = Date.now(); ordner.fehler = "";
+    idb("readwrite", (st) => st.put(ordner.zuletzt, "zuletzt")).catch(() => {});
+  } catch (e) {
+    ordner.status = e.name === "NotAllowedError" ? "pausiert" : "fehler"; ordner.fehler = e.message;
+  }
+  renderCloud();
+}
+async function ausOrdnerLaden() {
+  try {
+    if (ordner.status !== "aktiv") await ordnerFortsetzen();
+    const f = await (await ordner.handle.getFileHandle("klassenrat-sicherung.json")).getFile();
+    const neu = JSON.parse(await f.text());
+    if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
+    if (!confirm(`Sicherung vom ${new Date(f.lastModified).toLocaleString("de-DE")} laden? Sie ersetzt die Daten in diesem Browser.`)) return;
+    state = migrieren(neu); ui.view = "sitzungen"; speichern(); render();
+  } catch (e) { alert("Im Ordner wurde keine gültige Sicherung gefunden. " + (e.message || "")); }
+}
+function renderCloud() {
+  const el = $("#cloud");
+  if (!el) return;
+  if (!klasse() || !ordnerMoeglich) { el.innerHTML = ""; return; }
+  const zeit = ordner.zuletzt ? new Date(ordner.zuletzt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+  el.innerHTML = {
+    aktiv: `<button class="an" data-act="view" data-arg="daten" title="Automatische Sicherung aktiv">☁ gesichert ${zeit}</button>`,
+    pausiert: `<button class="warn" data-act="ordner-fortsetzen" title="Zum Fortsetzen antippen">☁ Sicherung pausiert – fortsetzen</button>`,
+    fehler: `<button class="warn" data-act="view" data-arg="daten" title="${esc(ordner.fehler)}">☁ Sicherung fehlgeschlagen</button>`,
+    aus: `<button data-act="view" data-arg="daten">☁ Sicherung einrichten</button>`,
+  }[ordner.status];
+}
+
 // --- Dateien -------------------------------------------------------------------
 function dateiWaehlen(accept, cb) {
   const inp = document.createElement("input");
@@ -853,8 +1196,53 @@ function exportieren() {
 const AKTIONEN = {
   view(v) { ui.view = v; render(); scrollTo(0, 0); },
   "neue-sitzung": neueSitzung,
-  oeffnen(sid) { ui.sitzungId = sid; ui.schritt = "start"; ui.view = "sitzung"; render(); scrollTo(0, 0); },
-  schritt(s) { ui.schritt = s; render(); scrollTo(0, 0); },
+  oeffnen(sid) { Object.assign(ui, { sitzungId: sid, schritt: "start", view: "sitzung", ziel: null, anliegenIdx: 0 }); render(); scrollTo(0, 0); },
+  schritt(s) { ui.schritt = s; ui.ziel = null; render(); scrollTo(0, 0); },
+  ziel(pfad) {
+    ui.ziel = pfad;
+    if (zielArt(pfad) === "zeile") ui.fokus = pfad + ".text";
+    render();
+  },
+  name(n) {
+    const s = sitzung(), z = ui.ziel, art = zielArt(z);
+    if (!art) return;
+    const w = wertAn(z);
+    const umschalten = (liste) => { const i = liste.indexOf(n); i >= 0 ? liste.splice(i, 1) : liste.push(n); };
+    if (art === "liste") {
+      w.push({ namen: [n], text: "" });
+      ui.ziel = `${z}.${w.length - 1}`; ui.fokus = ui.ziel + ".text";
+    } else if (art === "zeile") {
+      umschalten(w.namen); ui.fokus = z + ".text";
+    } else if (art === "mehrere") {
+      umschalten(w);
+    } else {
+      pfadSetzen(s, z, w === n ? "" : n);
+      const [basis, rolle] = z.split(".");
+      if (basis === "rollen" || basis === "naechsteRollen") {
+        // eine Person hat höchstens eine Rolle
+        for (const [r] of ROLLEN) if (r !== rolle && s[basis][r] === n) s[basis][r] = "";
+        const frei = ROLLEN.find(([r]) => !s[basis][r]);
+        if (frei) ui.ziel = `${basis}.${frei[0]}`;
+      }
+    }
+    speichern(); render();
+  },
+  "name-weg"(arg) {
+    const [pfad, n] = arg.split("|"), w = wertAn(pfad);
+    if (typeof w === "string") pfadSetzen(sitzung(), pfad, "");
+    else { const l = Array.isArray(w) ? w : w.namen; l.splice(l.indexOf(n), 1); }
+    ui.ziel = pfad;  // gleich einen anderen Namen wählen können
+    speichern(); render();
+  },
+  // Trägt die Endzeit ein (falls leer) und kehrt zur Übersicht zurück
+  beenden() {
+    const s = sitzung();
+    if (!s.ende) s.ende = jetzt();
+    ui.view = "sitzungen"; ui.ziel = null;
+    speichern(); render(); scrollTo(0, 0);
+  },
+  "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
+  "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
   "sitzung-loeschen"(sid) {
     const k = klasse(), s = k.sitzungen.find((x) => x.id === sid);
     if (confirm(`Sitzung Nr. ${s.nr} vom ${datum(s.datum)} wirklich löschen?`)) { k.sitzungen = k.sitzungen.filter((x) => x.id !== sid); speichern(); render(); }
@@ -877,14 +1265,15 @@ const AKTIONEN = {
     speichern(); render();
   },
   "zeile-neu"(pfad) {
-    const liste = pfad.split(".").reduce((o, k) => o[k], sitzung());
-    liste.push({ name: "", text: "" }); speichern(); render();
-    const felder = document.querySelectorAll(`[data-k^="${pfad}."][list]`);
-    felder[felder.length - 1]?.focus();
+    const liste = wertAn(pfad);
+    liste.push({ namen: [], text: "" });
+    ui.ziel = `${pfad}.${liste.length - 1}`; ui.fokus = ui.ziel + ".text";
+    speichern(); render();
   },
   "zeile-weg"(pfad) {
     const teile = pfad.split("."), i = +teile.pop();
-    teile.reduce((o, k) => o[k], sitzung()).splice(i, 1); speichern(); render();
+    teile.reduce((o, k) => o[k], sitzung()).splice(i, 1);
+    ui.ziel = null; speichern(); render();
   },
   "rb-status"(arg) {
     const [bid, st] = arg.split("|"), s = sitzung();
@@ -893,19 +1282,27 @@ const AKTIONEN = {
     if (!r.status) delete s.rueckblick[bid];
     speichern(); render();
   },
-  "anliegen-neu"() { sitzung().anliegen.push(neuesAnliegen()); speichern(); render(); document.querySelectorAll(".anliegen-kopf input")[sitzung().anliegen.length - 1]?.focus(); },
+  "anliegen-neu"() {
+    const s = sitzung();
+    s.anliegen.push(neuesAnliegen());
+    ui.anliegenIdx = s.anliegen.length - 1; ui.ziel = null; ui.fokus = `anliegen.${ui.anliegenIdx}.thema`;
+    speichern(); render();
+  },
   "anliegen-weg"(i) {
     const s = sitzung();
-    if (confirm(`${T().einAnliegen} „${s.anliegen[i].thema || "ohne Thema"}“ löschen?`)) { s.anliegen.splice(+i, 1); speichern(); render(); }
+    if (confirm(`${T().einAnliegen} „${s.anliegen[i].thema || "ohne Thema"}“ löschen?`)) {
+      s.anliegen.splice(+i, 1); ui.anliegenIdx = Math.max(0, Math.min(ui.anliegenIdx, s.anliegen.length - 1)); ui.ziel = null;
+      speichern(); render();
+    }
   },
   "vertagt-uebernehmen"() {
     const s = sitzung(), vorher = sortiert(klasse()).filter((x) => x.nr < s.nr).at(-1);
     for (const a of vorher.anliegen.filter((a) => a.ergebnis === "vertagt" && !s.anliegen.some((b) => b.aus === a.id))) {
-      s.anliegen.push(neuesAnliegen({ aus: a.id, thema: a.thema, von: a.von, art: a.art, worum: a.worum + (a.worum ? "\n" : "") + `(vertagt aus Sitzung ${vorher.nr})` }));
+      s.anliegen.push(neuesAnliegen({ aus: a.id, thema: a.thema, von: [...a.von], art: a.art, worum: a.worum + (a.worum ? "\n" : "") + `(vertagt aus Sitzung ${vorher.nr})` }));
     }
     speichern(); render();
   },
-  "vorschlag-neu"(i) { sitzung().anliegen[i].vorschlaege.push({ text: "", von: "", ja: 0, nein: 0, enth: 0 }); speichern(); render(); },
+  "vorschlag-neu"(i) { sitzung().anliegen[i].vorschlaege.push({ text: "", von: [], ja: 0, nein: 0, enth: 0 }); speichern(); render(); },
   "beste-idee"(i) {
     const a = sitzung().anliegen[i];
     const beste = a.vorschlaege.filter((v) => v.text).sort((x, y) => (y.ja || 0) - (x.ja || 0))[0];
@@ -948,7 +1345,7 @@ const AKTIONEN = {
         const neu = JSON.parse(await f.text());
         if (!Array.isArray(neu.klassen)) throw new Error();
         if (state.klassen.length && !confirm("Die Sicherung ersetzt alle Daten in diesem Browser. Fortfahren?")) return;
-        state = neu; ui.view = "sitzungen"; speichern(); render();
+        state = migrieren(neu); ui.view = "sitzungen"; speichern(); render();
       } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung."); }
     });
   },
@@ -967,6 +1364,10 @@ const AKTIONEN = {
       state = laden(); ui.view = "sitzungen"; render();
     }
   },
+  "ordner-waehlen": ordnerWaehlen,
+  "ordner-fortsetzen": ordnerFortsetzen,
+  "ordner-trennen": ordnerTrennen,
+  "ordner-laden": ausOrdnerLaden,
   "timer-auf"() { timer.offen = true; timer.rest = (klasse()?.timer || 10) * 60; timer.ende = false; renderTimer(); },
   "timer-zu"() { clearInterval(timer.int); timer.offen = false; timer.laeuft = false; timer.ende = false; renderTimer(); },
   "timer-start"() { timerStarten(klasse()?.timer || 10); },
@@ -1007,13 +1408,32 @@ document.addEventListener("change", (e) => {
     state.aktiveKlasse = e.target.value; ui.view = "sitzungen"; speichern(); render();
   }
 });
-// Textfelder wachsen mit dem Inhalt
+// Textfelder wachsen mit dem Inhalt; Reiter zeigt das Thema sofort
 document.addEventListener("input", (e) => {
-  if (e.target.tagName === "TEXTAREA" && e.target.rows === 1) { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }
+  if (e.target.tagName === "TEXTAREA" && e.target.rows === 1) hoeheAnpassen(e.target);
+  if ("reiter" in e.target.dataset) { const t = document.querySelector(".reiter button.aktiv .t"); if (t) t.textContent = e.target.value || T().einAnliegen; }
 });
+// Klick in eine Aussage-Zeile: angetippte Namen gehören zu dieser Zeile
+document.addEventListener("focusin", (e) => {
+  const z = e.target.dataset?.ziel;
+  if (z && z !== ui.ziel) { ui.ziel = z; zielAnzeigen(); }
+});
+// Enter beendet die Zeile – der nächste Name beginnt eine neue
+document.addEventListener("keydown", (e) => {
+  const z = e.target.dataset?.ziel;
+  if (z && e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    ui.ziel = z.split(".").slice(0, -1).join(".");
+    e.target.blur(); zielAnzeigen();
+  }
+});
+// Namen antippen, ohne dass das Textfeld den Fokus verliert
+document.addEventListener("pointerdown", (e) => { if (e.target.closest(".namenleiste .chip")) e.preventDefault(); });
+window.addEventListener("resize", () => document.documentElement.style.setProperty("--kopfhoehe", document.querySelector(".app-kopf").offsetHeight + "px"));
 window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
 render();
+ordnerLaden();
 </script>
 </body>
 </html>

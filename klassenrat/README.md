@@ -25,15 +25,30 @@ Für die Johann-Peter-Wagner-Grund- und Mittelschule Theres. Es gibt zwei Fassun
 
 Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft auf Laptop, Tablet oder am Smartboard.
 
-- Pro Klasse wird einmal die Klassenliste angelegt. Danach werden Namen beim Tippen vorgeschlagen.
+- Pro Klasse wird einmal die Klassenliste angelegt. Danach werden **Namen oben angetippt**:
+  Name antippen → neue Zeile → Aussage tippen. Weitere Namen derselben Zeile zuordnen, Enter beendet die Zeile.
+  Das funktioniert für Positivrunde, Aussagen, „eingebracht von“, Vorschläge, „Wer?“ und die Rollen.
+- Mehrere Anliegen erscheinen als **Reiter** und lassen sich direkt anwählen.
 - Die Sitzung läuft Schritt für Schritt nach dem Ablauf: Start & Rollen → Positivrunde → Rückblick → Anliegen → Abschluss → Protokoll.
 - **Rollen** werden vorgeschlagen (wer am seltensten dran war). Die Rollen für die nächste Sitzung werden automatisch übernommen.
 - **Offene Beschlüsse** erscheinen automatisch im Rückblick der nächsten Sitzung (umgesetzt / teilweise / nicht).
 - **Vertagte Anliegen** können in der nächsten Sitzung mit einem Klick übernommen werden.
 - Abstimmungszähler (dafür / dagegen / Enthaltung), Blitzlicht-Zähler und ein **Timer** mit Signalton für den Zeitwächter
+- **Unterschriften direkt am Gerät** (Finger, Stift oder Maus). Sie werden ins Protokoll übernommen.
 - **Protokoll drucken oder als PDF speichern**, im Design der Papierbögen
+- **„7 Sitzung beenden“** trägt die Endzeit ein (falls leer) und führt zur Übersicht zurück.
 - **Beschlussübersicht** über das ganze Schuljahr, mit Hinweis auf überfällige Beschlüsse
 - Mehrere Klassen in einem Tool. Die Schulart steuert Farben und Begriffe.
+
+### Automatische Sicherung in OneDrive
+Unter **Daten** einmal einen Ordner im OneDrive-Ordner des PCs wählen. Danach speichert das Tool nach jeder Änderung
+`klassenrat-sicherung.json` dorthin und legt unter `Verlauf/` eine Fassung pro Tag ab. Den Upload übernimmt OneDrive.
+Das funktioniert in Microsoft Edge und Google Chrome am PC oder Mac. Nach einem Browser-Neustart einmal „Sicherung fortsetzen“ antippen.
+Auf einem anderen Gerät denselben Ordner wählen und „Aus diesem Ordner wiederherstellen“ antippen.
+
+### Offene Beschlüsse
+Ein Beschluss erscheint so lange im Rückblick jeder folgenden Sitzung, bis er dort als **„umgesetzt“** markiert wird.
+„teilweise“, „nicht umgesetzt“ oder gar keine Auswahl lassen ihn offen.
 
 ### Datenschutz
 Alle Daten werden **nur im Browser des jeweiligen Geräts** gespeichert (localStorage). Nichts wird ins Internet übertragen.
@@ -41,9 +56,8 @@ Unter **Daten → Sicherung herunterladen** lässt sich alles als Datei sichern 
 Nach dem Löschen der Browserdaten sind die Protokolle sonst weg. Bitte beachtet die Vorgaben der Schule zum Umgang mit Schülerdaten.
 
 ## Schullogo
-Das Logo ist als Vektorgrafik nachgezeichnet (`bilder/logo.svg`). So kommt das **Originallogo** hinein:
-- **Im Tool:** Daten → „Logo-Datei wählen …“ (wird im Browser gespeichert)
-- **In den Bögen und als Standard im Tool:** Originaldatei als `bilder/logo.png` ablegen und `./bauen.sh` ausführen
+Das Originallogo liegt als `bilder/logo.png` vor und wird in Bögen und Tool eingebettet.
+Im Tool lässt es sich unter Daten → „Logo-Datei wählen …“ austauschen.
 
 ## Neu erzeugen
 Alle Dateien entstehen aus `werkzeuge/` (Python 3 mit `python-docx`, Node mit Playwright/Chromium):
