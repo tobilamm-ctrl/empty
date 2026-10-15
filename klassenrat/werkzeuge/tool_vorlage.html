@@ -44,7 +44,8 @@ nav.haupt button { display: flex; align-items: center; gap: 6px; border: 0; back
 nav.haupt button:hover { background: var(--hg); }
 nav.haupt button.aktiv { background: var(--akzent-hell); color: var(--akzent-dunkel); }
 .gespeichert { position: absolute; right: 20px; bottom: 2px; font-size: .72rem; color: var(--leise); }
-.cloud { font-size: .8rem; }
+.cloud { font-size: .8rem; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.cloud .cloud-label { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; color: var(--leise); }
 .datei-knopf { position: relative; overflow: hidden; }
 .datei-knopf input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; width: 100%; }
 .cloud button { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; color: var(--leise); }
@@ -373,6 +374,7 @@ table.uebersicht th { font-size: .8rem; color: var(--leise); text-transform: upp
 .wahl-liste { display: flex; flex-direction: column; gap: 8px; }
 .wahl-liste button { display: flex; gap: 12px; align-items: flex-start; text-align: left; border: 1.5px solid var(--linie); background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; }
 .wahl-liste button:hover { border-color: var(--akzent); background: var(--akzent-hell); }
+.wahl-liste .tafel-option { border-style: dashed; }
 .wahl-liste small { display: block; color: var(--leise); margin-top: 2px; line-height: 1.35; }
 .dialog:has(.wahl-liste) { width: min(520px, 100%); }
 .fern { position: fixed; left: 18px; bottom: 18px; z-index: 45; background: #fff; border-radius: 999px; padding: 6px 8px 6px 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.18); border: 2px solid var(--akzent); }
@@ -2565,10 +2567,18 @@ async function ausOrdnerLaden() {
 function renderCloud() {
   const el = $("#cloud");
   if (!el) return;
-  if (!klasse() || !ordnerMoeglich) { el.innerHTML = ""; return; }
+  const tafelKnopf = `<button data-act="tafel-wahl" title="Dieses Gerät als Tafel nutzen (Moderationskarten anzeigen)">📺 Tafel</button>`;
+  if (!klasse()) { el.innerHTML = tafelKnopf; return; }
+  if (!ordnerMoeglich) {
+    // iPad/Safari: kein Ordnerzugriff → ein Tipp öffnet die Dateiauswahl (OneDrive), einer das Teilen-Menü
+    const l = state.letzteDatei;
+    el.innerHTML = `${tafelKnopf}<label class="datei-knopf cloud-label" title="${l ? `Zuletzt geladen: ${esc(l.name)} (${new Date(l.zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })})` : "Sicherung aus OneDrive laden"}">☁ Laden<input type="file" accept=".json,application/json,text/plain" data-datei="sicherung"></label>
+      <button data-act="export" title="Sicherung in OneDrive / Dateien sichern">☁ Sichern</button>`;
+    return;
+  }
   const zeit = ordner.zuletzt ? new Date(ordner.zuletzt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
-  if (ordner.konflikt) { el.innerHTML = `<button class="warn" data-act="view" data-arg="sitzungen">☁ neuere Daten in OneDrive</button>`; return; }
-  el.innerHTML = {
+  if (ordner.konflikt) { el.innerHTML = tafelKnopf + `<button class="warn" data-act="view" data-arg="sitzungen">☁ neuere Daten in OneDrive</button>`; return; }
+  el.innerHTML = tafelKnopf + {
     aktiv: `<button class="an" data-act="view" data-arg="daten" title="Automatische Sicherung aktiv">☁ gesichert ${zeit}</button>`,
     pausiert: `<button class="warn" data-act="ordner-fortsetzen" title="Zum Fortsetzen antippen">☁ Sicherung pausiert – fortsetzen</button>`,
     fehler: `<button class="warn" data-act="view" data-arg="daten" title="${esc(ordner.fehler)}">☁ Sicherung fehlgeschlagen</button>`,
@@ -2601,7 +2611,8 @@ async function sicherungAusDatei(f) {
     if (!state.logo && logo) state.logo = logo;
     if (!state.klassen.some((k) => k.id === state.aktiveKlasse)) state.aktiveKlasse = state.klassen[0]?.id || null;
     ui.view = "sitzungen"; speichern(); render();
-    meldung(`Sicherung geladen: ${f.name}`);
+    state.letzteDatei = { name: f.name, zeit: f.lastModified || Date.now() }; speichern();
+    meldung(`☁ Sicherung geladen: ${f.name}`);
   } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung (" + (e.message || e) + ")."); }
 }
 document.addEventListener("change", async (e) => {
@@ -2810,6 +2821,8 @@ const AKTIONEN = {
         <button data-act="mod-hier">${bild("leute", "m")}<span><b>Auf diesem Gerät</b><small>Vollbild – die Leitung liest direkt vom Gerät ab.</small></span></button>
         <button data-act="mod-tafel">${bild("wandzeitung", "m")}<span><b>Auf der Tafel (zweites Fenster)</b><small>Das Gerät ist an die Tafel angeschlossen (erweiterter Bildschirm).
           Die Karten zeigen live die Daten dieser Sitzung, hier bleibt das Protokoll offen.</small></span></button>
+        <button data-act="tafel-wahl-direkt" class="tafel-option">${bild("wandzeitung", "m")}<span><b>Dieses Gerät ist die Tafel</b><small>Zeigt den Code an,
+          den das Protokollgerät eingibt – für das Gerät an der Tafel.</small></span></button>
         <button data-act="mod-direkt">${bild("idee", "m")}<span><b>Direkt mit der Tafel verbinden (Code)</b><small>Die Tafel zeigt einen 4-stelligen Code
           („Diesen Rechner als Tafel nutzen“ → Direktverbindung). Karten und Blitzlicht laufen ohne Verzögerung direkt zwischen den Geräten.</small></span></button>
         <button data-act="mod-onedrive">${bild("kalender", "m")}<span><b>Über OneDrive an einen anderen Rechner</b><small>Die Karten dieser Sitzung werden mit der automatischen Sicherung in den OneDrive-Ordner geschrieben.
@@ -2820,6 +2833,18 @@ const AKTIONEN = {
       <div class="aktionen abstand"><button class="knopf rand" data-act="dialog-zu">Abbrechen</button></div></div></div>`;
   },
   "dialog-zu"() { $("#dialog").innerHTML = ""; },
+  "tafel-wahl"() {
+    $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog">
+      <h3>${bild("wandzeitung", "m")} Dieses Gerät als Tafel nutzen</h3><p class="leise">Hier erscheinen die Moderationskarten, die das Protokollgerät schickt.</p>
+      <div class="wahl-liste">
+        <button data-act="tafel-wahl-direkt">${bild("idee", "m")}<span><b>Direktverbindung (Code)</b><small>Die Tafel zeigt einen 4-stelligen Code. Am Protokollgerät
+          „Moderationskarten“ → „Direkt mit der Tafel verbinden“ wählen und den Code eingeben. Ohne Verzögerung.</small></span></button>
+        ${ordnerMoeglich ? `<button data-act="tafel-wahl-ordner">${bild("kalender", "m")}<span><b>Über OneDrive</b><small>Liest die Karten aus dem gemeinsamen OneDrive-Ordner (mit einigen Sekunden Verzögerung).</small></span></button>` : ""}
+      </div>
+      <div class="aktionen abstand"><button class="knopf rand" data-act="dialog-zu">Abbrechen</button></div></div></div>`;
+  },
+  "tafel-wahl-direkt"() { $("#dialog").innerHTML = ""; direktTafelStarten(); },
+  "tafel-wahl-ordner"() { $("#dialog").innerHTML = ""; tafelOrdnerWaehlen(); },
   "mod-hier"() {
     $("#dialog").innerHTML = "";
     Object.assign(mod, { offen: true, idx: modStartIdx(moderationsKarten()) });
@@ -3130,7 +3155,7 @@ const AKTIONEN = {
   "timer-setzen"(n) { clearInterval(timer.int); Object.assign(timer, { rest: n * 60, laeuft: false, ende: false }); renderTimer(); },
 };
 
-const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation", "mod-direkt", "mod-tafel", "mod-hier", "mod-export", "mod-onedrive", "dialog-zu"];
+const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation", "mod-direkt", "tafel-wahl-direkt", "mod-tafel", "mod-hier", "mod-export", "mod-onedrive", "dialog-zu"];
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
   if (!el || (el.tagName === "LABEL")) return;
