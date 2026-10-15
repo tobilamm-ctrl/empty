@@ -49,6 +49,11 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
   Auf der Tafel **folgen die Karten automatisch dem Protokoll** (neuer Schritt, neues Anliegen). Auf der Blitzlicht-Karte
   startet „Blitzlicht hier starten“ die Abstimmung direkt an der Tafel; die Stimmen landen im Protokoll.
 - **Eigene Satzanfänge** für Positivrunde und Aussagen (unter Klasse oder während der Sitzung über „＋ eigener“)
+- **Briefkasten:** Die Kinder werfen Anliegen vor der Sitzung selbst ein (Vollbild auf dem Klassen-Tablet: Name antippen,
+  Art wählen, einen Satz schreiben). Sie sehen keine fremden Einträge, beenden geht nur mit dem Passwort der Lehrkraft,
+  nach einem Neuladen bleibt der Briefkasten offen. In der Sitzung werden die Anliegen per Antippen übernommen.
+  Einstellbar: Anliegen ohne Namen erlauben, Höchstzahl pro Kind und Tag. Für ein wirklich abgeschlossenes Gerät zusätzlich
+  „Geführter Zugriff“ (iPad), „Zugewiesener Zugriff“ (Windows) oder „App-Fixierung“ (Android) nutzen.
 - **Fristen:** Die Startseite zeigt, welche Beschlüsse in den nächsten 7 Tagen fällig sind oder schon überfällig sind.
 - **Auswertung** (mit Passwort): Rollen-Übersicht pro Kind und Jahresüberblick (Sitzungen, Arten der Anliegen,
   Stand der Beschlüsse, Blitzlicht je Sitzung)

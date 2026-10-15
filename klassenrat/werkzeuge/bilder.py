@@ -181,6 +181,13 @@ ICONS = {
                            f'<circle cx="32" cy="40" r="4.5" fill="{DUNKEL}"/><path d="M32 42v8" stroke="{DUNKEL}" stroke-width="4" stroke-linecap="round"/>'),
     "nicht_moeglich": _icon(f'<circle cx="32" cy="32" r="27" fill="#EDEDED" stroke="{GRAU}" stroke-width="5"/>'
                             f'<path d="M22 22l20 20M42 22L22 42" stroke="#7C7A7B" stroke-width="6" stroke-linecap="round"/>'),
+    "briefkasten": _icon(f'<path d="M14 22a10 10 0 0120 0v32H14z" fill="#8FB8D8"/><path d="M24 12h22a10 10 0 0110 10v32H34V22a10 10 0 00-10-10z" fill="#6C8EBF"/>'
+                         f'<rect x="31" y="54" width="6" height="8" fill="{GRAU}"/><path d="M17 26h14" stroke="{DUNKEL}" stroke-width="3" stroke-linecap="round"/>'
+                         f'<path d="M50 24V10h-8v6h8" fill="{ROT}" stroke="{ROT}" stroke-width="2" stroke-linejoin="round"/>'
+                         f'<rect x="18" y="34" width="12" height="8" rx="1.5" fill="#fff"/>'),
+    "brief": _icon(f'<rect x="6" y="14" width="52" height="36" rx="5" fill="#fff" stroke="{GRAU}" stroke-width="3"/>'
+                   f'<path d="M8 17l24 18 24-18" fill="none" stroke="{GRAU}" stroke-width="3" stroke-linejoin="round"/>'
+                   f'<circle cx="48" cy="44" r="9" fill="{ROT}"/><path d="M48 39.5c-2.5-3-7 0-4.5 3l4.5 4.5 4.5-4.5c2.5-3-2-6-4.5-3z" fill="#fff"/>'),
     "unterschrift": _icon(f'<path d="M6 46c6-14 10-26 14-26s-2 26 4 26 8-18 12-18-1 14 4 14 6-6 9-8" stroke="{DUNKEL}" '
                           f'stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
                           f'<path d="M6 54h52" stroke="{GRAU}" stroke-width="3" stroke-linecap="round"/>'),

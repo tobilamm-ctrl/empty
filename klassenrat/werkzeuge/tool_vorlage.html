@@ -363,6 +363,23 @@ body.tafel .blitz { position: fixed; }
 
 .mod-blitz { margin-top: 2vmin; font-size: clamp(1.1rem, 2.6vmin, 1.6rem); }
 
+/* Briefkasten */
+.bk { overflow-y: auto; z-index: 95; }
+.bk-form { flex: 1; background: #fff; border-radius: 24px; box-shadow: 0 6px 24px rgba(0,0,0,.08); padding: clamp(16px, 3vmin, 36px); display: flex; flex-direction: column; gap: 18px; max-width: 1100px; width: 100%; margin: 0 auto; }
+.bk-form h3 { margin: 0 0 10px; font-size: clamp(1.1rem, 2.6vmin, 1.5rem); color: var(--akzent-dunkel); display: flex; align-items: center; gap: 10px; }
+.bk-form h3 .n { display: inline-flex; width: 1.8em; height: 1.8em; border-radius: 50%; align-items: center; justify-content: center; background: var(--akzent); color: #fff; font-size: .85em; }
+.chips.gross .chip { font-size: clamp(1rem, 2.2vmin, 1.25rem); padding: 10px 18px; font-weight: 700; }
+.bk-form input, .bk-form textarea { font-size: clamp(1.05rem, 2.4vmin, 1.4rem); padding: 12px 14px; }
+.bk-form textarea { margin-top: 10px; }
+.bk-senden { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.bk-senden .knopf:disabled { opacity: .4; cursor: not-allowed; }
+.bk-meldung { background: #fbe4e7; color: #8c2230; border-radius: 12px; padding: 10px 14px; font-weight: 700; margin: 0; }
+.bk .danke { position: static; flex: 1; background: transparent; }
+.bk-liste { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.bk-eintrag { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border: 1.5px solid var(--linie); background: #fff; border-radius: 12px; padding: 8px 12px; cursor: pointer; max-width: 340px; }
+.bk-eintrag:hover { border-color: var(--akzent); }
+.bk-eintrag span { font-size: .8rem; color: var(--leise); }
+
 /* Dialog */
 .dialog-hg { position: fixed; inset: 0; background: rgba(30,30,30,.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: #fff; border-radius: 18px; padding: 20px 22px; width: min(420px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.25); border-top: 6px solid var(--akzent); }
@@ -417,6 +434,7 @@ body.tafel .blitz { position: fixed; }
 <div id="blitz"></div>
 <div id="moderation"></div>
 <div id="tafel-fern"></div>
+<div id="briefkasten-modus"></div>
 
 <script>
 /*__BILDER__*/
@@ -697,6 +715,7 @@ function render() {
   else if (ui.view === "klasse") app.innerHTML = viewKlasse();
   else if (ui.view === "daten") app.innerHTML = viewDaten();
   else if (ui.view === "auswertung") app.innerHTML = viewAuswertung();
+  else if (ui.view === "briefkasten") app.innerHTML = viewBriefkasten();
   else { ui.view = "sitzungen"; app.innerHTML = viewSitzungen(); }
   renderTimer();
   renderCloud();
@@ -828,6 +847,7 @@ function viewSitzungen() {
      ${offen.some(ueberfaellig) ? `<span class="badge ueberfaellig">${offen.filter(ueberfaellig).length} überfällig</span>` : ""}
      ${fristenListe(offen)}
      <div class="aktionen abstand"><button class="knopf mini zweit" data-act="view" data-arg="beschluesse">Beschlüsse ansehen</button></div></div></div>` : ""}
+  ${briefkastenKarte(k)}
   ${!k.schueler.length ? `<div class="hinweis-box">${bild("leute", "m")}<div>Noch keine Klassenliste hinterlegt. <button class="knopf mini" data-act="view" data-arg="klasse">Jetzt eintragen</button></div></div>` : ""}
   <div class="liste-sitzungen">
   ${liste.length ? liste.map((s) => {
@@ -1073,10 +1093,15 @@ function schrittAnliegen(s, t) {
   const vorher = sortiert(k).filter((x) => x.nr < s.nr).at(-1);
   const vertagt = (vorher?.anliegen || []).filter((a) => a.ergebnis === "vertagt" && !s.anliegen.some((b) => b.aus === a.id));
   return `
+  ${(k.briefkasten || []).length ? `<div class="hinweis-box info bk-sitzung">${bild("briefkasten", "m")}<div style="flex:1"><b>Im Briefkasten: ${k.briefkasten.length}</b>
+    <span class="leise klein">– antippen, um ${k.stufe === "gs" ? "ein Thema" : "ein Anliegen"} zu übernehmen</span>
+    <div class="bk-liste">${k.briefkasten.map((e) => `<button class="bk-eintrag" data-act="bk-uebernehmen" data-arg="${e.id}">
+      <b>${esc(e.thema)}</b><span>${e.namen.length ? esc(namenText(e.namen)) : "ohne Namen"}${e.art ? " · " + esc(e.art) : ""} · ${datumKurz(e.zeit)}</span></button>`).join("")}</div>
+    <div class="aktionen abstand"><button class="knopf mini" data-act="bk-alle">Alle übernehmen</button></div></div></div>` : ""}
   ${vertagt.length ? `<div class="hinweis-box info">${bild("zurueck", "m")}<div><b>Vertagt aus Sitzung ${vorher.nr}:</b> ${vertagt.map((a) => esc(a.thema || "ohne Thema")).join(", ")}
     <div class="aktionen abstand"><button class="knopf mini" data-act="vertagt-uebernehmen">Übernehmen</button></div></div></div>` : ""}
   ${s.anliegen.length ? anliegenKarte(s.anliegen[ui.anliegenIdx], ui.anliegenIdx, t, k)
-    : `<div class="karte leer">${bild("wandzeitung", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.anliegen} von der Wandzeitung ein.</p>
+    : `<div class="karte leer">${bild("wandzeitung", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.mehrere} von der Wandzeitung ein${(k.briefkasten || []).length ? " oder übernimm sie aus dem Briefkasten" : ""}.</p>
        <button class="knopf" data-act="anliegen-neu">＋ ${t.einAnliegen}</button></div>`}`;
 }
 
@@ -1716,6 +1741,77 @@ function viewAuswertung() {
   </div>`;
 }
 
+// --- Briefkasten: Kinder werfen Anliegen vor der Sitzung selbst ein ------------------
+// Daten je Klasse: k.briefkasten = [{ id, namen, art, thema, worum, zeit }], Einstellungen in k.bkEinst
+const bkEinst = (k = klasse()) => ({ anonym: false, proTag: 0, ...(k?.bkEinst || {}) });
+const datumKurz = (z) => new Date(z).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const bk = { offen: false, name: null, art: "", thema: "", worum: "", danke: false, meldung: "" };
+
+function briefkastenKarte(k) {
+  const n = (k.briefkasten || []).length;
+  return `<div class="hinweis-box info">${bild("briefkasten", "m")}<div style="flex:1"><b>Briefkasten</b>
+    ${n ? `<span class="badge offen">${n} Anliegen</span>` : `<span class="leise klein">leer</span>`}
+    <span class="leise klein">· Die Kinder werfen Anliegen vor der Sitzung selbst ein.</span>
+    <div class="aktionen abstand"><button class="knopf mini" data-act="bk-start">${bild("brief", "s")} Briefkasten für die Klasse öffnen</button>
+      <button class="knopf mini zweit" data-act="view" data-arg="briefkasten">Einträge & Einstellungen</button></div></div></div>`;
+}
+
+function viewBriefkasten() {
+  const k = klasse(), e = bkEinst(k), liste = k.briefkasten || [];
+  return `
+  <div class="titelzeile"><h2>${bild("briefkasten", "m")} Briefkasten ${esc(k.name)}</h2>
+    <button class="knopf" data-act="bk-start" style="margin-left:auto">${bild("brief", "s")} Für die Klasse öffnen</button></div>
+  <div class="karte akzent">
+    <h3 style="margin-top:0">Eingeworfene Anliegen <span class="leise klein">${liste.length}</span></h3>
+    <p class="leise klein">Die Anliegen werden in der Sitzung beim Schritt „${T().anliegen}“ übernommen. Unpassende Einträge hier vorher löschen.</p>
+    ${liste.length ? `<table class="uebersicht"><tr><th>Eingeworfen</th><th>Von</th><th>Art</th><th>Anliegen</th><th></th></tr>
+      ${liste.map((x) => `<tr><td class="leise">${datumKurz(x.zeit)}</td><td>${x.namen.length ? esc(namenText(x.namen)) : "<i>ohne Namen</i>"}</td>
+        <td>${esc(x.art || "–")}</td><td><b>${esc(x.thema)}</b>${x.worum ? `<br><span class="leise klein">${esc(x.worum)}</span>` : ""}</td>
+        <td><button class="x" data-act="bk-loeschen" data-arg="${x.id}" title="Eintrag löschen">✕</button></td></tr>`).join("")}</table>
+      <div class="aktionen abstand"><button class="knopf gefahr" data-act="bk-leeren">Briefkasten leeren</button></div>`
+      : `<div class="leer">${bild("briefkasten", "l")}<p>Der Briefkasten ist leer.</p></div>`}
+  </div>
+  <div class="karte">
+    <h3 style="margin-top:0">Einstellungen</h3>
+    <div class="ergebnis">
+      <label><input type="checkbox" data-bk="anonym" ${e.anonym ? "checked" : ""}> Anliegen ohne Namen erlauben</label>
+    </div>
+    <p class="leise klein">Im Klassenrat stehen Anliegen meist mit Namen. Ohne Namen kann bei heiklen Themen helfen.</p>
+    <label class="feld" style="max-width:360px">Höchstens so viele Anliegen pro Kind und Tag (0 = unbegrenzt)
+      <input type="number" min="0" max="10" data-bk="proTag" value="${e.proTag}"></label>
+    <p class="leise klein">Das Verlassen des Briefkastens ist nur mit dem Passwort der Lehrkraft möglich (dasselbe wie bei der Sperre).</p>
+  </div>`;
+}
+
+function renderBriefkasten() {
+  const el = $("#briefkasten-modus"), k = klasse();
+  if (!bk.offen || !k) { el.innerHTML = ""; return; }
+  const t = T(), e = bkEinst(k), gs = k.stufe === "gs";
+  if (bk.danke) {
+    el.innerHTML = `<div class="blitz bk"><div class="danke">${bild("brief", "l")}Danke!<small>Dein Anliegen ist im Briefkasten.</small></div></div>`;
+    return;
+  }
+  const bereit = (bk.name || (e.anonym && bk.name === "")) !== null && bk.name !== null && bk.thema.trim();
+  el.innerHTML = `<div class="blitz bk">
+    <div class="oben">${bild("briefkasten", "l")}<h2>${gs ? "Unser Klassenrat-Briefkasten" : "Briefkasten für den Klassenrat"}</h2>
+      <div class="aktionen"><button class="knopf mini rand" data-act="bk-beenden">${bild("schloss", "s")} Lehrkraft: beenden</button></div></div>
+    <div class="bk-form">
+      <section><h3><span class="n">1</span> ${gs ? "Wer bist du?" : "Wer bist du?"}</h3>
+        <div class="chips gross">${k.schueler.map((n) => `<button class="chip ${bk.name === n ? "an" : ""}" data-act="bk-name" data-arg="${esc(n)}">${esc(kurzname(n, k.schueler))}</button>`).join("")}
+          ${e.anonym ? `<button class="chip extra ${bk.name === "" ? "an" : ""}" data-act="bk-name" data-arg="">ohne Namen</button>` : ""}</div></section>
+      <section><h3><span class="n">2</span> ${gs ? "Was für ein Thema ist es?" : "Was für ein Anliegen ist es?"} <span class="leise klein">(freiwillig)</span></h3>
+        <div class="chips gross">${arten(k).map((x) => `<button class="chip ${bk.art === x ? "an" : ""}" data-act="bk-art" data-arg="${esc(x)}">${esc(x)}</button>`).join("")}</div></section>
+      <section><h3><span class="n">3</span> ${gs ? "Worum geht es? Schreibe einen Satz." : "Dein Anliegen in einem Satz"}</h3>
+        <input type="text" id="bk-thema" maxlength="140" value="${esc(bk.thema)}" placeholder="${gs ? "z. B. Beim Fußball wird immer gedrängelt." : "z. B. In der Pause ist es im Klassenzimmer zu laut."}">
+        <textarea id="bk-worum" rows="2" maxlength="600" placeholder="${gs ? "Willst du noch mehr erzählen? (freiwillig)" : "Möchtest du noch etwas erklären? (freiwillig)"}">${esc(bk.worum)}</textarea></section>
+      ${bk.meldung ? `<p class="bk-meldung">${esc(bk.meldung)}</p>` : ""}
+      <div class="bk-senden"><button class="knopf gross" data-act="bk-senden" ${bereit ? "" : "disabled"}>${bild("brief", "s")} In den Briefkasten werfen</button>
+        <span class="leise klein" id="bk-hinweis">${bereit ? "" : "Bitte deinen Namen antippen und das Anliegen aufschreiben."}</span></div>
+    </div>
+  </div>`;
+}
+function bkLeeren() { Object.assign(bk, { name: null, art: "", thema: "", worum: "", meldung: "" }); }
+
 // --- Klasse & Daten ------------------------------------------------------------
 function viewKlasse() {
   const k = klasse();
@@ -2251,6 +2347,63 @@ const AKTIONEN = {
     speichern(); render();
   },
   "baustein-standard"(art) { if (klasse().bausteine) delete klasse().bausteine[art]; speichern(); render(); },
+  async "bk-start"() {
+    const k = klasse();
+    if (!k.schueler.length && !bkEinst(k).anonym) { alert("Bitte zuerst die Klassenliste eintragen."); return; }
+    if (!state.sperre) {
+      const r = await neuesPasswortDialog("Passwort festlegen", "Den Briefkasten kann nur die Lehrkraft mit Passwort wieder verlassen. Lege es einmalig fest.");
+      if (!Array.isArray(r)) return;
+      await pwSetzen(r[0]);
+    }
+    bkLeeren(); bk.offen = true; bk.danke = false;
+    state.briefkastenAktiv = k.id; speichern();  // nach einem Neuladen geht es im Briefkasten weiter
+    renderBriefkasten();
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  },
+  "bk-name"(n) { bk.name = bk.name === n ? null : n; bk.meldung = ""; bkFelderMerken(); renderBriefkasten(); },
+  "bk-art"(x) { bk.art = bk.art === x ? "" : x; bkFelderMerken(); renderBriefkasten(); },
+  "bk-senden"() {
+    bkFelderMerken();
+    const k = klasse(), e = bkEinst(k);
+    if (bk.name === null || !bk.thema.trim()) return;
+    const namen = bk.name ? [bk.name] : [];
+    if (e.proTag > 0 && namen.length) {
+      const heuteZahl = (k.briefkasten || []).filter((x) => x.namen.includes(bk.name) && new Date(x.zeit).toDateString() === new Date().toDateString()).length;
+      if (heuteZahl >= e.proTag) {
+        bk.meldung = `Du hast heute schon ${heuteZahl === 1 ? "ein Anliegen" : heuteZahl + " Anliegen"} eingeworfen. Mehr geht heute nicht – sprich sonst mit deiner Lehrkraft.`;
+        renderBriefkasten(); return;
+      }
+    }
+    (k.briefkasten ||= []).push({ id: id(), namen, art: bk.art, thema: bk.thema.trim(), worum: bk.worum.trim(), zeit: Date.now() });
+    speichern();
+    bkLeeren(); bk.danke = true; renderBriefkasten();
+    setTimeout(() => { bk.danke = false; renderBriefkasten(); }, 2500);
+  },
+  async "bk-beenden"() {
+    if (!(await passwortAbfragen("Briefkasten beenden (nur Lehrkraft)."))) return;
+    bk.offen = false; delete state.briefkastenAktiv; speichern();
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    renderBriefkasten(); render();
+  },
+  "bk-loeschen"(bid) {
+    const k = klasse(), x = k.briefkasten.find((y) => y.id === bid);
+    if (x && confirm(`Anliegen „${x.thema}“ löschen?`)) { k.briefkasten = k.briefkasten.filter((y) => y.id !== bid); speichern(); render(); }
+  },
+  "bk-leeren"() { if (confirm("Alle Einträge im Briefkasten löschen?")) { klasse().briefkasten = []; speichern(); render(); } },
+  "bk-uebernehmen"(bid) {
+    const k = klasse(), s = sitzung(), x = k.briefkasten.find((y) => y.id === bid);
+    if (!x) return;
+    s.anliegen.push(neuesAnliegen({ thema: x.thema, von: [...x.namen], art: x.art, worum: x.worum, ausBriefkasten: x.id }));
+    k.briefkasten = k.briefkasten.filter((y) => y.id !== bid);
+    ui.anliegenIdx = s.anliegen.length - 1; ui.ziel = null;
+    speichern(); render();
+  },
+  "bk-alle"() {
+    const k = klasse(), s = sitzung();
+    for (const x of k.briefkasten) s.anliegen.push(neuesAnliegen({ thema: x.thema, von: [...x.namen], art: x.art, worum: x.worum, ausBriefkasten: x.id }));
+    k.briefkasten = []; ui.anliegenIdx = Math.max(0, s.anliegen.length - 1); ui.ziel = null;
+    speichern(); render();
+  },
   "anliegen-tab"(i) { ui.anliegenIdx = +i; ui.ziel = null; render(); scrollTo(0, 0); },
   "unterschrift-weg"(r) { delete sitzung().unterschriften[r]; speichern(); render(); },
   async "sitzung-loeschen"(sid) {
@@ -2421,6 +2574,26 @@ document.addEventListener("change", (e) => {
     state.aktiveKlasse = e.target.value; ui.view = "sitzungen"; speichern(); render();
   }
 });
+// Briefkasten: Eingaben merken, ohne neu zu zeichnen (Knopf freigeben, sobald Name und Satz da sind)
+function bkFelderMerken() {
+  const t = $("#bk-thema"), w = $("#bk-worum");
+  if (t) bk.thema = t.value;
+  if (w) bk.worum = w.value;
+}
+document.addEventListener("input", (e) => {
+  if (e.target.id === "bk-thema" || e.target.id === "bk-worum") {
+    bkFelderMerken();
+    const knopf = document.querySelector("[data-act=bk-senden]");
+    const bereit = bk.name !== null && bk.thema.trim();
+    if (knopf) knopf.disabled = !bereit;
+    if ($("#bk-hinweis")) $("#bk-hinweis").textContent = bereit ? "" : "Bitte deinen Namen antippen und das Anliegen aufschreiben.";
+  }
+  if (e.target.dataset?.bk && klasse()) {
+    const k = klasse(), key = e.target.dataset.bk;
+    k.bkEinst = { ...bkEinst(k), [key]: e.target.type === "checkbox" ? e.target.checked : Math.max(0, +e.target.value || 0) };
+    speichern();
+  }
+});
 // Textfelder wachsen mit dem Inhalt; Reiter zeigt das Thema sofort
 document.addEventListener("input", (e) => {
   if (e.target.tagName === "TEXTAREA" && e.target.rows === 1) hoeheAnpassen(e.target);
@@ -2455,7 +2628,13 @@ window.addEventListener("resize", () => document.documentElement.style.setProper
 window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 
 if (location.hash === "#tafel") tafelStarten();
-else { render(); ordnerLaden(); }
+else {
+  render(); ordnerLaden();
+  // war der Briefkasten offen (z. B. Seite neu geladen), geht es dort weiter
+  if (state.briefkastenAktiv && state.klassen.some((k) => k.id === state.briefkastenAktiv)) {
+    state.aktiveKlasse = state.briefkastenAktiv; render(); bk.offen = true; renderBriefkasten();
+  }
+}
 </script>
 </body>
 </html>
