@@ -166,6 +166,26 @@ textarea { resize: vertical; min-height: 64px; }
 
 /* Rückblick */
 .rb { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; align-items: center; }
+.rb-karte { border: 1.5px solid var(--linie); border-radius: 14px; margin-bottom: 14px; overflow: hidden; background: #fff; }
+.rb-karte.erledigt { border-color: #bfe0d4; }
+.rb-kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--akzent-hell); padding: 9px 14px; color: var(--akzent-dunkel); font-weight: 700; }
+.rb-kopf .datum-gross { font-size: 1.05rem; }
+.rb-kopf .alter { font-weight: 600; font-size: .85rem; color: var(--leise); }
+.rb-kopf .badge { margin-left: auto; }
+.rb-inhalt { padding: 14px; }
+.rb-beschluss { font-size: 1.25rem; font-weight: 800; line-height: 1.3; margin: 0 0 12px; display: flex; gap: 10px; align-items: flex-start; }
+.rb-beschluss .bild { width: 1.4em; height: 1.4em; margin-top: 2px; }
+.rb-fakten { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.rb-fakt { background: var(--hg); border-radius: 10px; padding: 8px 12px; }
+.rb-fakt small { display: flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; color: var(--leise); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+.rb-fakt small .bild { width: 1.2em; height: 1.2em; }
+.rb-fakt div { font-weight: 700; }
+.rb-fakt p { margin: 3px 0 0; font-size: .88rem; color: var(--leise); font-weight: 400; }
+.rb-fakt .nchip { padding-right: 10px; margin: 0 4px 3px 0; }
+.rb-fakt.warn { background: #fbe4e7; }
+.rb-frage { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-top: 1px dashed var(--linie); padding-top: 12px; }
+.rb-frage b { font-size: 1.05rem; }
+.rb-frage .status-wahl { margin-left: auto; }
 .status-wahl { display: flex; gap: 6px; }
 .status-wahl button { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2px solid var(--linie); background: #fff; border-radius: 12px; padding: 6px 10px; cursor: pointer; font-size: .8rem; font-weight: 700; color: var(--leise); min-width: 70px; }
 .status-wahl button.an { border-color: var(--akzent); background: var(--akzent-hell); color: var(--akzent-dunkel); }
@@ -840,23 +860,42 @@ function schrittRueckblick(s, t) {
   const offen = offeneFuer(s);
   if (!offen.length) return `<div class="karte leer">${bild("haken", "l")}<p><b>Keine offenen Beschlüsse.</b><br>Aus früheren Sitzungen ist nichts zu überprüfen.</p></div>`;
   const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"]];
+  const vor = (d) => {
+    const tage = Math.round((new Date(heute() + "T00:00") - new Date(d + "T00:00")) / 864e5);
+    return tage <= 0 ? "heute" : tage === 1 ? "gestern" : tage < 14 ? `vor ${tage} Tagen` : `vor ${Math.round(tage / 7)} Wochen`;
+  };
   return `<div class="karte akzent">
     <h3 style="margin-top:0">${bild("zurueck", "m")} ${t.rueckblick} <span class="leise klein">${t.rueckblickTipp}</span></h3>
     <p class="leise klein" style="margin-top:-4px">Nur „${t.status.ja}“ schließt einen Beschluss ab. „${t.status.teils}“ und „${t.status.nein}“ lassen ihn offen.</p>
     ${offen.map((b) => {
-      const r = s.rueckblick[b.id] || {};
-      return `<div class="karte" style="box-shadow:none;border:1.5px solid var(--linie)">
-        <div class="rb">
-          <div><b>${esc(b.anliegen.beschluss)}</b><br>
-          <span class="leise klein">aus Sitzung ${b.sitzung.nr} (${datum(b.sitzung.datum)}) · ${esc(b.anliegen.thema || "")}
-          ${b.anliegen.wer?.length ? " · zuständig: " + esc(namenText(b.anliegen.wer)) : ""}${b.anliegen.bisWann ? " · bis " + datum(b.anliegen.bisWann) : ""}</span>
-          ${b.verlauf.filter((v) => v.nr < s.nr).map((v) => ` <span class="badge ${v.status}">Nr. ${v.nr}: ${t.status[v.status]}</span>`).join("")}</div>
-          <div class="status-wahl">${opt.map(([st, ic]) => `<button class="${r.status === st ? "an" : ""}" data-act="rb-status" data-arg="${b.id}|${st}">${bild(ic, "m")}${t.status[st]}</button>`).join("")}</div>
+      const r = s.rueckblick[b.id] || {}, a = b.anliegen;
+      const frueher = b.verlauf.filter((v) => v.nr < s.nr);
+      const faellig = a.bisWann && a.bisWann < s.datum;
+      const stimmen = a.vorschlaege?.find((v) => v.text === a.beschluss);
+      return `<div class="rb-karte ${r.status === "ja" ? "erledigt" : ""}">
+        <div class="rb-kopf">${bild("kalender")} <span class="datum-gross">Beschluss vom ${datum(b.sitzung.datum, true)}</span>
+          <span class="alter">· Sitzung Nr. ${b.sitzung.nr} · ${vor(b.sitzung.datum)}</span>
+          ${frueher.length ? `<span class="badge ${frueher.at(-1).status}">zuletzt: ${t.status[frueher.at(-1).status]} (Nr. ${frueher.at(-1).nr})</span>` : `<span class="badge offen">erstmals im Rückblick</span>`}</div>
+        <div class="rb-inhalt">
+          <p class="rb-beschluss">${bild("beschluss")}<span>${esc(a.beschluss)}</span></p>
+          <div class="rb-fakten">
+            <div class="rb-fakt"><small>${bild("sprechen")} Worum ging es?</small><div>${esc(a.thema || "–")}</div>
+              ${a.worum ? `<p>${esc(a.worum)}</p>` : ""}${a.von?.length ? `<p>${t.von}: ${esc(namenText(a.von))}</p>` : ""}</div>
+            <div class="rb-fakt"><small>${bild("leute")} Zuständig</small>
+              <div>${a.wer?.length ? a.wer.map((n) => `<span class="nchip">${esc(n)}</span>`).join("") : "–"}</div></div>
+            <div class="rb-fakt ${faellig && r.status !== "ja" ? "warn" : ""}"><small>${bild("uhr")} Bis wann?</small>
+              <div>${a.bisWann ? datum(a.bisWann, true) : "ohne Frist"}</div>${faellig && r.status !== "ja" ? `<p>Frist ist abgelaufen</p>` : ""}</div>
+            ${stimmen ? `<div class="rb-fakt"><small>${bild("hand")} Abstimmung</small><div>${stimmen.ja || 0} dafür · ${stimmen.nein || 0} dagegen${stimmen.enth ? ` · ${stimmen.enth} Enth.` : ""}</div>
+              ${a.einstimmig ? `<p>${esc(a.einstimmig)}</p>` : ""}</div>` : ""}
+          </div>
+          ${frueher.length ? `<p class="leise klein" style="margin:-4px 0 10px">Bisherige Überprüfungen: ${frueher.map((v) => `Nr. ${v.nr} ${t.status[v.status]}${v.notiz ? ` („${esc(v.notiz)}“)` : ""}`).join(" · ")}</p>` : ""}
+          <div class="rb-frage"><b>${klasse().stufe === "gs" ? "Hat es geklappt?" : "Wurde der Beschluss umgesetzt?"}</b>
+            <div class="status-wahl">${opt.map(([st, ic]) => `<button class="${r.status === st ? "an" : ""}" data-act="rb-status" data-arg="${b.id}|${st}">${bild(ic, "m")}${t.status[st]}</button>`).join("")}</div></div>
+          <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="Bemerkung / wie geht es weiter?" ${r.status ? "" : "disabled"}>
+          <p class="leise klein" style="margin:6px 0 0">${r.status === "ja"
+            ? `${bild("haken", "s")} Erledigt – erscheint in künftigen Sitzungen nicht mehr.`
+            : `${bild("zurueck", "s")} Bleibt offen und wird in der nächsten Sitzung wieder zur Überprüfung aufgelistet${r.status ? "" : " (auch wenn nichts angetippt wird)"}.`}</p>
         </div>
-        <input type="text" class="abstand" data-k="rueckblick.${b.id}.notiz" value="${esc(r.notiz)}" placeholder="Bemerkung / wie geht es weiter?" ${r.status ? "" : "disabled"}>
-        <p class="leise klein" style="margin:6px 0 0">${r.status === "ja"
-          ? `${bild("haken", "s")} Erledigt – erscheint in künftigen Sitzungen nicht mehr.`
-          : `${bild("zurueck", "s")} Bleibt offen und wird in der nächsten Sitzung wieder zur Überprüfung aufgelistet${r.status ? "" : " (auch wenn nichts angetippt wird)"}.`}</p>
       </div>`;
     }).join("")}
   </div>`;
@@ -1017,9 +1056,9 @@ function protokollHTML(s) {
   ${tab(["Name", "Aussage"], voll(s.positiv).map((z) => [esc(namenText(z.namen)), esc(z.text)]))}
 
   <h4>${bild("zurueck")} 2 · ${t.rueckblick}</h4>
-  ${tab(["Beschluss", "aus Nr.", "zuständig", "Ergebnis", "Bemerkung"], offen.map((b) => {
+  ${tab(["Beschluss vom", "Worum ging es?", "Beschluss", "zuständig", "Ergebnis", "Bemerkung"], offen.map((b) => {
     const r = s.rueckblick[b.id] || {};
-    return [esc(b.anliegen.beschluss), b.sitzung.nr, esc(namenText(b.anliegen.wer)), r.status === "ja" ? t.status.ja : (r.status ? t.status[r.status] : "nicht besprochen") + " – bleibt offen", esc(r.notiz)];
+    return [`${datum(b.sitzung.datum)}<br><small>Nr. ${b.sitzung.nr}</small>`, esc(b.anliegen.thema), esc(b.anliegen.beschluss), esc(namenText(b.anliegen.wer)), r.status === "ja" ? t.status.ja : (r.status ? t.status[r.status] : "nicht besprochen") + " – bleibt offen", esc(r.notiz)];
   }))}
 
   <h4>${bild("sprechen")} 3 · ${t.anliegen}</h4>
