@@ -27,7 +27,7 @@ import bilder  # noqa: E402
 ICONS = bilder.ALLE
 GESICHTER = [("froh", "gut"), ("mittel", "geht so"), ("traurig", "nicht gut")]
 PNG = ROOT / "bilder" / "png"
-EIGENES_LOGO = ROOT / "bilder" / "logo.png"  # optional: Originallogo der Schule
+EIGENES_LOGO = ROOT / "bilder" / "logo.png"  # optional, nur lokal (nicht im Repository): Schullogo
 
 # Akzentfarben je Schulart (aus dem Logo)
 FARBEN = {
@@ -54,13 +54,12 @@ class HtmlBogen:
         return f'<span class="ic">{ICONS[name]}</span>' if name else ""
 
     def kopf(self, felder):
+        logo = ""
         if EIGENES_LOGO.exists():
             daten = base64.b64encode(EIGENES_LOGO.read_bytes()).decode()
-            logo = f'<img src="data:image/png;base64,{daten}" alt="Schullogo">'
-        else:
-            logo = ICONS["logo"]
+            logo = f'<div class="logo"><img src="data:image/png;base64,{daten}" alt="Schullogo"></div>'
         self._add(
-            f'<header class="kopf"><div class="logo">{logo}</div>'
+            f'<header class="kopf">{logo}'
             f'<div class="titel"><h1>{escape(self.titel)}</h1><p>{escape(self.untertitel)}</p></div>'
             f'<div class="bild">{ICONS["klassenrat"]}</div></header>{self._felder_html(felder)}'
         )
@@ -269,17 +268,19 @@ class WordBogen:
 
     @staticmethod
     def _bild(run, name, hoehe_mm):
-        pfad = EIGENES_LOGO if name == "logo" and EIGENES_LOGO.exists() else PNG / f"{name}.png"
+        pfad = EIGENES_LOGO if name == "logo" else PNG / f"{name}.png"
         run.add_picture(str(pfad), height=Mm(hoehe_mm))
 
     def kopf(self, felder):
-        t = self._tabelle(1, [44, 92, 50])
+        mit_logo = EIGENES_LOGO.exists()
+        t = self._tabelle(1, [44, 92, 50] if mit_logo else [1, 135, 50])
         logo, titel, bild = t.rows[0].cells
         for c in t.rows[0].cells:
             _rand(c)
             c.vertical_alignment = 1
         _rand(titel)
-        self._bild(logo.paragraphs[0].add_run(), "logo", 21)
+        if mit_logo:
+            self._bild(logo.paragraphs[0].add_run(), "logo", 21)
         p = titel.paragraphs[0]
         r = p.add_run(self.titel)
         r.bold, r.font.size, r.font.color.rgb = True, Pt(21 if self.gross else 18), RGBColor.from_string(self.akzent)

@@ -87,8 +87,15 @@ Unter **Daten → Sicherung herunterladen** lässt sich alles als Datei sichern 
 Nach dem Löschen der Browserdaten sind die Protokolle sonst weg. Bitte beachtet die Vorgaben der Schule zum Umgang mit Schülerdaten.
 
 ## Schullogo
-Das Originallogo liegt als `bilder/logo.png` vor und wird in Bögen und Tool eingebettet.
-Im Tool lässt es sich unter Daten → „Logo-Datei wählen …“ austauschen.
+Das Schullogo ist **nicht** Teil des Repositorys und des Tools, damit es nicht öffentlich auf GitHub liegt.
+- **Im Tool:** unter Daten → „Logo-Datei wählen …“ hochladen; es bleibt nur auf dem Gerät (und in dessen Sicherungen)
+  und lässt sich dort mit „Logo entfernen“ wieder löschen.
+- **Druckbögen/Karten mit Logo:** das Logo lokal als `bilder/logo.png` ablegen und `./bauen.sh` ausführen.
+  Die Datei ist per `.gitignore` von Commits ausgeschlossen – die so erzeugten Dateien mit Logo bitte nicht hochladen.
+
+## App-Symbol
+`digital/apple-touch-icon.png` (iPad/iPhone), `app-icon-192.png`/`app-icon-512.png` und `favicon.png`; das Symbol ist
+zusätzlich im Tool eingebettet. Auf GitHub Pages die PNG-Dateien neben `klassenrat-tool.html` hochladen.
 
 ## Neu erzeugen
 Alle Dateien entstehen aus `werkzeuge/` (Python 3 mit `python-docx`, Node mit Playwright/Chromium):

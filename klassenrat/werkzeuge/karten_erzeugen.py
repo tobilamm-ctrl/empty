@@ -113,7 +113,7 @@ def karte_html(nr, karte, gesamt, titel_stufe, logo):
 
 def main():
     logo = (f'<img src="data:image/png;base64,{base64.b64encode(LOGO.read_bytes()).decode()}" alt="Schullogo">'
-            if LOGO.exists() else bilder.LOGO)
+            if LOGO.exists() else "")  # Schullogo nur, wenn lokal in bilder/logo.png abgelegt
     for name, (titel, untertitel, akzent, hell, karten) in STUFEN.items():
         seiten = []
         for i in range(0, len(karten), 2):

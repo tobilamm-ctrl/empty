@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="#FBF8F1"/>
+<path d="M120,900 A392,392 0 0 1 512,330 L512,388 A340,340 0 0 0 172,900 Z" fill="#B4595E"/>
+<path d="M512,330 A392,392 0 0 1 904,900 L852,900 A340,340 0 0 0 512,388 Z" fill="#65A690"/>
+<path d="M418,160 h188 a40,40 0 0 1 40,40 v84 a40,40 0 0 1 -40,40 h-72 l-46,44 v-44 h-70 a40,40 0 0 1 -40,-40 v-84 a40,40 0 0 1 40,-40 z" fill="#F1D766"/>
+<circle cx="458" cy="242" r="17" fill="#fff"/><circle cx="512" cy="242" r="17" fill="#fff"/><circle cx="566" cy="242" r="17" fill="#fff"/>
+<rect x="250" y="808" width="524" height="64" rx="32" fill="#D9A469"/>
+<path d="M255.89999999999998,808.4 Q255.89999999999998,681.3 352,681.3 Q448.1,681.3 448.1,808.4 Z" fill="#F1D766"/><circle cx="352" cy="610" r="62" fill="#F6D3B3"/><path d="M290,603.8 Q286.9,535.6 352,535.6 Q417.1,535.6 414,603.8 Q389.2,563.5 352,566.6 Q314.8,563.5 290,603.8 Z" fill="#C9853A"/><circle cx="330.3" cy="613.1" r="6.82" fill="#3A3A3A"/><circle cx="373.7" cy="613.1" r="6.82" fill="#3A3A3A"/><path d="M330.3,633.56 Q352,648.44 373.7,633.56" stroke="#3A3A3A" stroke-width="6.2" fill="none" stroke-linecap="round"/>
+<path d="M403.5,799.0 Q403.5,655.5 512,655.5 Q620.5,655.5 620.5,799.0 Z" fill="#B4595E"/><circle cx="512" cy="575" r="70" fill="#C68B5E"/><path d="M442,568.0 Q438.5,491.0 512,491.0 Q585.5,491.0 582,568.0 Q554.0,522.5 512,526.0 Q470.0,522.5 442,568.0 Z" fill="#2F2522"/><circle cx="487.5" cy="578.5" r="7.7" fill="#3A3A3A"/><circle cx="536.5" cy="578.5" r="7.7" fill="#3A3A3A"/><path d="M487.5,601.6 Q512,618.4 536.5,601.6" stroke="#3A3A3A" stroke-width="7.0" fill="none" stroke-linecap="round"/>
+<path d="M575.9,808.4 Q575.9,681.3 672,681.3 Q768.1,681.3 768.1,808.4 Z" fill="#65A690"/><circle cx="672" cy="610" r="62" fill="#E8B48A"/><path d="M610,603.8 Q606.9,535.6 672,535.6 Q737.1,535.6 734,603.8 Q709.2,563.5 672,566.6 Q634.8,563.5 610,603.8 Z" fill="#5A3A22"/><circle cx="650.3" cy="613.1" r="6.82" fill="#3A3A3A"/><circle cx="693.7" cy="613.1" r="6.82" fill="#3A3A3A"/><path d="M650.3,633.56 Q672,648.44 693.7,633.56" stroke="#3A3A3A" stroke-width="6.2" fill="none" stroke-linecap="round"/>
+<rect x="250" y="800" width="524" height="72" rx="36" fill="#D9A469"/>
+</svg>

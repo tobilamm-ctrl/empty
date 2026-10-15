@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Klassenrat</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Klassenrat">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4E927C">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,__APP_ICON__">
+<link rel="icon" type="image/png" href="data:image/png;base64,__FAVICON__">
 <style>
 :root {
   --rot: #B4595E; --gruen: #65A690; --gelb: #F1D766; --grau: #B9BABE;
@@ -22,6 +30,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Kopfleiste */
 .app-kopf { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--linie); flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
 .app-kopf .logo { width: 120px; flex: none; }
+.app-kopf .logo .app-symbol { display: block; width: 52px; height: 52px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.app-kopf .logo .app-symbol svg { width: 100%; height: 100%; display: block; }
+.app-kopf .logo:has(.app-symbol) { width: auto; }
+.logo-vorschau { margin: 6px 0 12px; } .logo-vorschau img { max-height: 90px; max-width: 260px; }
 .app-kopf .logo svg, .app-kopf .logo img { width: 100%; height: auto; display: block; max-height: 64px; object-fit: contain; }
 .app-titel { display: flex; flex-direction: column; gap: 2px; }
 .app-titel h1 { margin: 0; font-size: 1.4rem; color: var(--akzent); }
@@ -33,6 +45,8 @@ nav.haupt button:hover { background: var(--hg); }
 nav.haupt button.aktiv { background: var(--akzent-hell); color: var(--akzent-dunkel); }
 .gespeichert { position: absolute; right: 20px; bottom: 2px; font-size: .72rem; color: var(--leise); }
 .cloud { font-size: .8rem; }
+.datei-knopf { position: relative; overflow: hidden; }
+.datei-knopf input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; width: 100%; }
 .cloud button { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--linie); background: #fff; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; color: var(--leise); }
 .cloud .an { border-color: #bfe0d4; color: #2f7660; background: #eef8f4; }
 .cloud .warn { border-color: #f3d9a0; color: #8a6400; background: #fff8e1; }
@@ -576,10 +590,12 @@ function datum(d, lang) {
   return new Date(d + "T00:00").toLocaleDateString("de-DE", opt);
 }
 function bild(name, kl = "") {
-  if (name === "logo" && state.logo) return `<span class="bild ${kl}"><img src="${state.logo}" alt="Schullogo"></span>`;
+  if (name === "logo") return state.logo ? `<span class="bild ${kl}"><img src="${state.logo}" alt="Schullogo"></span>` : bild("app-icon", kl);
   return `<span class="bild ${kl}">${BILDER[name] || ""}</span>`;
 }
-function logoHTML() { return state.logo ? `<img src="${state.logo}" alt="Schullogo">` : BILDER.logo; }
+// Das Schullogo ist nicht Teil des Tools; es liegt nur auf dem Gerät (unter „Daten“ hochgeladen)
+function logoHTML() { return state.logo ? `<img src="${state.logo}" alt="Schullogo">` : ""; }
+function logoBlock() { return state.logo ? `<div class="logo">${logoHTML()}</div>` : ""; }
 const klasse = () => state.klassen.find((k) => k.id === state.aktiveKlasse);
 const sitzung = () => klasse()?.sitzungen.find((s) => s.id === ui.sitzungId);
 const T = () => TEXTE[klasse()?.stufe || "ms"];
@@ -712,7 +728,7 @@ function render() {
   const k = klasse();
   document.body.dataset.stufe = k?.stufe || "ms";
   document.title = k ? `Klassenrat ${k.name}` : "Klassenrat";
-  $("#logo").innerHTML = logoHTML();
+  $("#logo").innerHTML = state.logo ? logoHTML() : `<span class="app-symbol">${BILDER["app-icon"]}</span>`;
   $("#klassenwahl").innerHTML = state.klassen.map((x) => `<option value="${x.id}" ${x.id === state.aktiveKlasse ? "selected" : ""}>Klasse ${esc(x.name)}</option>`).join("")
     + `<option value="__neu">+ Klasse anlegen …</option>`;
   $("#klassenwahl").hidden = !state.klassen.length;
@@ -827,7 +843,7 @@ function viewWillkommen(zusatz) {
     <label class="feld">Ein Name pro Zeile (Vor- und Nachname)<textarea id="nk-schueler" rows="8" placeholder="Anna Beispiel&#10;Ben Muster&#10;…"></textarea></label>
     <div class="aktionen abstand">
       <button class="knopf gross" data-act="klasse-anlegen">Klasse anlegen</button>
-      ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `<button class="knopf rand" data-act="import">Sicherung laden …</button>
+      ${zusatz ? `<button class="knopf rand" data-act="view" data-arg="sitzungen">Abbrechen</button>` : `${ladenKnopf("Sicherung laden …")}
         ${ordnerMoeglich ? `<button class="knopf rand" data-act="ordner-waehlen">☁ Aus OneDrive-Ordner laden …</button>` : ""}`}
     </div>
     ${zusatz ? "" : tafelKarte()}
@@ -1610,7 +1626,7 @@ function protokollHTML(s) {
   const offen = offeneFuer(s);
   const voll = (l) => l.filter((z) => z.namen.length || z.text);
   return `
-  <div class="prot-kopf"><div class="logo">${logoHTML()}</div>
+  <div class="prot-kopf">${logoBlock()}
     <div><h1>${esc(t.titel)}</h1><div>Klasse <b>${esc(k.name)}</b> · ${esc(k.schuljahr || "")}</div></div>
     <div class="illu-k">${BILDER.klassenrat}</div></div>
   <div class="prot-meta">
@@ -1928,7 +1944,7 @@ function viewDaten() {
     ${istIOS ? `<p class="leise klein">Auf dem iPad öffnet sich das Teilen-Menü: „In Dateien sichern“ wählen und den OneDrive-Ordner antippen.
       Zum Laden „Sicherung laden …“ antippen und die Datei in OneDrive auswählen.</p>` : ""}
     <div class="aktionen"><button class="knopf" data-act="export">${istIOS ? "Sicherung in OneDrive / Dateien sichern" : "Sicherung herunterladen"}</button>
-      <button class="knopf rand" data-act="import">Sicherung laden …</button></div>
+      ${ladenKnopf("Sicherung laden …")}</div>
     <p class="leise klein">Letzte Sicherung: ${state.letzterExport ? new Date(state.letzterExport).toLocaleString("de-DE") : "noch nie"}</p>
   </div>
   <div class="karte">
@@ -1948,9 +1964,11 @@ function viewDaten() {
   </div>
   <div class="karte">
     <h3 style="margin-top:0">${bild("logo", "m")} Schullogo</h3>
-    <p class="leise">Das Logo erscheint oben und auf jedem Protokoll. Du kannst die Originaldatei (PNG, JPG oder SVG) hochladen.</p>
-    <div class="aktionen"><button class="knopf zweit" data-act="logo-laden">Logo-Datei wählen …</button>
-      ${state.logo ? `<button class="knopf rand" data-act="logo-zuruecksetzen">Standardlogo verwenden</button>` : ""}</div>
+    <p class="leise">Das Logo erscheint oben und auf jedem Protokoll. Es wird <b>nur auf diesem Gerät</b> gespeichert (und in den Sicherungen),
+      nicht im Tool selbst. Möglich sind PNG, JPG oder SVG.</p>
+    ${state.logo ? `<div class="logo-vorschau"><img src="${state.logo}" alt="aktuelles Schullogo"></div>` : `<p class="leise klein">Zurzeit ist kein Logo hinterlegt.</p>`}
+    <div class="aktionen"><label class="knopf zweit datei-knopf">${state.logo ? "Anderes Logo wählen …" : "Logo-Datei wählen …"}<input type="file" accept="image/*" data-datei="logo"></label>
+      ${state.logo ? `<button class="knopf gefahr" data-act="logo-zuruecksetzen">Logo entfernen</button>` : ""}</div>
   </div>
   <div class="karte">
     <h3 style="margin-top:0">Alles löschen</h3>
@@ -2178,12 +2196,44 @@ function renderCloud() {
 }
 
 // --- Dateien -------------------------------------------------------------------
-function dateiWaehlen(accept, cb) {
-  const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = accept;
-  inp.onchange = () => inp.files[0] && cb(inp.files[0]);
-  inp.click();
+// Knopf zum Laden einer Sicherung. Mit Dateizugriff (Edge/Chrome am PC) wird die Datei gemerkt;
+// sonst ein echtes Dateifeld – das braucht Safari auf dem iPad, damit die Auswahl ankommt.
+function ladenKnopf(text) {
+  if (window.showOpenFilePicker) return `<button class="knopf rand" data-act="import">${text}</button>`;
+  return `<label class="knopf rand datei-knopf">${text}<input type="file" accept=".json,application/json,text/plain" data-datei="sicherung"></label>`;
 }
+function dateiLesen(f, alsBild) {
+  return new Promise((ok, fehler) => {
+    const r = new FileReader();
+    r.onload = () => ok(r.result);
+    r.onerror = () => fehler(r.error);
+    alsBild ? r.readAsDataURL(f) : r.readAsText(f);
+  });
+}
+async function sicherungAusDatei(f) {
+  try {
+    const neu = JSON.parse(await dateiLesen(f));
+    if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
+    if (state.klassen.length && !confirm("Die Sicherung ersetzt alle Daten auf diesem Gerät. Fortfahren?")) return;
+    const logo = state.logo;
+    state = migrieren(neu);
+    if (!state.logo && logo) state.logo = logo;
+    if (!state.klassen.some((k) => k.id === state.aktiveKlasse)) state.aktiveKlasse = state.klassen[0]?.id || null;
+    ui.view = "sitzungen"; speichern(); render();
+    meldung(`Sicherung geladen: ${f.name}`);
+  } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung (" + (e.message || e) + ")."); }
+}
+document.addEventListener("change", async (e) => {
+  const inp = e.target.closest?.("input[data-datei]");
+  if (!inp || !inp.files?.[0]) return;
+  const f = inp.files[0];
+  inp.value = "";  // dieselbe Datei später erneut wählbar
+  if (inp.dataset.datei === "sicherung") return sicherungAusDatei(f);
+  if (inp.dataset.datei === "logo") {
+    if (f.size > 1.5e6) { alert("Die Datei ist zu groß (max. 1,5 MB)."); return; }
+    state.logo = await dateiLesen(f, true); speichern(); render();
+  }
+});
 async function exportieren() {
   state.letzterExport = Date.now();
   const blob = new Blob([JSON.stringify(state, null, 1)], { type: "application/json" });
@@ -2436,7 +2486,7 @@ const AKTIONEN = {
     const k = klasse(), t = T(), offen = beschluesse(k).filter(istOffen);
     if (!offen.length) { alert("Zurzeit gibt es keine offenen Beschlüsse für den Aushang."); return; }
     drucken(`<div class="aushang">
-      <div class="prot-kopf"><div class="logo">${logoHTML()}</div>
+      <div class="prot-kopf">${logoBlock()}
         <div><h1>${k.stufe === "gs" ? "Das haben wir abgemacht" : "Unsere Beschlüsse"}</h1><div>Klassenrat ${esc(k.name)} · Stand ${datum(heute(), true)}</div></div>
         <div class="illu-k">${BILDER.klassenrat}</div></div>
       ${offen.map((b) => `<div class="ah-karte">${bild("haken")}<div><div class="ah-text">${esc(b.anliegen.beschluss)}</div>
@@ -2526,7 +2576,7 @@ const AKTIONEN = {
   drucken(sid) { const s = klasse().sitzungen.find((x) => x.id === sid); drucken(protokollHTML(s)); },
   "beschluesse-drucken"() {
     const k = klasse();
-    drucken(`<div class="prot-kopf"><div class="logo">${logoHTML()}</div><div><h1>Beschlüsse</h1><div>Klassenrat ${esc(k.name)} · ${esc(k.schuljahr || "")} · Stand ${datum(heute())}</div></div></div>`
+    drucken(`<div class="prot-kopf">${logoBlock()}<div><h1>Beschlüsse</h1><div>Klassenrat ${esc(k.name)} · ${esc(k.schuljahr || "")} · Stand ${datum(heute())}</div></div></div>`
       + beschlussTabelle(beschluesse(k).reverse(), T()).replace('class="uebersicht"', ""));
   },
   zeit(feld) { sitzung()[feld] = jetzt(); speichern(); render(); },
@@ -2623,24 +2673,8 @@ const AKTIONEN = {
       } catch (e) { if (e.name !== "AbortError") alert("Diese Datei ist keine gültige Klassenrat-Sicherung."); }
       return;
     }
-    dateiWaehlen(".json,application/json", async (f) => {
-      try {
-        const neu = JSON.parse(await f.text());
-        if (!Array.isArray(neu.klassen)) throw new Error();
-        if (state.klassen.length && !confirm("Die Sicherung ersetzt alle Daten in diesem Browser. Fortfahren?")) return;
-        state = migrieren(neu); ui.view = "sitzungen"; speichern(); render();
-      } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung."); }
-    });
   },
-  "logo-laden"() {
-    dateiWaehlen("image/*", (f) => {
-      if (f.size > 1.5e6) { alert("Die Datei ist zu groß (max. 1,5 MB)."); return; }
-      const r = new FileReader();
-      r.onload = () => { state.logo = r.result; speichern(); render(); };
-      r.readAsDataURL(f);
-    });
-  },
-  "logo-zuruecksetzen"() { state.logo = null; speichern(); render(); },
+  "logo-zuruecksetzen"() { if (confirm("Schullogo von diesem Gerät entfernen?")) { state.logo = null; speichern(); render(); } },
   "alles-loeschen"() {
     if (confirm("Wirklich ALLE Daten löschen? Lade vorher eine Sicherung herunter, wenn du sie noch brauchst.")) {
       try { localStorage.removeItem(SPEICHER); } catch (e) { /* egal */ }

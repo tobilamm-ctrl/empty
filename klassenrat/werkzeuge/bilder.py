@@ -1,4 +1,4 @@
-"""Logo, Cliparts und Symbole für den Klassenrat – eine Quelle für Bögen, Word und Tool.
+"""Cliparts, Symbole und App-Symbol für den Klassenrat – eine Quelle für Bögen, Word und Tool.
 
 Alle Bilder sind als SVG beschrieben (ohne IDs, damit sie mehrfach inline
 eingebettet werden können) und werden zusätzlich nach klassenrat/bilder/ geschrieben.
@@ -20,26 +20,6 @@ HAAR = ["#5A3A22", "#2F2522", "#C9853A", "#7A4A2A", "#1E1A18"]
 def _svg(viewbox, inhalt, breite=None, hoehe=None):
     groesse = f' width="{breite}" height="{hoehe}"' if breite else ""
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{viewbox}"{groesse}>{inhalt}</svg>'
-
-
-# ---------------------------------------------------------------------------
-# Schullogo (Nachzeichnung – nur Ersatz, falls bilder/logo.png fehlt)
-# ---------------------------------------------------------------------------
-
-LOGO = _svg("-8 0 216 108", f"""
-<path d="M14,104 A82,74 0 0 1 100,30 L100,38.5 A75.5,65.5 0 0 0 21,104 Z" fill="{ROT}"/>
-<path d="M100,30 A82,74 0 0 1 186,104 L179,104 A75.5,65.5 0 0 0 100,38.5 Z" fill="{GRUEN}"/>
-<path d="M4,99 A92,84 0 0 1 100,19" fill="none" id="lg-a"/>
-<path d="M100,19 A92,84 0 0 1 196,99" fill="none" id="lg-b"/>
-<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="{ROT}" letter-spacing=".3">
-  <textPath href="#lg-a" startOffset="7%">GRUNDSCHULE</textPath></text>
-<text font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="{GRUEN}" letter-spacing=".3">
-  <textPath href="#lg-b" startOffset="3%">MITTELSCHULE</textPath></text>
-<circle cx="40" cy="12" r="8" fill="{GELB}"/>
-<circle cx="168" cy="12" r="8" fill="#B5B5B5"/>
-<text x="100" y="62" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="9.5" fill="#7A7A7A">Johann-Peter-Wagner</text>
-<text x="178" y="100" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#7A7A7A">Theres</text>
-""")
 
 
 # ---------------------------------------------------------------------------
@@ -193,8 +173,32 @@ ICONS = {
                           f'<path d="M6 54h52" stroke="{GRAU}" stroke-width="3" stroke-linecap="round"/>'),
 }
 
+# App-Symbol für den Home-Bildschirm (quadratisch, ohne Transparenz – iOS rundet die Ecken selbst)
+def _kopf(x, y, r, haut, haar, shirt):
+    return (f'<path d="M{x - r * 1.55},{y + r * 3.2} Q{x - r * 1.55},{y + r * 1.15} {x},{y + r * 1.15} '
+            f'Q{x + r * 1.55},{y + r * 1.15} {x + r * 1.55},{y + r * 3.2} Z" fill="{shirt}"/>'
+            f'<circle cx="{x}" cy="{y}" r="{r}" fill="{haut}"/>'
+            f'<path d="M{x - r},{y - r * .1} Q{x - r * 1.05},{y - r * 1.2} {x},{y - r * 1.2} Q{x + r * 1.05},{y - r * 1.2} {x + r},{y - r * .1} '
+            f'Q{x + r * .6},{y - r * .75} {x},{y - r * .7} Q{x - r * .6},{y - r * .75} {x - r},{y - r * .1} Z" fill="{haar}"/>'
+            f'<circle cx="{x - r * .35}" cy="{y + r * .05}" r="{r * .11}" fill="{DUNKEL}"/><circle cx="{x + r * .35}" cy="{y + r * .05}" r="{r * .11}" fill="{DUNKEL}"/>'
+            f'<path d="M{x - r * .35},{y + r * .38} Q{x},{y + r * .62} {x + r * .35},{y + r * .38}" stroke="{DUNKEL}" stroke-width="{r * .1}" fill="none" stroke-linecap="round"/>')
+
+
+APP_ICON = _svg("0 0 1024 1024", f"""
+<rect width="1024" height="1024" fill="#FBF8F1"/>
+<path d="M120,900 A392,392 0 0 1 512,330 L512,388 A340,340 0 0 0 172,900 Z" fill="{ROT}"/>
+<path d="M512,330 A392,392 0 0 1 904,900 L852,900 A340,340 0 0 0 512,388 Z" fill="{GRUEN}"/>
+<path d="M418,160 h188 a40,40 0 0 1 40,40 v84 a40,40 0 0 1 -40,40 h-72 l-46,44 v-44 h-70 a40,40 0 0 1 -40,-40 v-84 a40,40 0 0 1 40,-40 z" fill="{GELB}"/>
+<circle cx="458" cy="242" r="17" fill="#fff"/><circle cx="512" cy="242" r="17" fill="#fff"/><circle cx="566" cy="242" r="17" fill="#fff"/>
+<rect x="250" y="808" width="524" height="64" rx="32" fill="#D9A469"/>
+{_kopf(352, 610, 62, HAUT[0], HAAR[2], GELB)}
+{_kopf(512, 575, 70, HAUT[2], HAAR[1], ROT)}
+{_kopf(672, 610, 62, HAUT[1], HAAR[0], GRUEN)}
+<rect x="250" y="800" width="524" height="72" rx="36" fill="#D9A469"/>
+""")
+
 # Zugriff für die Druckvorlagen: Bilder mit Namen
-ALLE = {"logo": LOGO, "klassenrat": KLASSENRAT, **ICONS}
+ALLE = {"klassenrat": KLASSENRAT, "app-icon": APP_ICON, **ICONS}
 
 
 def schreiben(ziel: Path):
