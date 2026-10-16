@@ -5,17 +5,26 @@
   const COLORS = ["#1f3f9e", "#2e7d5b", "#b5541b", "#6b3fa0", "#9aa3b8"];
   const CHAR = 0.58 * 3.4; // ungefähre Zeichenbreite in mm (Skizzenschrift ca. 10 pt)
   const pct = v => fmtInt(v) + " %";
+  const dec1 = x => fmtDec(new Frac(Math.round(x * 10), 10), 1); // eine Nachkommastelle, Komma
+  const ratioStr = x => (Math.round(x * 10) % 10 === 0 ? fmtInt(Math.round(x)) : dec1(x));
 
+  // Befragungsgruppen mit realistischer Gesamtzahl (sizes). Ganze Anzahlen werden über die Auswahl der Werte sichergestellt.
+  const SCOPE = {
+    klasse: { where: "in der Klasse 7b", noun: "Schüler", sizes: [20, 24, 25, 28, 30] },
+    jgst: { where: "in der Jahrgangsstufe 7", noun: "Schüler", sizes: [60, 80, 90, 100, 120, 125, 150] },
+    schule: { where: "an unserer Schule", noun: "Schüler", sizes: [300, 400, 450, 500, 600, 750, 800, 900] },
+    stadt: { where: "in unserer Stadt", noun: "Jugendliche", sizes: [1000, 1200, 1500, 2000] },
+  };
   const TOPICS = [
-    { ctx: "In einer Umfrage in der Klasse 7b wurde nach dem Lieblingssport gefragt.", noun: "Schüler",
+    { asked: "wurde nach dem Lieblingssport gefragt", scopes: ["klasse", "jgst", "schule"],
       cats: ["Fußball", "Schwimmen", "Turnen", "Tanzen", "Radfahren"] },
-    { ctx: "Schüler wurden gefragt, wie sie zur Schule kommen.", noun: "Schüler",
+    { asked: "wurde gefragt, wie die Befragten zur Schule kommen", scopes: ["klasse", "jgst", "schule"],
       cats: ["Bus", "Auto", "Fahrrad", "zu Fuß", "Bahn"] },
-    { ctx: "Jugendliche wurden gefragt, wofür sie ihr Taschengeld ausgeben.", noun: "Jugendliche",
+    { asked: "wurde gefragt, wofür die Befragten ihr Taschengeld ausgeben", scopes: ["schule", "stadt"],
       cats: ["Kleidung", "Süßes", "Apps", "Sparen", "Kino"] },
-    { ctx: "Schüler wurden nach ihrer Freizeit gefragt.", noun: "Schüler",
+    { asked: "wurde nach der Freizeitgestaltung gefragt", scopes: ["schule", "stadt"],
       cats: ["Sport", "Musik", "Lesen", "Gaming", "Freunde"] },
-    { ctx: "In der Klasse 7a wurde das Lieblingsfach erfragt.", noun: "Schüler",
+    { asked: "wurde das Lieblingsfach erfragt", scopes: ["klasse", "jgst", "schule"],
       cats: ["Mathe", "Deutsch", "Englisch", "Sport", "Kunst"] },
   ];
 
@@ -156,14 +165,33 @@
     cols: 1,
     generate(rng, level) {
       const topic = rng.pick(TOPICS);
+      const scope = SCOPE[rng.pick(topic.scopes)];
       const kind = rng.pick(["pie", "strip", "col", "bar"]);
-      const n = rng.int(3, 5);
-      const cats = rng.shuffle(topic.cats).slice(0, n);
-      const vals = shares(rng, n, level);
+      // Gesamtzahl G und Anteile so wählen, dass die gefragten Anzahlen ganzzahlig sind (G · p : 100)
+      let G, cats, vals, cntIdx, pairs, diffPairs;
+      for (let tries = 0; ; tries++) {
+        if (tries > 3000) throw new Error("m7-diagramm-prozent: keine passende Aufgabe gefunden");
+        G = rng.pick(scope.sizes);
+        const n = rng.int(3, 5);
+        cats = rng.shuffle(topic.cats).slice(0, n);
+        vals = shares(rng, n, level);
+        cntIdx = vals.map((v, i) => i).filter(i => (G * vals[i]) % 100 === 0);
+        pairs = [];
+        diffPairs = [];
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (vals[i] > vals[j]) {
+          pairs.push([i, j]);
+          if (((vals[i] - vals[j]) * G) % 100 === 0) diffPairs.push([i, j]);
+        }
+        if (level === 1) break;
+        if (level === 2 && cntIdx.length) break;
+        if (level === 3 && (cntIdx.length || pairs.length)) break;
+      }
+      const n = cats.length;
       const fig = chartFig(kind, cats, vals);
-      const noun = topic.noun;
-      const k = rng.int(2, 12), G = 100 * k; // Grundwert G = 100 · k, damit Anzahlen ganzzahlig sind
-      const base = topic.ctx + " Das Diagramm zeigt das Ergebnis.";
+      const noun = scope.noun;
+      const ctx = "Bei einer Umfrage " + scope.where + " " + topic.asked + ".";
+      const base = ctx + " Das Diagramm zeigt das Ergebnis.";
+      const ctxG = ctx + " Insgesamt wurden " + fmtInt(G) + " " + noun + " befragt.";
 
       if (level === 1) {
         if (rng.chance(0.6)) {
@@ -188,10 +216,9 @@
       }
 
       if (level === 2) {
-        const ctxG = topic.ctx + " Insgesamt wurden " + fmtInt(G) + " " + noun + " befragt.";
-        const i = rng.int(0, n - 1);
+        const i = rng.pick(cntIdx);
         if (rng.chance(0.6)) {
-          const cnt = k * vals[i];
+          const cnt = (G * vals[i]) / 100;
           return {
             q: rich(ctxG, " Wie viele ", noun, " entfallen auf „", cats[i], "“?"),
             a: rich(fmtInt(cnt), " ", noun),
@@ -200,7 +227,7 @@
             meta: { vals, ask: "count", i, G, expect: cnt },
           };
         }
-        const cnt = G - k * vals[i];
+        const cnt = G - (G * vals[i]) / 100;
         return {
           q: rich(ctxG, " Wie viele ", noun, " geben etwas anderes als „", cats[i], "“ an?"),
           a: rich(fmtInt(cnt), " ", noun),
@@ -214,11 +241,13 @@
       }
 
       // Niveau 3: Vergleich (Prozentpunkte oder Anzahl) oder Grundwert aus einem Anteil
-      const pairs = [];
-      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (vals[i] > vals[j]) pairs.push([i, j]);
-      const sub = pairs.length ? rng.pick(["pp", "diff", "base"]) : "base";
+      const modes = [];
+      if (pairs.length) modes.push("pp");
+      if (diffPairs.length) modes.push("diff");
+      if (cntIdx.length) modes.push("base");
+      const sub = rng.pick(modes);
       if (sub === "pp" || sub === "diff") {
-        const [i, j] = rng.pick(pairs);
+        const [i, j] = rng.pick(sub === "pp" ? pairs : diffPairs);
         const d = vals[i] - vals[j];
         if (sub === "pp") {
           return {
@@ -230,17 +259,17 @@
           };
         }
         return {
-          q: rich(topic.ctx, " Insgesamt wurden ", fmtInt(G), " ", noun, " befragt. Wie viele ", noun, " mehr entfallen auf „", cats[i], "“ als auf „", cats[j], "“?"),
-          a: rich(fmtInt(d * k), " ", noun),
+          q: rich(ctxG, " Wie viele ", noun, " mehr entfallen auf „", cats[i], "“ als auf „", cats[j], "“?"),
+          a: rich(fmtInt((d * G) / 100), " ", noun),
           steps: [
             rich("Unterschied: ", pct(vals[i]), " ", MINUS, " ", pct(vals[j]), " = ", pct(d)),
-            rich(fmtInt(G), " · ", fmtInt(d), " : 100 = ", fmtInt(d * k)),
+            rich(fmtInt(G), " · ", fmtInt(d), " : 100 = ", fmtInt((d * G) / 100)),
           ],
           fig, inline: false,
-          meta: { vals, ask: "diff", i, j, G, expect: d * k },
+          meta: { vals, ask: "diff", i, j, G, expect: (d * G) / 100 },
         };
       }
-      const i = rng.int(0, n - 1), cnt = k * vals[i];
+      const i = rng.pick(cntIdx), cnt = (G * vals[i]) / 100;
       return {
         q: rich(base, " Von den Befragten nannten ", fmtInt(cnt), " ", noun, " die Antwort „", cats[i], "“. Wie viele ", noun, " wurden insgesamt befragt?"),
         a: rich(fmtInt(G), " ", noun),
@@ -271,13 +300,17 @@
         default: return "unbekannte Frage";
       }
       if (e !== m.expect) return "Rechnung stimmt nicht: " + e + " statt " + m.expect;
+      if (!Number.isInteger(m.expect)) return "Ergebnis nicht ganzzahlig";
       if (!AG.plain(t.a).includes(fmtInt(m.expect))) return "Ergebnis fehlt im Lösungstext";
       return true;
     },
   });
 
   // ---------- Diagramme beurteilen: Säulendiagramm mit abgeschnittener y-Achse ----------
+  // Achse beginnt knapp unter dem kleinsten Wert: Abstand b → kleinste Säule = hs (1 oder 2 Skalenschritte ts).
   const BASES = [20, 25, 40, 50, 80, 100];
+  const PCTS = [10, 20, 30];        // Unterschied in Prozent (vom kleineren Wert aus)
+  const STEPS = [[2, 2], [2, 4], [5, 5], [5, 10], [10, 10]]; // [ts, hs]
   const SCEN = [
     { ctx: "Ein Unternehmen vergleicht die Verkaufszahlen (in Tausend Stück) von Filialen. Das Diagramm zeigt die Werte.",
       pool: ["Filiale Nord", "Filiale Süd", "Filiale West", "Filiale Ost", "Filiale Mitte", "Filiale Hafen"], unit: " Tausend Stück" },
@@ -329,49 +362,61 @@
       const sc = rng.pick(SCEN);
       const n = level === 2 ? 2 : 3;
       const names = rng.shuffle(sc.pool).slice(0, n);
-      const vA = rng.pick(BASES);
-      const pOK = [];
-      for (let p = 2; p <= 15; p++) if ((p * vA) % 100 === 0) pOK.push(p); // d = p · vA : 100 ist ganzzahlig
-      const pB = rng.pick(pOK);
+      let vA, pB, pOK, ts, hs, cands;
+      for (let tries = 0; ; tries++) {
+        if (tries > 2000) throw new Error("m7-diagramm-beurteilen: keine passende Aufgabe gefunden");
+        vA = rng.pick(BASES);
+        pOK = PCTS.filter(p => (p * vA) % 100 === 0); // Unterschied d = p · vA : 100 ist ganzzahlig
+        if (!pOK.length || (n === 3 && pOK.length < 2)) continue;
+        pB = rng.pick(pOK);
+        const d = (pB * vA) / 100;
+        // d ≥ hs: die größte Säule wirkt mindestens doppelt so hoch; Skala höchstens 8 Schritte
+        cands = STEPS.filter(([t, h]) => vA % t === 0 && h <= d && h < vA && Math.ceil(((0.3 * vA + h) * 1.2) / t) <= 8);
+        if (cands.length) break;
+      }
+      [ts, hs] = rng.pick(cands);
+      const b = vA - hs;
       const vals = [vA, vA + (pB * vA) / 100];
       if (n === 3) vals.push(vA + (rng.pick(pOK.filter(p => p !== pB)) * vA) / 100);
       const vmax = Math.max(...vals);
-      const bs = [];
-      for (let x = 10; x <= vA - 5; x += 10) if (x >= vA - 30) bs.push(x);
-      const b = rng.pick(bs); // Achse beginnt bei b < vA
-      const rough = (vmax - b) * 1.2;
-      const step = rough <= 40 ? 5 : 10;
-      const T = b + step * Math.ceil(rough / step);
-      const fig = truncFig(names, vals, b, T, step);
+      const T = b + ts * Math.ceil(((vmax - b) * 1.2) / ts);
+      const fig = truncFig(names, vals, b, T, ts);
       const A = names[0], B = names[1];
       const d = vals[1] - vals[0];
-      const p = (d * 100) / vA;
+      const p = pB;
+      const rVis = Math.round(((hs + d) / hs) * 10) / 10;   // Verhältnis der Säulenhöhen ab b (wirkt so)
+      const rReal = Math.round((vals[1] / vals[0]) * 10) / 10; // tatsächliches Verhältnis
 
       if (level === 2) {
         return {
           q: rich(sc.ctx, " (a) Um wie viel Prozent ist der Wert von „", B, "“ größer als der von „", A, "“? Rechne vom Wert von „", A, "“ aus. (b) Warum wirkt der Unterschied im Diagramm so groß?"),
-          a: rich("(a) ", pct(p), " größer. (b) Die Achse beginnt bei ", fmtInt(b), " und nicht bei 0. Dadurch wirkt der kleine Unterschied im Diagramm sehr groß."),
+          a: rich(
+            "(a) ", pct(p), " größer. (b) Die Achse beginnt bei ", fmtInt(b), " statt bei 0. Die Säule von ", A,
+            " ist deshalb nur ", fmtInt(hs), " Einheiten hoch, die von ", B, " ", fmtInt(hs + d),
+            " Einheiten. Sie wirkt ", ratioStr(rVis), "-mal so groß, obwohl der Unterschied nur ", pct(p), " beträgt."),
           steps: [
             rich(fmtInt(vals[1]), " ", MINUS, " ", fmtInt(vals[0]), " = ", fmtInt(d), sc.unit),
             rich(fmtInt(d), " · 100 : ", fmtInt(vA), " = ", pct(p)),
           ],
           fig, inline: false,
-          meta: { vals, b, p, expect: p, ask: "trunc" },
+          meta: { vals, b, hs, p, rVis, rReal, expect: p, ask: "trunc" },
         };
       }
 
-      // Niveau 3: zusätzlich die scheinbare Steigerung aus den gemessenen Säulenhöhen (ab b)
-      const vis = Math.round((d * 1000) / (vA - b)) / 10;
+      // Niveau 3: scheinbares Verhältnis (aus den Säulenhöhen ab b) gegen das tatsächliche Verhältnis
       return {
-        q: rich(sc.ctx, " (a) Um wie viel Prozent ist der Wert von „", B, "“ größer als der von „", A, "“? (b) Miss die Säulenhöhen ab der Achse, die bei ", fmtInt(b), " beginnt. Um wie viel Prozent scheint die Säule von „", B, "“ höher als die von „", A, "“ zu sein?"),
-        a: rich("(a) ", pct(p), " größer. (b) Im Diagramm scheint B um ca. ", fmtDec(new Frac(Math.round((d * 1000) / (vA - b)), 10)), " % höher zu sein."),
+        q: rich(sc.ctx, " (a) Um wie viel Prozent ist der Wert von „", B, "“ größer als der von „", A, "“? (b) Miss die Säulenhöhen ab der Achse, die bei ", fmtInt(b), " beginnt. Wievielmal so hoch wirkt die Säule von „", B, "“ wie die von „", A, "“? Wievielmal so groß ist der Wert wirklich? Runde auf eine Nachkommastelle."),
+        a: rich(
+          "(a) ", pct(p), " größer. (b) Im Diagramm wirkt die Säule von ", B, " ca. ", dec1(rVis),
+          "-mal so hoch wie die von ", A, ". Wirklich ist der Wert von ", B, " nur ", dec1(rReal), "-mal so groß wie der von ", A, "."),
         steps: [
           rich("Echter Unterschied: ", fmtInt(d), " · 100 : ", fmtInt(vA), " = ", pct(p)),
-          rich("Höhen ab ", fmtInt(b), ": B = ", fmtInt(vals[1] - b), ", A = ", fmtInt(vA - b)),
-          rich(fmtInt(d), " · 100 : ", fmtInt(vA - b), " = ca. ", fmtDec(new Frac(Math.round((d * 1000) / (vA - b)), 10)), " %"),
+          rich("Säulenhöhen ab ", fmtInt(b), ": ", B, " = ", fmtInt(hs + d), ", ", A, " = ", fmtInt(hs)),
+          rich("Wirkung im Diagramm: ", fmtInt(hs + d), " : ", fmtInt(hs), " = ca. ", dec1(rVis)),
+          rich("Wirklich: ", fmtInt(vals[1]), " : ", fmtInt(vA), " = ", dec1(rReal)),
         ],
         fig, inline: false,
-        meta: { vals, b, p, vis, expect: p, ask: "trunc3" },
+        meta: { vals, b, hs, p, rVis, rReal, expect: p, ask: "trunc3" },
       };
     },
     verify(t, level) {
@@ -379,12 +424,14 @@
       if (!m) return "meta fehlt";
       const v = m.vals;
       if (v.some(x => !Number.isInteger(x) || x <= 0)) return "Werte ungültig";
-      if (!(m.b % 10 === 0 && m.b > 0 && m.b < Math.min(...v))) return "Achse beginnt nicht unterhalb der Säulen";
+      if (!(m.b > 0 && m.b < v[0] && v[0] - m.b === m.hs)) return "Achse nicht knapp unter dem kleinsten Wert";
       const d = v[1] - v[0];
+      if (d < m.hs) return "Unterschied zu klein für sichtbare Täuschung";
       const p = (d * 100) / v[0];
       if (!Number.isInteger(p) || p !== m.p) return "Prozentwert falsch";
-      if (!AG.plain(t.a).includes(fmtInt(p))) return "Ergebnis fehlt im Lösungstext";
-      if (level === 3 && Math.abs(m.vis - (d * 100) / (v[0] - m.b)) > 0.051) return "sichtbare Steigerung falsch";
+      if (Math.abs((m.hs + d) / m.hs - m.rVis) > 0.051) return "sichtbares Verhältnis falsch";
+      if (Math.abs(v[1] / v[0] - m.rReal) > 0.051) return "reales Verhältnis falsch";
+      if (!AG.plain(t.a).includes(String(p))) return "Ergebnis fehlt im Lösungstext";
       return true;
     },
   });

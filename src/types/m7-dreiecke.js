@@ -29,7 +29,7 @@
   }
 
   // Winkelbogen mit Beschriftung; bei kleinen Winkeln weiter außen beschriften
-  function arc(s, v, p, q, text, g) { s.angle(v, p, q, text, { r: 4, textOffset: g < 60 ? 5.8 : 4.2 }); }
+  function arc(s, v, p, q, text, g) { s.angle(v, p, q, text, { r: 4, textOffset: g < 60 ? 5.8 + (60 - g) * 0.12 : 4.2 }); }
 
   // Eckenbezeichnungen außen
   function names(s, P, letters) {
@@ -80,8 +80,8 @@
   }
 
   // Gleiche Seiten markieren: kleiner Strich quer über die Seite
-  function ticks(s, p, q) {
-    const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  function ticks(s, p, q, f = 0.5) {
+    const m = [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
     const d = unit(vsub(q, p)), n = [-d[1], d[0]];
     s.line(along(m, n, -1.3), along(m, n, 1.3), { width: 0.5 });
   }
@@ -146,7 +146,7 @@
       const ang = [base, base, g];
       const build = sol => sketchOf(triUnits(base, base), (s, P) => {
         s.poly(P);
-        ticks(s, P[0], P[2]); ticks(s, P[1], P[2]);
+        ticks(s, P[0], P[2], 0.6); ticks(s, P[1], P[2], 0.6);
         triArcs(s, P, ang, [0, 1, 2].map(i => GR[i] + " = " + (i < 2 && !sol ? "?" : ang[i] + "°")));
         names(s, P, VN);
       });
@@ -164,7 +164,7 @@
     const ang = [base, base, g];
     const build = sol => sketchOf(triUnits(base, base), (s, P) => {
       s.poly(P);
-      ticks(s, P[0], P[2]); ticks(s, P[1], P[2]);
+      ticks(s, P[0], P[2], 0.6); ticks(s, P[1], P[2], 0.6);
       triArcs(s, P, ang, [GR[0] + " = " + base + "°", GR[1] + " = " + base + "°", GR[2] + " = " + (sol ? g + "°" : "?")]);
       names(s, P, VN);
     });
@@ -254,7 +254,7 @@
     const build = sol => sketchOf([A, B, C, D], (s, P) => {
       s.poly([P[0], P[1], P[2]]);
       s.line(P[1], P[3]);
-      ticks(s, P[0], P[2]); ticks(s, P[1], P[2]);
+      ticks(s, P[0], P[2], 0.6); ticks(s, P[1], P[2], 0.6);
       arc(s, P[1], P[3], P[2], e + "°", e);
       arc(s, P[2], P[0], P[1], sol ? GR[2] + " = " + g + "°" : GR[2] + " = ?", g);
       names(s, P, ["A", "B", "C", "D"]);
