@@ -2192,17 +2192,17 @@ table.vt th { background: #f1f3f8; text-align: left; }
       pwl: (c, G, p) => rich("Ein Buch hat ", Q(c, G), ". Tim hat ", pc(p), " davon gelesen. Wie viele Seiten sind das?"),
       gw: (c, G, p, P) => rich("Tim hat ", pc(p), " des Buches gelesen. Das sind ", Q(c, P), ". Wie viele Seiten hat das Buch?"),
       ps: (c, G, p, P) => rich("Ein Buch hat ", Q(c, G), ". Tim hat ", Q(c, P), " gelesen. Wie viel Prozent des Buches sind das?") },
-    { sg: "€", pl: "€", dat: "€", range: [250, 900], step: 10, money: true, qw: "Wie viel €",
+    { sg: "€", pl: "€", dat: "€", range: [250, 900], step: 10, money: true, pMax: 50, qw: "Wie viel €",
       sh: (c, G) => rich("von einem Fahrrad für ", Q(c, G)),
       pwl: (c, G, p) => rich("Ein Fahrrad kostet ", Q(c, G), ". Im Sommerangebot gibt es ", pc(p), " Rabatt. Wie viel € spart man?"),
       gw: (c, G, p, P) => rich("Im Sommerangebot spart man ", pc(p), " des Fahrradpreises. Das sind ", Q(c, P), ". Wie teuer war das Fahrrad vorher?"),
       ps: (c, G, p, P) => rich("Ein Fahrrad kostet ", Q(c, G), ". Im Sommerangebot spart man ", Q(c, P), ". Wie viel Prozent Rabatt ist das?") },
-    { sg: "€", pl: "€", dat: "€", range: [150, 800], step: 10, money: true, qw: "Wie viel €",
+    { sg: "€", pl: "€", dat: "€", range: [150, 800], step: 10, money: true, pMax: 50, qw: "Wie viel €",
       sh: (c, G) => rich("von einem Handy für ", Q(c, G)),
       pwl: (c, G, p) => rich("Ein Handy kostet ", Q(c, G), ". Beim Sale gibt es ", pc(p), " Rabatt. Wie viel € spart man?"),
       gw: (c, G, p, P) => rich("Beim Sale spart man ", pc(p), " vom Preis. Das sind ", Q(c, P), ". Wie viel € kostete das Handy vorher?"),
       ps: (c, G, p, P) => rich("Ein Handy kostet ", Q(c, G), ". Beim Sale spart man ", Q(c, P), ". Wie viel Prozent sind das?") },
-    { sg: "€", pl: "€", dat: "€", range: [40, 180], step: 1, money: true, qw: "Wie viel €",
+    { sg: "€", pl: "€", dat: "€", range: [40, 180], step: 1, money: true, pMax: 50, qw: "Wie viel €",
       sh: (c, G) => rich("von einer Jacke für ", Q(c, G)),
       pwl: (c, G, p) => rich("Eine Jacke kostet ", Q(c, G), ". Im Schlussverkauf gibt es ", pc(p), " Rabatt. Wie viel € spart man?"),
       gw: (c, G, p, P) => rich("Im Schlussverkauf spart Lena ", pc(p), " vom Jackenpreis. Das sind ", Q(c, P), ". Wie viel € kostete die Jacke vorher?"),
@@ -2212,7 +2212,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       pwl: (c, G, p) => rich("Im Lager liegen ", Q(c, G), " Mehl. Davon werden ", pc(p), " verbraucht. Wie viel kg sind das?"),
       gw: (c, G, p, P) => rich("Vom Mehl im Lager werden ", pc(p), " verbraucht. Das sind ", Q(c, P), ". Wie viel kg Mehl lagen vorher im Lager?"),
       ps: (c, G, p, P) => rich("Im Lager liegen ", Q(c, G), " Mehl. Davon werden ", Q(c, P), " verbraucht. Wie viel Prozent sind das?") },
-    { sg: "€", pl: "€", dat: "€", range: [10, 60], step: 1, money: true, qw: "Wie viel €",
+    { sg: "€", pl: "€", dat: "€", range: [10, 60], step: 1, money: true, pMax: 50, qw: "Wie viel €",
       sh: (c, G) => rich("von einem Taschengeld von ", D(c, G)),
       pwl: (c, G, p) => rich("Lena bekommt ", Q(c, G), " Taschengeld im Monat. Davon spart sie ", pc(p), ". Wie viel € spart sie?"),
       gw: (c, G, p, P) => rich("Lena spart ", pc(p), " ihres Taschengeldes. Das sind ", Q(c, P), ". Wie viel € Taschengeld bekommt sie im Monat?"),
@@ -2247,6 +2247,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     for (let i = 0; i < 1000; i++) {
       const c = rng.pick(list);
       const p = pickPct(rng, level, c.over);
+      if (c.pMax && Frac.of(p).cmp(c.pMax) > 0) continue;
       const lo = Math.ceil(c.range[0] / c.step), hi = Math.floor(c.range[1] / c.step);
       const G = new Frac(c.step * rng.int(lo, hi), 1);
       const P = G.mul(p).div(100);
