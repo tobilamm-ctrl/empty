@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aufgaben-Generator Mathematik</title>
+<style>
+@font-face { font-family: "Familjen Grotesk"; src: url(data:font/woff2;base64,__FONT__) format("woff2"); font-weight: 400 700; font-display: swap; }
+
+/* Layout: links der Bauplan (feste Spalte), rechts der Schreibtisch aus Karopapier mit dem A4-Blatt und Registerreitern A–D */
+:root {
+  --desk: #eef2f8;
+  --grid: #dde4f0;
+  --panel: #ffffff;
+  --panel-2: #f6f8fc;
+  --line: #d8dfeb;
+  --text: #1b2130;
+  --muted: #5a6275;
+  --ink: #1f3f9e;
+  --ink-soft: #e6ecfa;
+  --red: #c8102e;
+  --part-0: #1f3f9e;
+  --part-1: #2e7d5b;
+  --part-2: #b5541b;
+  --part-3: #6b3fa0;
+  --ui: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --sheet-font: Arial, "Liberation Sans", Helvetica, sans-serif;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: #141a26; --grid: #1d2536; --panel: #1b2232; --panel-2: #222a3c; --line: #2f3a51;
+    --text: #e6eaf3; --muted: #9aa4bb; --ink: #8ea8ff; --ink-soft: #26314f; --red: #ff7a8a;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; font-family: var(--ui); font-size: 15px; color: var(--text); background: var(--desk); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: 384px 1fr; height: 100%; }
+
+/* ---------- Bauplan ---------- */
+.plan { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.plan-scroll { overflow-y: auto; padding: 22px 22px 12px; display: grid; gap: 22px; }
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.brand h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+.brand h1 span { color: var(--ink); }
+.brand small { color: var(--muted); font-size: 12px; }
+
+.group { display: grid; gap: 10px; }
+.group > h2 { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+label.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+input[type=text], input[type=number], select {
+  width: 100%; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 8px 10px; font-size: 14px;
+}
+input[type=number] { font-variant-numeric: tabular-nums; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; padding: 2px; background: var(--panel-2); gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 6px 11px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(20, 30, 60, .14); }
+.seg button:disabled { opacity: .38; cursor: not-allowed; }
+
+/* Teile A–D als Karteikarten mit farbigem Reiter */
+.parts { display: grid; gap: 10px; }
+.part { display: grid; grid-template-columns: 34px 1fr; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+.part.flash { animation: flash .9s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--pc); } to { box-shadow: 0 0 0 0 transparent; } }
+.part-tab { background: var(--pc); color: #fff; font-weight: 700; font-size: 17px; display: grid; place-items: start center; padding-top: 10px; }
+.part-body { padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.part-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.part select { padding: 6px 8px; }
+.stars { display: inline-flex; gap: 1px; }
+.stars button { border: 0; background: none; padding: 0 1px; font-size: 20px; line-height: 1; cursor: pointer; color: var(--pc); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.stepper button { border: 0; background: var(--panel-2); width: 28px; height: 28px; cursor: pointer; font-size: 16px; }
+.stepper output { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.mini { font-size: 12px; color: var(--muted); }
+.icon-btn { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; margin-left: auto; }
+.icon-btn:hover { color: var(--red); background: var(--panel-2); }
+.add-part { border: 1px dashed var(--line); background: none; border-radius: var(--radius); padding: 9px; color: var(--ink); font-weight: 600; cursor: pointer; }
+.add-part:hover { background: var(--ink-soft); }
+
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.check input { width: 17px; height: 17px; accent-color: var(--ink); }
+
+.code-box { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.code-box input { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--ink); }
+.btn svg { flex: none; }
+.msg { font-size: 13px; min-height: 1em; }
+.msg.err { color: var(--red); }
+.msg.ok { color: var(--part-1); }
+
+.plan-foot { border-top: 1px solid var(--line); padding: 14px 22px 18px; display: grid; gap: 10px; background: var(--panel); }
+.download { border: 0; background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.download:hover { filter: brightness(1.08); }
+@media (prefers-color-scheme: dark) { .download { color: #0f1424; } }
+
+/* ---------- Schreibtisch ---------- */
+.desk {
+  min-width: 0; overflow: auto; position: relative;
+  background-color: var(--desk);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.desk-bar { position: sticky; top: 0; z-index: 3; display: flex; justify-content: center; padding: 14px 16px; pointer-events: none; }
+.desk-bar .seg { pointer-events: auto; background: var(--panel); box-shadow: 0 2px 10px rgba(20, 30, 60, .12); }
+.desk-bar .seg button[data-view="steps"][aria-pressed="true"], .desk-bar .seg button[data-view="answers"][aria-pressed="true"] { color: var(--red); }
+.stage { display: flex; justify-content: center; padding: 6px 70px 60px 24px; }
+.sheet-wrap { position: relative; }
+
+/* Registerreiter rechts am Blatt */
+.tabs { position: absolute; top: 120px; right: -38px; display: grid; gap: 6px; }
+.tabs button { width: 38px; height: 54px; border: 0; border-radius: 0 9px 9px 0; background: var(--pc); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 2px 2px 6px rgba(20, 30, 60, .18); transition: transform .15s; }
+.tabs button:hover { transform: translateX(3px); }
+
+/* ---------- A4-Blatt (Vorschau, entspricht der Word-Datei) ---------- */
+.sheet {
+  width: 210mm; min-height: 297mm; background: #fff; color: #1b2130; padding: 16mm 18mm 14mm;
+  font-family: var(--sheet-font); font-size: 11pt; line-height: 1.32;
+  box-shadow: 0 1px 2px rgba(20, 30, 60, .1), 0 12px 32px rgba(20, 30, 60, .14);
+  display: flex; flex-direction: column;
+  --ink: #1f3f9e; --red: #c8102e; --grey: #5a6275;
+  --part-0: #1f3f9e; --part-1: #2e7d5b; --part-2: #b5541b; --part-3: #6b3fa0;
+}
+.sheet .red { color: var(--red); }
+.sh-head { display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--grey); }
+.sh-nr { color: var(--ink); font-weight: 700; }
+.sh-nr.red { color: var(--red); }
+.sh-fields { display: grid; grid-template-columns: 52% 17% 1fr; gap: 3%; margin-top: 10pt; font-size: 9pt; color: var(--grey); }
+.sh-fields span { border-bottom: 0.75pt solid #9aa3b8; padding-bottom: 1pt; padding-top: 8pt; }
+.sh-title { font-size: 18pt; color: var(--ink); margin: 13pt 0 6pt; line-height: 1.15; }
+.sh-title.red { color: var(--red); }
+.sh-merke { background: #eaf0fc; border-left: 4.5pt solid var(--ink); padding: 6pt 10pt 7pt 11pt; margin: 2pt 0 4pt; font-size: 10.5pt; line-height: 1.5; }
+.sh-merke b:first-child { color: var(--ink); font-size: 10pt; }
+.sh-merke p { margin: 2pt 0 0; }
+.sh-part { margin-top: 11pt; }
+.sh-part-head { display: flex; align-items: center; gap: 9pt; break-after: avoid; }
+.sh-letter { background: var(--pc); color: #fff; font-weight: 700; font-size: 13pt; width: 23pt; height: 21pt; display: grid; place-items: center; }
+.sh-part-title { font-weight: 700; font-size: 12pt; }
+.sh-stars { color: var(--pc); font-size: 11pt; letter-spacing: 1px; }
+.sh-ins { font-style: italic; color: var(--grey); font-size: 10.5pt; margin: 5pt 0 4pt; }
+.sh-tasks { list-style: none; padding: 0; margin: 2pt 0 0; display: grid; grid-template-columns: repeat(var(--cols), 1fr); column-gap: 6pt; row-gap: 4pt; }
+.sh-tasks li { display: grid; grid-template-columns: 19pt 1fr; position: relative; padding: 3pt 26px 7pt 0; border-radius: 4px; min-width: 0; }
+.sh-tasks li:hover { background: #f3f6fd; }
+.lab { color: var(--ink); font-weight: 700; }
+.tb { min-width: 0; line-height: 1.6; }
+.q { overflow-wrap: anywhere; }
+.ans { margin-top: 2pt; }
+.steps { font-size: 10pt; margin: 2pt 0 0 12pt; line-height: 1.75; }
+.work { height: calc(var(--lines) * 15pt); }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: 0.92em; line-height: 1.05; margin: 0 1.5px; }
+.fr > span:first-child { border-bottom: 0.9px solid currentColor; padding: 0 2px; }
+.fr > span:last-child { padding: 0 2px; }
+.blank { display: inline-block; width: calc(var(--w) * 0.6em + 1.4em); border-bottom: 0.75pt solid #9aa3b8; height: 1em; vertical-align: baseline; }
+table.vt { border-collapse: collapse; margin: 4pt 0 2pt; font-size: 10pt; }
+table.vt th, table.vt td { border: 0.75pt solid #9aa3b8; padding: 2pt 7pt; text-align: center; min-width: 34pt; }
+table.vt th { background: #f1f3f8; text-align: left; }
+.sh-foot { margin-top: auto; padding-top: 14pt; display: flex; justify-content: space-between; font-size: 7.5pt; color: #8a91a3; }
+.reroll { position: absolute; top: 2pt; right: 2px; width: 24px; height: 24px; border: 0; border-radius: 6px; background: #fff; color: var(--ink); cursor: pointer; display: grid; place-items: center; opacity: 0; box-shadow: 0 1px 3px rgba(20, 30, 60, .25); }
+.sh-tasks li:hover .reroll, .reroll:focus-visible { opacity: 1; }
+.reroll.spin svg { animation: roll .45s ease-out; }
+@keyframes roll { from { transform: rotate(-200deg) scale(.6); } to { transform: none; } }
+
+.error-box { max-width: 210mm; margin: 0 auto; background: var(--panel); border: 1px solid var(--red); color: var(--red); padding: 14px 16px; border-radius: 10px; }
+
+@media (max-width: 980px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  .plan { border-right: 0; border-bottom: 1px solid var(--line); }
+  .stage { padding: 6px 50px 40px 12px; justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="plan" aria-label="Bauplan des Arbeitsblatts">
+    <div class="plan-scroll">
+      <div class="brand"><h1>Aufgaben-<span>Generator</span></h1><small>Mathematik Mittelschule</small></div>
+
+      <section class="group">
+        <h2>Klasse</h2>
+        <div class="row">
+          <div class="seg" id="klasse" role="group" aria-label="Klasse"></div>
+          <div class="seg" id="zug" role="group" aria-label="Zug"></div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2>Thema</h2>
+        <select id="thema" aria-label="Thema"></select>
+        <div class="row">
+          <span class="mini">Niveau</span>
+          <div class="seg" id="niveau" role="group" aria-label="Niveau des Blatts">
+            <button type="button" data-n="1">leicht</button>
+            <button type="button" data-n="2">mittel</button>
+            <button type="button" data-n="3">schwer</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2>Teile des Blatts</h2>
+        <div class="parts" id="parts"></div>
+        <button type="button" class="add-part" id="addPart">Teil hinzufügen</button>
+      </section>
+
+      <section class="group">
+        <h2>Blatt</h2>
+        <label class="field">Überschrift<input type="text" id="title"></label>
+        <label class="check"><input type="checkbox" id="merke"> Merke-Kasten anzeigen</label>
+        <div class="row">
+          <span class="mini">Platz zum Rechnen</span>
+          <div class="seg" id="work" role="group" aria-label="Platz zum Rechnen">
+            <button type="button" data-w="0">keiner</button>
+            <button type="button" data-w="1">wenig</button>
+            <button type="button" data-w="3">viel</button>
+          </div>
+        </div>
+        <div class="row">
+          <span class="mini">Lösungsblatt</span>
+          <div class="seg" id="solmode" role="group" aria-label="Lösungsblatt">
+            <button type="button" data-s="answers">nur Ergebnisse</button>
+            <button type="button" data-s="steps">mit Zwischenschritten</button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="groupB"> Gruppe B (gleiche Aufgaben, andere Zahlen)</label>
+      </section>
+
+      <section class="group">
+        <h2>Blatt-Nummer</h2>
+        <div class="row">
+          <input type="number" id="seed" min="1" max="99999" style="width: 110px" aria-label="Blatt-Nummer">
+          <button type="button" class="btn" id="newSeed">__DICE__ Neues Blatt</button>
+        </div>
+        <label class="field">Blatt-Code zum Wiederherstellen
+          <span class="code-box"><input type="text" id="code" spellcheck="false"><button type="button" class="btn" id="loadCode">Laden</button></span>
+        </label>
+        <div class="msg" id="codeMsg" role="status"></div>
+      </section>
+    </div>
+    <div class="plan-foot">
+      <button type="button" class="download" id="download">Word-Datei herunterladen</button>
+      <div class="mini" id="dlInfo"></div>
+    </div>
+  </aside>
+
+  <main class="desk" id="desk">
+    <div class="desk-bar">
+      <div class="seg" id="view" role="group" aria-label="Ansicht">
+        <button type="button" data-view="A">Arbeitsblatt</button>
+        <button type="button" data-view="B">Gruppe B</button>
+        <button type="button" data-view="answers">Lösung</button>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="sheet-wrap">
+        <article class="sheet" id="sheet" aria-label="Vorschau des Arbeitsblatts"></article>
+        <nav class="tabs" id="tabs" aria-label="Zu Teil springen"></nav>
+      </div>
+    </div>
+  </main>
+</div>
+__SCRIPTS__
+</body>
+</html>
