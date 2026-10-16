@@ -100,6 +100,9 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 .plan-foot { border-top: 1px solid var(--line); padding: 14px 22px 18px; display: grid; gap: 10px; background: var(--panel); }
 .download { border: 0; background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .download:hover { filter: brightness(1.08); }
+.onenote-btn { justify-content: center; padding: 10px 12px; }
+.target-onenote .download { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+.target-onenote .onenote-btn { background: #7719aa; border-color: #7719aa; color: #fff; }
 @media (prefers-color-scheme: dark) { .download { color: #0f1424; } }
 
 /* ---------- Schreibtisch ---------- */
@@ -121,6 +124,8 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 .tabs button:hover { transform: translateX(3px); }
 
 /* ---------- A4-Blatt (Vorschau, entspricht der Word-Datei) ---------- */
+.pages { display: grid; gap: 28px; }
+.measure-box { position: absolute; left: -10000px; top: 0; visibility: hidden; pointer-events: none; }
 .sheet {
   width: 210mm; min-height: 297mm; background: #fff; color: #1b2130; padding: 16mm 18mm 14mm;
   font-family: var(--sheet-font); font-size: 11pt; line-height: 1.32;
@@ -150,25 +155,27 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 .sh-part-title { font-weight: 700; font-size: 12pt; }
 .sh-stars { color: var(--pc); font-size: 11pt; letter-spacing: 1px; }
 .sh-ins { font-style: italic; color: var(--grey); font-size: 10.5pt; margin: 5pt 0 4pt; }
-.sh-tasks { list-style: none; padding: 0; margin: 2pt 0 0; display: grid; grid-template-columns: repeat(var(--cols), 1fr); column-gap: 6pt; row-gap: 4pt; }
-.sh-tasks li { display: grid; grid-template-columns: 19pt 1fr; position: relative; padding: 3pt 26px 7pt 0; border-radius: 4px; min-width: 0; }
+.sh-tasks { list-style: none; padding: 0; margin: 2pt 0 0; display: grid; grid-template-columns: repeat(var(--cols), 1fr); column-gap: 6pt; row-gap: 0; }
+.sh-tasks li { display: grid; grid-template-columns: 19pt 1fr; position: relative; padding: 1pt 26px 5pt 0; border-radius: 4px; min-width: 0; }
 .sh-tasks li:hover { background: #f3f6fd; }
 .lab { color: var(--ink); font-weight: 700; }
-.tb { min-width: 0; line-height: 1.6; }
+.tb { min-width: 0; line-height: 1.42; }
 .q { overflow-wrap: anywhere; }
 .ans { margin-top: 2pt; }
 .q, .steps > div { position: relative; }
 .op { position: absolute; left: 4.6cm; white-space: nowrap; }
 .steps .op { left: 4.6cm; }
-.steps { font-size: 10pt; margin: 2pt 0 0 12pt; line-height: 1.75; }
-.work { height: calc(var(--lines) * 15pt); }
-.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: 0.92em; line-height: 1.05; margin: 0 1.5px; }
+.steps { font-size: 10pt; margin: 2pt 0 0 12pt; line-height: 1.42; }
+.work { flex: none; }
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: 1em; line-height: 1.22; margin: 2px 1.5px; }
 .fr > span:first-child { border-bottom: 0.9px solid currentColor; padding: 0 2px; }
 .fr > span:last-child { padding: 0 2px; }
 .blank { display: inline-block; width: calc(var(--w) * 0.6em + 1.4em); border-bottom: 0.75pt solid #9aa3b8; height: 1em; vertical-align: baseline; }
 table.vt { border-collapse: collapse; margin: 4pt 0 2pt; font-size: 10pt; }
 table.vt th, table.vt td { border: 0.75pt solid #9aa3b8; padding: 2pt 7pt; text-align: center; min-width: 34pt; }
 table.vt th { background: #f1f3f8; text-align: left; }
+.sheet.paged { height: 297mm; min-height: 0; overflow: hidden; }
+.sheet.measure { min-height: 0; }
 .sh-foot { margin-top: auto; padding-top: 14pt; display: flex; justify-content: space-between; font-size: 7.5pt; color: #8a91a3; }
 .reroll { position: absolute; top: 2pt; right: 2px; width: 24px; height: 24px; border: 0; border-radius: 6px; background: #fff; color: var(--ink); cursor: pointer; display: grid; place-items: center; opacity: 0; box-shadow: 0 1px 3px rgba(20, 30, 60, .25); }
 .sh-tasks li:hover .reroll, .reroll:focus-visible { opacity: 1; }
@@ -223,6 +230,14 @@ table.vt th { background: #f1f3f8; text-align: left; }
         <label class="field">Überschrift<input type="text" id="title"></label>
         <label class="check"><input type="checkbox" id="merke"> Merke-Kasten anzeigen</label>
         <div class="row">
+          <span class="mini">Ausgabe für</span>
+          <div class="seg" id="target" role="group" aria-label="Ausgabe für">
+            <button type="button" data-t="word">Word (A4-Seiten)</button>
+            <button type="button" data-t="onenote">OneNote (eine lange Seite)</button>
+          </div>
+        </div>
+        <label class="check" id="fillRow"><input type="checkbox" id="fill"> Seiten ganz ausfüllen (genau 1 oder 2 Seiten)</label>
+        <div class="row">
           <span class="mini">Platz zum Rechnen</span>
           <div class="seg" id="work" role="group" aria-label="Platz zum Rechnen">
             <button type="button" data-w="0">keiner</button>
@@ -254,6 +269,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
     </div>
     <div class="plan-foot">
       <button type="button" class="download" id="download">Word-Datei herunterladen</button>
+      <button type="button" class="btn onenote-btn" id="copyOneNote">Angezeigte Seite für OneNote kopieren</button>
+      <div class="msg" id="copyMsg" role="status"></div>
       <div class="mini" id="dlInfo"></div>
     </div>
   </aside>
@@ -268,7 +285,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
     </div>
     <div class="stage">
       <div class="sheet-wrap">
-        <article class="sheet" id="sheet" aria-label="Vorschau des Arbeitsblatts"></article>
+        <div class="pages" id="sheet" aria-label="Vorschau des Arbeitsblatts"></div>
+        <div class="measure-box" id="measure" aria-hidden="true"></div>
         <nav class="tabs" id="tabs" aria-label="Zu Teil springen"></nav>
       </div>
     </div>
@@ -485,6 +503,26 @@ table.vt th { background: #f1f3f8; text-align: left; }
     return t.length <= 48 && !/[?.!:]$/.test(t) && !/\n/.test(t) && !/[a-zäöüß]{4,}/i.test(t.replace(/\b(von|und)\b/g, ""));
   }
 
+  // Zahl und folgendes Wort/Zeichen fest verbinden (kein Umbruch zwischen „20“ und „€“)
+  const NBSP = "\u00A0";
+  function glue(s) {
+    return s.replace(/(\d) (?=[^\s\d=+\u2212·:|(\u2192])/g, "$1" + NBSP);
+  }
+  // Merke-Kasten: „Beispiel …“ in eine eigene Zeile
+  function merkeRich(m) {
+    const out = [];
+    for (const seg of m || []) {
+      if (typeof seg === "string" && /\s*Beispiel/.test(seg) && !/^\s*Beispiel/.test(seg) || (typeof seg === "string" && /^\s*Beispiel/.test(seg) && out.length)) {
+        const i = seg.search(/\s*Beispiel/);
+        if (seg.slice(0, i).trim()) out.push(seg.slice(0, i));
+        out.push({ br: true }, seg.slice(i).replace(/^\s+/, ""));
+      } else out.push(seg);
+    }
+    return out;
+  }
+
+  AG.glue = glue;
+  AG.merkeRich = merkeRich;
   AG.MINUS = MINUS;
   AG.isExpression = isExpression;
   AG.gcd = gcd;
@@ -699,7 +737,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   function richXml(r, o = {}) {
     if (typeof r === "string") r = [r];
     return r.map(seg => {
-      if (typeof seg === "string") return run(seg.replace(/ {2,}\|/g, "\t|"), o);
+      if (typeof seg === "string") return run(AG.glue(seg.replace(/ {2,}\|/g, "\t|")), o);
       if (seg.f) {
         let pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? String(seg.w) : "");
         return run(pre, o) + fracXml(seg.f[0], seg.f[1], o);
@@ -718,7 +756,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     if (o.pageBreakBefore) p += "<w:pageBreakBefore/>";
     if (o.shade) p += `<w:shd w:val="clear" w:color="auto" w:fill="${o.shade}"/>`;
     if (o.tabs) p += `<w:tabs>${o.tabs.map(t => `<w:tab w:val="${t.val || "left"}" w:pos="${t.pos}"/>`).join("")}</w:tabs>`;
-    p += `<w:spacing w:before="${o.before || 0}" w:after="${o.after === undefined ? 60 : o.after}" w:line="${o.line || 264}" w:lineRule="auto"/>`;
+    p += `<w:spacing w:before="${o.before || 0}" w:after="${o.after === undefined ? 60 : o.after}" w:line="${o.line || 264}" w:lineRule="${o.exact ? "exact" : "auto"}"/>`;
     if (o.indent) p += `<w:ind w:left="${o.indent}"${o.hanging ? ` w:hanging="${o.hanging}"` : ""}/>`;
     if (o.align) p += `<w:jc w:val="${o.align}"/>`;
     if (o.size) p += `<w:rPr><w:sz w:val="${o.size}"/></w:rPr>`;
@@ -755,11 +793,11 @@ table.vt th { background: #f1f3f8; text-align: left; }
 
   function stars(level) { return STAR_ON.repeat(level) + STAR_OFF.repeat(3 - level); }
 
-  function headerXml(meta, solution) {
+  function headerXml(meta, solution, pageBreak) {
     const left = `Mathematik  Klasse ${meta.klasse}${meta.zug === "M" ? " M-Zug" : ""}${meta.subject ? "  |  " + meta.subject : ""}`;
     const right = `${solution ? "Lösungen  " : ""}Blatt ${meta.blattNr}  |  Gruppe ${meta.group}`;
     let x = para(run(left, { size: 17, color: GREY }) + run("\t" + right, { size: 17, color: solution ? RED : INK, b: true }),
-      { tabs: [{ val: "right", pos: TEXT_W }], after: 80 });
+      { tabs: [{ val: "right", pos: TEXT_W }], after: 80, pageBreakBefore: !!pageBreak });
     if (!solution) {
       const cell = label => ({ xml: para(run(label, { size: 18, color: GREY }), { after: 0, before: 160 }), borders: { bottom: { sz: 6, color: "9AA3B8" } } });
       x += table([[cell("Name"), { xml: para("") }, cell("Klasse"), { xml: para("") }, cell("Datum")]],
@@ -770,7 +808,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   function merkeXml(merke) {
-    const inner = para(run("Merke", { b: true, color: INK, size: 20 }), { after: 40 }) + para(richXml(merke, { size: 21 }), { after: 0, line: 300 });
+    const inner = para(run("Merke", { b: true, color: INK, size: 20 }), { after: 40 }) + para(richXml(AG.merkeRich(merke), { size: 21 }), { after: 0, line: 300 });
     return table([[{ xml: inner, fill: FILL, borders: { left: { sz: 36, color: INK } }, margins: { top: 120, bottom: 140, left: 220, right: 200 } }]],
       { widths: [TEXT_W] }) + para("", { after: 120 });
   }
@@ -799,7 +837,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     return table(rows, { widths, indent: o.indent, padT: 50, padB: 50, borders: { top: line, left: line, bottom: line, right: line, insideH: line, insideV: line } });
   }
 
-  function tasksXml(part, mode, workLines) {
+  function tasksXml(part, mode, workLines, pi, layout) {
     const cols = Math.max(1, Math.min(3, part.cols));
     const colW = Math.floor(TEXT_W / cols);
     const label = i => String.fromCharCode(97 + i) + ")";
@@ -823,30 +861,34 @@ table.vt th { background: #f1f3f8; text-align: left; }
         for (const s of t.steps) x += para(richXml(s, { color, size: 20 }), { indent: inline ? 600 : 380, tabs: [{ pos: (inline ? 600 : 380) + 2600 }], after: 0, line: 300 });
       }
       if (sol && !inline) x += para(run("Ergebnis: ", { color, size: 20 }) + richXml(t.a, { color, b: true }), { indent: 380, before: 40, after: 40, line: 300 });
-      if (!sol && workLines > 0) {
-        for (let k = 0; k < workLines; k++) x += para("", { after: 0, line: 300 });
-      }
+      const workTw = Math.round((workLines || 0) * 300 + (layout ? layout.extra * 15 : 0));
+      if (!sol && workTw > 0) x += para("", { after: 0, line: Math.max(20, workTw), exact: true, size: 4 });
       x += para("", { after: 0, size: 10, line: 200 });
       return { xml: x };
     });
-    const rows = [];
-    for (let i = 0; i < cells.length; i += cols) {
+    // Zeilen; bei einem Seitenumbruch Tabelle beenden und neue Seite beginnen
+    let out = "", rows = [];
+    const flush = () => { if (rows.length) out += table(rows, { widths: Array(cols).fill(colW), padL: 0, padR: 120, cantSplit: true }); rows = []; };
+    for (let i = 0, r = 0; i < cells.length; i += cols, r++) {
+      if (r > 0 && layout && layout.breaks.has(pi + "." + r)) { flush(); out += PAGE_BREAK; }
       const row = cells.slice(i, i + cols);
       while (row.length < cols) row.push({ xml: para("") });
       rows.push(row);
     }
-    return table(rows, { widths: Array(cols).fill(colW), padL: 0, padR: 120, cantSplit: true });
+    flush();
+    return out;
   }
+  const PAGE_BREAK = `<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>`;
 
   // Ein Blatt (Arbeitsblatt oder Lösung) als Body-XML
-  function sheetXml(sheet, meta, mode, opts, pageBreak) {
+  function sheetXml(sheet, meta, mode, opts, pageBreak, layout) {
     const solution = mode !== "worksheet";
-    let x = pageBreak ? `<w:p><w:r><w:br w:type="page"/></w:r></w:p>` : "";
-    x += headerXml({ ...meta, group: sheet.group }, solution);
+    let x = headerXml({ ...meta, group: sheet.group }, solution, pageBreak);
     if (!solution && opts.merke && meta.merke && meta.merke.length) x += merkeXml(meta.merke);
     sheet.parts.forEach((p, i) => {
+      if (layout && layout.breaks.has(i + ".0")) x += PAGE_BREAK;
       x += partHeadXml(p, i, solution);
-      x += tasksXml(p, mode, opts.workLines || 0);
+      x += tasksXml(p, mode, opts.workLines || 0, i, layout);
     });
     return x;
   }
@@ -890,7 +932,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   function buildDocx(pages, meta, opts) { return zip(docxFiles(pages, meta, opts)); }
 
   function docxFiles(pages, meta, opts) {
-    const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0)).join("");
+    const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0, pg.layout)).join("");
     const files = [
       ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
@@ -924,7 +966,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   function richHtml(r) {
     if (typeof r === "string") r = [r];
     return r.map(seg => {
-      if (typeof seg === "string") return esc(seg).replace(/ {2,}\|(.*)$/, '<span class="op">|$1</span>');
+      if (typeof seg === "string") return esc(AG.glue(seg)).replace(/ {2,}\|(.*)$/, '<span class="op">|$1</span>');
       if (seg.f) {
         const pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? seg.w : "");
         return `${esc(pre)}<span class="fr"><span>${seg.f[0]}</span><span>${seg.f[1]}</span></span>`;
@@ -943,21 +985,38 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   // mode: "worksheet" | "answers" | "steps"
+  // opts.layout = { extra: Zusatzplatz je Aufgabenzeile in px, breaks: Set("teil.zeile") } -> mehrere A4-Seiten
+  // ohne layout: ein durchgehendes Blatt (zum Ausmessen und für Lösungen)
   function sheetHtml(sheet, meta, mode, opts) {
     const sol = mode !== "worksheet";
+    const layout = opts.layout || null;
+    const extra = layout ? layout.extra : 0;
     const subj = `Mathematik&nbsp; Klasse ${esc(meta.klasse)}${meta.zug === "M" ? " M-Zug" : ""}${meta.subject ? "&nbsp; | &nbsp;" + esc(meta.subject) : ""}`;
-    let h = `<header class="sh-head"><span>${subj}</span><span class="sh-nr${sol ? " red" : ""}">${sol ? "Lösungen&nbsp; " : ""}Blatt ${esc(meta.blattNr)}&nbsp; | &nbsp;Gruppe ${sheet.group}</span></header>`;
+    const cls = `sheet${sol ? " sol" : ""}${layout ? " paged" : ""}${opts.measure ? " measure" : ""}`;
+    let page = 1;
+    const foot = () => `<footer class="sh-foot"><span>Blatt-Code: ${esc(meta.code)}</span><span>Seite ${page}</span></footer>`;
+    let h = `<article class="${cls}">`;
+    h += `<div class="sh-top"><header class="sh-head"><span>${subj}</span><span class="sh-nr${sol ? " red" : ""}">${sol ? "Lösungen&nbsp; " : ""}Blatt ${esc(meta.blattNr)}&nbsp; | &nbsp;Gruppe ${sheet.group}</span></header>`;
     if (!sol) h += `<div class="sh-fields"><span>Name</span><span>Klasse</span><span>Datum</span></div>`;
     h += `<h1 class="sh-title${sol ? " red" : ""}">${esc(meta.title)}${sol ? " – Lösungen" : ""}</h1>`;
     if (!sol && opts.merke && meta.merke && meta.merke.length) {
-      h += `<aside class="sh-merke"><b>Merke</b><p>${richHtml(meta.merke)}</p></aside>`;
+      h += `<aside class="sh-merke"><b>Merke</b><p>${richHtml(AG.merkeRich(meta.merke))}</p></aside>`;
     }
+    h += `</div>`;
+    const newPage = () => { h += foot() + `</article>`; page++; h += `<article class="${cls}">`; };
+
     sheet.parts.forEach((p, pi) => {
-      h += `<section class="sh-part" data-part="${pi}" style="--pc: var(--part-${pi})">
-        <div class="sh-part-head"><span class="sh-letter">${p.label}</span><span class="sh-part-title">${esc(p.title)}</span><span class="sh-stars" aria-label="Niveau ${p.level} von 3">${AG.stars(p.level)}</span></div>`;
-      if (!sol) h += `<p class="sh-ins">${esc(p.instruction)}</p>`;
-      h += `<ol class="sh-tasks" style="--cols:${Math.max(1, Math.min(3, p.cols))}">`;
+      const cols = Math.max(1, Math.min(3, p.cols));
+      const sectionOpen = head => `<section class="sh-part" data-part="${pi}" style="--pc: var(--part-${pi})">` + (head ?
+        `<div class="sh-part-head"><span class="sh-letter">${p.label}</span><span class="sh-part-title">${esc(p.title)}</span><span class="sh-stars" aria-label="Niveau ${p.level} von 3">${AG.stars(p.level)}</span></div>` +
+        (sol ? "" : `<p class="sh-ins">${esc(p.instruction)}</p>`) : "") + `<ol class="sh-tasks" style="--cols:${cols}">`;
+      if (layout && layout.breaks.has(pi + ".0")) newPage();
+      h += sectionOpen(true);
       p.tasks.forEach((t, ti) => {
+        const row = Math.floor(ti / cols);
+        if (layout && ti % cols === 0 && row > 0 && layout.breaks.has(pi + "." + row)) {
+          h += `</ol></section>`; newPage(); h += sectionOpen(false);
+        }
         const lab = String.fromCharCode(97 + ti) + ")";
         let body;
         const inline = sol && AG.isExpression(t);
@@ -970,20 +1029,84 @@ table.vt th { background: #f1f3f8; text-align: left; }
           body += `<div class="steps red">${t.steps.map(s => `<div>${richHtml(s)}</div>`).join("")}</div>`;
         }
         if (sol && !inline) body += `<div class="ans red">Ergebnis: <b>${richHtml(t.a)}</b></div>`;
-        if (!sol && opts.workLines) body += `<div class="work" style="--lines:${opts.workLines}"></div>`;
-        h += `<li data-task="${pi}.${ti}"><span class="lab">${lab}</span><div class="tb">${body}</div>` +
+        if (!sol && (opts.workLines || extra)) body += `<div class="work" style="height: calc(${opts.workLines || 0} * 15pt + ${extra.toFixed(1)}px)"></div>`;
+        h += `<li data-task="${pi}.${ti}" data-row="${pi}.${row}"><span class="lab">${lab}</span><div class="tb">${body}</div>` +
           (opts.interactive ? `<button type="button" class="reroll" data-reroll="${pi}.${ti}" title="Diese Aufgabe neu würfeln" aria-label="Aufgabe ${p.label} ${lab} neu würfeln">${DICE}</button>` : "") + `</li>`;
       });
       h += `</ol></section>`;
     });
-    h += `<footer class="sh-foot"><span>Blatt-Code: ${esc(meta.code)}</span><span>Seite 1</span></footer>`;
+    h += foot() + `</article>`;
     return h;
+  }
+
+  // ---------- Seiten aufteilen ----------
+  // Misst ein durchgehend gerendertes Blatt (Element mit Klasse .sheet.measure) und berechnet
+  // Seitenumbrüche und Zusatzplatz, sodass das Arbeitsblatt genau 1 oder 2 Seiten füllt.
+  function computeLayout(sheetEl, fill) {
+    const mm = sheetEl.ownerDocument.createElement("div");
+    mm.style.cssText = "position:absolute;visibility:hidden;height:100mm;width:1px";
+    sheetEl.appendChild(mm);
+    const pxPerMm = mm.getBoundingClientRect().height / 100;
+    mm.remove();
+    const cs = getComputedStyle(sheetEl);
+    const padT = parseFloat(cs.paddingTop), padB = parseFloat(cs.paddingBottom);
+    const footEl = sheetEl.querySelector(".sh-foot");
+    const footH = footEl.getBoundingClientRect().height + 6;
+    const SAFETY = 0.985; // Word setzt etwas anders als der Browser
+    const avail = (297 * pxPerMm - padT - padB - footH) * SAFETY;
+    const top0 = sheetEl.getBoundingClientRect().top + padT;
+    const topBlock = sheetEl.querySelector(".sh-top").getBoundingClientRect().bottom - top0;
+
+    // Blöcke: je Teil Kopf + Zeilen
+    const parts = [...sheetEl.querySelectorAll(".sh-part")].map(sec => {
+      const secTop = sec.getBoundingClientRect().top;
+      const lis = [...sec.querySelectorAll("li[data-row]")];
+      const rows = new Map();
+      for (const li of lis) {
+        const r = li.getBoundingClientRect();
+        const key = li.dataset.row;
+        const cur = rows.get(key) || { top: r.top, bottom: r.bottom };
+        cur.top = Math.min(cur.top, r.top); cur.bottom = Math.max(cur.bottom, r.bottom);
+        rows.set(key, cur);
+      }
+      const rowList = [...rows.entries()].map(([key, v]) => ({ key, top: v.top }));
+      const secBottom = sec.getBoundingClientRect().bottom;
+      rowList.forEach((r, i) => { r.h = (i + 1 < rowList.length ? rowList[i + 1].top : secBottom) - r.top; });
+      const marginTop = parseFloat(getComputedStyle(sec).marginTop);
+      return { head: (rowList.length ? rowList[0].top : secBottom) - secTop + marginTop, rows: rowList };
+    });
+
+    function paginate(extra) {
+      let pages = 1, y = topBlock;
+      const breaks = new Set();
+      for (const part of parts) {
+        part.rows.forEach((row, ri) => {
+          const need = (ri === 0 ? part.head : 0) + row.h + extra;
+          if (y + need > avail && y > 0) {
+            pages++; breaks.add(row.key);
+            y = (ri === 0 ? part.head : 0) + row.h + extra;
+          } else y += need;
+        });
+      }
+      return { pages, breaks, last: y };
+    }
+    const base = paginate(0);
+    if (!fill) return { extra: 0, breaks: base.breaks, pages: base.pages };
+    const target = base.pages;
+    let lo = 0, hi = 600;
+    for (let i = 0; i < 30; i++) {
+      const mid = (lo + hi) / 2;
+      if (paginate(mid).pages <= target) lo = mid; else hi = mid;
+    }
+    const res = paginate(lo);
+    return { extra: lo, breaks: res.breaks, pages: res.pages };
   }
 
   const DICE = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>`;
 
   AG.richHtml = richHtml;
   AG.sheetHtml = sheetHtml;
+  AG.computeLayout = computeLayout;
   AG.DICE_SVG = DICE;
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
 
@@ -3352,7 +3475,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
 
   const state = {
     klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
-    title: "", titleCustom: false, merke: true, work: 1, solmode: "steps",
+    title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
 
@@ -3455,6 +3578,10 @@ table.vt th { background: #f1f3f8; text-align: left; }
     markSeg($("solmode"), "s", state.solmode);
     if (document.activeElement !== $("title")) $("title").value = state.title;
     $("merke").checked = state.merke;
+    $("fill").checked = state.fill;
+    markSeg($("target"), "t", state.target);
+    $("fillRow").hidden = state.target !== "word";
+    document.querySelector(".plan").classList.toggle("target-onenote", state.target === "onenote");
     $("groupB").checked = state.groupB;
     if (document.activeElement !== $("seed")) $("seed").value = state.seed;
     renderParts();
@@ -3528,8 +3655,9 @@ table.vt th { background: #f1f3f8; text-align: left; }
       const m = meta(cfg);
       const showSheet = state.view === "B" ? B : A;
       const mode = state.view === "answers" ? state.solmode : "worksheet";
-      sheetEl.innerHTML = AG.sheetHtml(showSheet, m, mode, { merke: state.merke, workLines: state.work, interactive: mode === "worksheet" });
-      sheetEl.classList.toggle("sol", mode !== "worksheet");
+      const opts = { merke: state.merke, workLines: state.work, interactive: mode === "worksheet" };
+      if (mode === "worksheet" && state.target === "word") opts.layout = layoutFor(showSheet, m);
+      sheetEl.innerHTML = AG.sheetHtml(showSheet, m, mode, opts);
       $("code").value = m.code;
       $("tabs").innerHTML = showSheet.parts.map((p, i) => `<button type="button" style="--pc: var(--part-${i})" data-jump="${i}" title="Teil ${p.label}: ${p.title}">${p.label}</button>`).join("");
       const n = (B ? 2 : 1);
@@ -3538,6 +3666,15 @@ table.vt th { background: #f1f3f8; text-align: left; }
       sheetEl.innerHTML = `<div class="error-box">Das Blatt ließ sich nicht erzeugen: ${e.message}</div>`;
       console.error(e);
     }
+  }
+
+  // Seitenaufteilung: Blatt unsichtbar durchgehend setzen, ausmessen, Umbrüche berechnen
+  function layoutFor(sheet, m) {
+    const box = $("measure");
+    box.innerHTML = AG.sheetHtml(sheet, m, "worksheet", { merke: state.merke, workLines: state.work, measure: true });
+    const lay = AG.computeLayout(box.firstElementChild, state.fill);
+    box.innerHTML = "";
+    return lay;
   }
 
   function update() { renderPlan(); save(); }
@@ -3554,6 +3691,9 @@ table.vt th { background: #f1f3f8; text-align: left; }
     $("view").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.view; update(); };
     $("title").oninput = e => { state.title = e.target.value; state.titleCustom = true; renderView(); save(); };
     $("merke").onchange = e => { state.merke = e.target.checked; update(); };
+    $("fill").onchange = e => { state.fill = e.target.checked; update(); };
+    $("target").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.target = b.dataset.t; update(); };
+    $("copyOneNote").onclick = copyOneNote;
     $("groupB").onchange = e => { state.groupB = e.target.checked; if (state.groupB) state.view = "B"; update(); };
     $("seed").onchange = e => {
       const v = Math.max(1, Math.min(99999, Math.round(Number(e.target.value) || 1)));
@@ -3605,14 +3745,28 @@ table.vt th { background: #f1f3f8; text-align: left; }
     $("sheet").addEventListener("mouseleave", () => document.querySelectorAll(".part.hot").forEach(p => p.classList.remove("hot")));
   }
 
+  async function copyOneNote() {
+    const msg = $("copyMsg");
+    if (!lastSheets || !AG.oneNoteHtml) { msg.className = "msg err"; msg.textContent = "OneNote-Export ist in dieser Version nicht verfügbar."; return; }
+    const { A, B, cfg } = lastSheets;
+    const sheet = state.view === "B" && B ? B : A;
+    const mode = state.view === "answers" ? state.solmode : "worksheet";
+    const html = AG.oneNoteHtml(sheet, meta(cfg), mode, { merke: state.merke, workLines: state.work });
+    const ok = await AG.copyForOneNote(html);
+    const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
+    msg.className = ok ? "msg ok" : "msg err";
+    msg.textContent = ok ? `${what} kopiert. In OneNote eine leere Seite öffnen und Strg+V drücken.` : "Kopieren hat nicht geklappt. Bitte den Browser Chrome oder Edge verwenden.";
+  }
+
   async function download() {
     if (!lastSheets) return;
     const { A, B, cfg } = lastSheets;
-    const pages = [{ sheet: A, mode: "worksheet" }];
-    if (B) pages.push({ sheet: B, mode: "worksheet" });
+    const m = meta(cfg);
+    const pages = [{ sheet: A, mode: "worksheet", layout: layoutFor(A, m) }];
+    if (B) pages.push({ sheet: B, mode: "worksheet", layout: layoutFor(B, m) });
     pages.push({ sheet: A, mode: state.solmode });
     if (B) pages.push({ sheet: B, mode: state.solmode });
-    const bytes = await AG.buildDocxAsync(pages, meta(cfg), { merke: state.merke, workLines: state.work });
+    const bytes = await AG.buildDocxAsync(pages, m, { merke: state.merke, workLines: state.work });
     const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     const name = (state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_") + `_Blatt-${state.seed}.docx`;
     const a = document.createElement("a");

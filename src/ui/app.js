@@ -7,7 +7,7 @@
 
   const state = {
     klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
-    title: "", titleCustom: false, merke: true, work: 1, solmode: "steps",
+    title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
 
@@ -110,6 +110,10 @@
     markSeg($("solmode"), "s", state.solmode);
     if (document.activeElement !== $("title")) $("title").value = state.title;
     $("merke").checked = state.merke;
+    $("fill").checked = state.fill;
+    markSeg($("target"), "t", state.target);
+    $("fillRow").hidden = state.target !== "word";
+    document.querySelector(".plan").classList.toggle("target-onenote", state.target === "onenote");
     $("groupB").checked = state.groupB;
     if (document.activeElement !== $("seed")) $("seed").value = state.seed;
     renderParts();
@@ -183,8 +187,9 @@
       const m = meta(cfg);
       const showSheet = state.view === "B" ? B : A;
       const mode = state.view === "answers" ? state.solmode : "worksheet";
-      sheetEl.innerHTML = AG.sheetHtml(showSheet, m, mode, { merke: state.merke, workLines: state.work, interactive: mode === "worksheet" });
-      sheetEl.classList.toggle("sol", mode !== "worksheet");
+      const opts = { merke: state.merke, workLines: state.work, interactive: mode === "worksheet" };
+      if (mode === "worksheet" && state.target === "word") opts.layout = layoutFor(showSheet, m);
+      sheetEl.innerHTML = AG.sheetHtml(showSheet, m, mode, opts);
       $("code").value = m.code;
       $("tabs").innerHTML = showSheet.parts.map((p, i) => `<button type="button" style="--pc: var(--part-${i})" data-jump="${i}" title="Teil ${p.label}: ${p.title}">${p.label}</button>`).join("");
       const n = (B ? 2 : 1);
@@ -193,6 +198,15 @@
       sheetEl.innerHTML = `<div class="error-box">Das Blatt ließ sich nicht erzeugen: ${e.message}</div>`;
       console.error(e);
     }
+  }
+
+  // Seitenaufteilung: Blatt unsichtbar durchgehend setzen, ausmessen, Umbrüche berechnen
+  function layoutFor(sheet, m) {
+    const box = $("measure");
+    box.innerHTML = AG.sheetHtml(sheet, m, "worksheet", { merke: state.merke, workLines: state.work, measure: true });
+    const lay = AG.computeLayout(box.firstElementChild, state.fill);
+    box.innerHTML = "";
+    return lay;
   }
 
   function update() { renderPlan(); save(); }
@@ -209,6 +223,9 @@
     $("view").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.view; update(); };
     $("title").oninput = e => { state.title = e.target.value; state.titleCustom = true; renderView(); save(); };
     $("merke").onchange = e => { state.merke = e.target.checked; update(); };
+    $("fill").onchange = e => { state.fill = e.target.checked; update(); };
+    $("target").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.target = b.dataset.t; update(); };
+    $("copyOneNote").onclick = copyOneNote;
     $("groupB").onchange = e => { state.groupB = e.target.checked; if (state.groupB) state.view = "B"; update(); };
     $("seed").onchange = e => {
       const v = Math.max(1, Math.min(99999, Math.round(Number(e.target.value) || 1)));
@@ -260,14 +277,28 @@
     $("sheet").addEventListener("mouseleave", () => document.querySelectorAll(".part.hot").forEach(p => p.classList.remove("hot")));
   }
 
+  async function copyOneNote() {
+    const msg = $("copyMsg");
+    if (!lastSheets || !AG.oneNoteHtml) { msg.className = "msg err"; msg.textContent = "OneNote-Export ist in dieser Version nicht verfügbar."; return; }
+    const { A, B, cfg } = lastSheets;
+    const sheet = state.view === "B" && B ? B : A;
+    const mode = state.view === "answers" ? state.solmode : "worksheet";
+    const html = AG.oneNoteHtml(sheet, meta(cfg), mode, { merke: state.merke, workLines: state.work });
+    const ok = await AG.copyForOneNote(html);
+    const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
+    msg.className = ok ? "msg ok" : "msg err";
+    msg.textContent = ok ? `${what} kopiert. In OneNote eine leere Seite öffnen und Strg+V drücken.` : "Kopieren hat nicht geklappt. Bitte den Browser Chrome oder Edge verwenden.";
+  }
+
   async function download() {
     if (!lastSheets) return;
     const { A, B, cfg } = lastSheets;
-    const pages = [{ sheet: A, mode: "worksheet" }];
-    if (B) pages.push({ sheet: B, mode: "worksheet" });
+    const m = meta(cfg);
+    const pages = [{ sheet: A, mode: "worksheet", layout: layoutFor(A, m) }];
+    if (B) pages.push({ sheet: B, mode: "worksheet", layout: layoutFor(B, m) });
     pages.push({ sheet: A, mode: state.solmode });
     if (B) pages.push({ sheet: B, mode: state.solmode });
-    const bytes = await AG.buildDocxAsync(pages, meta(cfg), { merke: state.merke, workLines: state.work });
+    const bytes = await AG.buildDocxAsync(pages, m, { merke: state.merke, workLines: state.work });
     const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     const name = (state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_") + `_Blatt-${state.seed}.docx`;
     const a = document.createElement("a");

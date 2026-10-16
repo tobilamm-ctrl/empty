@@ -87,7 +87,7 @@
   function richXml(r, o = {}) {
     if (typeof r === "string") r = [r];
     return r.map(seg => {
-      if (typeof seg === "string") return run(seg.replace(/ {2,}\|/g, "\t|"), o);
+      if (typeof seg === "string") return run(AG.glue(seg.replace(/ {2,}\|/g, "\t|")), o);
       if (seg.f) {
         let pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? String(seg.w) : "");
         return run(pre, o) + fracXml(seg.f[0], seg.f[1], o);
@@ -106,7 +106,7 @@
     if (o.pageBreakBefore) p += "<w:pageBreakBefore/>";
     if (o.shade) p += `<w:shd w:val="clear" w:color="auto" w:fill="${o.shade}"/>`;
     if (o.tabs) p += `<w:tabs>${o.tabs.map(t => `<w:tab w:val="${t.val || "left"}" w:pos="${t.pos}"/>`).join("")}</w:tabs>`;
-    p += `<w:spacing w:before="${o.before || 0}" w:after="${o.after === undefined ? 60 : o.after}" w:line="${o.line || 264}" w:lineRule="auto"/>`;
+    p += `<w:spacing w:before="${o.before || 0}" w:after="${o.after === undefined ? 60 : o.after}" w:line="${o.line || 264}" w:lineRule="${o.exact ? "exact" : "auto"}"/>`;
     if (o.indent) p += `<w:ind w:left="${o.indent}"${o.hanging ? ` w:hanging="${o.hanging}"` : ""}/>`;
     if (o.align) p += `<w:jc w:val="${o.align}"/>`;
     if (o.size) p += `<w:rPr><w:sz w:val="${o.size}"/></w:rPr>`;
@@ -143,11 +143,11 @@
 
   function stars(level) { return STAR_ON.repeat(level) + STAR_OFF.repeat(3 - level); }
 
-  function headerXml(meta, solution) {
+  function headerXml(meta, solution, pageBreak) {
     const left = `Mathematik  Klasse ${meta.klasse}${meta.zug === "M" ? " M-Zug" : ""}${meta.subject ? "  |  " + meta.subject : ""}`;
     const right = `${solution ? "Lösungen  " : ""}Blatt ${meta.blattNr}  |  Gruppe ${meta.group}`;
     let x = para(run(left, { size: 17, color: GREY }) + run("\t" + right, { size: 17, color: solution ? RED : INK, b: true }),
-      { tabs: [{ val: "right", pos: TEXT_W }], after: 80 });
+      { tabs: [{ val: "right", pos: TEXT_W }], after: 80, pageBreakBefore: !!pageBreak });
     if (!solution) {
       const cell = label => ({ xml: para(run(label, { size: 18, color: GREY }), { after: 0, before: 160 }), borders: { bottom: { sz: 6, color: "9AA3B8" } } });
       x += table([[cell("Name"), { xml: para("") }, cell("Klasse"), { xml: para("") }, cell("Datum")]],
@@ -158,7 +158,7 @@
   }
 
   function merkeXml(merke) {
-    const inner = para(run("Merke", { b: true, color: INK, size: 20 }), { after: 40 }) + para(richXml(merke, { size: 21 }), { after: 0, line: 300 });
+    const inner = para(run("Merke", { b: true, color: INK, size: 20 }), { after: 40 }) + para(richXml(AG.merkeRich(merke), { size: 21 }), { after: 0, line: 300 });
     return table([[{ xml: inner, fill: FILL, borders: { left: { sz: 36, color: INK } }, margins: { top: 120, bottom: 140, left: 220, right: 200 } }]],
       { widths: [TEXT_W] }) + para("", { after: 120 });
   }
@@ -187,7 +187,7 @@
     return table(rows, { widths, indent: o.indent, padT: 50, padB: 50, borders: { top: line, left: line, bottom: line, right: line, insideH: line, insideV: line } });
   }
 
-  function tasksXml(part, mode, workLines) {
+  function tasksXml(part, mode, workLines, pi, layout) {
     const cols = Math.max(1, Math.min(3, part.cols));
     const colW = Math.floor(TEXT_W / cols);
     const label = i => String.fromCharCode(97 + i) + ")";
@@ -211,30 +211,34 @@
         for (const s of t.steps) x += para(richXml(s, { color, size: 20 }), { indent: inline ? 600 : 380, tabs: [{ pos: (inline ? 600 : 380) + 2600 }], after: 0, line: 300 });
       }
       if (sol && !inline) x += para(run("Ergebnis: ", { color, size: 20 }) + richXml(t.a, { color, b: true }), { indent: 380, before: 40, after: 40, line: 300 });
-      if (!sol && workLines > 0) {
-        for (let k = 0; k < workLines; k++) x += para("", { after: 0, line: 300 });
-      }
+      const workTw = Math.round((workLines || 0) * 300 + (layout ? layout.extra * 15 : 0));
+      if (!sol && workTw > 0) x += para("", { after: 0, line: Math.max(20, workTw), exact: true, size: 4 });
       x += para("", { after: 0, size: 10, line: 200 });
       return { xml: x };
     });
-    const rows = [];
-    for (let i = 0; i < cells.length; i += cols) {
+    // Zeilen; bei einem Seitenumbruch Tabelle beenden und neue Seite beginnen
+    let out = "", rows = [];
+    const flush = () => { if (rows.length) out += table(rows, { widths: Array(cols).fill(colW), padL: 0, padR: 120, cantSplit: true }); rows = []; };
+    for (let i = 0, r = 0; i < cells.length; i += cols, r++) {
+      if (r > 0 && layout && layout.breaks.has(pi + "." + r)) { flush(); out += PAGE_BREAK; }
       const row = cells.slice(i, i + cols);
       while (row.length < cols) row.push({ xml: para("") });
       rows.push(row);
     }
-    return table(rows, { widths: Array(cols).fill(colW), padL: 0, padR: 120, cantSplit: true });
+    flush();
+    return out;
   }
+  const PAGE_BREAK = `<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>`;
 
   // Ein Blatt (Arbeitsblatt oder Lösung) als Body-XML
-  function sheetXml(sheet, meta, mode, opts, pageBreak) {
+  function sheetXml(sheet, meta, mode, opts, pageBreak, layout) {
     const solution = mode !== "worksheet";
-    let x = pageBreak ? `<w:p><w:r><w:br w:type="page"/></w:r></w:p>` : "";
-    x += headerXml({ ...meta, group: sheet.group }, solution);
+    let x = headerXml({ ...meta, group: sheet.group }, solution, pageBreak);
     if (!solution && opts.merke && meta.merke && meta.merke.length) x += merkeXml(meta.merke);
     sheet.parts.forEach((p, i) => {
+      if (layout && layout.breaks.has(i + ".0")) x += PAGE_BREAK;
       x += partHeadXml(p, i, solution);
-      x += tasksXml(p, mode, opts.workLines || 0);
+      x += tasksXml(p, mode, opts.workLines || 0, i, layout);
     });
     return x;
   }
@@ -278,7 +282,7 @@
   function buildDocx(pages, meta, opts) { return zip(docxFiles(pages, meta, opts)); }
 
   function docxFiles(pages, meta, opts) {
-    const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0)).join("");
+    const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0, pg.layout)).join("");
     const files = [
       ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],

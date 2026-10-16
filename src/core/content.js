@@ -150,6 +150,26 @@
     return t.length <= 48 && !/[?.!:]$/.test(t) && !/\n/.test(t) && !/[a-zäöüß]{4,}/i.test(t.replace(/\b(von|und)\b/g, ""));
   }
 
+  // Zahl und folgendes Wort/Zeichen fest verbinden (kein Umbruch zwischen „20“ und „€“)
+  const NBSP = "\u00A0";
+  function glue(s) {
+    return s.replace(/(\d) (?=[^\s\d=+\u2212·:|(\u2192])/g, "$1" + NBSP);
+  }
+  // Merke-Kasten: „Beispiel …“ in eine eigene Zeile
+  function merkeRich(m) {
+    const out = [];
+    for (const seg of m || []) {
+      if (typeof seg === "string" && /\s*Beispiel/.test(seg) && !/^\s*Beispiel/.test(seg) || (typeof seg === "string" && /^\s*Beispiel/.test(seg) && out.length)) {
+        const i = seg.search(/\s*Beispiel/);
+        if (seg.slice(0, i).trim()) out.push(seg.slice(0, i));
+        out.push({ br: true }, seg.slice(i).replace(/^\s+/, ""));
+      } else out.push(seg);
+    }
+    return out;
+  }
+
+  AG.glue = glue;
+  AG.merkeRich = merkeRich;
   AG.MINUS = MINUS;
   AG.isExpression = isExpression;
   AG.gcd = gcd;
