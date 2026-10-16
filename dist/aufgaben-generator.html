@@ -2450,9 +2450,17 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const build = sol => sketchOf([A, B, C, D], (s, P) => {
       s.poly([P[0], P[1], P[2]]);
       s.line(P[1], P[3]);
-      ticks(s, P[0], P[2], 0.6); ticks(s, P[1], P[2], 0.6);
+      // Sehr spitzer Scheitel (< 45°): Striche in Seitenmitte, Beschriftung außerhalb über der Spitze
+      const sharp = g < 45, f = sharp ? 0.5 : 0.6;
+      ticks(s, P[0], P[2], f); ticks(s, P[1], P[2], f);
       arc(s, P[1], P[3], P[2], e + "°", e);
-      arc(s, P[2], P[0], P[1], sol ? GR[2] + " = " + g + "°" : GR[2] + " = ?", g);
+      const txt = sol ? GR[2] + " = " + g + "°" : GR[2] + " = ?";
+      if (sharp) {
+        arc(s, P[2], P[0], P[1], "", g);
+        s.label([P[2][0], P[2][1] - 6], txt, { anchor: "middle" });
+      } else {
+        arc(s, P[2], P[0], P[1], txt, g);
+      }
       names(s, P, ["A", "B", "C", "D"]);
     });
     return {
@@ -2565,9 +2573,21 @@ table.vt th { background: #f1f3f8; text-align: left; }
     return pair ? "gleichschenklig" : null;
   }
 
-  const angWordText = g => g < 90
-    ? `spitzwinklig, weil γ = ${g}° < 90°`
-    : g === 90 ? "rechtwinklig, weil γ = 90°" : `stumpfwinklig, weil γ = ${g}° > 90°`;
+  // Begründung der Winkelart aus allen drei Winkeln: spitzwinklig nur, wenn ALLE Winkel unter 90° sind
+  const angWordText = ang => {
+    const mx = Math.max(...ang);
+    if (mx < 90) {
+      const txt = ang[0] === ang[1] ? `α = β = ${ang[0]}°, γ = ${ang[2]}°` : ang.map((v, i) => GR[i] + " = " + v + "°").join(", ");
+      return `spitzwinklig, weil alle Winkel kleiner als 90° sind (${txt})`;
+    }
+    const i = ang.indexOf(mx);
+    return mx === 90 ? `rechtwinklig, weil ${GR[i]} = 90°` : `stumpfwinklig, weil ${GR[i]} = ${mx}° > 90°`;
+  };
+
+  // Lösungsschritt zur Winkelart in Niveau 1–2
+  const angExpl = (aw, mx) => aw === "spitzwinklig" ? `alle Winkel kleiner als 90° (größter Winkel ${mx}°) → spitzwinklig`
+    : aw === "rechtwinklig" ? "ein Winkel ist 90° → rechtwinklig"
+    : `ein Winkel ist größer als 90° (${mx}°) → stumpfwinklig`;
 
   // Niveau 1: alle drei Winkel gegeben
   // Niveau 2: zwei Winkel gegeben, dritter berechnen
@@ -2583,7 +2603,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       return {
         q: rich(`Im Dreieck ABC sind α = ${ang[0]}°, β = ${ang[1]}° und γ = ${ang[2]}° gegeben. Bestimme die Art des Dreiecks: spitzwinklig, rechtwinklig oder stumpfwinklig? Und gleichseitig, gleichschenklig oder allgemein?`),
         a: rich(`${aw}, ${sw}`),
-        steps: [rich(`größter Winkel: ${mx}° → ${aw}`), rich(`${sideExpl} → ${sw}`)],
+        steps: [rich(angExpl(aw, mx)), rich(`${sideExpl} → ${sw}`)],
         fig: sketch ? angleSketch(ang, -1, false) : undefined,
         inline: false,
         check: { ang, sides: null, hidden: null },
@@ -2597,7 +2617,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       a: rich(`${hidden}; ${aw}, ${sw}`),
       steps: [
         rich(`${GR[h]} = 180° − ${others.map(i => ang[i] + "°").join(" − ")} = ${ang[h]}°`),
-        rich(`größter Winkel: ${mx}° → ${aw}`),
+        rich(angExpl(aw, mx)),
         rich(`${sideExpl} → ${sw}`),
       ],
       fig: sketch ? angleSketch(ang, h, false) : undefined,
@@ -2626,7 +2646,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       });
       return {
         q: rich(`Im Dreieck ABC sind a = b = ${L} cm lang. Der Winkel γ misst ${g}°. Bestimme die Art des Dreiecks nach Winkeln und nach Seiten und begründe.`),
-        a: rich(`gleichschenklig, weil a = b; ${angWordText(g)}`),
+        a: rich(`gleichschenklig, weil a = b; ${angWordText([base, base, g])}`),
         steps: [rich(`a = b, also α = β (Basiswinkel)`), rich(`α = β = (180° − ${g}°) : 2 = ${base}°`)],
         fig, inline: false,
         check: { ang: [base, base, g], sides: [L, L, null] },
@@ -2648,7 +2668,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       });
       return {
         q: rich(`Im Dreieck ABC sind a = b = ${L} cm lang. Der Winkel α misst ${al}°. Bestimme die Art des Dreiecks nach Winkeln und nach Seiten und begründe.`),
-        a: rich(`gleichschenklig, weil a = b; ${angWordText(g)}`),
+        a: rich(`gleichschenklig, weil a = b; ${angWordText([al, al, g])}`),
         steps: [rich(`a = b, also β = α = ${al}°`), rich(`γ = 180° − ${al}° − ${al}° = ${g}°`)],
         fig, inline: false,
         check: { ang: [al, al, g], sides: [L, L, null] },
@@ -2675,6 +2695,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   function verifyArt(t, level) {
+    const st = (t.steps || []).map(x => AG.plain(x)).join(" ");
     const k = t.check;
     if (!k) return "kein Prüfdatensatz";
     const s = AG.plain(t.a);
@@ -2690,6 +2711,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
     for (const w of SIDE) if (has(w) !== (w === sw)) return `Seitenart: erwartet „${sw}“, steht „${s}“`;
     if (k.hidden && !s.includes(k.hidden)) return `Lösung „${k.hidden}“ fehlt in „${s}“`;
     if (level === 3 && !s.includes("weil")) return "Begründung fehlt";
+    if (aw === "spitzwinklig" && level === 3 && !s.includes("alle Winkel kleiner als 90°")) return "Spitzwinkel nicht über alle Winkel begründet";
+    if (aw === "spitzwinklig" && level < 3 && !st.includes("alle Winkel kleiner als 90°")) return "Lösungsschritt zur Spitzwinkligkeit fehlt";
     return true;
   }
 
@@ -4302,31 +4325,62 @@ table.vt th { background: #f1f3f8; text-align: left; }
     return out;
   }
 
-  // Freie Stelle für eine Beschriftung suchen: neben der Linie, ohne eine andere Linie zu berühren
-  function freeSpot(text, line, f, segs, W, H) {
+  // Freie Stelle für eine Beschriftung neben einer Linie suchen: ohne Berührung von Linien und Maßen.
+  // segs: Linien (mm), boxes: Rechtecke bereits gesetzter Maße (mm)
+  function freeSpot(text, line, f, segs, boxes, W, H) {
     const size = 3.4, w = text.length * size * 0.56, h = size;
     const A = f(line[0]), B = f(line[1]);
-    const hit = (cx, cy) => {
+    const score = (cx, cy) => {
       const x0 = cx - w / 2 - 0.6, x1 = cx + w / 2 + 0.6, y0 = cy - h / 2 - 0.6, y1 = cy + h / 2 + 0.6;
-      if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) return true;
-      return segs.some(([p, q]) => {
+      let hits = 0;
+      if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) hits += 50;
+      for (const [bx0, by0, bx1, by1] of boxes) if (x0 < bx1 && x1 > bx0 && y0 < by1 && y1 > by0) hits += 50;
+      for (const [p, q] of segs) {
         const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L / 0.3));
         for (let k = 0; k <= n; k++) {
           const x = p[0] + (q[0] - p[0]) * k / n, y = p[1] + (q[1] - p[1]) * k / n;
-          if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+          if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { hits++; break; }
         }
-        return false;
-      });
+      }
+      return hits;
     };
-    for (const t of [0.5, 0.35, 0.65, 0.2, 0.8]) {
+    let best = null;
+    for (const t of [0.5, 0.35, 0.65, 0.2, 0.8, 0.1, 0.9]) {
       const mx = A[0] + (B[0] - A[0]) * t, my = A[1] + (B[1] - A[1]) * t;
       const cand = [
         [mx + w / 2 + 1.4, my], [mx - w / 2 - 1.4, my],
         [mx, my + h / 2 + 1.6], [mx, my - h / 2 - 1.6],
+        [mx + w / 2 + 1, my + h / 2 + 1], [mx - w / 2 - 1, my - h / 2 - 1],
       ];
-      for (const [cx, cy] of cand) if (!hit(cx, cy)) return { p: [cx, cy], anchor: "middle" };
+      for (const [cx, cy] of cand) {
+        const sc = score(cx, cy);
+        if (sc === 0) return { p: [cx, cy], anchor: "middle" };
+        if (!best || sc < best.sc) best = { sc, p: [cx, cy] };
+      }
     }
-    return { p: [A[0] + 1.4 + w / 2, (A[1] + B[1]) / 2], anchor: "middle" };
+    if (best.sc === 0) return { p: best.p, anchor: "middle" };
+    // Kein freier Platz direkt an der Linie: Raster in der Nähe absuchen, möglichst nah an der Linie
+    const mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+    const grid = [];
+    for (let dx = -30; dx <= 30; dx += 1.5) for (let dy = -14; dy <= 14; dy += 1.5) {
+      const d = Math.hypot(dx, dy);
+      if (d <= 26) grid.push([d, [mid[0] + dx, mid[1] + dy]]);
+    }
+    grid.sort((u, v) => u[0] - v[0]);
+    for (const [, c] of grid) if (score(c[0], c[1]) === 0) return { p: c, anchor: "middle" };
+    return { p: best.p, anchor: "middle" };
+  }
+
+  // Rechteck eines Seitenmaßes (wie S.side in figures.js): Mitte der Strecke, nach außen versetzt
+  function sideBox(a, b, text, C) {
+    const size = 3.4, w = text.length * size * 0.56, h = size;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    let nx = -(b[1] - a[1]), ny = b[0] - a[0];
+    const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+    if ((C[0] - mx) * nx + (C[1] - my) * ny > 0) { nx = -nx; ny = -ny; }
+    const px = mx + nx * size * 0.95, py = my + ny * size * 0.95;
+    const cx = Math.abs(nx) < 0.35 ? px : nx > 0 ? px - 0.4 + w / 2 : px + 0.4 - w / 2;
+    return [cx - w / 2 - 0.5, py - h / 2 - 0.5, cx + w / 2 + 0.5, py + h / 2 + 0.5];
   }
 
   function prismSketch(b, len, lenText) {
@@ -4363,16 +4417,25 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const C = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
     b.dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
     b.rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
-    b.sides.forEach(({ i, t }) => S.side(P[i], P[(i + 1) % n], t, { inside: C }));
+    const boxes = [];
+    b.sides.forEach(({ i, t }) => {
+      const j = (i + 1) % n;
+      // Kante liegt oben (Seitenfläche sichtbar, zeigt nach oben): Maß über die hintere Kante setzen
+      const top = vis[i] && pts[j][0] - pts[i][0] < -1e-9;
+      const ea = top ? B[i] : P[i], eb = top ? B[j] : P[j];
+      S.side(ea, eb, t, { inside: C });
+      boxes.push(sideBox(ea, eb, t, C));
+    });
     b.inner.forEach(o => {
-      const spot = freeSpot(o.t, o.line.map(f), f, segs, W, H);
+      const spot = freeSpot(o.t, o.line, f, segs, boxes, W, H);
       S.label(spot.p, o.t, { anchor: spot.anchor });
     });
     // Körperhöhe: rechts neben der Mitte der Kante an der äußersten rechten Ecke
     let j = 0;
     pts.forEach((p, i) => { if (p[0] > pts[j][0] + 1e-9 || (Math.abs(p[0] - pts[j][0]) < 1e-9 && p[1] > pts[j][1])) j = i; });
     const m = [(P[j][0] + B[j][0]) / 2, (P[j][1] + B[j][1]) / 2];
-    S.label([m[0] + 2.2, m[1] + 1.2], lenText, { anchor: "start" });
+    const rightX = Math.max(...B.map(p => p[0]), ...P.map(p => p[0]));
+    S.label([rightX + 1.8, m[1] + 1.2], lenText, { anchor: "start" });
     return S.done();
   }
 

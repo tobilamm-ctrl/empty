@@ -254,9 +254,17 @@
     const build = sol => sketchOf([A, B, C, D], (s, P) => {
       s.poly([P[0], P[1], P[2]]);
       s.line(P[1], P[3]);
-      ticks(s, P[0], P[2], 0.6); ticks(s, P[1], P[2], 0.6);
+      // Sehr spitzer Scheitel (< 45°): Striche in Seitenmitte, Beschriftung außerhalb über der Spitze
+      const sharp = g < 45, f = sharp ? 0.5 : 0.6;
+      ticks(s, P[0], P[2], f); ticks(s, P[1], P[2], f);
       arc(s, P[1], P[3], P[2], e + "°", e);
-      arc(s, P[2], P[0], P[1], sol ? GR[2] + " = " + g + "°" : GR[2] + " = ?", g);
+      const txt = sol ? GR[2] + " = " + g + "°" : GR[2] + " = ?";
+      if (sharp) {
+        arc(s, P[2], P[0], P[1], "", g);
+        s.label([P[2][0], P[2][1] - 6], txt, { anchor: "middle" });
+      } else {
+        arc(s, P[2], P[0], P[1], txt, g);
+      }
       names(s, P, ["A", "B", "C", "D"]);
     });
     return {

@@ -185,31 +185,62 @@
     return out;
   }
 
-  // Freie Stelle für eine Beschriftung suchen: neben der Linie, ohne eine andere Linie zu berühren
-  function freeSpot(text, line, f, segs, W, H) {
+  // Freie Stelle für eine Beschriftung neben einer Linie suchen: ohne Berührung von Linien und Maßen.
+  // segs: Linien (mm), boxes: Rechtecke bereits gesetzter Maße (mm)
+  function freeSpot(text, line, f, segs, boxes, W, H) {
     const size = 3.4, w = text.length * size * 0.56, h = size;
     const A = f(line[0]), B = f(line[1]);
-    const hit = (cx, cy) => {
+    const score = (cx, cy) => {
       const x0 = cx - w / 2 - 0.6, x1 = cx + w / 2 + 0.6, y0 = cy - h / 2 - 0.6, y1 = cy + h / 2 + 0.6;
-      if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) return true;
-      return segs.some(([p, q]) => {
+      let hits = 0;
+      if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) hits += 50;
+      for (const [bx0, by0, bx1, by1] of boxes) if (x0 < bx1 && x1 > bx0 && y0 < by1 && y1 > by0) hits += 50;
+      for (const [p, q] of segs) {
         const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L / 0.3));
         for (let k = 0; k <= n; k++) {
           const x = p[0] + (q[0] - p[0]) * k / n, y = p[1] + (q[1] - p[1]) * k / n;
-          if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+          if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { hits++; break; }
         }
-        return false;
-      });
+      }
+      return hits;
     };
-    for (const t of [0.5, 0.35, 0.65, 0.2, 0.8]) {
+    let best = null;
+    for (const t of [0.5, 0.35, 0.65, 0.2, 0.8, 0.1, 0.9]) {
       const mx = A[0] + (B[0] - A[0]) * t, my = A[1] + (B[1] - A[1]) * t;
       const cand = [
         [mx + w / 2 + 1.4, my], [mx - w / 2 - 1.4, my],
         [mx, my + h / 2 + 1.6], [mx, my - h / 2 - 1.6],
+        [mx + w / 2 + 1, my + h / 2 + 1], [mx - w / 2 - 1, my - h / 2 - 1],
       ];
-      for (const [cx, cy] of cand) if (!hit(cx, cy)) return { p: [cx, cy], anchor: "middle" };
+      for (const [cx, cy] of cand) {
+        const sc = score(cx, cy);
+        if (sc === 0) return { p: [cx, cy], anchor: "middle" };
+        if (!best || sc < best.sc) best = { sc, p: [cx, cy] };
+      }
     }
-    return { p: [A[0] + 1.4 + w / 2, (A[1] + B[1]) / 2], anchor: "middle" };
+    if (best.sc === 0) return { p: best.p, anchor: "middle" };
+    // Kein freier Platz direkt an der Linie: Raster in der Nähe absuchen, möglichst nah an der Linie
+    const mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+    const grid = [];
+    for (let dx = -30; dx <= 30; dx += 1.5) for (let dy = -14; dy <= 14; dy += 1.5) {
+      const d = Math.hypot(dx, dy);
+      if (d <= 26) grid.push([d, [mid[0] + dx, mid[1] + dy]]);
+    }
+    grid.sort((u, v) => u[0] - v[0]);
+    for (const [, c] of grid) if (score(c[0], c[1]) === 0) return { p: c, anchor: "middle" };
+    return { p: best.p, anchor: "middle" };
+  }
+
+  // Rechteck eines Seitenmaßes (wie S.side in figures.js): Mitte der Strecke, nach außen versetzt
+  function sideBox(a, b, text, C) {
+    const size = 3.4, w = text.length * size * 0.56, h = size;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    let nx = -(b[1] - a[1]), ny = b[0] - a[0];
+    const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+    if ((C[0] - mx) * nx + (C[1] - my) * ny > 0) { nx = -nx; ny = -ny; }
+    const px = mx + nx * size * 0.95, py = my + ny * size * 0.95;
+    const cx = Math.abs(nx) < 0.35 ? px : nx > 0 ? px - 0.4 + w / 2 : px + 0.4 - w / 2;
+    return [cx - w / 2 - 0.5, py - h / 2 - 0.5, cx + w / 2 + 0.5, py + h / 2 + 0.5];
   }
 
   function prismSketch(b, len, lenText) {
@@ -246,14 +277,17 @@
     const C = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
     b.dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
     b.rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
+    const boxes = [];
     b.sides.forEach(({ i, t }) => {
       const j = (i + 1) % n;
       // Kante liegt oben (Seitenfläche sichtbar, zeigt nach oben): Maß über die hintere Kante setzen
-      if (vis[i] && pts[j][0] - pts[i][0] < -1e-9) S.side(B[i], B[j], t, { inside: C });
-      else S.side(P[i], P[j], t, { inside: C });
+      const top = vis[i] && pts[j][0] - pts[i][0] < -1e-9;
+      const ea = top ? B[i] : P[i], eb = top ? B[j] : P[j];
+      S.side(ea, eb, t, { inside: C });
+      boxes.push(sideBox(ea, eb, t, C));
     });
     b.inner.forEach(o => {
-      const spot = freeSpot(o.t, o.line, f, segs, W, H);
+      const spot = freeSpot(o.t, o.line, f, segs, boxes, W, H);
       S.label(spot.p, o.t, { anchor: spot.anchor });
     });
     // Körperhöhe: rechts neben der Mitte der Kante an der äußersten rechten Ecke
