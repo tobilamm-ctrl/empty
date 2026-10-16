@@ -86,3 +86,46 @@ node tools/test-types.js m7-prozent --samples 5
 Läuft für jedes Niveau 300 Aufgaben durch und zeigt Beispiele. Muss mit „Alle Prüfungen bestanden.“ enden.
 Danach die Beispiele **selbst nachrechnen** – der Test prüft nur die Form, nicht die Mathematik.
 Ein `verify` hilft: z. B. bei Gleichungen die Lösung einsetzen und prüfen.
+
+## Regelklasse und M-Zug (`zug`)
+
+- `zug: "M"` nur M-Zug, `zug: "R"` nur Regelklasse, `zug: "RM"` beide.
+- `generate(rng, level, ctx)` bekommt `ctx.zug` ("R" oder "M"). Bei `zug: "RM"` damit Inhalte einschränken,
+  die laut Lehrplan nur im M-Zug vorkommen (z. B. Trapez/Drachen nur M; Regelklasse: Prisma nur mit Dreieck als Grundfläche).
+- Der Test prüft `RM`-Typen abwechselnd mit beiden Zügen.
+
+## Skizzen (`fig`)
+
+Aufgaben können eine Skizze haben: `task.fig = AG.sketch(...)...done()` (für das Lösungsblatt optional `task.aFig`,
+z. B. mit eingetragenen Ergebnissen). Vorbild: `src/types/m7-flaechen.js` – erst lesen!
+
+```js
+const pts = [[0,0],[6,0],[8,4],[2,4]];              // Figur in echten Einheiten, y nach OBEN
+const f = AG.fitPoints(pts, 62, 38, 7);             // in Feld 62 × 38 mm mit 7 mm Rand einpassen
+const P = pts.map(f);                               // mm-Koordinaten, y nach unten
+const s = AG.sketch(62, 38);                        // Zeichenfläche in mm
+s.poly(P);                                          // Fläche (hellblau gefüllt, Rand dunkel); { fill: false } ohne Füllung
+s.line(P[3], [P[3][0], P[0][1]], { dash: true });   // Höhe / verdeckte Kante gestrichelt
+s.right(fussPunkt, richtungsPunkt1, richtungsPunkt2);  // Zeichen für rechten Winkel
+s.angle(scheitel, p1, p2, "α");                    // Winkelbogen mit Beschriftung
+s.side(P[0], P[1], "g = 6 cm", { inside: P[3] });   // Seite außen beschriften (weg vom Punkt inside)
+s.label([x, y], "A", { anchor: "middle" });          // freier Text (anchor start|middle|end), weißer Rand automatisch
+s.circle([x,y], r), s.rect(x, y, w, h), s.path("M… L…")  // weitere Formen
+task.fig = s.done();                                // { svg, w, h }
+```
+
+Regeln:
+- Größe: bei `cols: 2` höchstens ca. 75 × 45 mm, bei `cols: 1` höchstens ca. 150 × 60 mm. Schrift ist automatisch ca. 10 pt.
+- Skizzen sind **nicht maßstabsgetreu**: Proportionen so begrenzen, dass nichts zu flach oder spitz wird
+  (Beispiel in m7-flaechen.js). Beschriftungen dürfen sich nicht überlappen und nicht aus der Fläche ragen
+  (an den Rändern genug Platz lassen, ggf. Feld größer wählen).
+- Gegebene Größen stehen in der Skizze UND im Aufgabentext (für OneNote-Text und Barrierefreiheit).
+- Gesuchte Größen in der Skizze mit „?“ oder einem Buchstaben markieren.
+- Aufgaben mit Skizze: `inline: false` setzen, damit das Ergebnis unter der Aufgabe steht.
+- Nur `AG.sketch`/`AG.fitPoints` benutzen, kein eigenes SVG von Hand, keine Farben außer den Standardfarben
+  (Ausnahme Diagramme: dort dürfen Balken/Sektoren die Farben "#1f3f9e", "#2e7d5b", "#b5541b", "#6b3fa0", "#9aa3b8" haben;
+  über `s.rect(x, y, w, h, { fill: "#2e7d5b" })` bzw. `s.path(d, { fill })`).
+
+Testen wie immer mit `node tools/test-types.js <id> --samples 3`. Skizzen ansehen: `python3 tools/build.py`,
+dann im Browser prüfen, oder ein PNG erzeugen mit
+`node tools/render-figs.js <id> <ausgabe.png>` (zeigt je Niveau einige Skizzen nebeneinander).

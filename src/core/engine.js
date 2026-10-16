@@ -25,9 +25,10 @@
   }
 
   // Eine Aufgabe erzeugen (ohne Duplikatprüfung)
-  function generateTask(type, level, seedStr) {
+  // ctx.zug = "R" oder "M": Typen mit zug "RM" können damit für die Regelklasse einschränken
+  function generateTask(type, level, seedStr, ctx) {
     const rng = AG.makeRng(seedStr);
-    const task = type.generate(rng, level);
+    const task = type.generate(rng, level, ctx || { zug: type.zug === "R" ? "R" : "M" });
     if (!task || !task.q || !task.a) throw new Error(type.id + ": generate() muss {q, a} liefern");
     return task;
   }
@@ -43,11 +44,11 @@
         const reroll = (config.rerolls && config.rerolls[group + "." + pi + "." + ti]) || 0;
         let task = null;
         for (let attempt = 0; attempt < 60; attempt++) {
-          const t = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, attempt, p.type, p.level].join("|"));
+          const t = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, attempt, p.type, p.level].join("|"), { zug: config.zug });
           const key = taskKey(t);
           if (!seen.has(key)) { seen.add(key); task = t; break; }
         }
-        if (!task) task = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, "x"].join("|"));
+        if (!task) task = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, "x"].join("|"), { zug: config.zug });
         tasks.push(task);
       }
       return {

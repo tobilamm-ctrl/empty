@@ -558,9 +558,10 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   }
 
   // Eine Aufgabe erzeugen (ohne Duplikatprüfung)
-  function generateTask(type, level, seedStr) {
+  // ctx.zug = "R" oder "M": Typen mit zug "RM" können damit für die Regelklasse einschränken
+  function generateTask(type, level, seedStr, ctx) {
     const rng = AG.makeRng(seedStr);
-    const task = type.generate(rng, level);
+    const task = type.generate(rng, level, ctx || { zug: type.zug === "R" ? "R" : "M" });
     if (!task || !task.q || !task.a) throw new Error(type.id + ": generate() muss {q, a} liefern");
     return task;
   }
@@ -576,11 +577,11 @@ table.vt td.red { color: var(--red); font-weight: 700; }
         const reroll = (config.rerolls && config.rerolls[group + "." + pi + "." + ti]) || 0;
         let task = null;
         for (let attempt = 0; attempt < 60; attempt++) {
-          const t = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, attempt, p.type, p.level].join("|"));
+          const t = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, attempt, p.type, p.level].join("|"), { zug: config.zug });
           const key = taskKey(t);
           if (!seen.has(key)) { seen.add(key); task = t; break; }
         }
-        if (!task) task = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, "x"].join("|"));
+        if (!task) task = generateTask(type, p.level, [config.seed, group, pi, ti, reroll, "x"].join("|"), { zug: config.zug });
         tasks.push(task);
       }
       return {
@@ -4061,7 +4062,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     for (let i = 0; i < 30; i++) {
       type = AG.typeById(setup.topics[Math.floor(Math.random() * setup.topics.length)]);
       level = run.levelOf[type.id] || type.levels[Math.floor(Math.random() * type.levels.length)];
-      task = AG.generateTask(type, level, "u" + Date.now() + "|" + Math.random());
+      task = AG.generateTask(type, level, "u" + Date.now() + "|" + Math.random(), { zug: setup.zug });
       const key = AG.plain(task.q);
       if (!run.lastKeys.includes(key)) { run.lastKeys = [key, ...run.lastKeys].slice(0, 20); break; }
     }

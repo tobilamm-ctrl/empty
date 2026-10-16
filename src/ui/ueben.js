@@ -114,7 +114,7 @@
     for (let i = 0; i < 30; i++) {
       type = AG.typeById(setup.topics[Math.floor(Math.random() * setup.topics.length)]);
       level = run.levelOf[type.id] || type.levels[Math.floor(Math.random() * type.levels.length)];
-      task = AG.generateTask(type, level, "u" + Date.now() + "|" + Math.random());
+      task = AG.generateTask(type, level, "u" + Date.now() + "|" + Math.random(), { zug: setup.zug });
       const key = AG.plain(task.q);
       if (!run.lastKeys.includes(key)) { run.lastKeys = [key, ...run.lastKeys].slice(0, 20); break; }
     }

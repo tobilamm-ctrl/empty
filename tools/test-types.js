@@ -48,7 +48,8 @@ for (const type of AG.TYPES) {
     const shown = [];
     for (let i = 0; i < N; i++) {
       try {
-        const t = AG.generateTask(type, level, "test|" + level + "|" + i);
+        const zug = type.zug === "RM" ? (i % 2 ? "R" : "M") : type.zug;
+        const t = AG.generateTask(type, level, "test|" + level + "|" + i, { zug });
         checkRich(t.q, "q"); checkRich(t.a, "a");
         (t.steps || []).forEach((s, k) => checkRich(s, "steps[" + k + "]"));
         if (t.table) t.table.rows.forEach(r => r.forEach(c => checkRich(c, "table")));
