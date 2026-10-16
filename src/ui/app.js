@@ -226,6 +226,7 @@
     $("fill").onchange = e => { state.fill = e.target.checked; update(); };
     $("target").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.target = b.dataset.t; update(); };
     $("copyOneNote").onclick = copyOneNote;
+    $("copyOneNoteImg").onclick = copyOneNoteImage;
     $("groupB").onchange = e => { state.groupB = e.target.checked; if (state.groupB) state.view = "B"; update(); };
     $("seed").onchange = e => {
       const v = Math.max(1, Math.min(99999, Math.round(Number(e.target.value) || 1)));
@@ -288,6 +289,31 @@
     const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
     msg.className = ok ? "msg ok" : "msg err";
     msg.textContent = ok ? `${what} kopiert. In OneNote eine leere Seite öffnen und Strg+V drücken.` : "Kopieren hat nicht geklappt. Bitte den Browser Chrome oder Edge verwenden.";
+  }
+
+  // Blatt als Bild („Ausdruck“) für OneNote
+  async function copyOneNoteImage() {
+    const msg = $("copyMsg");
+    if (!lastSheets || !AG.sheetsToPng) { msg.className = "msg err"; msg.textContent = "Bild-Export ist in dieser Version nicht verfügbar."; return; }
+    const { A, B, cfg } = lastSheets;
+    const sheet = state.view === "B" && B ? B : A;
+    const mode = state.view === "answers" ? state.solmode : "worksheet";
+    const m = meta(cfg);
+    const opts = { merke: state.merke, workLines: state.work, interactive: false };
+    if (mode === "worksheet" && state.target === "word") opts.layout = layoutFor(sheet, m);
+    const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
+    msg.className = "msg"; msg.textContent = "Bild wird erzeugt …";
+    try {
+      const blob = await AG.sheetsToPng(AG.sheetHtml(sheet, m, mode, opts), { scale: 2 });
+      if (await AG.copyPng(blob)) {
+        msg.className = "msg ok"; msg.textContent = `${what} als Bild kopiert. In OneNote Strg+V drücken.`;
+      } else {
+        AG.downloadPng(blob, `${(state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_")}_Blatt-${state.seed}.png`);
+        msg.className = "msg err"; msg.textContent = "Kopieren als Bild hat nicht geklappt. Das Bild wurde stattdessen heruntergeladen – in OneNote über Einfügen > Bild einfügen.";
+      }
+    } catch (e) {
+      msg.className = "msg err"; msg.textContent = "Das Bild ließ sich nicht erzeugen: " + e.message;
+    }
   }
 
   async function download() {

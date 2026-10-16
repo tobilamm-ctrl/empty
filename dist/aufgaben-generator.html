@@ -101,6 +101,8 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 .plan-foot { border-top: 1px solid var(--line); padding: 14px 22px 18px; display: grid; gap: 10px; background: var(--panel); }
 .download { border: 0; background: var(--ink); color: #fff; border-radius: 10px; padding: 12px 14px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .download:hover { filter: brightness(1.08); }
+.onenote-row { display: grid; gap: 6px; }
+.onenote-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .onenote-btn { justify-content: center; padding: 10px 12px; }
 .target-onenote .download { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
 .target-onenote .onenote-btn { background: #7719aa; border-color: #7719aa; color: #fff; }
@@ -271,7 +273,13 @@ table.vt th { background: #f1f3f8; text-align: left; }
     </div>
     <div class="plan-foot">
       <button type="button" class="download" id="download">Word-Datei herunterladen</button>
-      <button type="button" class="btn onenote-btn" id="copyOneNote">Angezeigte Seite für OneNote kopieren</button>
+      <div class="onenote-row">
+        <span class="mini">Angezeigte Seite für OneNote kopieren</span>
+        <div class="onenote-btns">
+          <button type="button" class="btn onenote-btn" id="copyOneNote" title="Text, Tabellen und Brüche zum Weiterbearbeiten">Als Text</button>
+          <button type="button" class="btn onenote-btn" id="copyOneNoteImg" title="Das Blatt als Bild, wie ein Ausdruck">Als Bild</button>
+        </div>
+      </div>
       <div class="msg" id="copyMsg" role="status"></div>
       <div class="mini" id="dlInfo"></div>
     </div>
@@ -3937,6 +3945,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     $("fill").onchange = e => { state.fill = e.target.checked; update(); };
     $("target").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.target = b.dataset.t; update(); };
     $("copyOneNote").onclick = copyOneNote;
+    $("copyOneNoteImg").onclick = copyOneNoteImage;
     $("groupB").onchange = e => { state.groupB = e.target.checked; if (state.groupB) state.view = "B"; update(); };
     $("seed").onchange = e => {
       const v = Math.max(1, Math.min(99999, Math.round(Number(e.target.value) || 1)));
@@ -3999,6 +4008,31 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
     msg.className = ok ? "msg ok" : "msg err";
     msg.textContent = ok ? `${what} kopiert. In OneNote eine leere Seite öffnen und Strg+V drücken.` : "Kopieren hat nicht geklappt. Bitte den Browser Chrome oder Edge verwenden.";
+  }
+
+  // Blatt als Bild („Ausdruck“) für OneNote
+  async function copyOneNoteImage() {
+    const msg = $("copyMsg");
+    if (!lastSheets || !AG.sheetsToPng) { msg.className = "msg err"; msg.textContent = "Bild-Export ist in dieser Version nicht verfügbar."; return; }
+    const { A, B, cfg } = lastSheets;
+    const sheet = state.view === "B" && B ? B : A;
+    const mode = state.view === "answers" ? state.solmode : "worksheet";
+    const m = meta(cfg);
+    const opts = { merke: state.merke, workLines: state.work, interactive: false };
+    if (mode === "worksheet" && state.target === "word") opts.layout = layoutFor(sheet, m);
+    const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;
+    msg.className = "msg"; msg.textContent = "Bild wird erzeugt …";
+    try {
+      const blob = await AG.sheetsToPng(AG.sheetHtml(sheet, m, mode, opts), { scale: 2 });
+      if (await AG.copyPng(blob)) {
+        msg.className = "msg ok"; msg.textContent = `${what} als Bild kopiert. In OneNote Strg+V drücken.`;
+      } else {
+        AG.downloadPng(blob, `${(state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_")}_Blatt-${state.seed}.png`);
+        msg.className = "msg err"; msg.textContent = "Kopieren als Bild hat nicht geklappt. Das Bild wurde stattdessen heruntergeladen – in OneNote über Einfügen > Bild einfügen.";
+      }
+    } catch (e) {
+      msg.className = "msg err"; msg.textContent = "Das Bild ließ sich nicht erzeugen: " + e.message;
+    }
   }
 
   async function download() {
