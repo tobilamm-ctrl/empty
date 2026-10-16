@@ -87,7 +87,7 @@
   function richXml(r, o = {}) {
     if (typeof r === "string") r = [r];
     return r.map(seg => {
-      if (typeof seg === "string") return run(seg, o);
+      if (typeof seg === "string") return run(seg.replace(/ {2,}\|/g, "\t|"), o);
       if (seg.f) {
         let pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? String(seg.w) : "");
         return run(pre, o) + fracXml(seg.f[0], seg.f[1], o);
@@ -200,7 +200,7 @@
       if (sol && AG.isExpression(t)) {
         x += para(lab + richXml(qRich) + run(" = ", {}) + richXml(t.a, { color, b: true }), { indent: 380, hanging: 380, tabs: [{ pos: 380 }], after: 40, line: 300 });
       } else {
-        x += para(lab + richXml(qRich), { indent: 380, hanging: 380, tabs: [{ pos: 380 }], after: 60, line: 300 });
+        x += para(lab + richXml(qRich), { indent: 380, hanging: 380, tabs: [{ pos: 380 }, { pos: 380 + 2600 }], after: 60, line: 300 });
         if (t.table) {
           const tb = sol && t.aTable ? t.aTable : t.table;
           x += taskTableXml(tb, { width: colW - 380, color, indent: 380 }) + para("", { after: 40, size: 6 });
@@ -208,7 +208,7 @@
       }
       const inline = sol && AG.isExpression(t);
       if (sol && mode === "steps" && t.steps && t.steps.length) {
-        for (const s of t.steps) x += para(richXml(s, { color, size: 20 }), { indent: inline ? 600 : 380, after: 0, line: 300 });
+        for (const s of t.steps) x += para(richXml(s, { color, size: 20 }), { indent: inline ? 600 : 380, tabs: [{ pos: (inline ? 600 : 380) + 2600 }], after: 0, line: 300 });
       }
       if (sol && !inline) x += para(run("Ergebnis: ", { color, size: 20 }) + richXml(t.a, { color, b: true }), { indent: 380, before: 40, after: 40, line: 300 });
       if (!sol && workLines > 0) {

@@ -5,7 +5,7 @@
   function richHtml(r) {
     if (typeof r === "string") r = [r];
     return r.map(seg => {
-      if (typeof seg === "string") return esc(seg);
+      if (typeof seg === "string") return esc(seg).replace(/ {2,}\|(.*)$/, '<span class="op">|$1</span>');
       if (seg.f) {
         const pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? seg.w : "");
         return `${esc(pre)}<span class="fr"><span>${seg.f[0]}</span><span>${seg.f[1]}</span></span>`;
