@@ -185,25 +185,27 @@
     return out;
   }
 
-  // Freie Stelle für eine Beschriftung neben einer Linie suchen: ohne Berührung von Linien und Maßen.
-  // segs: Linien (mm), boxes: Rechtecke bereits gesetzter Maße (mm)
+  // Anzahl der Treffer eines Textfelds (Mitte cx, cy) mit Linien, Rändern und bereits gesetzten Maßen
+  function clashScore(cx, cy, w, h, segs, boxes, W, H) {
+    const x0 = cx - w / 2 - 0.6, x1 = cx + w / 2 + 0.6, y0 = cy - h / 2 - 0.6, y1 = cy + h / 2 + 0.6;
+    let hits = 0;
+    if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) hits += 50;
+    for (const [bx0, by0, bx1, by1] of boxes) if (x0 < bx1 && x1 > bx0 && y0 < by1 && y1 > by0) hits += 50;
+    for (const [p, q] of segs) {
+      const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L / 0.3));
+      for (let k = 0; k <= n; k++) {
+        const x = p[0] + (q[0] - p[0]) * k / n, y = p[1] + (q[1] - p[1]) * k / n;
+        if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { hits++; break; }
+      }
+    }
+    return hits;
+  }
+
+  // Freie Stelle für eine Innenbeschriftung neben ihrer Linie (cm-Koordinaten) suchen
   function freeSpot(text, line, f, segs, boxes, W, H) {
     const size = 3.4, w = text.length * size * 0.56, h = size;
     const A = f(line[0]), B = f(line[1]);
-    const score = (cx, cy) => {
-      const x0 = cx - w / 2 - 0.6, x1 = cx + w / 2 + 0.6, y0 = cy - h / 2 - 0.6, y1 = cy + h / 2 + 0.6;
-      let hits = 0;
-      if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) hits += 50;
-      for (const [bx0, by0, bx1, by1] of boxes) if (x0 < bx1 && x1 > bx0 && y0 < by1 && y1 > by0) hits += 50;
-      for (const [p, q] of segs) {
-        const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L / 0.3));
-        for (let k = 0; k <= n; k++) {
-          const x = p[0] + (q[0] - p[0]) * k / n, y = p[1] + (q[1] - p[1]) * k / n;
-          if (x >= x0 && x <= x1 && y >= y0 && y <= y1) { hits++; break; }
-        }
-      }
-      return hits;
-    };
+    const score = (cx, cy) => clashScore(cx, cy, w, h, segs, boxes, W, H);
     let best = null;
     for (const t of [0.5, 0.35, 0.65, 0.2, 0.8, 0.1, 0.9]) {
       const mx = A[0] + (B[0] - A[0]) * t, my = A[1] + (B[1] - A[1]) * t;
@@ -214,11 +216,11 @@
       ];
       for (const [cx, cy] of cand) {
         const sc = score(cx, cy);
-        if (sc === 0) return { p: [cx, cy], anchor: "middle" };
+        if (sc === 0) return [cx, cy];
         if (!best || sc < best.sc) best = { sc, p: [cx, cy] };
       }
     }
-    if (best.sc === 0) return { p: best.p, anchor: "middle" };
+    if (best.sc === 0) return best.p;
     // Kein freier Platz direkt an der Linie: Raster in der Nähe absuchen, möglichst nah an der Linie
     const mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
     const grid = [];
@@ -227,20 +229,24 @@
       if (d <= 26) grid.push([d, [mid[0] + dx, mid[1] + dy]]);
     }
     grid.sort((u, v) => u[0] - v[0]);
-    for (const [, c] of grid) if (score(c[0], c[1]) === 0) return { p: c, anchor: "middle" };
-    return { p: best.p, anchor: "middle" };
+    for (const [, c] of grid) if (score(c[0], c[1]) === 0) return c;
+    return best.p;
   }
 
-  // Rechteck eines Seitenmaßes (wie S.side in figures.js): Mitte der Strecke, nach außen versetzt
-  function sideBox(a, b, text, C) {
+  // Seitenmaß an der Strecke a→c: zuerst außen, dann innen (nach Kollisionsprüfung)
+  function sideSpot(a, c, text, C, segs, boxes, W, H) {
     const size = 3.4, w = text.length * size * 0.56, h = size;
-    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-    let nx = -(b[1] - a[1]), ny = b[0] - a[0];
-    const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
-    if ((C[0] - mx) * nx + (C[1] - my) * ny > 0) { nx = -nx; ny = -ny; }
-    const px = mx + nx * size * 0.95, py = my + ny * size * 0.95;
-    const cx = Math.abs(nx) < 0.35 ? px : nx > 0 ? px - 0.4 + w / 2 : px + 0.4 - w / 2;
-    return [cx - w / 2 - 0.5, py - h / 2 - 0.5, cx + w / 2 + 0.5, py + h / 2 + 0.5];
+    const mx = (a[0] + c[0]) / 2, my = (a[1] + c[1]) / 2;
+    let nx = -(c[1] - a[1]), ny = c[0] - a[0];
+    const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+    if ((C[0] - mx) * nx + (C[1] - my) * ny > 0) { nx = -nx; ny = -ny; }   // nx, ny zeigt nach außen
+    const reach = Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+    const tryDirs = [[nx, ny], [-nx, -ny]];
+    for (const dd of [size * 0.95, size * 1.5, size * 2.2]) for (const [ux, uy] of tryDirs) {
+      const cx = mx + ux * (dd + reach), cy = my + uy * (dd + reach);
+      if (clashScore(cx, cy, w, h, segs, boxes, W, H) === 0) return [cx, cy];
+    }
+    return [mx + nx * (size * 0.95 + reach), my + ny * (size * 0.95 + reach)];
   }
 
   function prismSketch(b, len, lenText) {
@@ -251,7 +257,7 @@
     // Seitenfläche i (Kante i→i+1) ist sichtbar, wenn ihre Normale nach oben oder rechts zeigt
     const vis = pts.map((p, i) => { const q = pts[(i + 1) % n]; return (q[1] - p[1]) - (q[0] - p[0]) > -1e-9; });
     // Maßstab mit Platz links (Seitenmaße), rechts (Körperhöhe), oben und unten
-    const padL = 13, padR = 24, padT = 9, padB = 9;
+    const padL = 22, padR = 24, padT = 9, padB = 9;
     const all = pts.concat(back);
     const minX = Math.min(...all.map(p => p[0])), maxX = Math.max(...all.map(p => p[0]));
     const minY = Math.min(...all.map(p => p[1])), maxY = Math.max(...all.map(p => p[1]));
@@ -277,20 +283,24 @@
     const C = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
     b.dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
     b.rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
+    // Seitenmaße: waagerechte obere Kante über die hintere Kante bemaßen (liegt sonst auf der Fläche)
     const boxes = [];
     b.sides.forEach(({ i, t }) => {
       const j = (i + 1) % n;
-      // Kante liegt oben (Seitenfläche sichtbar, zeigt nach oben): Maß über die hintere Kante setzen
-      const top = vis[i] && pts[j][0] - pts[i][0] < -1e-9;
+      const top = vis[i] && Math.abs(pts[j][1] - pts[i][1]) < 1e-9;
       const ea = top ? B[i] : P[i], eb = top ? B[j] : P[j];
-      S.side(ea, eb, t, { inside: C });
-      boxes.push(sideBox(ea, eb, t, C));
+      const [cx, cy] = sideSpot(ea, eb, t, C, segs, boxes, W, H);
+      S.label([cx, cy], t, { anchor: "middle" });
+      const w = t.length * 3.4 * 0.56;
+      boxes.push([cx - w / 2 - 0.5, cy - 2.2, cx + w / 2 + 0.5, cy + 2.2]);
     });
     b.inner.forEach(o => {
-      const spot = freeSpot(o.t, o.line, f, segs, boxes, W, H);
-      S.label(spot.p, o.t, { anchor: spot.anchor });
+      const q = freeSpot(o.t, o.line, f, segs, boxes, W, H);
+      S.label(q, o.t, { anchor: "middle" });
+      const w = o.t.length * 3.4 * 0.56;
+      boxes.push([q[0] - w / 2 - 0.5, q[1] - 2.2, q[0] + w / 2 + 0.5, q[1] + 2.2]);
     });
-    // Körperhöhe: rechts neben der Mitte der Kante an der äußersten rechten Ecke
+    // Körperhöhe: rechts neben der Figur, auf Höhe der Kantenmitte der äußersten rechten Ecke
     let j = 0;
     pts.forEach((p, i) => { if (p[0] > pts[j][0] + 1e-9 || (Math.abs(p[0] - pts[j][0]) < 1e-9 && p[1] > pts[j][1])) j = i; });
     const m = [(P[j][0] + B[j][0]) / 2, (P[j][1] + B[j][1]) / 2];
