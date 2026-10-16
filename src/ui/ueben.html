@@ -96,7 +96,13 @@ h3 { margin: 0; font-size: 14px; color: var(--muted); font-weight: 700; }
 .fr > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 3px; }
 .fr > span:last-child { padding: 0 3px; }
 .nw { white-space: nowrap; }
-.fig { margin: 10px 0 4px; }
+.fig { margin: 10px 0 4px; position: relative; max-width: 100%; }
+.zoom { position: absolute; top: 2px; right: 2px; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(20, 30, 60, .15); }
+.zoom:hover { border-color: var(--ink); }
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(15, 20, 36, .72); display: grid; place-items: center; padding: 16px; }
+.lb-card { background: #fff; border-radius: 14px; padding: 14px; width: min(96vw, 1000px); max-height: 94vh; overflow: auto; display: grid; gap: 8px; }
+.lb-close { justify-self: end; border: 1px solid #d8dfeb; background: #f4f7fc; color: #1b2130; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.lb-fig svg { display: block; width: 100%; height: auto; }
 .fig svg { display: block; width: 100%; height: auto; }
 .solution .fig svg { filter: none; }
 .blank { display: inline-block; width: calc(var(--w) * 0.55em + 1.2em); border-bottom: 1.5px solid var(--muted); height: 1em; }
@@ -180,7 +186,12 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       </div>
 
       <div class="group">
-        <h3>Klasse</h3>
+        <h3>Aufgaben auswählen nach</h3>
+        <div class="seg" id="sortBy" role="group" aria-label="Aufgaben auswählen nach"></div>
+      </div>
+
+      <div class="group">
+        <h3 id="klasseH">Klasse</h3>
         <div class="row"><div class="seg" id="klasse" role="group" aria-label="Klasse"></div> <div class="seg" id="zug" role="group" aria-label="Zug"></div></div>
       </div>
 
@@ -269,6 +280,14 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       </div>
     </div>
   </section>
+
+  <!-- Lupe -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Zeichnung vergrößert">
+    <div class="lb-card">
+      <button type="button" class="lb-close" aria-label="Schließen">Schließen</button>
+      <div class="lb-fig"></div>
+    </div>
+  </div>
 
   <!-- Auswertung -->
   <section class="card" id="summary" hidden>

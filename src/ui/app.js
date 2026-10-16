@@ -6,23 +6,40 @@
   const STORE_KEY = "aufgaben-generator-v1";
 
   const state = {
-    klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
+    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
     title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
 
   function randomSeed() { return 1000 + Math.floor(Math.random() * 9000); }
   function typesFor(k, z) { return AG.TYPES.filter(t => t.klasse === k && (t.zug === z || t.zug === "RM")); }
-  function themesFor(k, z) {
+  // alle Klassen für einen Zug (Klasse 5/6 ohne Zug-Trennung)
+  function typesAllGrades(z) { return AG.TYPES.filter(t => t.zug === z || t.zug === "RM" || (z === "R" && Number(t.klasse) <= 6)); }
+  // Gruppen für Themenauswahl und Typ-Liste: [schlüssel, titel, typen]
+  function groups() {
     const map = new Map();
-    for (const t of typesFor(k, z)) if (!map.has(t.lb)) map.set(t.lb, t.lbTitle);
-    return [...map.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
+    if (state.sortBy === "thema") {
+      const types = typesAllGrades(state.zug).slice().sort((a, b) => Number(a.klasse) - Number(b.klasse));
+      for (const tp of AG.TOPICS) {
+        const ts = types.filter(t => AG.topicOf(t) === tp.id);
+        if (ts.length) map.set(tp.id, { title: tp.title, types: ts });
+      }
+      return [...map.entries()].map(([k, g]) => [k, g.title, g.types]);
+    }
+    for (const t of typesFor(state.klasse, state.zug)) {
+      if (!map.has(t.lb)) map.set(t.lb, { title: t.lbTitle, types: [] });
+      map.get(t.lb).types.push(t);
+    }
+    return [...map.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([k, g]) => [k, g.title, g.types]);
   }
+  function themesFor() { return groups().map(([k, title]) => [k, title]); }
+  function groupKey(type) { return state.sortBy === "thema" ? AG.topicOf(type) : type.lb; }
   function defaultCount(type) { return type.cols === 1 ? 3 : type.cols === 2 ? 6 : 9; }
 
   // Thema gewählt -> Teile A–C (bzw. so viele Typen wie vorhanden, höchstens 4) vorbelegen
   function applyTheme() {
-    const types = typesFor(state.klasse, state.zug).filter(t => t.lb === state.thema);
+    const g = groups().find(([k]) => k === state.thema);
+    const types = g ? g[2] : [];
     if (!types.length) { state.parts = []; return; }
     const levels = NIVEAU_LEVELS[state.niveau];
     const n = Math.min(4, Math.max(3, types.length));
@@ -34,7 +51,7 @@
     }
     // gleiche Typen mit gleichem Niveau vermeiden
     state.rerolls = {};
-    if (!state.titleCustom) state.title = types[0].lbTitle;
+    if (!state.titleCustom) state.title = g[1];
   }
   function clampLevel(type, lv) {
     if (type.levels.includes(lv)) return lv;
@@ -51,9 +68,12 @@
   }
   function meta(cfg) {
     const first = state.parts[0] && AG.typeById(state.parts[0].type);
-    const lbs = [...new Set(state.parts.map(p => AG.typeById(p.type).lbTitle))];
+    const types = state.parts.map(p => AG.typeById(p.type));
+    const lbs = [...new Set(types.map(t => state.sortBy === "thema" ? AG.topicTitle(AG.topicOf(t)) : t.lbTitle))];
+    const ks = [...new Set(types.map(t => Number(t.klasse)))].sort((a, b) => a - b);
+    const klasse = ks.length > 1 ? ks[0] + "–" + ks[ks.length - 1] : String(ks[0] || state.klasse);
     return {
-      klasse: state.klasse, zug: state.zug, title: state.title || "Arbeitsblatt",
+      klasse, zug: state.zug, title: state.title || "Arbeitsblatt",
       subject: lbs.length === 1 ? lbs[0] : "Gemischte Aufgaben",
       blattNr: state.seed, code: AG.encodeCode(cfg), merke: first ? first.merke : null,
     };
@@ -90,18 +110,23 @@
   }
 
   function renderPlan() {
+    segButtons($("sortBy"), [["klasse", "Jahrgangsstufe"], ["thema", "Thema (alle Klassen)"]], state.sortBy, s => {
+      state.sortBy = s; state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+    });
+    $("klasseRow").hidden = state.sortBy === "thema";
+    $("klasseH").textContent = state.sortBy === "thema" ? "Zug" : "Klasse";
     segButtons($("klasse"), KLASSEN.map(k => [k, k]), state.klasse, k => {
       state.klasse = k; if (k === "5" || k === "6") state.zug = "R";
-      state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+      state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, k => !AG.TYPES.some(t => t.klasse === k));
-    const zugItems = Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
+    const zugItems = state.sortBy === "thema" || Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
     segButtons($("zug"), zugItems, state.zug, z => {
-      state.zug = z; state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
-    }, z => typesFor(state.klasse, z).length === 0);
+      state.zug = z; state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+    }, z => (state.sortBy === "thema" ? typesAllGrades(z) : typesFor(state.klasse, z)).length === 0);
 
     const sel = $("thema");
-    const themes = themesFor(state.klasse, state.zug);
-    sel.innerHTML = themes.map(([lb, t]) => `<option value="${lb}">LB ${lb}  ${t}</option>`).join("") +
+    const themes = themesFor();
+    sel.innerHTML = themes.map(([k, t]) => `<option value="${k}">${state.sortBy === "thema" ? "" : "LB " + k + "  "}${t}</option>`).join("") +
       `<option value="mix">Eigene Zusammenstellung</option>`;
     sel.value = state.thema || "mix";
 
@@ -121,13 +146,9 @@
   }
 
   function typeOptions(current) {
-    const byLb = new Map();
-    for (const t of typesFor(state.klasse, state.zug)) {
-      if (!byLb.has(t.lb)) byLb.set(t.lb, { title: t.lbTitle, types: [] });
-      byLb.get(t.lb).types.push(t);
-    }
-    return [...byLb.entries()].sort((a, b) => a[0] - b[0]).map(([lb, g]) =>
-      `<optgroup label="LB ${lb}  ${g.title}">${g.types.map(t => `<option value="${t.id}"${t.id === current ? " selected" : ""}>${t.title}</option>`).join("")}</optgroup>`).join("");
+    const byTopic = state.sortBy === "thema";
+    return groups().map(([k, title, types]) =>
+      `<optgroup label="${byTopic ? "" : "LB " + k + "  "}${title}">${types.map(t => `<option value="${t.id}"${t.id === current ? " selected" : ""}>${t.title}${byTopic ? " (" + AG.gradeLabel(t, state.zug) + ")" : ""}</option>`).join("")}</optgroup>`).join("");
   }
 
   function renderParts() {
@@ -164,7 +185,7 @@
     $("addPart").hidden = state.parts.length >= 4;
   }
   function derivedTheme() {
-    const lbs = new Set(state.parts.map(p => AG.typeById(p.type).lb));
+    const lbs = new Set(state.parts.map(p => groupKey(AG.typeById(p.type))));
     return lbs.size === 1 ? [...lbs][0] : null;
   }
   function clearRerolls(pi) {
@@ -184,6 +205,8 @@
       const A = AG.generateSheet(cfg, "A");
       const B = state.groupB ? AG.generateSheet(cfg, "B") : null;
       lastSheets = { A, B, cfg };
+      // Skizzen schon jetzt in Bilder umwandeln, damit der Download sofort startet
+      if (AG.rasterizeSheet) { AG.rasterizeSheet(A).catch(() => {}); if (B) AG.rasterizeSheet(B).catch(() => {}); }
       const m = meta(cfg);
       const showSheet = state.view === "B" ? B : A;
       const mode = state.view === "answers" ? state.solmode : "worksheet";
@@ -342,12 +365,18 @@
       if (await AG.copyPng(blob)) {
         msg.className = "msg ok"; msg.textContent = `${what} als Bild kopiert. In OneNote Strg+V drücken.`;
       } else {
-        AG.downloadPng(blob, `${(state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_")}_Blatt-${state.seed}.png`);
+        AG.downloadPng(blob, `${safeName(state.title)}_Blatt-${state.seed}.png`);
         msg.className = "msg err"; msg.textContent = "Kopieren als Bild hat nicht geklappt. Das Bild wurde stattdessen heruntergeladen – in OneNote über Einfügen > Bild einfügen.";
       }
     } catch (e) {
       msg.className = "msg err"; msg.textContent = "Das Bild ließ sich nicht erzeugen: " + e.message;
     }
+  }
+
+  // Dateiname ohne Umlaute und Sonderzeichen (funktioniert in allen Browsern und Systemen)
+  function safeName(s) {
+    const map = { ä: "ae", ö: "oe", ü: "ue", Ä: "Ae", Ö: "Oe", Ü: "Ue", ß: "ss" };
+    return (s || "Arbeitsblatt").replace(/[äöüÄÖÜß]/g, c => map[c]).replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "Arbeitsblatt";
   }
 
   async function download() {
@@ -360,7 +389,7 @@
     if (B) pages.push({ sheet: B, mode: state.solmode });
     const bytes = await AG.buildDocxAsync(pages, m, { merke: state.merke, workLines: state.work });
     const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-    const name = (state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_") + `_Blatt-${state.seed}.docx`;
+    const name = safeName(state.title) + `_Blatt-${state.seed}.docx`;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();

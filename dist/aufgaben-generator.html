@@ -205,9 +205,14 @@ table.vt th { background: #f1f3f8; text-align: left; }
       <div class="brand"><h1>Aufgaben-<span>Generator</span></h1><small>Mathematik Mittelschule</small></div>
 
       <section class="group">
-        <h2>Klasse</h2>
+        <h2>Aufgaben auswählen nach</h2>
+        <div class="seg" id="sortBy" role="group" aria-label="Aufgaben auswählen nach"></div>
+      </section>
+
+      <section class="group">
+        <h2 id="klasseH">Klasse</h2>
         <div class="row">
-          <div class="seg" id="klasse" role="group" aria-label="Klasse"></div>
+          <span id="klasseRow"><div class="seg" id="klasse" role="group" aria-label="Klasse"></div></span>
           <div class="seg" id="zug" role="group" aria-label="Zug"></div>
         </div>
       </section>
@@ -657,6 +662,64 @@ table.vt th { background: #f1f3f8; text-align: left; }
   AG.encodeCode = encodeCode;
   AG.typeShort = typeShort;
   AG.decodeCode = decodeCode;
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/core/topics.js ----
+// Jahrgangsübergreifende Themen: Aufgabentypen aller Klassen nach Inhalt ordnen.
+// Ein Typ kann sein Thema mit `topic: "<id>"` selbst angeben, sonst wird es aus id/Lernbereich abgeleitet.
+(function (AG) {
+  const TOPICS = [
+    { id: "zahlen", title: "Zahlen und Rechnen" },
+    { id: "brueche", title: "Brüche und Dezimalzahlen" },
+    { id: "prozent", title: "Prozent- und Zinsrechnung" },
+    { id: "terme", title: "Terme und Gleichungen" },
+    { id: "zuordnung", title: "Zuordnungen und Funktionen" },
+    { id: "groessen", title: "Größen und Maßstab" },
+    { id: "winkel", title: "Winkel und Figuren" },
+    { id: "flaechen", title: "Umfang und Flächeninhalt" },
+    { id: "koerper", title: "Körper: Oberfläche und Volumen" },
+    { id: "daten", title: "Daten, Diagramme und Wahrscheinlichkeit" },
+    { id: "potenzen", title: "Potenzen und Wurzeln" },
+  ];
+
+  // Einzelne Typen, deren Lernbereich nicht zum Inhalt passt
+  const OVERRIDE = {
+    "m7-bruchdivision": "brueche",
+    "m7-masstab": "groessen",
+    "m7-prisma-oberflaeche": "koerper",
+    "m7-flaeche-para-dreieck": "flaechen",
+  };
+
+  function topicOf(type) {
+    if (type.topic) return type.topic;
+    if (OVERRIDE[type.id]) return OVERRIDE[type.id];
+    // zuerst der Typ-Titel (eindeutiger), dann der Lernbereich
+    if (/Winkel|Dreieck/i.test(type.title) && !/Prisma/i.test(type.title)) return "winkel";
+    const s = type.title + " " + type.lbTitle;
+    if (/Prozent|Zins|Promille/i.test(s)) return "prozent";
+    if (/Potenz|Wurzel|Quadratzahl/i.test(s)) return "potenzen";
+    if (/Bruch|Dezimal/i.test(s)) return "brueche";
+    if (/Gleichung|Term/i.test(s)) return "terme";
+    if (/Proportional|Funktion|Zuordnung|Graph/i.test(s)) return "zuordnung";
+    if (/Rauminhalt|Körper|Prisma|Zylinder|Pyramide|Kegel|Kugel|Quader/i.test(s)) return "koerper";
+    if (/Fläche|Umfang|Kreis/i.test(s)) return "flaechen";
+    if (/Diagramm|Daten|Kennwert|Zufall|Wahrscheinlich|Statistik/i.test(s)) return "daten";
+    if (/Größe|Maßstab/i.test(s)) return "groessen";
+    if (/Geometri|Winkel|Dreieck|Figur/i.test(s)) return "winkel";
+    return "zahlen";
+  }
+
+  // Bezeichnung „Kl. 7“, „Kl. 7 M“ für Auswahllisten
+  function gradeLabel(type, zug) {
+    return "Kl. " + type.klasse + (type.zug === "M" && zug !== "M" ? " M" : "");
+  }
+
+  AG.TOPICS = TOPICS;
+  AG.topicOf = topicOf;
+  AG.topicTitle = id => (TOPICS.find(t => t.id === id) || { title: id }).title;
+  AG.gradeLabel = gradeLabel;
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
 
 </script>
@@ -6822,23 +6885,40 @@ table.vt th { background: #f1f3f8; text-align: left; }
   const STORE_KEY = "aufgaben-generator-v1";
 
   const state = {
-    klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
+    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
     title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
 
   function randomSeed() { return 1000 + Math.floor(Math.random() * 9000); }
   function typesFor(k, z) { return AG.TYPES.filter(t => t.klasse === k && (t.zug === z || t.zug === "RM")); }
-  function themesFor(k, z) {
+  // alle Klassen für einen Zug (Klasse 5/6 ohne Zug-Trennung)
+  function typesAllGrades(z) { return AG.TYPES.filter(t => t.zug === z || t.zug === "RM" || (z === "R" && Number(t.klasse) <= 6)); }
+  // Gruppen für Themenauswahl und Typ-Liste: [schlüssel, titel, typen]
+  function groups() {
     const map = new Map();
-    for (const t of typesFor(k, z)) if (!map.has(t.lb)) map.set(t.lb, t.lbTitle);
-    return [...map.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
+    if (state.sortBy === "thema") {
+      const types = typesAllGrades(state.zug).slice().sort((a, b) => Number(a.klasse) - Number(b.klasse));
+      for (const tp of AG.TOPICS) {
+        const ts = types.filter(t => AG.topicOf(t) === tp.id);
+        if (ts.length) map.set(tp.id, { title: tp.title, types: ts });
+      }
+      return [...map.entries()].map(([k, g]) => [k, g.title, g.types]);
+    }
+    for (const t of typesFor(state.klasse, state.zug)) {
+      if (!map.has(t.lb)) map.set(t.lb, { title: t.lbTitle, types: [] });
+      map.get(t.lb).types.push(t);
+    }
+    return [...map.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([k, g]) => [k, g.title, g.types]);
   }
+  function themesFor() { return groups().map(([k, title]) => [k, title]); }
+  function groupKey(type) { return state.sortBy === "thema" ? AG.topicOf(type) : type.lb; }
   function defaultCount(type) { return type.cols === 1 ? 3 : type.cols === 2 ? 6 : 9; }
 
   // Thema gewählt -> Teile A–C (bzw. so viele Typen wie vorhanden, höchstens 4) vorbelegen
   function applyTheme() {
-    const types = typesFor(state.klasse, state.zug).filter(t => t.lb === state.thema);
+    const g = groups().find(([k]) => k === state.thema);
+    const types = g ? g[2] : [];
     if (!types.length) { state.parts = []; return; }
     const levels = NIVEAU_LEVELS[state.niveau];
     const n = Math.min(4, Math.max(3, types.length));
@@ -6850,7 +6930,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     }
     // gleiche Typen mit gleichem Niveau vermeiden
     state.rerolls = {};
-    if (!state.titleCustom) state.title = types[0].lbTitle;
+    if (!state.titleCustom) state.title = g[1];
   }
   function clampLevel(type, lv) {
     if (type.levels.includes(lv)) return lv;
@@ -6867,9 +6947,12 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
   function meta(cfg) {
     const first = state.parts[0] && AG.typeById(state.parts[0].type);
-    const lbs = [...new Set(state.parts.map(p => AG.typeById(p.type).lbTitle))];
+    const types = state.parts.map(p => AG.typeById(p.type));
+    const lbs = [...new Set(types.map(t => state.sortBy === "thema" ? AG.topicTitle(AG.topicOf(t)) : t.lbTitle))];
+    const ks = [...new Set(types.map(t => Number(t.klasse)))].sort((a, b) => a - b);
+    const klasse = ks.length > 1 ? ks[0] + "–" + ks[ks.length - 1] : String(ks[0] || state.klasse);
     return {
-      klasse: state.klasse, zug: state.zug, title: state.title || "Arbeitsblatt",
+      klasse, zug: state.zug, title: state.title || "Arbeitsblatt",
       subject: lbs.length === 1 ? lbs[0] : "Gemischte Aufgaben",
       blattNr: state.seed, code: AG.encodeCode(cfg), merke: first ? first.merke : null,
     };
@@ -6906,18 +6989,23 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   function renderPlan() {
+    segButtons($("sortBy"), [["klasse", "Jahrgangsstufe"], ["thema", "Thema (alle Klassen)"]], state.sortBy, s => {
+      state.sortBy = s; state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+    });
+    $("klasseRow").hidden = state.sortBy === "thema";
+    $("klasseH").textContent = state.sortBy === "thema" ? "Zug" : "Klasse";
     segButtons($("klasse"), KLASSEN.map(k => [k, k]), state.klasse, k => {
       state.klasse = k; if (k === "5" || k === "6") state.zug = "R";
-      state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+      state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, k => !AG.TYPES.some(t => t.klasse === k));
-    const zugItems = Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
+    const zugItems = state.sortBy === "thema" || Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
     segButtons($("zug"), zugItems, state.zug, z => {
-      state.zug = z; state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
-    }, z => typesFor(state.klasse, z).length === 0);
+      state.zug = z; state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
+    }, z => (state.sortBy === "thema" ? typesAllGrades(z) : typesFor(state.klasse, z)).length === 0);
 
     const sel = $("thema");
-    const themes = themesFor(state.klasse, state.zug);
-    sel.innerHTML = themes.map(([lb, t]) => `<option value="${lb}">LB ${lb}  ${t}</option>`).join("") +
+    const themes = themesFor();
+    sel.innerHTML = themes.map(([k, t]) => `<option value="${k}">${state.sortBy === "thema" ? "" : "LB " + k + "  "}${t}</option>`).join("") +
       `<option value="mix">Eigene Zusammenstellung</option>`;
     sel.value = state.thema || "mix";
 
@@ -6937,13 +7025,9 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   function typeOptions(current) {
-    const byLb = new Map();
-    for (const t of typesFor(state.klasse, state.zug)) {
-      if (!byLb.has(t.lb)) byLb.set(t.lb, { title: t.lbTitle, types: [] });
-      byLb.get(t.lb).types.push(t);
-    }
-    return [...byLb.entries()].sort((a, b) => a[0] - b[0]).map(([lb, g]) =>
-      `<optgroup label="LB ${lb}  ${g.title}">${g.types.map(t => `<option value="${t.id}"${t.id === current ? " selected" : ""}>${t.title}</option>`).join("")}</optgroup>`).join("");
+    const byTopic = state.sortBy === "thema";
+    return groups().map(([k, title, types]) =>
+      `<optgroup label="${byTopic ? "" : "LB " + k + "  "}${title}">${types.map(t => `<option value="${t.id}"${t.id === current ? " selected" : ""}>${t.title}${byTopic ? " (" + AG.gradeLabel(t, state.zug) + ")" : ""}</option>`).join("")}</optgroup>`).join("");
   }
 
   function renderParts() {
@@ -6980,7 +7064,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     $("addPart").hidden = state.parts.length >= 4;
   }
   function derivedTheme() {
-    const lbs = new Set(state.parts.map(p => AG.typeById(p.type).lb));
+    const lbs = new Set(state.parts.map(p => groupKey(AG.typeById(p.type))));
     return lbs.size === 1 ? [...lbs][0] : null;
   }
   function clearRerolls(pi) {
@@ -7000,6 +7084,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
       const A = AG.generateSheet(cfg, "A");
       const B = state.groupB ? AG.generateSheet(cfg, "B") : null;
       lastSheets = { A, B, cfg };
+      // Skizzen schon jetzt in Bilder umwandeln, damit der Download sofort startet
+      if (AG.rasterizeSheet) { AG.rasterizeSheet(A).catch(() => {}); if (B) AG.rasterizeSheet(B).catch(() => {}); }
       const m = meta(cfg);
       const showSheet = state.view === "B" ? B : A;
       const mode = state.view === "answers" ? state.solmode : "worksheet";
@@ -7158,12 +7244,18 @@ table.vt th { background: #f1f3f8; text-align: left; }
       if (await AG.copyPng(blob)) {
         msg.className = "msg ok"; msg.textContent = `${what} als Bild kopiert. In OneNote Strg+V drücken.`;
       } else {
-        AG.downloadPng(blob, `${(state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_")}_Blatt-${state.seed}.png`);
+        AG.downloadPng(blob, `${safeName(state.title)}_Blatt-${state.seed}.png`);
         msg.className = "msg err"; msg.textContent = "Kopieren als Bild hat nicht geklappt. Das Bild wurde stattdessen heruntergeladen – in OneNote über Einfügen > Bild einfügen.";
       }
     } catch (e) {
       msg.className = "msg err"; msg.textContent = "Das Bild ließ sich nicht erzeugen: " + e.message;
     }
+  }
+
+  // Dateiname ohne Umlaute und Sonderzeichen (funktioniert in allen Browsern und Systemen)
+  function safeName(s) {
+    const map = { ä: "ae", ö: "oe", ü: "ue", Ä: "Ae", Ö: "Oe", Ü: "Ue", ß: "ss" };
+    return (s || "Arbeitsblatt").replace(/[äöüÄÖÜß]/g, c => map[c]).replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "Arbeitsblatt";
   }
 
   async function download() {
@@ -7176,7 +7268,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     if (B) pages.push({ sheet: B, mode: state.solmode });
     const bytes = await AG.buildDocxAsync(pages, m, { merke: state.merke, workLines: state.work });
     const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-    const name = (state.title || "Arbeitsblatt").replace(/[^\wäöüÄÖÜß\- ]+/g, "").trim().replace(/\s+/g, "_") + `_Blatt-${state.seed}.docx`;
+    const name = safeName(state.title) + `_Blatt-${state.seed}.docx`;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();

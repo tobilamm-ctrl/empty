@@ -4,13 +4,23 @@
   const STORE = "mathe-ueben-v1";
   const KLASSEN = ["5", "6", "7", "8", "9", "10"];
 
-  const setup = { klasse: "7", zug: "M", topics: [], level: 2, adapt: true, mode: "s" };
+  const setup = { sortBy: "klasse", klasse: "7", zug: "M", topics: [], level: 2, adapt: true, mode: "s" };
   let run = null;   // laufende Übung
   let cur = null;   // aktuelle Aufgabe
 
   function typesFor(k, z) { return AG.TYPES.filter(t => t.klasse === k && (t.zug === z || t.zug === "RM")); }
+  function typesAllGrades(z) { return AG.TYPES.filter(t => t.zug === z || t.zug === "RM" || (z === "R" && Number(t.klasse) <= 6)); }
+  function groupKey(t) { return setup.sortBy === "thema" ? AG.topicOf(t) : t.lb; }
   function lbGroups() {
     const map = new Map();
+    if (setup.sortBy === "thema") {
+      const types = typesAllGrades(setup.zug).slice().sort((a, b) => Number(a.klasse) - Number(b.klasse));
+      for (const tp of AG.TOPICS) {
+        const ts = types.filter(t => AG.topicOf(t) === tp.id);
+        if (ts.length) map.set(tp.id, { title: tp.title, types: ts });
+      }
+      return [...map.entries()];
+    }
     for (const t of typesFor(setup.klasse, setup.zug)) {
       if (!map.has(t.lb)) map.set(t.lb, { title: t.lbTitle, types: [] });
       map.get(t.lb).types.push(t);
@@ -51,10 +61,17 @@
     }
   }
   function renderSetup() {
+    seg($("sortBy"), [["klasse", "Jahrgangsstufe"], ["thema", "Thema (alle Klassen)"]], setup.sortBy, s => { setup.sortBy = s; renderSetup(); });
+    $("klasse").hidden = setup.sortBy === "thema";
+    $("klasseH").textContent = setup.sortBy === "thema" ? "Zug" : "Klasse";
     seg($("klasse"), KLASSEN.map(k => [k, k]), setup.klasse, k => { setup.klasse = k; setup.topics = []; renderSetup(); },
       k => !AG.TYPES.some(t => t.klasse === k));
-    seg($("zug"), [["R", "Regelklasse"], ["M", "M-Zug"]], setup.zug, z => { setup.zug = z; setup.topics = []; renderSetup(); },
-      z => typesFor(setup.klasse, z).length === 0);
+    seg($("zug"), [["R", "Regelklasse"], ["M", "M-Zug"]], setup.zug, z => {
+      setup.zug = z;
+      const ok = new Set((setup.sortBy === "thema" ? typesAllGrades(z) : typesFor(setup.klasse, z)).map(t => t.id));
+      setup.topics = setup.topics.filter(id => ok.has(id));
+      renderSetup();
+    }, z => (setup.sortBy === "thema" ? typesAllGrades(z) : typesFor(setup.klasse, z)).length === 0);
     const box = $("topics");
     box.innerHTML = "";
     lbGroups().forEach(([lb, g], gi) => {
@@ -70,7 +87,7 @@
       const tbox = div.querySelector(".topics");
       for (const t of g.types) {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "topic"; b.textContent = t.title;
+        b.type = "button"; b.className = "topic"; b.textContent = t.title + (setup.sortBy === "thema" ? " · " + AG.gradeLabel(t, setup.zug) : "");
         b.setAttribute("aria-pressed", String(setup.topics.includes(t.id)));
         b.onclick = () => {
           const i = setup.topics.indexOf(t.id);
@@ -125,7 +142,7 @@
 
   function renderTask() {
     const { type, level, task, kind } = cur;
-    const gi = lbGroups().findIndex(([lb]) => lb === type.lb);
+    const gi = lbGroups().findIndex(([lb]) => lb === groupKey(type));
     $("practice").style.setProperty("--pc", `var(--part-${Math.max(0, gi) % 8})`);
     $("tTopic").textContent = type.title;
     $("tStars").textContent = AG.stars(level);
@@ -136,6 +153,7 @@
     if (task.table) q += `<div class="table-wrap">${tableHtml(task.table, false)}</div>`;
     if (task.fig) q += AG.figHtml(task.fig);
     $("tQ").innerHTML = q;
+    addZoom($("tQ"));
 
     $("answerRow").hidden = !kind;
     $("inputHint").hidden = !kind;
@@ -158,6 +176,28 @@
     return `<table class="vt">${tbl.rows.map((r, ri) => `<tr>${r.map((c, ci) => `<${ci ? "td" : "th"}${sol && ri && ci ? ' class="red"' : ""}>${AG.richHtml(c)}</${ci ? "td" : "th"}>`).join("")}</tr>`).join("")}</table>`;
   }
 
+  // Lupe: Zeichnungen groß anzeigen
+  const ZOOM_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  function addZoom(box) {
+    box.querySelectorAll(".fig").forEach(f => {
+      if (f.querySelector(".zoom")) return;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "zoom"; b.innerHTML = ZOOM_ICON;
+      b.title = "Zeichnung vergrößern"; b.setAttribute("aria-label", "Zeichnung vergrößern");
+      b.onclick = () => openZoom(f);
+      f.appendChild(b);
+    });
+  }
+  function openZoom(fig) {
+    const svg = fig.querySelector("svg").cloneNode(true);
+    const box = $("lightbox");
+    box.querySelector(".lb-fig").innerHTML = "";
+    box.querySelector(".lb-fig").appendChild(svg);
+    box.hidden = false;
+    box.querySelector(".lb-close").focus();
+  }
+  function closeZoom() { $("lightbox").hidden = true; }
+
   // Lösung schrittweise aufdecken
   function reveal(all) {
     const steps = cur.task.steps || [];
@@ -174,6 +214,7 @@
       }
       cur.step++;
     }
+    addZoom(sol);
     const finished = cur.step > steps.length;
     $("showStep").textContent = "Nächster Schritt";
     $("showStep").hidden = finished;
@@ -298,6 +339,8 @@
   $("yes").onclick = () => { if (!cur.counted) record(true); $("yes").setAttribute("aria-pressed", "true"); };
   $("no").onclick = () => { if (!cur.counted) record(false); $("no").setAttribute("aria-pressed", "true"); };
   $("next").onclick = nextTask;
+  $("lightbox").onclick = e => { if (e.target.closest(".lb-close") || !e.target.closest(".lb-fig")) closeZoom(); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("lightbox").hidden) closeZoom(); });
   $("finish").onclick = finish;
   $("again").onclick = () => { show("practice"); nextTask(); };
   $("newSel").onclick = () => show("setup");

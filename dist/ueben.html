@@ -96,7 +96,13 @@ h3 { margin: 0; font-size: 14px; color: var(--muted); font-weight: 700; }
 .fr > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 3px; }
 .fr > span:last-child { padding: 0 3px; }
 .nw { white-space: nowrap; }
-.fig { margin: 10px 0 4px; }
+.fig { margin: 10px 0 4px; position: relative; max-width: 100%; }
+.zoom { position: absolute; top: 2px; right: 2px; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(20, 30, 60, .15); }
+.zoom:hover { border-color: var(--ink); }
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(15, 20, 36, .72); display: grid; place-items: center; padding: 16px; }
+.lb-card { background: #fff; border-radius: 14px; padding: 14px; width: min(96vw, 1000px); max-height: 94vh; overflow: auto; display: grid; gap: 8px; }
+.lb-close { justify-self: end; border: 1px solid #d8dfeb; background: #f4f7fc; color: #1b2130; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.lb-fig svg { display: block; width: 100%; height: auto; }
 .fig svg { display: block; width: 100%; height: auto; }
 .solution .fig svg { filter: none; }
 .blank { display: inline-block; width: calc(var(--w) * 0.55em + 1.2em); border-bottom: 1.5px solid var(--muted); height: 1em; }
@@ -180,7 +186,12 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       </div>
 
       <div class="group">
-        <h3>Klasse</h3>
+        <h3>Aufgaben auswählen nach</h3>
+        <div class="seg" id="sortBy" role="group" aria-label="Aufgaben auswählen nach"></div>
+      </div>
+
+      <div class="group">
+        <h3 id="klasseH">Klasse</h3>
         <div class="row"><div class="seg" id="klasse" role="group" aria-label="Klasse"></div> <div class="seg" id="zug" role="group" aria-label="Zug"></div></div>
       </div>
 
@@ -269,6 +280,14 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       </div>
     </div>
   </section>
+
+  <!-- Lupe -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Zeichnung vergrößert">
+    <div class="lb-card">
+      <button type="button" class="lb-close" aria-label="Schließen">Schließen</button>
+      <div class="lb-fig"></div>
+    </div>
+  </div>
 
   <!-- Auswertung -->
   <section class="card" id="summary" hidden>
@@ -637,6 +656,64 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   AG.encodeCode = encodeCode;
   AG.typeShort = typeShort;
   AG.decodeCode = decodeCode;
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/core/topics.js ----
+// Jahrgangsübergreifende Themen: Aufgabentypen aller Klassen nach Inhalt ordnen.
+// Ein Typ kann sein Thema mit `topic: "<id>"` selbst angeben, sonst wird es aus id/Lernbereich abgeleitet.
+(function (AG) {
+  const TOPICS = [
+    { id: "zahlen", title: "Zahlen und Rechnen" },
+    { id: "brueche", title: "Brüche und Dezimalzahlen" },
+    { id: "prozent", title: "Prozent- und Zinsrechnung" },
+    { id: "terme", title: "Terme und Gleichungen" },
+    { id: "zuordnung", title: "Zuordnungen und Funktionen" },
+    { id: "groessen", title: "Größen und Maßstab" },
+    { id: "winkel", title: "Winkel und Figuren" },
+    { id: "flaechen", title: "Umfang und Flächeninhalt" },
+    { id: "koerper", title: "Körper: Oberfläche und Volumen" },
+    { id: "daten", title: "Daten, Diagramme und Wahrscheinlichkeit" },
+    { id: "potenzen", title: "Potenzen und Wurzeln" },
+  ];
+
+  // Einzelne Typen, deren Lernbereich nicht zum Inhalt passt
+  const OVERRIDE = {
+    "m7-bruchdivision": "brueche",
+    "m7-masstab": "groessen",
+    "m7-prisma-oberflaeche": "koerper",
+    "m7-flaeche-para-dreieck": "flaechen",
+  };
+
+  function topicOf(type) {
+    if (type.topic) return type.topic;
+    if (OVERRIDE[type.id]) return OVERRIDE[type.id];
+    // zuerst der Typ-Titel (eindeutiger), dann der Lernbereich
+    if (/Winkel|Dreieck/i.test(type.title) && !/Prisma/i.test(type.title)) return "winkel";
+    const s = type.title + " " + type.lbTitle;
+    if (/Prozent|Zins|Promille/i.test(s)) return "prozent";
+    if (/Potenz|Wurzel|Quadratzahl/i.test(s)) return "potenzen";
+    if (/Bruch|Dezimal/i.test(s)) return "brueche";
+    if (/Gleichung|Term/i.test(s)) return "terme";
+    if (/Proportional|Funktion|Zuordnung|Graph/i.test(s)) return "zuordnung";
+    if (/Rauminhalt|Körper|Prisma|Zylinder|Pyramide|Kegel|Kugel|Quader/i.test(s)) return "koerper";
+    if (/Fläche|Umfang|Kreis/i.test(s)) return "flaechen";
+    if (/Diagramm|Daten|Kennwert|Zufall|Wahrscheinlich|Statistik/i.test(s)) return "daten";
+    if (/Größe|Maßstab/i.test(s)) return "groessen";
+    if (/Geometri|Winkel|Dreieck|Figur/i.test(s)) return "winkel";
+    return "zahlen";
+  }
+
+  // Bezeichnung „Kl. 7“, „Kl. 7 M“ für Auswahllisten
+  function gradeLabel(type, zug) {
+    return "Kl. " + type.klasse + (type.zug === "M" && zug !== "M" ? " M" : "");
+  }
+
+  AG.TOPICS = TOPICS;
+  AG.topicOf = topicOf;
+  AG.topicTitle = id => (TOPICS.find(t => t.id === id) || { title: id }).title;
+  AG.gradeLabel = gradeLabel;
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
 
 </script>
@@ -6647,13 +6724,23 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   const STORE = "mathe-ueben-v1";
   const KLASSEN = ["5", "6", "7", "8", "9", "10"];
 
-  const setup = { klasse: "7", zug: "M", topics: [], level: 2, adapt: true, mode: "s" };
+  const setup = { sortBy: "klasse", klasse: "7", zug: "M", topics: [], level: 2, adapt: true, mode: "s" };
   let run = null;   // laufende Übung
   let cur = null;   // aktuelle Aufgabe
 
   function typesFor(k, z) { return AG.TYPES.filter(t => t.klasse === k && (t.zug === z || t.zug === "RM")); }
+  function typesAllGrades(z) { return AG.TYPES.filter(t => t.zug === z || t.zug === "RM" || (z === "R" && Number(t.klasse) <= 6)); }
+  function groupKey(t) { return setup.sortBy === "thema" ? AG.topicOf(t) : t.lb; }
   function lbGroups() {
     const map = new Map();
+    if (setup.sortBy === "thema") {
+      const types = typesAllGrades(setup.zug).slice().sort((a, b) => Number(a.klasse) - Number(b.klasse));
+      for (const tp of AG.TOPICS) {
+        const ts = types.filter(t => AG.topicOf(t) === tp.id);
+        if (ts.length) map.set(tp.id, { title: tp.title, types: ts });
+      }
+      return [...map.entries()];
+    }
     for (const t of typesFor(setup.klasse, setup.zug)) {
       if (!map.has(t.lb)) map.set(t.lb, { title: t.lbTitle, types: [] });
       map.get(t.lb).types.push(t);
@@ -6694,10 +6781,17 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     }
   }
   function renderSetup() {
+    seg($("sortBy"), [["klasse", "Jahrgangsstufe"], ["thema", "Thema (alle Klassen)"]], setup.sortBy, s => { setup.sortBy = s; renderSetup(); });
+    $("klasse").hidden = setup.sortBy === "thema";
+    $("klasseH").textContent = setup.sortBy === "thema" ? "Zug" : "Klasse";
     seg($("klasse"), KLASSEN.map(k => [k, k]), setup.klasse, k => { setup.klasse = k; setup.topics = []; renderSetup(); },
       k => !AG.TYPES.some(t => t.klasse === k));
-    seg($("zug"), [["R", "Regelklasse"], ["M", "M-Zug"]], setup.zug, z => { setup.zug = z; setup.topics = []; renderSetup(); },
-      z => typesFor(setup.klasse, z).length === 0);
+    seg($("zug"), [["R", "Regelklasse"], ["M", "M-Zug"]], setup.zug, z => {
+      setup.zug = z;
+      const ok = new Set((setup.sortBy === "thema" ? typesAllGrades(z) : typesFor(setup.klasse, z)).map(t => t.id));
+      setup.topics = setup.topics.filter(id => ok.has(id));
+      renderSetup();
+    }, z => (setup.sortBy === "thema" ? typesAllGrades(z) : typesFor(setup.klasse, z)).length === 0);
     const box = $("topics");
     box.innerHTML = "";
     lbGroups().forEach(([lb, g], gi) => {
@@ -6713,7 +6807,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       const tbox = div.querySelector(".topics");
       for (const t of g.types) {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "topic"; b.textContent = t.title;
+        b.type = "button"; b.className = "topic"; b.textContent = t.title + (setup.sortBy === "thema" ? " · " + AG.gradeLabel(t, setup.zug) : "");
         b.setAttribute("aria-pressed", String(setup.topics.includes(t.id)));
         b.onclick = () => {
           const i = setup.topics.indexOf(t.id);
@@ -6768,7 +6862,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
 
   function renderTask() {
     const { type, level, task, kind } = cur;
-    const gi = lbGroups().findIndex(([lb]) => lb === type.lb);
+    const gi = lbGroups().findIndex(([lb]) => lb === groupKey(type));
     $("practice").style.setProperty("--pc", `var(--part-${Math.max(0, gi) % 8})`);
     $("tTopic").textContent = type.title;
     $("tStars").textContent = AG.stars(level);
@@ -6779,6 +6873,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     if (task.table) q += `<div class="table-wrap">${tableHtml(task.table, false)}</div>`;
     if (task.fig) q += AG.figHtml(task.fig);
     $("tQ").innerHTML = q;
+    addZoom($("tQ"));
 
     $("answerRow").hidden = !kind;
     $("inputHint").hidden = !kind;
@@ -6801,6 +6896,28 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     return `<table class="vt">${tbl.rows.map((r, ri) => `<tr>${r.map((c, ci) => `<${ci ? "td" : "th"}${sol && ri && ci ? ' class="red"' : ""}>${AG.richHtml(c)}</${ci ? "td" : "th"}>`).join("")}</tr>`).join("")}</table>`;
   }
 
+  // Lupe: Zeichnungen groß anzeigen
+  const ZOOM_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  function addZoom(box) {
+    box.querySelectorAll(".fig").forEach(f => {
+      if (f.querySelector(".zoom")) return;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "zoom"; b.innerHTML = ZOOM_ICON;
+      b.title = "Zeichnung vergrößern"; b.setAttribute("aria-label", "Zeichnung vergrößern");
+      b.onclick = () => openZoom(f);
+      f.appendChild(b);
+    });
+  }
+  function openZoom(fig) {
+    const svg = fig.querySelector("svg").cloneNode(true);
+    const box = $("lightbox");
+    box.querySelector(".lb-fig").innerHTML = "";
+    box.querySelector(".lb-fig").appendChild(svg);
+    box.hidden = false;
+    box.querySelector(".lb-close").focus();
+  }
+  function closeZoom() { $("lightbox").hidden = true; }
+
   // Lösung schrittweise aufdecken
   function reveal(all) {
     const steps = cur.task.steps || [];
@@ -6817,6 +6934,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       }
       cur.step++;
     }
+    addZoom(sol);
     const finished = cur.step > steps.length;
     $("showStep").textContent = "Nächster Schritt";
     $("showStep").hidden = finished;
@@ -6941,6 +7059,8 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   $("yes").onclick = () => { if (!cur.counted) record(true); $("yes").setAttribute("aria-pressed", "true"); };
   $("no").onclick = () => { if (!cur.counted) record(false); $("no").setAttribute("aria-pressed", "true"); };
   $("next").onclick = nextTask;
+  $("lightbox").onclick = e => { if (e.target.closest(".lb-close") || !e.target.closest(".lb-fig")) closeZoom(); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("lightbox").hidden) closeZoom(); });
   $("finish").onclick = finish;
   $("again").onclick = () => { show("practice"); nextTask(); };
   $("newSel").onclick = () => show("setup");
