@@ -30,7 +30,7 @@
     for (let i = 0; i < n; i++) {
       const type = types.length >= n ? types[i] : types[i % types.length];
       const lv = clampLevel(type, levels[i]);
-      state.parts.push({ type: type.id, level: lv, count: defaultCount(type) });
+      state.parts.push({ type: type.id, level: lv, count: defaultCount(type), base: defaultCount(type) });
     }
     // gleiche Typen mit gleichem Niveau vermeiden
     state.rerolls = {};
@@ -92,11 +92,11 @@
   function renderPlan() {
     segButtons($("klasse"), KLASSEN.map(k => [k, k]), state.klasse, k => {
       state.klasse = k; if (k === "5" || k === "6") state.zug = "R";
-      state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); update();
+      state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, k => !AG.TYPES.some(t => t.klasse === k));
     const zugItems = Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
     segButtons($("zug"), zugItems, state.zug, z => {
-      state.zug = z; state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); update();
+      state.zug = z; state.thema = (themesFor(state.klasse, state.zug)[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, z => typesFor(state.klasse, z).length === 0);
 
     const sel = $("thema");
@@ -150,12 +150,12 @@
         </div>`;
       el.querySelector("select").onchange = e => {
         p.type = e.target.value; const t = AG.typeById(p.type);
-        p.level = clampLevel(t, p.level); p.count = defaultCount(t); p.cols = undefined;
+        p.level = clampLevel(t, p.level); p.count = defaultCount(t); p.base = p.count; p.cols = undefined;
         state.thema = derivedTheme(); clearRerolls(i); update();
       };
       el.querySelectorAll(".stars button").forEach(b => b.onclick = () => { p.level = Number(b.dataset.l); clearRerolls(i); update(); });
       el.querySelectorAll(".stepper button").forEach(b => b.onclick = () => {
-        p.count = Math.max(1, Math.min(type.cols === 1 ? 8 : 18, p.count + Number(b.dataset.d))); update();
+        p.count = Math.max(1, Math.min(type.cols === 1 ? 8 : 18, p.count + Number(b.dataset.d))); p.base = p.count; update();
       });
       const rm = el.querySelector("[data-rm]");
       if (rm) rm.onclick = () => { state.parts.splice(i, 1); state.rerolls = {}; state.thema = derivedTheme(); update(); };
@@ -209,15 +209,48 @@
     return lay;
   }
 
+  // Vorbelegung so verkleinern, dass das Arbeitsblatt höchstens 2 Seiten hat
+  function fitPages(fromBase) {
+    if (!state.parts.length || typeof document === "undefined") return;
+    if (fromBase) for (const p of state.parts) if (p.base) p.count = p.base;
+    for (let i = 0; i < 40; i++) {
+      const cfg = config();
+      const sheet = AG.generateSheet(cfg, "A");
+      const box = $("measure");
+      box.innerHTML = AG.sheetHtml(sheet, meta(cfg), "worksheet", { merke: state.merke, workLines: state.work, measure: true });
+      const pages = AG.computeLayout(box.firstElementChild, false).pages;
+      box.innerHTML = "";
+      if (pages <= 2) return;
+      // Teil mit den meisten Aufgabenzeilen um eine Zeile kürzen (mindestens eine Zeile bleibt)
+      let best = -1, bestRows = 1;
+      state.parts.forEach((p, k) => {
+        const cols = p.cols || AG.typeById(p.type).cols;
+        const rows = Math.ceil(p.count / cols);
+        if (rows > bestRows || (rows === bestRows && best >= 0 && p.count > state.parts[best].count)) { best = k; bestRows = rows; }
+      });
+      if (best < 0) {
+        // jeder Teil hat nur noch eine Zeile: Aufgaben einzeln reduzieren oder letzten Teil entfernen
+        const k = state.parts.findIndex(p => p.count > 1);
+        if (k >= 0 && state.parts.some(p => p.count > 1)) state.parts[state.parts.reduce((m, p, j) => p.count > state.parts[m].count ? j : m, 0)].count--;
+        else if (state.parts.length > 1) state.parts.pop();
+        else return;
+        continue;
+      }
+      const p = state.parts[best];
+      const cols = p.cols || AG.typeById(p.type).cols;
+      p.count = Math.max(1, (Math.ceil(p.count / cols) - 1) * cols);
+    }
+  }
+
   function update() { renderPlan(); save(); }
 
   // ---------- Ereignisse ----------
   function wire() {
     $("thema").onchange = e => {
       if (e.target.value === "mix") { state.thema = null; update(); return; }
-      state.thema = e.target.value; state.titleCustom = false; applyTheme(); update();
+      state.thema = e.target.value; state.titleCustom = false; applyTheme(); fitPages(); update();
     };
-    $("niveau").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.niveau = Number(b.dataset.n); applyNiveau(); update(); };
+    $("niveau").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.niveau = Number(b.dataset.n); applyNiveau(); fitPages(); update(); };
     $("work").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.work = Number(b.dataset.w); update(); };
     $("solmode").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.solmode = b.dataset.s; update(); };
     $("view").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.view; update(); };
@@ -230,9 +263,9 @@
     $("groupB").onchange = e => { state.groupB = e.target.checked; if (state.groupB) state.view = "B"; update(); };
     $("seed").onchange = e => {
       const v = Math.max(1, Math.min(99999, Math.round(Number(e.target.value) || 1)));
-      state.seed = v; state.rerolls = {}; update();
+      state.seed = v; state.rerolls = {}; fitPages(true); update();
     };
-    $("newSeed").onclick = () => { state.seed = randomSeed(); state.rerolls = {}; update(); };
+    $("newSeed").onclick = () => { state.seed = randomSeed(); state.rerolls = {}; fitPages(true); update(); };
     $("addPart").onclick = () => {
       const last = state.parts[state.parts.length - 1];
       const t = last ? AG.typeById(last.type) : typesFor(state.klasse, state.zug)[0];

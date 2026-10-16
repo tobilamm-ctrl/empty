@@ -32,8 +32,11 @@ und wahlweise Selbstkontrolle oder Eingabe des Ergebnisses mit automatischer Pr�
 
 ## Stand
 
-Ausbauschritt 1: Grundgerüst und Klasse 7 M-Zug (Rechenaufgaben aus Prozentrechnung,
-rationalen Zahlen, Gleichungen, Proportionalität, Statistik, Winkelsumme und Maßstab).
+**Klasse 7 vollständig** (M-Zug 34 Aufgabentypen, Regelklasse 31) – alle Lernbereiche des LehrplanPLUS:
+Prozentrechnung (auch Diagramme), rationale Zahlen (auch Sachaufgaben, Überschlag), Winkel und Dreiecke,
+Maßstab, Flächeninhalt (Parallelogramm, Dreieck, Trapez, Drachen, Raute, zusammengesetzte Figuren),
+Prismen (Oberfläche, Volumen), Diagramme und Kennwerte, Terme und Gleichungen, Proportionalität (auch Graphen).
+Geometrie- und Diagrammaufgaben haben Skizzen, die auch in Word und OneNote erscheinen.
 Die Themenliste aller Klassen steht in `konzept/lehrplan-abgleich.md`.
 
 ## Für die Entwicklung

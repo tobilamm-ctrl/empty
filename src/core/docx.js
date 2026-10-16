@@ -213,7 +213,9 @@
         for (const s of t.steps) x += para(richXml(s, { color, size: 20 }), { indent: inline ? 600 : 380, tabs: [{ pos: (inline ? 600 : 380) + 2600 }], after: 0, line: 300 });
       }
       if (sol && !inline) x += para(run("Ergebnis: ", { color, size: 20 }) + richXml(t.a, { color, b: true }), { indent: 380, before: 40, after: 40, line: 300 });
-      const workTw = Math.round((workLines || 0) * 300 + (layout ? layout.extra * 15 : 0));
+      const rowKey = pi + "." + Math.floor(i / cols);
+      const exPx = layout ? (layout.rowExtra ? (layout.rowExtra.get(rowKey) || 0) : layout.extra) : 0;
+      const workTw = Math.round((workLines || 0) * 300 + exPx * 15);
       if (!sol && workTw > 0) x += para("", { after: 0, line: Math.max(20, workTw), exact: true, size: 4 });
       x += para("", { after: 0, size: 10, line: 200 });
       return { xml: x };

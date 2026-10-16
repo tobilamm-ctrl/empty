@@ -69,7 +69,8 @@
           body += `<div class="steps red">${t.steps.map(s => `<div>${richHtml(s)}</div>`).join("")}</div>`;
         }
         if (sol && !inline) body += `<div class="ans red">Ergebnis: <b>${richHtml(t.a)}</b></div>`;
-        if (!sol && (opts.workLines || extra)) body += `<div class="work" style="height: calc(${opts.workLines || 0} * 15pt + ${extra.toFixed(1)}px)"></div>`;
+        const ex = layout && layout.rowExtra ? (layout.rowExtra.get(pi + "." + row) || 0) : extra;
+        if (!sol && (opts.workLines || ex)) body += `<div class="work" style="height: calc(${opts.workLines || 0} * 15pt + ${ex.toFixed(1)}px)"></div>`;
         h += `<li data-task="${pi}.${ti}" data-row="${pi}.${row}"><span class="lab">${lab}</span><div class="tb">${body}</div>` +
           (opts.interactive ? `<button type="button" class="reroll" data-reroll="${pi}.${ti}" title="Diese Aufgabe neu würfeln" aria-label="Aufgabe ${p.label} ${lab} neu würfeln">${DICE}</button>` : "") + `</li>`;
       });
@@ -95,7 +96,7 @@
     const SAFETY = 0.985; // Word setzt etwas anders als der Browser
     const avail = (297 * pxPerMm - padT - padB - footH) * SAFETY;
     const top0 = sheetEl.getBoundingClientRect().top + padT;
-    const topBlock = sheetEl.querySelector(".sh-top").getBoundingClientRect().bottom - top0;
+    const topBlock = (sheetEl.querySelector(".sh-top").getBoundingClientRect().bottom - top0) * (AG.LAYOUT_K || 1);
 
     // Blöcke: je Teil Kopf + Zeilen
     const parts = [...sheetEl.querySelectorAll(".sh-part")].map(sec => {
@@ -116,22 +117,28 @@
       return { head: (rowList.length ? rowList[0].top : secBottom) - secTop + marginTop, rows: rowList };
     });
 
+    // Word setzt etwas kompakter als der Browser: gemessene Höhen mit Faktor K umrechnen
+    const K = AG.LAYOUT_K || 1;
+    for (const part of parts) { part.head *= K; for (const r of part.rows) r.h *= K; }
     function paginate(extra) {
       let pages = 1, y = topBlock;
       const breaks = new Set();
+      const pageRows = [[]], used = [];
       for (const part of parts) {
         part.rows.forEach((row, ri) => {
           const need = (ri === 0 ? part.head : 0) + row.h + extra;
           if (y + need > avail && y > 0) {
-            pages++; breaks.add(row.key);
+            used.push(y); pages++; breaks.add(row.key); pageRows.push([]);
             y = (ri === 0 ? part.head : 0) + row.h + extra;
           } else y += need;
+          pageRows[pageRows.length - 1].push(row.key);
         });
       }
-      return { pages, breaks, last: y };
+      used.push(y);
+      return { pages, breaks, pageRows, used };
     }
     const base = paginate(0);
-    if (!fill) return { extra: 0, breaks: base.breaks, pages: base.pages };
+    if (!fill) return { extra: 0, breaks: base.breaks, pages: base.pages, rowExtra: null };
     const target = base.pages;
     let lo = 0, hi = 600;
     for (let i = 0; i < 30; i++) {
@@ -139,7 +146,14 @@
       if (paginate(mid).pages <= target) lo = mid; else hi = mid;
     }
     const res = paginate(lo);
-    return { extra: lo, breaks: res.breaks, pages: res.pages };
+    // Restplatz jeder Seite auf ihre eigenen Zeilen verteilen, damit jede Seite voll wird
+    const rowExtra = new Map();
+    res.pageRows.forEach((keys, pi) => {
+      const rest = Math.max(0, avail - res.used[pi]);
+      const add = keys.length ? rest / keys.length : 0;
+      for (const k of keys) rowExtra.set(k, lo + add);
+    });
+    return { extra: lo, breaks: res.breaks, pages: res.pages, rowExtra };
   }
 
   const DICE = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>`;
