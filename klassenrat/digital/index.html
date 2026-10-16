@@ -496,6 +496,7 @@ body.tafel .blitz { position: fixed; }
 
 /* Protokoll-iPad */
 .fern.prot { bottom: 76px; }
+.prot-gerade { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: #fff8e1; border: 1px solid #f3e1a6; border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; }
 .prot-kind-kopf { display: flex; gap: 12px; align-items: center; background: var(--akzent-hell); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; }
 .dialog.prot-dialog { width: min(560px, 100%); }
 
@@ -2706,6 +2707,8 @@ function bkLeeren() { Object.assign(bk, { name: null, art: "", thema: "", worum:
 const PROT_PREFIX = "klassenrat-jpw-prot-";
 const PROT_FELDER = ["positiv", "anliegen", "vorsatz"];  // nur das darf das Protokoll-iPad ändern
 const PROT_SCHRITTE = ["positiv", "anliegen"];
+// Schritt der Lehrkraft → passender Schritt auf dem Protokoll-iPad (vor und nach den Anliegen gibt es nichts mitzuschreiben)
+const PROT_ZIEL = { start: "positiv", positiv: "positiv", rueckblick: "positiv", anliegen: "anliegen", abschluss: "anliegen", protokoll: "anliegen" };
 const pr = { kind: false, rolle: null, peer: null, conn: null, code: "", status: "aus", schreiben: true, kid: null, sid: null,
   meldung: "", qr: null, timer: null, basis: null, sendeTimer: null, ort: null, versuche: 0, dialogOffen: false };
 const kopie = (x) => JSON.parse(JSON.stringify(x));
@@ -2854,7 +2857,7 @@ function prNachricht(d) {
 function protokollantStarten(code) {
   Object.assign(pr, { kind: true, code, status: "verbinde", schreiben: false });
   state = { version: 2, klassen: [], aktiveKlasse: null, logo: null };
-  Object.assign(ui, { view: "sitzung", schritt: "anliegen" });
+  Object.assign(ui, { view: "sitzung", schritt: "positiv" });
   document.title = "Klassenrat – Protokoll";
   render();
   prKindVerbinden();
@@ -2898,11 +2901,14 @@ function prKindNachricht(d) {
   pr.status = "verbunden"; pr.schreiben = !!d.schreiben; pr.meldung = "";
   let neuZeichnen = vorher.status !== "verbunden" || vorher.schreiben !== pr.schreiben || vorher.sid !== ui.sitzungId;
   // dem Protokoll der Lehrkraft folgen (neuer Schritt / neues Anliegen)
-  if (d.ort && PROT_SCHRITTE.includes(d.ort.schritt) && JSON.stringify(d.ort) !== JSON.stringify(pr.ort)) {
-    ui.schritt = d.ort.schritt; ui.anliegenIdx = d.ort.idx || 0; ui.ziel = null; neuZeichnen = true;
+  if (d.ort && PROT_ZIEL[d.ort.schritt] && JSON.stringify(d.ort) !== JSON.stringify(pr.ort)) {
+    const ziel = PROT_ZIEL[d.ort.schritt];
+    if (ziel !== ui.schritt || d.ort.schritt === "anliegen") { ui.schritt = ziel; ui.ziel = null; }
+    if (d.ort.schritt === "anliegen") ui.anliegenIdx = d.ort.idx || 0;
+    neuZeichnen = true;
   }
   pr.ort = d.ort;
-  if (!PROT_SCHRITTE.includes(ui.schritt)) ui.schritt = "anliegen";
+  if (!PROT_SCHRITTE.includes(ui.schritt)) ui.schritt = "positiv";
   neuZeichnen ? render() : liveAktualisieren();
 }
 function prKindSendenSpaeter() { clearTimeout(pr.sendeTimer); pr.sendeTimer = setTimeout(prKindSenden, 120); }
@@ -2934,6 +2940,9 @@ function renderKind() {
   }
   $("#app").innerHTML = `<div class="prot-kind-kopf">${bild("stift", "m")}<div><b>Protokoll-iPad</b> · Klasse ${esc(k.name)} · Sitzung Nr. ${s.nr}
       <br><span class="leise klein">Du schreibst das Protokoll. Deine Lehrkraft sieht alles sofort und kann korrigieren.</span></div></div>
+    ${pr.ort && !PROT_SCHRITTE.includes(pr.ort.schritt) ? `<p class="prot-gerade">${bild("glocke", "s")} Gerade im Klassenrat:
+      <b>${esc({ start: "Start (Begrüßung und Rollen)", rueckblick: t.rueckblick, abschluss: t.abschluss, protokoll: "Unterschreiben" }[pr.ort.schritt] || "")}</b>
+      – ${pr.ort.schritt === "start" ? "gleich geht es mit der " + esc(t.positiv) + " los." : pr.ort.schritt === "rueckblick" ? "hier musst du nichts mitschreiben." : "die " + esc(t.mehrere) + " sind fertig. Danke!"}</p>` : ""}
     <details class="rh-mini"><summary>${bild("leute", "s")} Was macht die ${esc(t.protokoll)}?</summary>${rollenHilfeListe("protokoll")}</details>
     ${pr.status === "getrennt" ? `<div class="sperr-box">${bild("uhr", "m")}<div><b>Verbindung unterbrochen.</b><br><span class="leise klein">${esc(pr.meldung)}</span></div></div>`
       : !pr.schreiben ? `<div class="sperr-box">${bild("schloss", "m")}<div><b>Die Lehrkraft hat das Schreiben gerade pausiert.</b><br><span class="leise klein">Es geht gleich weiter.</span></div></div>` : ""}
