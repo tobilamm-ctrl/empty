@@ -130,6 +130,10 @@ input[type=number] { font-variant-numeric: tabular-nums; }
   --part-0: #1f3f9e; --part-1: #2e7d5b; --part-2: #b5541b; --part-3: #6b3fa0;
 }
 .sheet .red { color: var(--red); }
+/* Lösungsansicht: roter Korrekturrand wie im Schulheft */
+.sheet.sol { background: linear-gradient(90deg, transparent 13mm, #e0566b 13mm, #e0566b calc(13mm + 1.5px), transparent calc(13mm + 1.5px)), #fff; }
+.sheet.sol .sh-tasks li:hover { background: #fdf2f4; }
+.part.hot { box-shadow: 0 0 0 2px var(--pc); }
 .sh-head { display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--grey); }
 .sh-nr { color: var(--ink); font-weight: 700; }
 .sh-nr.red { color: var(--red); }

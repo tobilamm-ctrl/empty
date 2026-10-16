@@ -3,11 +3,14 @@
   const { Frac, num, rich, plain, fmtDec, MINUS } = AG;
 
   // Datenkontexte. Werte sind ganze Zahlen in Einheiten von 1/den; mean in Zehnteln.
+  // pool: gewichtete Auswahl (Noten 5 und 6 sind selten).
+  const NOTEN_POOL = [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 6];
   const CTX = [
     {
       intro: n => `Die Noten von ${n} Schülerinnen und Schülern im letzten Mathetest:`,
       unit: "", den: { 1: 1, 2: 1 }, dig: { 1: 0, 2: 0 },
       range: { 1: [1, 6], 2: [1, 6] }, mean: { 1: [20, 50], 2: [20, 50] },
+      pool: NOTEN_POOL,
     },
     {
       intro: n => `Die erreichten Punkte von ${n} Schülerinnen und Schülern bei einem Quiz:`,
@@ -15,18 +18,28 @@
       range: { 1: [6, 30], 2: [6, 30] }, mean: { 1: [120, 240], 2: [120, 240] },
     },
     {
-      intro: n => `Die Tageshöchsttemperaturen an ${n} Tagen in °C:`,
+      // Winter: −10 bis 8 °C, Ausreißer höchstens ca. 10 Grad daneben
+      intro: n => `Die Tageshöchsttemperaturen im Januar an ${n} Tagen in °C:`,
       unit: " °C", den: { 1: 1, 2: 1, 3: 10 }, dig: { 1: 0, 2: 0, 3: 1 },
-      range: { 1: [8, 28], 2: [-6, 24], 3: [-120, 80] },
-      mean: { 1: [120, 240], 2: [-20, 200], 3: [-40, 40] },
-      out: { 3: [[-230, -180], [150, 250]] }, // Ausreißer: sehr kalt oder sehr warm
+      range: { 1: [-10, 8], 2: [-10, 8], 3: [-100, 80] },
+      mean: { 1: [-40, 40], 2: [-40, 40], 3: [-30, 30] },
+      out: { 3: [[-200, -180], [120, 150]] },
     },
     {
+      // Sommer: 18 bis 35 °C, Ausreißer höchstens ca. 10 Grad daneben
+      intro: n => `Die Tageshöchsttemperaturen im Juli an ${n} Tagen in °C:`,
+      unit: " °C", den: { 1: 1, 2: 1, 3: 10 }, dig: { 1: 0, 2: 0, 3: 1 },
+      range: { 1: [18, 35], 2: [18, 35], 3: [180, 350] },
+      mean: { 1: [200, 300], 2: [200, 300], 3: [220, 300] },
+      out: { 3: [[90, 110]] },
+    },
+    {
+      // Weitsprung Klasse 7: 2,80 bis 5,20 m; Ausreißer 1,90 m oder 5,90 m
       intro: n => `Die Weiten von ${n} Schülerinnen und Schülern im Weitsprung in m:`,
       unit: " m", den: { 1: 100, 2: 100, 3: 100 }, dig: { 1: 2, 2: 2, 3: 2 },
-      range: { 1: [300, 600], 2: [300, 580], 3: [500, 900] },
-      mean: { 1: [40, 55], 2: [35, 55], 3: [55, 85] },
-      out: { 3: [[110, 180]] }, // Fehlsprung
+      range: { 1: [280, 520], 2: [280, 520], 3: [280, 520] },
+      mean: { 1: [30, 45], 2: [30, 45], 3: [35, 45] },
+      out: { 3: [[190, 190], [590, 590]] },
     },
   ];
 
@@ -43,6 +56,7 @@
     const [lo, hi] = c.range[level];
     const [mlo, mhi] = c.mean[level];
     const low = new Frac(lo, den), high = new Frac(hi, den);
+    const draw = () => (c.pool ? new Frac(rng.pick(c.pool), den) : new Frac(rng.int(lo, hi), den));
     for (let tries = 0; tries < 500; tries++) {
       let outlier = null;
       if (c.out && c.out[level]) {
@@ -51,7 +65,7 @@
       }
       const vals = [];
       const normal = n - 1 - (outlier ? 1 : 0);
-      for (let i = 0; i < normal; i++) vals.push(new Frac(rng.int(lo, hi), den));
+      for (let i = 0; i < normal; i++) vals.push(draw());
       if (outlier) vals.push(outlier);
       const sum = vals.reduce((s, v) => s.add(v), new Frac(0));
       const cands = [];
@@ -124,10 +138,13 @@
       if (level >= 2) a = rich(a, "; Zentralwert ", num(med, { as: "dec" }), U);
       if (level === 3) {
         const up = outlier.cmp(mean) > 0;
-        a = rich(a, ". Der Zentralwert ist aussagekräftiger, denn der Ausreißer zieht den Mittelwert ", up ? "nach oben" : "nach unten", ".");
+        a = rich(
+          a,
+          `. Der Zentralwert ist aussagekräftiger, denn der Ausreißer ${fx(outlier)}${U} zieht den Mittelwert ${up ? "nach oben" : "nach unten"}.`,
+        );
       }
 
-      return { q, a, steps, check: { c, data, level, n } };
+      return { q, a, steps, check: { c, data, level, n, outlier } };
     },
     verify(t, level) {
       const k = t.check;
@@ -146,7 +163,10 @@
       if (!s.startsWith(base)) return `erwartet „${base}…“, steht „${s}“`;
       if (level === 1 && !mean.isInt()) return "Mittelwert nicht ganzzahlig";
       if (level === 2 && !mean.mul(10).isInt()) return "Mittelwert mit mehr als einer Nachkommastelle";
-      if (level === 3 && !s.includes("Zentralwert ist aussagekräftiger")) return "Antwort zur Aussagekraft fehlt";
+      if (level === 3) {
+        if (!s.includes("Zentralwert ist aussagekräftiger")) return "Antwort zur Aussagekraft fehlt";
+        if (!s.includes(`Ausreißer ${plain(fmtDec(k.outlier, k.c.dig[3]))}${U}`)) return "Ausreißer wird nicht konkret genannt";
+      }
       return true;
     },
   });

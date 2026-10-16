@@ -184,6 +184,7 @@
       const showSheet = state.view === "B" ? B : A;
       const mode = state.view === "answers" ? state.solmode : "worksheet";
       sheetEl.innerHTML = AG.sheetHtml(showSheet, m, mode, { merke: state.merke, workLines: state.work, interactive: mode === "worksheet" });
+      sheetEl.classList.toggle("sol", mode !== "worksheet");
       $("code").value = m.code;
       $("tabs").innerHTML = showSheet.parts.map((p, i) => `<button type="button" style="--pc: var(--part-${i})" data-jump="${i}" title="Teil ${p.label}: ${p.title}">${p.label}</button>`).join("");
       const n = (B ? 2 : 1);
@@ -250,6 +251,13 @@
       if (part) { part.scrollIntoView({ block: "nearest" }); part.classList.remove("flash"); void part.offsetWidth; part.classList.add("flash"); }
     };
     $("download").onclick = download;
+    // Teil im Blatt <-> Karte im Bauplan
+    $("sheet").addEventListener("mouseover", e => {
+      const sec = e.target.closest("[data-part]");
+      document.querySelectorAll(".part.hot").forEach(p => p.classList.remove("hot"));
+      if (sec) { const card = $("part-" + sec.dataset.part); if (card) card.classList.add("hot"); }
+    });
+    $("sheet").addEventListener("mouseleave", () => document.querySelectorAll(".part.hot").forEach(p => p.classList.remove("hot")));
   }
 
   async function download() {

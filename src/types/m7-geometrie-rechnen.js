@@ -36,24 +36,40 @@
         a = rich(`γ = ${ga}°`);
         exp = [ga];
       } else if (level === 2) {
-        if (rng.chance(0.5)) {
-          // gleichschenklig: zwei Basiswinkel gleich groß
-          const b = rng.int(20, 80);
-          al = b; be = b; ga = 180 - 2 * b;
-          q = rich(`Ein gleichschenkliges Dreieck hat an der Basis zwei gleich große Winkel mit je ${b}°. Berechne den Winkel an der Spitze.`);
-          steps = [rich(`2 · ${b}° = ${2 * b}°`), rich(`180° − ${2 * b}° = ${ga}°`)];
-          a = rich(`Winkel an der Spitze = ${ga}°`);
-          exp = [ga];
-        } else {
+        const v = rng.int(0, 3);
+        if (v === 0) {
           // rechtwinklig: γ = 90°, α gegeben
           al = rng.int(15, 80); ga = 90; be = 90 - al;
           q = rich(`Ein rechtwinkliges Dreieck hat einen rechten Winkel γ = 90°. Der Winkel α misst ${al}°. Berechne β.`);
           steps = [rich("α + β = 180° − 90° = 90°"), rich(`β = 90° − ${al}° = ${be}°`)];
           a = rich(`β = ${be}°`);
           exp = [be];
+        } else if (v === 1) {
+          // gleichschenklig, Basiswinkel gegeben -> Spitzenwinkel gesucht
+          const b = rng.int(20, 80);
+          al = b; be = b; ga = 180 - 2 * b;
+          q = rich(`Ein gleichschenkliges Dreieck hat an der Basis zwei gleich große Winkel mit je ${b}°. Berechne den Winkel an der Spitze.`);
+          steps = [rich(`2 · ${b}° = ${2 * b}°`), rich(`180° − ${2 * b}° = ${ga}°`)];
+          a = rich(`Winkel an der Spitze = ${ga}°`);
+          exp = [ga];
+        } else if (v === 2) {
+          // gleichschenklig, Spitzenwinkel gegeben -> Basiswinkel gesucht
+          const s = 2 * rng.int(10, 70); // gerade Gradzahl, damit der Basiswinkel ganz ist
+          ga = s; al = (180 - s) / 2; be = al;
+          q = rich(`Ein gleichschenkliges Dreieck hat an der Spitze einen Winkel von ${s}°. Berechne einen Basiswinkel.`);
+          steps = [rich(`180° − ${s}° = ${180 - s}°`), rich(`${180 - s}° : 2 = ${al}°`)];
+          a = rich(`Basiswinkel = ${al}°`);
+          exp = [al];
+        } else {
+          // gleichseitig: alle Winkel gleich groß
+          al = 60; be = 60; ga = 60;
+          q = rich("Ein gleichseitiges Dreieck hat drei gleich große Winkel. Berechne den Winkel α. Hinweis: Im gleichseitigen Dreieck sind alle Winkel gleich groß.");
+          steps = [rich("α = β = γ, also 3 · α = 180°"), rich("α = 180° : 3 = 60°")];
+          a = rich("α = 60°");
+          exp = [60];
         }
       } else {
-        // Winkel als Term; γ oder ein Winkel ist gegeben
+        // Winkel als Term; ein Winkel ist ein Vielfaches oder Summe eines anderen
         if (rng.chance(0.5)) {
           // α ist k-mal so groß wie β
           const k = rng.pick([2, 3]);
@@ -105,7 +121,36 @@
   });
 
   // ---------- 5. Maßstab ----------
-  const PLACE = ["Auf einer Wanderkarte", "Auf einer Landkarte", "Auf einem Stadtplan"];
+  // Niveau 1: Grundriss, Lageplan, Stadtplan (Maßstab 1 : 100 bis 1 : 10 000), Umrechnung in m
+  const ORT_L1 = [
+    { N: 100, ort: "Auf dem Grundriss" },
+    { N: 1000, ort: "Auf dem Lageplan" },
+    { N: 10000, ort: "Auf dem Stadtplan" },
+  ];
+  // Niveau 2: Stadtplan, Wanderkarte, Straßenkarte; Längen mit einer Nachkommastelle (Zehntel-cm)
+  const ints = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => (a + i) * 10);
+  const halves = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => (a + i) * 10 + 5);
+  const ORT_L2 = [
+    { N: 20000, ort: "Auf dem Stadtplan", cs: [...ints(1, 15), ...halves(1, 12)] },
+    { N: 25000, ort: "Auf der Wanderkarte", cs: ints(1, 15) },
+    { N: 50000, ort: "Auf der Wanderkarte", cs: [...ints(1, 15), ...halves(1, 8)] },
+    { N: 200000, ort: "Auf der Straßenkarte", cs: [...ints(1, 12), ...halves(1, 6)] },
+  ];
+  const FRAGE_KM = [
+    "Wie lang ist die Strecke in Wirklichkeit (in km)?",
+    "Wie lang ist die Strecke in Wirklichkeit? Gib das Ergebnis in km an.",
+  ];
+  // Niveau 3: Bauplan bis Straßenkarte
+  const ORT_L3 = [
+    { N: 50, ort: "Auf dem Bauplan" },
+    { N: 100, ort: "Auf dem Grundriss" },
+    { N: 1000, ort: "Auf dem Lageplan" },
+    { N: 10000, ort: "Auf dem Stadtplan" },
+    { N: 20000, ort: "Auf dem Stadtplan" },
+    { N: 25000, ort: "Auf der Wanderkarte" },
+    { N: 50000, ort: "Auf der Wanderkarte" },
+    { N: 200000, ort: "Auf der Straßenkarte" },
+  ];
 
   AG.registerType({
     id: "m7-masstab",
@@ -125,49 +170,54 @@
     ],
     cols: 2,
     generate(rng, level) {
-      const place = rng.pick(PLACE);
       let q, a, steps, check;
 
       if (level === 1) {
-        const N = rng.pick([100, 1000, 10000]);
-        const c = rng.int(2, 12);
-        const Rm = (c * N) / 100; // Wirklichkeit in m, immer ganzzahlig
+        const { N, ort } = rng.pick(ORT_L1);
+        const c = new Frac(rng.int(2, 12));
+        const Rm = c.mul(N).div(100); // Wirklichkeit in m, ganzzahlig
         if (rng.chance(0.5)) {
-          q = rich(`${place} ist eine Strecke ${c} cm lang. Der Maßstab ist 1 : ${fmtInt(N)}. Wie lang ist die Strecke in Wirklichkeit (in m)?`);
-          steps = [rich(`${c} cm · ${fmtInt(N)} = ${fmtInt(c * N)} cm`), rich(`${fmtInt(c * N)} cm : 100 = ${fmtInt(Rm)} m`)];
-          a = rich(`${fmtInt(Rm)} m`);
+          q = rich(`${ort} ist eine Strecke ${fmtDec(c)} cm lang. Der Maßstab ist 1 : ${fmtInt(N)}. Wie lang ist die Strecke in Wirklichkeit (in m)?`);
+          steps = [rich(`${fmtDec(c)} cm · ${fmtInt(N)} = ${fmtInt(c.n * N)} cm`), rich(`${fmtInt(c.n * N)} cm : 100 = ${fmtInt(Rm.n)} m`)];
+          a = rich(`${fmtInt(Rm.n)} m`);
           check = { kind: "karte", c, N, div: 100, unit: "m" };
         } else {
-          q = rich(`Eine Strecke ist in Wirklichkeit ${fmtInt(Rm)} m lang. Wie lang ist sie auf der Karte mit dem Maßstab 1 : ${fmtInt(N)} (in cm)?`);
-          steps = [rich(`${fmtInt(Rm)} m = ${fmtInt(Rm * 100)} cm`), rich(`${fmtInt(Rm * 100)} cm : ${fmtInt(N)} = ${c} cm`)];
-          a = rich(`${c} cm`);
-          check = { kind: "wirk", c, N, real: new Frac(Rm), div: 100, unit: "m" };
+          q = rich(`Eine Strecke ist in Wirklichkeit ${fmtInt(Rm.n)} m lang. Wie lang ist sie auf der Karte mit dem Maßstab 1 : ${fmtInt(N)} (in cm)?`);
+          steps = [rich(`${fmtInt(Rm.n)} m = ${fmtInt(Rm.n * 100)} cm`), rich(`${fmtInt(Rm.n * 100)} cm : ${fmtInt(N)} = ${fmtDec(c)} cm`)];
+          a = rich(`${fmtDec(c)} cm`);
+          check = { kind: "wirk", c, N, real: Rm, div: 100, unit: "m" };
         }
       } else if (level === 2) {
-        const N = rng.pick([25000, 50000]);
-        const c = N === 25000 ? rng.pick([2, 4, 6, 8, 10, 12]) : rng.int(1, 10);
-        const R = new Frac(c * N, 100000); // Wirklichkeit in km
+        const grp = rng.pick(ORT_L2);
+        const N = grp.N;
+        const c = new Frac(rng.pick(grp.cs), 10); // Karte in cm, eine Nachkommastelle möglich
+        const cN = c.mul(N);                        // Wirklichkeit in cm
+        const R = cN.div(100000);                   // Wirklichkeit in km
         if (rng.chance(0.5)) {
-          q = rich(`${place} ist eine Strecke ${c} cm lang. Der Maßstab ist 1 : ${fmtInt(N)}. Wie lang ist die Strecke in Wirklichkeit (in km)?`);
-          steps = [rich(`${c} cm · ${fmtInt(N)} = ${fmtInt(c * N)} cm`), rich(`${fmtInt(c * N)} cm : 100 000 = ${fmtDec(R)} km`)];
+          q = rich(`${grp.ort} ist eine Strecke ${fmtDec(c)} cm lang. Der Maßstab ist 1 : ${fmtInt(N)}. ${rng.pick(FRAGE_KM)}`);
+          steps = [rich(`${fmtDec(c)} cm · ${fmtInt(N)} = ${fmtDec(cN)} cm`), rich(`${fmtDec(cN)} cm : 100 000 = ${fmtDec(R)} km`)];
           a = rich(`${fmtDec(R)} km`);
           check = { kind: "karte", c, N, div: 100000, unit: "km" };
         } else {
           q = rich(`Eine Strecke ist in Wirklichkeit ${fmtDec(R)} km lang. Wie lang ist sie auf der Karte mit dem Maßstab 1 : ${fmtInt(N)} (in cm)?`);
-          steps = [rich(`${fmtDec(R)} km = ${fmtInt(c * N)} cm`), rich(`${fmtInt(c * N)} cm : ${fmtInt(N)} = ${c} cm`)];
-          a = rich(`${c} cm`);
+          steps = [rich(`${fmtDec(R)} km = ${fmtDec(cN)} cm`), rich(`${fmtDec(cN)} cm : ${fmtInt(N)} = ${fmtDec(c)} cm`)];
+          a = rich(`${fmtDec(c)} cm`);
           check = { kind: "wirk", c, N, real: R, div: 100000, unit: "km" };
         }
       } else {
         if (rng.chance(0.5)) {
           // Maßstab aus Karten- und Naturlänge
-          const N = rng.pick([5000, 10000, 20000, 25000, 40000, 50000, 75000, 100000]);
-          const c = rng.pick([2, 3, 4, 5, 6, 8, 10]);
-          const Rm = (c * N) / 100;
-          q = rich(`${place} misst die Strecke ${c} cm. In Wirklichkeit ist sie ${fmtInt(Rm)} m lang. Bestimme den Maßstab.`);
-          steps = [rich(`${fmtInt(Rm)} m = ${fmtInt(Rm * 100)} cm`), rich(`${fmtInt(Rm * 100)} cm : ${c} cm = ${fmtInt(N)}`)];
+          const { N, ort } = rng.pick(ORT_L3);
+          const c = new Frac(rng.pick([2, 3, 4, 5, 6, 8, 10]));
+          const big = N >= 20000; // große Maßstäbe: Wirklichkeit in km, sonst in m
+          const unit = big ? "km" : "m";
+          const div = big ? 100000 : 100;
+          const R = c.mul(N).div(div);    // Wirklichkeit in der gewählten Einheit
+          const Rcm = R.mul(div);         // ... und in cm
+          q = rich(`${ort} misst die Strecke ${fmtDec(c)} cm. In Wirklichkeit ist sie ${fmtDec(R)} ${unit} lang. Bestimme den Maßstab.`);
+          steps = [rich(`${fmtDec(R)} ${unit} = ${fmtDec(Rcm)} cm`), rich(`${fmtDec(Rcm)} cm : ${fmtDec(c)} cm = ${fmtInt(N)}`)];
           a = rich(`Maßstab 1 : ${fmtInt(N)}`);
-          check = { kind: "best", c, N, Rm };
+          check = { kind: "best", c, Rcm };
         } else {
           // Vergrößerungsmaßstab, z. B. 20 : 1 bei Insekten
           let R, F, I;
@@ -191,20 +241,20 @@
       const s = plain(t.a);
       switch (k.kind) {
         case "karte": {
-          // Wirklichkeit = Karte · N, umgerechnet in km (bzw. m)
-          const real = new Frac(k.c).mul(k.N).div(k.div);
+          // Wirklichkeit = Karte · N, umgerechnet in km bzw. m
+          const real = k.c.mul(k.N).div(k.div);
           const exp = `${fmtDec(real)} ${k.unit}`;
           return s === exp || `erwartet „${exp}“, steht „${s}“`;
         }
         case "wirk": {
-          // Karte = Wirklichkeit · 100 cm / N
+          // Karte = Wirklichkeit · 100 000 cm / N (bzw. 100 cm / N)
           const cm = k.real.mul(k.div).div(k.N);
           if (!cm.eq(k.c)) return "Kartenlänge stimmt nicht";
-          const exp = `${k.c} cm`;
+          const exp = `${fmtDec(k.c)} cm`;
           return s === exp || `erwartet „${exp}“, steht „${s}“`;
         }
         case "best": {
-          const N = new Frac(k.Rm).mul(100).div(k.c);
+          const N = k.Rcm.div(k.c);
           const exp = `Maßstab 1 : ${fmtInt(N.n)}`;
           return s === exp || `erwartet „${exp}“, steht „${s}“`;
         }
