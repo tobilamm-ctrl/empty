@@ -5886,22 +5886,32 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   }
 
   const CTX_G = [
-    { xl: "Menge in kg", yl: "Preis in €", xu: "kg", intro: "Auf dem Markt kosten Äpfel überall gleich viel. Der Graph zeigt den Preis für Äpfel." },
-    { xl: "Menge in l", yl: "Preis in €", xu: "l", intro: "Im Hofladen wird Milch nach Litern verkauft. Der Graph zeigt den Preis für Milch." },
-    { xl: "Länge in m", yl: "Preis in €", xu: "m", intro: "Im Stoffladen kostet der Stoff pro Meter immer gleich viel. Der Graph zeigt den Preis." },
+    { xl: "Menge in kg", yl: "Preis in €", xu: "kg", rates: [2, 3, 4], intro: "Am Obststand kosten Äpfel je kg überall gleich viel. Der Graph zeigt den Preis." },
+    { xl: "Menge in kg", yl: "Preis in €", xu: "kg", rates: [4, 5, 6, 7], intro: "Am Erdbeerstand kostet ein kg Erdbeeren immer gleich viel. Der Graph zeigt den Preis." },
+    { xl: "Menge in kg", yl: "Preis in €", xu: "kg", rates: [4, 5, 6], intro: "Auf dem Wochenmarkt kosten Kirschen je kg gleich viel. Der Graph zeigt den Preis." },
+    { xl: "Länge in m", yl: "Preis in €", xu: "m", rates: [1, 2, 3], intro: "Im Bastelladen kostet das Band pro Meter immer gleich viel. Der Graph zeigt den Preis." },
+  ];
+
+  // Niveau 3, Variante Grundgebühr: Grundgebühr g und Preis pro Einheit r, verschiedene Kontexte
+  const CTX_FEE = [
+    { xl: "Zeit in h", xu: "h", intro: (g, r) => `Ein Fahrradverleih verlangt eine Grundgebühr von ${g} € und danach ${r} € pro Stunde.` },
+    { xl: "Strecke in km", xu: "km", intro: (g, r) => `Ein Taxi verlangt einen Grundpreis von ${g} € und danach ${r} € pro Kilometer.` },
+    { xl: "Datenvolumen in GB", xu: "GB", intro: (g, r) => `Ein Handytarif kostet im Monat eine Grundgebühr von ${g} € und danach ${r} € pro GB.` },
+    { xl: "Zeit in h", xu: "h", intro: (g, r) => `Eine Kletterhalle verlangt eine Leihgebühr von ${g} € für das Kletterzeug und danach ${r} € Eintritt pro Stunde.` },
+    { xl: "Parkdauer in h", xu: "h", intro: (g, r) => `Ein Parkhaus verlangt eine Einfahrtgebühr von ${g} € und danach ${r} € pro Stunde.` },
   ];
 
   function genGraph(rng, level) {
     const c = rng.pick(CTX_G);
     if (level < 3) {
-      const r = rng.pick([2, 3, 4, 5]);
+      const r = rng.pick(c.rates);
       const base = { xMax: 8, yMax: 8 * r, yStep: r, xl: c.xl, yl: c.yl, lines: [{ g: 0, r }] };
       if (level === 1) {
         const [x1, x2] = rng.shuffle([2, 3, 4, 5, 6, 7, 8]).slice(0, 2);
         const k = rng.pick([2, 3, 4, 5, 6, 7, 8].filter(v => v !== x1 && v !== x2));
         const marks = [[x1, r * x1], [x2, r * x2], [k, r * k]];
         return {
-          q: rich(c.intro, ` Lies am Graphen ab: a) Was kostet ${x1} ${c.xu}? b) Was kostet ${x2} ${c.xu}? c) Welche Menge (in ${c.xu}) bekommt man für ${r * k} €?`),
+          q: rich(c.intro, ` Lies am Graphen ab: a) Was kosten ${x1} ${c.xu}? b) Was kosten ${x2} ${c.xu}? c) Welche Menge (in ${c.xu}) bekommt man für ${r * k} €?`),
           a: rich(`a) ${r * x1} €; b) ${r * x2} €; c) ${k} ${c.xu}`),
           steps: [
             rich(`${x1} ${c.xu} → ${r * x1} €`),
@@ -5928,20 +5938,24 @@ table.vt td.red { color: var(--red); font-weight: 700; }
         check: { expect: [String(p1), String(p2)] },
       };
     }
-    // Niveau 3: zwei Angebote oder Graph mit Grundgebühr (nicht proportional)
-    const ax = { xMax: 10, yMax: 40, yStep: 4, xl: "Menge in kg", yl: "Preis in €" };
+    // Niveau 3: zwei Angebote oder Graph mit Grundgebühr (nicht proportional), jeweils die Hälfte
+    const ax = { xMax: 10, yMax: 50, yStep: 4, xl: "Menge in kg", yl: "Preis in €" };
+    const who = rng.pick(["Lena", "Max", "Aylin", "Jonas", "Mia", "Elias"]);
     if (rng.chance(0.5)) {
+      const prod = rng.pick([
+        { n: "Äpfel", rates: [2, 3, 4] },
+        { n: "Erdbeeren", rates: [4, 5] },
+        { n: "Kartoffeln", rates: [1, 2, 3] },
+      ]);
       let r1, r2;
-      do { r1 = rng.pick([2, 3, 4]); r2 = rng.pick([2, 3, 4]); } while (r1 === r2);
+      do { r1 = rng.pick(prod.rates); r2 = rng.pick(prod.rates); } while (r1 === r2);
       const pA = 8 * r1, pB = 8 * r2, diff = Math.abs(pA - pB);
       const [nA, nB] = rng.pick([["Laden A", "Laden B"], ["Markt Nord", "Markt Süd"], ["Bioladen", "Supermarkt"]]);
       const base = { ...ax, lines: [{ g: 0, r: r1, color: INK }, { g: 0, r: r2, color: BLUE }],
         legend: [{ t: nA, color: INK }, { t: nB, color: BLUE }] };
-      const who = rng.pick(["Lena", "Max", "Aylin", "Jonas", "Mia", "Elias"]);
-      const what = rng.pick(["Äpfel", "Kartoffeln", "Bananen"]);
       const winner = r1 < r2 ? nA : nB;
       return {
-        q: rich(`${who} möchte ${what} kaufen. Der Graph zeigt die Preise in zwei Läden (${nA} und ${nB}). a) Was kosten 8 kg in ${nA} und in ${nB}? b) Wie viel spart ${who} bei 8 kg im günstigeren Laden?`),
+        q: rich(`${who} möchte ${prod.n} kaufen. Der Graph zeigt die Preise in zwei Läden (${nA} und ${nB}). a) Was kosten 8 kg in ${nA} und in ${nB}? b) Wie viel spart ${who} bei 8 kg im günstigeren Laden?`),
         a: rich(`a) ${nA}: ${pA} €; ${nB}: ${pB} €. b) ${winner} ist günstiger, man spart ${diff} €.`),
         steps: [
           rich(`${nA}: 8 · ${r1} € = ${pA} €`),
@@ -5952,16 +5966,17 @@ table.vt td.red { color: var(--red); font-weight: 700; }
         check: { expect: [String(pA), String(pB), String(diff)] },
       };
     }
-    const g = rng.pick([4, 8]), r = rng.pick([2, 3]);
+    const K = rng.pick(CTX_FEE);
+    const g = rng.pick([4, 8]), r = rng.pick([1, 2, 3]);
     const P4 = g + 4 * r, P8 = g + 8 * r;
     const q4 = plain(num(new Frac(P4, 4), { as: "dec" })), q8 = plain(num(new Frac(P8, 8), { as: "dec" }));
-    const base = { ...ax, xl: "Zeit in h", yl: "Kosten in €", lines: [{ g, r }] };
+    const base = { ...ax, xl: K.xl, yl: "Kosten in €", lines: [{ g, r }] };
     return {
-      q: rich(`Ein Fahrradverleih verlangt eine Grundgebühr von ${g} € und danach ${r} € pro Stunde. Der Graph zeigt die Kosten. a) Lies die Kosten für 4 h und 8 h ab. b) Ist die Zuordnung proportional? Begründe mit den Quotienten y : x.`),
-      a: rich(`a) 4 h: ${P4} €; 8 h: ${P8} €. b) Nicht proportional, denn ${P4} : 4 = ${q4} und ${P8} : 8 = ${q8} sind verschieden.`),
+      q: rich(`${who} informiert sich. ${K.intro(g, r)} Der Graph zeigt die Kosten. a) Lies die Kosten für 4 ${K.xu} und 8 ${K.xu} ab. b) Ist die Zuordnung proportional? Begründe mit den Quotienten y : x.`),
+      a: rich(`a) 4 ${K.xu}: ${P4} €; 8 ${K.xu}: ${P8} €. b) Nicht proportional, denn ${P4} : 4 = ${q4} und ${P8} : 8 = ${q8} sind verschieden.`),
       steps: [
-        rich(`4 h: ${g} € + 4 · ${r} € = ${P4} €`),
-        rich(`8 h: ${g} € + 8 · ${r} € = ${P8} €`),
+        rich(`4 ${K.xu}: ${g} € + 4 · ${r} € = ${P4} €`),
+        rich(`8 ${K.xu}: ${g} € + 8 · ${r} € = ${P8} €`),
         rich(`Quotienten: ${P4} : 4 = ${q4}; ${P8} : 8 = ${q8}`),
       ],
       ...figs(base, [[4, P4, INK], [8, P8, INK]]), inline: false,
@@ -6279,9 +6294,8 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   // ---------- 4. Überschlagen ----------
   const OPS = { "+": (a, b) => a.add(b), "-": (a, b) => a.sub(b), "*": (a, b) => a.mul(b), "/": (a, b) => a.div(b) };
   const OPSYM = { "+": " + ", "-": " " + MINUS + " ", "*": " · ", "/": " : " };
-  const PREC = { "+": 1, "-": 1, "*": 2, "/": 2 };
 
-  // Auf eine wertvolle Ziffer runden (48,7 → 50; 3,1 → 3; 0,34 → 0,3)
+  // Auf eine geltende Ziffer runden (48,7 → 50; 396 → 400; 7,9 → 8; 0,34 → 0,3)
   function estimate(f) {
     if (f.n === 0) return f;
     const a = Math.abs(f.n / f.d);
@@ -6293,7 +6307,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
 
   // Zahl im Ausdruck; ab dem zweiten Glied negative Zahlen in Klammern
   const opnd = (f, first) => num(f, { as: "dec", paren: !first });
-  // Ausdruck links nach rechts (nur wenn die Rangfolge keine Rolle spielt)
+  // Ausdruck links nach rechts (Rangfolge wird vorher geprüft)
   function exprRich(vals, ops) {
     const parts = [opnd(vals[0], true)];
     ops.forEach((o, i) => parts.push(OPSYM[o], opnd(vals[i + 1], false)));
@@ -6304,48 +6318,48 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     ops.forEach((o, i) => { r = OPS[o](r, vals[i + 1]); });
     return r;
   }
-  const dec1 = rng => (rng.chance(0.5) ? new Frac(rng.int(1, 99), 10).neg() : new Frac(rng.int(1, 99), 10));
-  const int2 = rng => new Frac(rng.signedInt(2, 40));
+
+  // krumme Zahl: ganz (11–499) oder mit einer Nachkommastelle, nie schon rund (Rundung ändert sie)
+  function krumm(rng) {
+    for (;;) {
+      const v = rng.chance(0.5) ? new Frac(rng.int(11, 499)) : new Frac(rng.int(11, 499), 10);
+      if (!estimate(v).eq(v)) return rng.chance(0.5) ? v.neg() : v;
+    }
+  }
 
   function genCalc(rng, level) {
-    for (let i = 0; i < 500; i++) {
-      const n = level === 1 ? 2 : 3;
-      const vals = [], ops = [];
-      for (let j = 0; j < n; j++) {
-        if (level === 1) vals.push(rng.chance(0.5) ? dec1(rng) : int2(rng));
-        else vals.push(dec1(rng));
-        if (j > 0) ops.push(level === 1 ? rng.pick(["+", "-", "*", "/"]) : rng.pick(["+", "-", "*"]));
-      }
-      if (level === 1 && ops[0] === "/") {
-        // Division nur mit ganzzahligem Teiler und ganzer Zahl davor
-        vals[1] = new Frac(rng.signedInt(2, 12));
-        vals[0] = new Frac(vals[1].n * rng.signedInt(2, 9));
-      }
-      if (level > 1 && ops[0] !== "*" && ops[1] === "*") continue; // Punkt vor Strich: nicht links nach rechts
-      if (vals.some(v => v.n === 0)) continue;
-      if (level === 1 && (vals[0].abs().eq(vals[1].abs()) || vals[1].abs().eq(1))) continue;
-      const est = vals.map(estimate);
-      const E = evalLeft(est, ops);
+    const n = level === 1 ? 2 : 3;
+    for (let i = 0; i < 3000; i++) {
+      const vals = [];
+      for (let j = 0; j < n; j++) vals.push(krumm(rng));
+      const ops = [];
+      for (let j = 1; j < n; j++) ops.push(level === 1 ? rng.pick(["*", "/"]) : rng.pick(["+", "-", "*"]));
+      if (level > 1 && ops[0] !== "*" && ops[1] === "*") continue; // sonst nicht links nach rechts
+      const E = evalLeft(vals.map(estimate), ops);
       if (!E.isTerminating()) continue;
-      const estRich = exprRich(est, ops);
+      const X = evalLeft(vals, ops);
+      const xv = X.valueOf(), ev = E.valueOf();
+      if (!(Math.abs(xv) >= 1)) continue; // Ergebnisse nahe 0 sind für den Überschlag ungeeignet
+      if (!(Math.abs(ev - xv) / Math.abs(xv) <= 0.25)) continue; // Überschlag höchstens ca. 25 % daneben
+      const estRich = exprRich(vals.map(estimate), ops);
+      const Es = plain(num(E, { as: "dec" })), Xs = X.isTerminating() ? plain(num(X, { as: "dec" })) : null;
       if (level === 1) {
         return {
           q: rich("Überschlage: ", exprRich(vals, ops)),
           a: rich("≈ ", num(E, { as: "dec" })),
           steps: [rich("≈ ", estRich, " = ", num(E, { as: "dec" }))],
-          check: { E: plain(num(E, { as: "dec" })) },
+          check: { E: Es, Ef: ev, X: Xs, Xf: xv },
         };
       }
-      const X = evalLeft(vals, ops);
-      if (X.decimals() > 2 || Math.abs(X.valueOf()) > 500) continue;
       if (level === 2) {
         return {
           q: rich("Überschlage: ", exprRich(vals, ops)),
           a: rich("≈ ", num(E, { as: "dec" })),
           steps: [rich("≈ ", estRich, " = ", num(E, { as: "dec" }))],
-          check: { E: plain(num(E, { as: "dec" })) },
+          check: { E: Es, Ef: ev, X: Xs, Xf: xv },
         };
       }
+      if (!X.isTerminating() || X.decimals() > 2) continue;
       return {
         q: rich("Überschlage zuerst und rechne dann genau: ", exprRich(vals, ops)),
         a: rich("≈ ", num(E, { as: "dec" }), "; genau: ", num(X, { as: "dec" })),
@@ -6353,7 +6367,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
           rich("≈ ", estRich, " = ", num(E, { as: "dec" })),
           rich("genau: ", exprRich(vals, ops), " = ", num(X, { as: "dec" })),
         ],
-        check: { E: plain(num(E, { as: "dec" })), X: plain(num(X, { as: "dec" })) },
+        check: { E: Es, Ef: ev, X: Xs, Xf: xv },
       };
     }
     throw new Error("m7-ueberschlag: keine Aufgabe gefunden");
@@ -6367,12 +6381,12 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     lbTitle: "Rationale Zahlen – Rechenregeln",
     title: "Überschlagen",
     instruction: {
-      1: "Überschlage das Ergebnis. Runde die Zahlen sinnvoll.",
-      2: "Überschlage das Ergebnis. Runde die Zahlen sinnvoll.",
-      3: "Überschlage zuerst und rechne dann genau.",
+      1: "Überschlage das Ergebnis. Runde jede Zahl auf eine geltende Ziffer.",
+      2: "Überschlage das Ergebnis. Runde jede Zahl auf eine geltende Ziffer.",
+      3: "Überschlage zuerst, rechne dann genau und vergleiche.",
     },
     merke: [
-      "Beim Überschlagen rundet man jede Zahl auf eine wertvolle Ziffer und rechnet mit den gerundeten Zahlen. Beispiel: −48,7 · 3,1 ≈ −50 · 3 = −150.",
+      "Beim Überschlagen rundet man jede Zahl auf eine geltende Ziffer und rechnet mit den gerundeten Zahlen. Beispiel: −48,7 · 3,1 ≈ −50 · 3 = −150.",
     ],
     cols: 2,
     generate: genCalc,
@@ -6381,6 +6395,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       if (!c) return "kein Prüfdatensatz";
       const a = plain(t.a);
       if (!a.startsWith("≈ " + c.E)) return "Überschlag falsch: " + a;
+      if (!(Math.abs(c.Ef - c.Xf) / Math.abs(c.Xf) <= 0.25)) return "Überschlag weicht mehr als 25 % ab";
       if (level === 3 && !a.includes("; genau: " + c.X)) return "genaues Ergebnis falsch: " + a;
       return true;
     },
