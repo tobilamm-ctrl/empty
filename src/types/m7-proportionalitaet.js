@@ -77,7 +77,7 @@
           n = new Frac(nn); m = new Frac(mm);
         } else {
           const nk = rng.int(3, Math.min(kMax, 15));
-          const mk = rng.intExcept(2, Math.min(kMax, 20), [nk]);
+          const mk = rng.intExcept(3, Math.min(kMax, 20), [nk]); // mindestens 1,5 h bzw. 3 Stück: nie „1 Stunden“
           n = Q(nk); m = Q(mk);
         }
         const total = u.mul(n);
