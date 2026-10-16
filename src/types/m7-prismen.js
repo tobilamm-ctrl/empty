@@ -26,13 +26,13 @@
     const Fu = x => F(x, U);
     switch (kind) {
       case "rect": {
-        const { a, b } = d;
+        const { a, c } = d;
         return {
-          kind, name: "Quader", G: a.mul(b), u: a.add(b).mul(2),
-          pts: [[0, 0], [N(a), 0], [N(a), N(b)], [0, N(b)]],
-          sides: [{ i: 0, t: "a = " + Fu(a) }, { i: 3, t: "b = " + Fu(b) }],
+          kind, name: "Quader", G: a.mul(c), u: a.add(c).mul(2),
+          pts: [[0, 0], [N(a), 0], [N(a), N(c)], [0, N(c)]],
+          sides: [{ i: 0, t: "a = " + Fu(a) }, { i: 3, t: "c = " + Fu(c) }],
           dashed: [], inner: [], rights: [],
-          parts: ["Länge a = " + Fu(a), "Breite b = " + Fu(b)],
+          parts: ["Länge a = " + Fu(a), "Höhe c = " + Fu(c)],
         };
       }
       case "para": {
@@ -105,7 +105,7 @@
   // Flächen unabhängig nachrechnen (für verify)
   function areaOf(kind, d) {
     switch (kind) {
-      case "rect": return d.a.mul(d.b);
+      case "rect": return d.a.mul(d.c);
       case "para": return d.g.mul(d.h);
       case "tri": return d.g.mul(d.h).div(2);
       case "trap": return d.a.add(d.c).mul(d.h).div(2);
@@ -115,7 +115,7 @@
   }
   function perimOf(kind, d) {
     switch (kind) {
-      case "rect": return d.a.add(d.b).mul(2);
+      case "rect": return d.a.add(d.c).mul(2);
       case "para": return d.g.add(d.s).mul(2);
       case "tri": return d.g.add(d.sL).add(d.sR);
       case "trap": return d.a.add(d.c).add(d.s.mul(2));
@@ -125,7 +125,7 @@
   function perimTxt(kind, d, U) {
     const x = v => nf(v) + " " + U;
     switch (kind) {
-      case "rect": return `2 · (${x(d.a)} + ${x(d.b)})`;
+      case "rect": return `2 · (${x(d.a)} + ${x(d.c)})`;
       case "para": return `2 · (${x(d.g)} + ${x(d.s)})`;
       case "tri": return `${x(d.g)} + ${x(d.sL)} + ${x(d.sR)}`;
       case "trap": return `${x(d.a)} + ${x(d.c)} + 2 · ${x(d.s)}`;
@@ -136,7 +136,7 @@
   function gStep(b, d, U) {
     const sq = U + "²", G = nf(b.G);
     switch (b.kind) {
-      case "rect": return `G = ${nf(d.a)} ${U} · ${nf(d.b)} ${U} = ${G} ${sq}`;
+      case "rect": return `G = ${nf(d.a)} ${U} · ${nf(d.c)} ${U} = ${G} ${sq}`;
       case "para": return `G = ${nf(d.g)} ${U} · ${nf(d.h)} ${U} = ${G} ${sq}`;
       case "tri": return `G = ${nf(d.g)} ${U} · ${nf(d.h)} ${U} : 2 = ${G} ${sq}`;
       case "trap": return `G = (${nf(d.a)} ${U} + ${nf(d.c)} ${U}) · ${nf(d.h)} ${U} : 2 = ${G} ${sq}`;
@@ -146,50 +146,11 @@
   }
 
   // ---------- Skizze: gerades Prisma als Schrägbild ----------
-  // Grundfläche vorne in echter Form, Körperhöhe nach hinten rechts unter 45° und auf die Hälfte verkürzt.
-  // Sichtbar sind die vordere Fläche und Seitenflächen, die nach oben oder rechts zeigen.
-  // Verdeckte Kanten werden gestrichelt gezeichnet, aber dort ausgeblendet, wo sie hinter einer sichtbaren Fläche liegen.
-  function segParam(a, b, c, d) {
-    const r = [b[0] - a[0], b[1] - a[1]], s = [d[0] - c[0], d[1] - c[1]];
-    const den = r[0] * s[1] - r[1] * s[0];
-    if (Math.abs(den) < 1e-12) return null;
-    const qp = [c[0] - a[0], c[1] - a[1]];
-    const t = (qp[0] * s[1] - qp[1] * s[0]) / den;
-    const u = (qp[0] * r[1] - qp[1] * r[0]) / den;
-    return u >= -1e-9 && u <= 1 + 1e-9 ? t : null;
-  }
-  function inPoly(poly, p) {
-    let c = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-      const [xi, yi] = poly[i], [xj, yj] = poly[j];
-      if ((yi > p[1]) !== (yj > p[1]) && p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi) c = !c;
-    }
-    return c;
-  }
-  // Teilstrecken von a→b, die nicht innerhalb der Polygone liegen
-  function hiddenParts(a, b, polys) {
-    const ts = [0, 1];
-    for (const poly of polys) for (let i = 0; i < poly.length; i++) {
-      const t = segParam(a, b, poly[i], poly[(i + 1) % poly.length]);
-      if (t !== null && t > 1e-9 && t < 1 - 1e-9) ts.push(t);
-    }
-    ts.sort((x, y) => x - y);
-    const at = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-    const out = [];
-    for (let k = 0; k + 1 < ts.length; k++) {
-      const t0 = ts[k], t1 = ts[k + 1];
-      if (t1 - t0 < 1e-6) continue;
-      const pm = at((t0 + t1) / 2);
-      if (!polys.some(poly => inPoly(poly, pm))) out.push([at(t0), at(t1)]);
-    }
-    return out;
-  }
-
   // Anzahl der Treffer eines Textfelds (Mitte cx, cy) mit Linien, Rändern und bereits gesetzten Maßen
   function clashScore(cx, cy, w, h, segs, boxes, W, H) {
     const x0 = cx - w / 2 - 0.6, x1 = cx + w / 2 + 0.6, y0 = cy - h / 2 - 0.6, y1 = cy + h / 2 + 0.6;
     let hits = 0;
-    if (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5) hits += 50;
+    if (Number.isFinite(W) && (x0 < 0.5 || x1 > W - 0.5 || y0 < 0.5 || y1 > H - 0.5)) hits += 50;
     for (const [bx0, by0, bx1, by1] of boxes) if (x0 < bx1 && x1 > bx0 && y0 < by1 && y1 > by0) hits += 50;
     for (const [p, q] of segs) {
       const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L / 0.3));
@@ -257,71 +218,107 @@
     return [mx + nx * (size * 0.95 + reach), my + ny * (size * 0.95 + reach)];
   }
 
+  // Skizze eines geraden Prismas als Schrägbild (nicht maßstabsgetreu):
+  // Höhe der vorderen Grundfläche mindestens 45 % ihrer Breite, schräge Tiefe mindestens 35 % der Breite.
+  // Verdeckte Kanten sind immer gestrichelt. Die Zeichenfläche wird eng um die Figur gelegt (max. 75 × 50 mm).
   function prismSketch(b, len, lenText) {
-    const W = 72, H = 46;
-    const pts = b.pts, n = pts.length;
-    const k = 0.5 * SQ * len;                       // Tiefenvektor: 45°, Länge halbiert
+    const M = 2, MAXW = 75, MAXH = 50;
+    const minZ = Math.min(...b.pts.map(p => p[1])), maxZ = Math.max(...b.pts.map(p => p[1]));
+    const wF = Math.max(...b.pts.map(p => p[0])) - Math.min(...b.pts.map(p => p[0])), hF = maxZ - minZ;
+    const sy = hF < 0.45 * wF ? 0.45 * wF / hF : 1;
+    const T = p => [p[0], minZ + (p[1] - minZ) * sy];
+    const pts = b.pts.map(T), n = pts.length;
+    const Ld = Math.max(len, 0.7 * wF);             // gezeichnete Tiefe = Ld/2 ≥ 35 % der Breite
+    const k = 0.5 * SQ * Ld;
     const back = pts.map(p => [p[0] + k, p[1] + k]);
     // Seitenfläche i (Kante i→i+1) ist sichtbar, wenn ihre Normale nach oben oder rechts zeigt
     const vis = pts.map((p, i) => { const q = pts[(i + 1) % n]; return (q[1] - p[1]) - (q[0] - p[0]) > -1e-9; });
-    // Maßstab mit Platz links (Seitenmaße), rechts (Körperhöhe), oben und unten
-    const padL = 22, padR = 24, padT = 9, padB = 9;
     const all = pts.concat(back);
     const minX = Math.min(...all.map(p => p[0])), maxX = Math.max(...all.map(p => p[0]));
     const minY = Math.min(...all.map(p => p[1])), maxY = Math.max(...all.map(p => p[1]));
-    const areaW = W - padL - padR, areaH = H - padT - padB;
-    const sc = Math.min(areaW / ((maxX - minX) || 1), areaH / ((maxY - minY) || 1));
-    const ox = padL + (areaW - (maxX - minX) * sc) / 2, oy = padB + (areaH - (maxY - minY) * sc) / 2;
-    const f = p => [ox + (p[0] - minX) * sc, H - oy - (p[1] - minY) * sc];
-    const P = pts.map(f), B = back.map(f), S = AG.sketch(W, H);
-    const segs = [];
-    const line = (a, c, o) => { S.line(a, c, o); segs.push([a, c]); };
-    const occ = [P];
-    vis.forEach((v, i) => { if (v) occ.push([P[i], P[(i + 1) % n], B[(i + 1) % n], B[i]]); });
-    const hidden = (a, c) => hiddenParts(a, c, occ).forEach(([x, y]) => line(x, y, { dash: true }));
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      if (vis[i]) line(B[i], B[j]); else hidden(B[i], B[j]);
+    const C0 = [pts.reduce((s, p) => s + p[0], 0) / n, pts.reduce((s, p) => s + p[1], 0) / n];
+    const dashed = b.dashed.map(([a, c]) => [T(a), T(c)]);
+    const rights = b.rights.map(r => r.map(T));
+    const inner = b.inner.map(o => ({ t: o.t, line: o.line.map(T) }));
+
+    // Zeichnen mit Maßstab sc und Verschiebung (ox, oy); W, H = Infinity: ohne Randprüfung
+    function build(sc, ox, oy, W, H) {
+      const f = p => [ox + (p[0] - minX) * sc, oy + (maxY - p[1]) * sc];
+      const P = pts.map(f), B = back.map(f), S = AG.sketch(W, H);
+      const segs = [], boxes = [];
+      const line = (a, c, o) => { S.line(a, c, o); segs.push([a, c]); };
+      const C = f(C0);
+      S.poly(P);                                     // vordere Fläche hellblau
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        line(B[i], B[j], vis[i] ? undefined : { dash: true });
+      }
+      for (let j = 0; j < n; j++) {
+        line(P[j], B[j], (vis[j] || vis[(j - 1 + n) % n]) ? undefined : { dash: true });
+      }
+      for (let i = 0; i < n; i++) segs.push([P[i], P[(i + 1) % n]]);
+      dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
+      rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
+      // Seitenmaße: waagrechte obere Kante über die hintere Kante bemaßen (liegt sonst auf der Fläche)
+      b.sides.forEach(({ i, t }) => {
+        const j = (i + 1) % n;
+        const top = vis[i] && Math.abs(pts[j][1] - pts[i][1]) < 1e-9;
+        const ea = top ? B[i] : P[i], eb = top ? B[j] : P[j];
+        const [cx, cy] = sideSpot(ea, eb, t, C, segs, boxes, W, H);
+        S.label([cx, cy], t, { anchor: "middle" });
+        const w = t.length * 3.4 * 0.56;
+        boxes.push([cx - w / 2 - 0.5, cy - 2.2, cx + w / 2 + 0.5, cy + 2.2]);
+      });
+      inner.forEach(o => {
+        const q = freeSpot(o.t, o.line, f, segs, boxes, W, H);
+        S.label(q, o.t, { anchor: "middle" });
+        const w = o.t.length * 3.4 * 0.56;
+        boxes.push([q[0] - w / 2 - 0.5, q[1] - 2.2, q[0] + w / 2 + 0.5, q[1] + 2.2]);
+      });
+      // Körperhöhe (bzw. Breite b): rechts neben der Figur, auf Höhe der Kantenmitte der äußersten rechten Ecke
+      let j = 0;
+      pts.forEach((p, i) => { if (p[0] > pts[j][0] + 1e-9 || (Math.abs(p[0] - pts[j][0]) < 1e-9 && p[1] > pts[j][1])) j = i; });
+      const m = [(P[j][0] + B[j][0]) / 2, (P[j][1] + B[j][1]) / 2];
+      const rightX = Math.max(...B.map(p => p[0]), ...P.map(p => p[0]));
+      const lx = rightX + 1.8, ly = m[1] + 1.2, lw = lenText.length * 3.4 * 0.56;
+      S.label([lx, ly], lenText, { anchor: "start" });
+      boxes.push([lx - 0.5, ly - 2.2, lx + lw + 0.5, ly + 2.2]);
+      return { S, segs, boxes };
     }
-    for (let j = 0; j < n; j++) {
-      if (vis[j] || vis[(j - 1 + n) % n]) line(P[j], B[j]); else hidden(P[j], B[j]);
+    const bounds = r => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+      r.segs.forEach(([p, q]) => { add(p[0], p[1]); add(q[0], q[1]); });
+      r.boxes.forEach(([a, c, d2, e]) => { add(a, c); add(d2, e); });
+      return { x0, y0, x1, y1 };
+    };
+    // Maßstab so wählen, dass Figur mit Maßen die Zeichenfläche ausfüllt
+    let sc = Math.min(60 / ((maxX - minX) || 1), 36 / ((maxY - minY) || 1));
+    for (let it = 0; it < 8; it++) {
+      const bb = bounds(build(sc, 0, 0, Infinity, Infinity));
+      const fit = Math.min((MAXW - 2 * M) / (bb.x1 - bb.x0), (MAXH - 2 * M) / (bb.y1 - bb.y0));
+      sc *= fit;
+      if (Math.abs(fit - 1) < 0.005) break;
     }
-    for (let i = 0; i < n; i++) segs.push([P[i], P[(i + 1) % n]]);
-    S.poly(P);
-    const C = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
-    b.dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
-    b.rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
-    // Seitenmaße: waagerechte obere Kante über die hintere Kante bemaßen (liegt sonst auf der Fläche)
-    const boxes = [];
-    b.sides.forEach(({ i, t }) => {
-      const j = (i + 1) % n;
-      const top = vis[i] && Math.abs(pts[j][1] - pts[i][1]) < 1e-9;
-      const ea = top ? B[i] : P[i], eb = top ? B[j] : P[j];
-      const [cx, cy] = sideSpot(ea, eb, t, C, segs, boxes, W, H);
-      S.label([cx, cy], t, { anchor: "middle" });
-      const w = t.length * 3.4 * 0.56;
-      boxes.push([cx - w / 2 - 0.5, cy - 2.2, cx + w / 2 + 0.5, cy + 2.2]);
-    });
-    b.inner.forEach(o => {
-      const q = freeSpot(o.t, o.line, f, segs, boxes, W, H);
-      S.label(q, o.t, { anchor: "middle" });
-      const w = o.t.length * 3.4 * 0.56;
-      boxes.push([q[0] - w / 2 - 0.5, q[1] - 2.2, q[0] + w / 2 + 0.5, q[1] + 2.2]);
-    });
-    // Körperhöhe: rechts neben der Figur, auf Höhe der Kantenmitte der äußersten rechten Ecke
-    let j = 0;
-    pts.forEach((p, i) => { if (p[0] > pts[j][0] + 1e-9 || (Math.abs(p[0] - pts[j][0]) < 1e-9 && p[1] > pts[j][1])) j = i; });
-    const m = [(P[j][0] + B[j][0]) / 2, (P[j][1] + B[j][1]) / 2];
-    const rightX = Math.max(...B.map(p => p[0]), ...P.map(p => p[0]));
-    S.label([rightX + 1.8, m[1] + 1.2], lenText, { anchor: "start" });
-    return S.done();
+    for (let g = 0; g < 40; g++) {
+      const bb = bounds(build(sc, 0, 0, Infinity, Infinity));
+      if (bb.x1 - bb.x0 <= MAXW - 2 * M && bb.y1 - bb.y0 <= MAXH - 2 * M) break;
+      sc *= 0.98;
+    }
+    const bb = bounds(build(sc, 0, 0, Infinity, Infinity));
+    const W = bb.x1 - bb.x0 + 2 * M, H = bb.y1 - bb.y0 + 2 * M;
+    return build(sc, M - bb.x0, M - bb.y0, W, H).S.done();
   }
+
+  // Körperhöhe bzw. beim Quader die Breite b (schräg nach hinten)
+  const lenSym = kind => (kind === "rect" ? "b" : "hk");
+  const lenWord = kind => (kind === "rect" ? "Breite b" : "Körperhöhe hk");
 
   // ---------- Volumen ----------
   function volDims(rng, kind, dec) {
     const v = (lo, hi) => dec ? tn(rng, lo * 10, hi * 10) : iv(rng, lo, hi);
     switch (kind) {
-      case "rect": return { a: v(3, 12), b: v(2, 9) };
+      case "rect": return { a: v(3, 12), c: v(2, 9) };
       case "para": { const g = v(3, 12); return { g, h: v(2, 9), p: g.mul(ci(rng.int(2, 7))).div(10) }; }
       case "tri": { const g = v(4, 12); return { g, h: v(2, 9), p: g.mul(ci(rng.int(2, 8))).div(10) }; }
       case "trap": return { a: v(3, 12), c: v(2, 10), h: v(2, 9) };
@@ -342,20 +339,24 @@
     const d = volDims(rng, kind, dec);
     if (kind === "trap" && d.a.cmp(d.c) === 0) return null;
     const b = base(kind, d, U);
-    const len = dec ? tn(rng, 20, 120) : iv(rng, 3, 12);
+    const len = dec ? tn(rng, 20, 120) : iv(rng, 3, 12);   // Körperhöhe hk, beim Quader die Breite b
     const V = b.G.mul(len);
     if (dec ? !okDec(V) : !V.isInt()) return null;
     const head = `${b.name}: ${b.parts.join(", ")}`;
+    const sym = lenSym(kind), word = lenWord(kind);
     const steps = [gStep(b, d, U)];
+    const vStep = kind === "rect"
+      ? `V = a · b · c = ${nf(d.a)} ${U} · ${nf(len)} ${U} · ${nf(d.c)} ${U} = ${nf(V)} ${cu}`
+      : `V = G · hk = ${nf(b.G)} ${U}² · ${nf(len)} ${U} = ${nf(V)} ${cu}`;
     let q, a, ans, lenText;
     if (mode === "umk") {
-      q = `${head}. Das Prisma hat das Volumen V = ${nf(V)} ${cu}. Berechne die Körperhöhe hk.`;
-      steps.push(`hk = V : G = ${nf(V)} ${cu} : ${nf(b.G)} ${U}² = ${nf(len)} ${U}`);
-      a = `hk = ${nf(len)} ${U}`;
-      lenText = "hk = ?";
+      q = `${head}. Das Prisma hat das Volumen V = ${nf(V)} ${cu}. Berechne die ${word}.`;
+      steps.push(`${sym} = V : G = ${nf(V)} ${cu} : ${nf(b.G)} ${U}² = ${nf(len)} ${U}`);
+      a = `${sym} = ${nf(len)} ${U}`;
+      lenText = `${sym} = ?`;
     } else {
-      q = `${head}, Körperhöhe hk = ${F(len, U)}. `;
-      steps.push(`V = G · hk = ${nf(b.G)} ${U}² · ${nf(len)} ${U} = ${nf(V)} ${cu}`);
+      q = `${head}, ${word} = ${F(len, U)}. `;
+      steps.push(vStep);
       if (mode === "dm") {
         q += "Berechne das Volumen in Litern (1 dm³ = 1 l).";
         ans = "l";
@@ -369,7 +370,7 @@
         ans = "cm³";
       }
       a = `${nf(V)} ${ans}`;
-      lenText = "hk = " + F(len, U);
+      lenText = `${sym} = ` + F(len, U);
     }
     return {
       q: rich(q), a: rich(a), steps: steps.map(s => rich(s)),
@@ -452,7 +453,7 @@
       const s = AG.plain(t.a);
       if (c.mode === "umk") {
         if (!G.mul(c.len).eq(c.V)) return "G · hk ≠ V";
-        const exp = "hk = " + nf(c.len) + " " + c.unit;
+        const exp = lenSym(c.kind) + " = " + nf(c.len) + " " + c.unit;
         return s === exp || `erwartet „${exp}“, steht „${s}“`;
       }
       const exp = nf(G.mul(c.len).mul(c.scale)) + " " + c.ans;
@@ -463,7 +464,7 @@
   // ---------- Oberfläche ----------
   function oberDims(rng, kind) {
     switch (kind) {
-      case "rect": return { a: iv(rng, 3, 12), b: iv(rng, 2, 9) };
+      case "rect": return { a: iv(rng, 3, 12), c: iv(rng, 2, 9) };
       case "tri": {
         const [h, p0, q0, sL0, sR0] = rng.pick(TRI_TRIPLES);
         const sw = rng.chance(0.5);
@@ -489,27 +490,28 @@
     const kind = rng.pick(M ? ["rect", "tri", "para", "trap"] : ["rect", "tri"]);
     const d = oberDims(rng, kind);
     const b = base(kind, d, "cm");
-    const hk = level === 2 ? tn(rng, 20, 120) : iv(rng, 3, 12);
+    const hk = level === 2 ? tn(rng, 20, 120) : iv(rng, 3, 12);   // beim Quader: Breite b
     const G = b.G, u = perimOf(kind, d), Mant = u.mul(hk), O = G.mul(2).add(Mant);
     if (level === 2 && !okDec(O)) return null;
     const head = `${b.name}: ${b.parts.join(", ")}`;
+    const sym = lenSym(kind), word = lenWord(kind);
     const steps = [gStep(b, d, "cm"), `u = ${perimTxt(kind, d, "cm")} = ${nf(u)} cm`];
     let q, a, lenText;
     if (umk) {
-      q = `${head}. Die Oberfläche beträgt O = ${nf(O)} cm². Berechne die Körperhöhe hk.`;
+      q = `${head}. Die Oberfläche beträgt O = ${nf(O)} cm². Berechne die ${word}.`;
       steps.push(`M = O − 2 · G = ${nf(O)} cm² − 2 · ${nf(G)} cm² = ${nf(Mant)} cm²`);
-      steps.push(`hk = M : u = ${nf(Mant)} cm² : ${nf(u)} cm = ${nf(hk)} cm`);
-      a = `hk = ${nf(hk)} cm`;
-      lenText = "hk = ?";
+      steps.push(`${sym} = M : u = ${nf(Mant)} cm² : ${nf(u)} cm = ${nf(hk)} cm`);
+      a = `${sym} = ${nf(hk)} cm`;
+      lenText = `${sym} = ?`;
     } else {
       const sach = level === 3;
       q = sach
-        ? `Eine Schachtel hat die Form eines Prismas (${b.name}: ${b.parts.join(", ")}, Körperhöhe hk = ${F(hk, "cm")}). Wie viel Karton braucht man mindestens für die gesamte Oberfläche?`
-        : `${head}, Körperhöhe hk = ${F(hk, "cm")}. Berechne den Oberflächeninhalt.`;
-      steps.push(`M = u · hk = ${nf(u)} cm · ${nf(hk)} cm = ${nf(Mant)} cm²`);
+        ? `Eine Schachtel hat die Form eines Prismas (${b.name}: ${b.parts.join(", ")}, ${word} = ${F(hk, "cm")}). Wie viel Karton braucht man mindestens für die gesamte Oberfläche?`
+        : `${head}, ${word} = ${F(hk, "cm")}. Berechne den Oberflächeninhalt.`;
+      steps.push(`M = u · ${sym} = ${nf(u)} cm · ${nf(hk)} cm = ${nf(Mant)} cm²`);
       steps.push(`O = 2 · G + M = 2 · ${nf(G)} cm² + ${nf(Mant)} cm² = ${nf(O)} cm²`);
       a = `${nf(O)} cm²`;
-      lenText = "hk = " + F(hk, "cm");
+      lenText = `${sym} = ` + F(hk, "cm");
     }
     return {
       q: rich(q), a: rich(a), steps: steps.map(s => rich(s)),
@@ -549,7 +551,7 @@
       const s = AG.plain(t.a);
       if (c.mode === "umk") {
         if (!G.mul(2).add(u.mul(c.hk)).eq(c.O)) return "2G + u·hk ≠ O";
-        const exp = "hk = " + nf(c.hk) + " cm";
+        const exp = lenSym(c.kind) + " = " + nf(c.hk) + " cm";
         return s === exp || `erwartet „${exp}“, steht „${s}“`;
       }
       const exp = nf(G.mul(2).add(u.mul(c.hk))) + " cm²";
