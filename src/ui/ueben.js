@@ -177,14 +177,15 @@
   }
 
   // Lupe: Zeichnungen groß anzeigen
-  const ZOOM_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  const ZOOM_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="cursor:inherit"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   function addZoom(box) {
     box.querySelectorAll(".fig").forEach(f => {
       if (f.querySelector(".zoom")) return;
       const b = document.createElement("button");
-      b.type = "button"; b.className = "zoom"; b.innerHTML = ZOOM_ICON;
+      b.type = "button"; b.className = "zoom"; b.innerHTML = ZOOM_ICON + "Vergrößern";
       b.title = "Zeichnung vergrößern"; b.setAttribute("aria-label", "Zeichnung vergrößern");
       b.onclick = () => openZoom(f);
+      f.querySelector("svg").addEventListener("click", () => openZoom(f));
       f.appendChild(b);
     });
   }
