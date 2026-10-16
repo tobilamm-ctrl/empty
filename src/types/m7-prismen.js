@@ -246,6 +246,14 @@
       const cx = mx + ux * (dd + reach), cy = my + uy * (dd + reach);
       if (clashScore(cx, cy, w, h, segs, boxes, W, H) === 0) return [cx, cy];
     }
+    // Kein freier Platz an der Strecke: Raster in der Nähe absuchen
+    const grid = [];
+    for (let dx = -26; dx <= 26; dx += 1.5) for (let dy = -16; dy <= 16; dy += 1.5) {
+      const d = Math.hypot(dx, dy);
+      if (d <= 24) grid.push([d, [mx + dx, my + dy]]);
+    }
+    grid.sort((u, v) => u[0] - v[0]);
+    for (const [, c] of grid) if (clashScore(c[0], c[1], w, h, segs, boxes, W, H) === 0) return c;
     return [mx + nx * (size * 0.95 + reach), my + ny * (size * 0.95 + reach)];
   }
 

@@ -38,33 +38,24 @@
   }
 
   // Drachen bzw. Raute: Diagonale e waagerecht, f senkrecht, Schnittpunkt S. ratio = Lage von S auf f (von unten).
-  // Maße an Diagonalen über Maßlinien (unten für e, links für f).
+  // Nur die gestrichelten Diagonalen. e und f stehen rechts neben der Figur, auf Höhe der jeweiligen Diagonale,
+  // damit keine Kante die Beschriftung kreuzt.
   function kiteFig(e, f, ratio, labE, labF, raute) {
-    const W = 75, H = 45, L = 27, R = 6, Bp = 11, Tp = 4;
+    const W = 75, H = 45, Lm = 6, Bp = 6, Tp = 6, avail = 45;
     const de = Number(e);
     const df = clamp(Number(f), 0.6 * de, 1.4 * de); // nur für die Zeichnung
     const v = raute ? df / 2 : df * ratio;
-    const sc = Math.min((W - L - R) / de, (H - Bp - Tp) / df);
-    const ox = L + ((W - L - R) - de * sc) / 2;
-    const X = p => [ox + p[0] * sc, H - Bp - p[1] * sc];
+    const scx = Math.min(avail / de, 6.5), scy = (H - Bp - Tp) / df; // nicht maßstabsgetreu
+    const ox = Lm + (avail - de * scx) / 2;
+    const X = p => [ox + p[0] * scx, H - Bp - p[1] * scy];
     const P = X([0, v]), T = X([de / 2, df]), Q = X([de, v]), B = X([de / 2, 0]), S = X([de / 2, v]);
     const s = AG.sketch(W, H);
     s.poly([P, T, Q, B]);
     s.line(P, Q, { dash: true });
     s.line(B, T, { dash: true });
     s.right(S, P, T);
-    // Maßlinie für e unter der Figur
-    const yd = B[1] + 5;
-    s.line([P[0], P[1]], [P[0], yd + 1]);
-    s.line([Q[0], Q[1]], [Q[0], yd + 1]);
-    s.line([P[0], yd], [Q[0], yd]);
-    s.label([(P[0] + Q[0]) / 2, yd + 3.4], labE);
-    // Maßlinie für f links neben der Figur
-    const xd = P[0] - 5;
-    s.line([T[0], T[1]], [xd - 1, T[1]]);
-    s.line([B[0], B[1]], [xd - 1, B[1]]);
-    s.line([xd, T[1]], [xd, B[1]]);
-    s.label([xd - 1.6, (T[1] + B[1]) / 2], labF, { anchor: "end" });
+    s.label([Q[0] + 2, S[1] + 3.5], labE, { anchor: "start" });
+    s.label([Q[0] + 2, S[1] - (S[1] - T[1]) / 2], labF, { anchor: "start" });
     return s.done();
   }
 
@@ -147,7 +138,7 @@
             askF ? rich("f = ", cm2(A.mul(2)), " : ", cm(e)) : rich("e = ", cm2(A.mul(2)), " : ", cm(f)),
             askF ? rich("f = ", cm(f)) : rich("e = ", cm(e)),
           ],
-          fig: kiteFig(e, f, ratio, askF ? cm(e) : "e = ?", askF ? "f = ?" : cm(f), raute),
+          fig: kiteFig(e, f, ratio, askF ? "e = " + cm(e) : "e = ?", askF ? "f = ?" : "f = " + cm(f), raute),
           inline: false,
           _kind: "kite", _e: e, _f: f, _A: A, _ask: askF ? "f" : "e", _ans: askF ? f : e,
         };
@@ -319,22 +310,23 @@
     return { pieces, pre: [], unit: u, q, sp };
   }
 
-  // Rechteck mit Parallelogramm als Schrägdach (Level 1)
-  function buildSchrag(rng) {
+  // Rechteck mit rechtwinkligem Dreieck rechts angesetzt (Rampe), Katheten b (waagerecht) und H (senkrecht)
+  function buildRampe(rng) {
     const u = UNIT.cm;
-    const W = F(rng.int(6, 12)), H = F(rng.int(4, 9)), h = F(rng.int(2, 6)), sh = F(rng.int(2, W.n - 2));
-    const Wn = Number(W), Hn = Number(H), hn = Number(h), sn = Number(sh);
-    const pieces = [piece("rect", 1, "Rechteck", { a: W, b: H }), piece("par", 1, "Parallelogramm", { g: W, h })];
-    const hm = heightMark([sn, Hn], [Wn, Hn], [sn, Hn + hn], "h = " + u.L(h));
+    const W = F(rng.int(6, 12)), H = F(rng.int(4, 9)), b = F(rng.int(2, 7));
+    const Wn = Number(W), Hn = Number(H), bn = Number(b);
+    const pieces = [piece("rect", 1, "Rechteck", { a: W, b: H }), piece("tri", 1, "Rampe (Dreieck)", { g: b, h: H })];
     const sp = {
-      outline: [[0, 0], [Wn, 0], [Wn, Hn], [Wn + sn, Hn + hn], [sn, Hn + hn], [0, Hn]],
+      outline: [[0, 0], [Wn + bn, 0], [Wn, Hn], [0, Hn]],
       sides: [
         { a: [0, 0], b: [Wn, 0], text: u.L(W), inside: [Wn / 2, Hn / 2] },
+        { a: [Wn, 0], b: [Wn + bn, 0], text: u.L(b), inside: [Wn + bn / 3, 0.2 * Hn] },
         { a: [0, 0], b: [0, Hn], text: u.L(H), inside: [Wn / 2, Hn / 2] },
       ],
-      ...hm,
+      lines: [[[Wn, 0], [Wn, Hn]]],
+      rights: [[[Wn, 0], [Wn + bn, 0], [Wn, Hn]]],
     };
-    const q = rich("Ein Rechteck (", u.L(W), " breit, ", u.L(H), " hoch) trägt oben ein Parallelogramm als Dach (Grundseite ", u.L(W), ", Höhe ", u.L(h), "). Berechne den Flächeninhalt der Figur.");
+    const q = rich("Ein Rechteck (", u.L(W), " breit, ", u.L(H), " hoch) hat rechts eine Rampe. Die Rampe ist ein rechtwinkliges Dreieck mit der waagerechten Seite ", u.L(b), " und der senkrechten Seite ", u.L(H), ". Berechne den Flächeninhalt der Figur.");
     return { pieces, pre: [], unit: u, q, sp };
   }
 
@@ -449,7 +441,7 @@
       return buildL(UNIT.cm, W, H, w2, h2, level === 2 ? "cut" : "split", null);
     },
     haus: buildHaus,
-    schrag: buildSchrag,
+    rampe: buildRampe,
     dach: buildDach,
     anbau: buildAnbau,
     vnotch: buildVnotch,
@@ -487,7 +479,7 @@
     generate(rng, level, ctx) {
       const M = !!ctx && ctx.zug === "M";
       const fams = level === 1
-        ? ["L", "haus", "schrag"].concat(M ? ["dach"] : [])
+        ? ["L", "haus", "rampe"].concat(M ? ["dach"] : [])
         : level === 2 ? ["anbau", "vnotch", "L"] : ["wand", "garten"];
       for (let t = 0; t < 300; t++) {
         const r = BUILDERS[rng.pick(fams)](rng, level);
