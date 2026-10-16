@@ -214,6 +214,14 @@ table.vt td.red { color: var(--red); font-weight: 700; }
         <div id="codeBox" hidden>
           <p class="hint">Diesen Code an die Klasse geben. Die Schüler tippen ihn oben ein und üben genau diese Auswahl.</p>
           <div class="code-out" id="codeOut"></div>
+          <p class="hint" style="margin-top:14px"><b>Prüfcode eines Schülers kontrollieren</b> (gilt für die oben eingestellte Auswahl):</p>
+          <div class="code-row">
+            <input type="text" id="pcCode" placeholder="Prüfcode" aria-label="Prüfcode" style="max-width:130px">
+            <input type="text" id="pcDate" placeholder="Datum, z. B. 16.10.2026" aria-label="Datum" style="max-width:190px">
+            <input type="text" id="pcRes" placeholder="richtig/gesamt, z. B. 8/10" aria-label="Ergebnis" style="max-width:190px">
+            <button type="button" class="btn" id="pcCheck">Kontrollieren</button>
+          </div>
+          <p class="msg" id="pcMsg" role="status"></p>
         </div>
       </div>
     </div>

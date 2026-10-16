@@ -18,6 +18,18 @@ Alles steckt in **einer** Datei, die ohne Internet im Browser läuft.
 
 **Speichern:** Die letzte Einstellung merkt sich der Browser automatisch.
 
+## Übungsmodus für Schüler (Entwurf)
+
+`dist/ueben.html` ist eine eigene Datei für Schüler: Themen und Schwierigkeit wählen,
+dann eine Aufgabe nach der anderen am Bildschirm lösen – mit Tipp, schrittweiser Lösung
+und wahlweise Selbstkontrolle oder Eingabe des Ergebnisses mit automatischer Prüfung.
+
+- **Code für die Klasse:** Unten auf der Startseite „Für Lehrkräfte“ öffnen, Auswahl treffen,
+  Code an die Klasse geben. Die Schüler tippen ihn oben ein.
+- **Prüfcode:** Am Ende zeigt die Datei einen Prüfcode mit Datum und Ergebnis. Im Lehrkraft-Bereich
+  (gleiche Auswahl einstellen) lässt er sich kontrollieren.
+- Alles läuft offline, es werden keine Daten übertragen.
+
 ## Stand
 
 Ausbauschritt 1: Grundgerüst und Klasse 7 M-Zug (Rechenaufgaben aus Prozentrechnung,

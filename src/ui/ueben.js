@@ -245,9 +245,14 @@
       return `<div class="result-row"><span>${t.title}</span><b>${p.ok} / ${p.all}</b><div class="bar"><span style="width:${Math.round(100 * p.ok / p.all)}%"></span></div></div>`;
     }).join("");
     const date = new Date().toLocaleDateString("de-DE");
-    const proof = AG.hash(JSON.stringify([date, ok, all, Object.keys(run.perType).sort()])).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+    const proof = proofCode(date, ok, all, setup.topics);
     $("proof").innerHTML = all ? `Prüfcode für deine Lehrkraft: <b>${proof}</b>  (${date}, ${ok}/${all})` : "";
     show("summary");
+  }
+
+  // Prüfcode hängt von Datum, Ergebnis und gewählten Themen ab
+  function proofCode(date, ok, all, topics) {
+    return AG.hash(JSON.stringify(["U1", date, ok, all, topics.map(AG.typeShort).sort()])).toString(36).toUpperCase().padStart(6, "0").slice(-6);
   }
 
   function show(which) {
@@ -274,6 +279,15 @@
   };
   $("codeIn").onkeydown = e => { if (e.key === "Enter") $("codeLoad").click(); };
   $("makeCode").onclick = () => { $("codeBox").hidden = !$("codeBox").hidden; renderSetup(); };
+  $("pcCheck").onclick = () => {
+    const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec($("pcRes").value);
+    const msg = $("pcMsg");
+    if (!m) { msg.className = "msg err"; msg.textContent = "Ergebnis bitte als richtig/gesamt eingeben, z. B. 8/10."; return; }
+    const want = proofCode($("pcDate").value.trim(), Number(m[1]), Number(m[2]), setup.topics);
+    const ok = want === $("pcCode").value.trim().toUpperCase();
+    msg.className = ok ? "msg ok" : "msg err";
+    msg.textContent = ok ? "Der Prüfcode passt zu Datum, Ergebnis und Auswahl." : "Der Prüfcode passt nicht. Stimmen Datum, Ergebnis und die eingestellte Auswahl (Code der Klasse oben übernehmen)?";
+  };
   $("tip").onclick = () => { $("merke").hidden = !$("merke").hidden; };
   $("showStep").onclick = () => reveal(false);
   $("showAll").onclick = () => reveal(true);
