@@ -101,5 +101,6 @@
   AG.generateSheet = generateSheet;
   AG.generateTask = generateTask;
   AG.encodeCode = encodeCode;
+  AG.typeShort = typeShort;
   AG.decodeCode = decodeCode;
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
