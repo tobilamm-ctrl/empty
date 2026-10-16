@@ -246,16 +246,22 @@
     const C = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
     b.dashed.forEach(([a, c]) => line(f(a), f(c), { dash: true }));
     b.rights.forEach(([v, p, q]) => S.right(f(v), f(p), f(q)));
-    b.sides.forEach(({ i, t }) => S.side(P[i], P[(i + 1) % n], t, { inside: C }));
+    b.sides.forEach(({ i, t }) => {
+      const j = (i + 1) % n;
+      // Kante liegt oben (Seitenfläche sichtbar, zeigt nach oben): Maß über die hintere Kante setzen
+      if (vis[i] && pts[j][0] - pts[i][0] < -1e-9) S.side(B[i], B[j], t, { inside: C });
+      else S.side(P[i], P[j], t, { inside: C });
+    });
     b.inner.forEach(o => {
-      const spot = freeSpot(o.t, o.line.map(f), f, segs, W, H);
+      const spot = freeSpot(o.t, o.line, f, segs, W, H);
       S.label(spot.p, o.t, { anchor: spot.anchor });
     });
     // Körperhöhe: rechts neben der Mitte der Kante an der äußersten rechten Ecke
     let j = 0;
     pts.forEach((p, i) => { if (p[0] > pts[j][0] + 1e-9 || (Math.abs(p[0] - pts[j][0]) < 1e-9 && p[1] > pts[j][1])) j = i; });
     const m = [(P[j][0] + B[j][0]) / 2, (P[j][1] + B[j][1]) / 2];
-    S.label([m[0] + 2.2, m[1] + 1.2], lenText, { anchor: "start" });
+    const rightX = Math.max(...B.map(p => p[0]), ...P.map(p => p[0]));
+    S.label([rightX + 1.8, m[1] + 1.2], lenText, { anchor: "start" });
     return S.done();
   }
 

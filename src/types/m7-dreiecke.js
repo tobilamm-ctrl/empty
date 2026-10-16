@@ -369,9 +369,21 @@
     return pair ? "gleichschenklig" : null;
   }
 
-  const angWordText = g => g < 90
-    ? `spitzwinklig, weil γ = ${g}° < 90°`
-    : g === 90 ? "rechtwinklig, weil γ = 90°" : `stumpfwinklig, weil γ = ${g}° > 90°`;
+  // Begründung der Winkelart aus allen drei Winkeln: spitzwinklig nur, wenn ALLE Winkel unter 90° sind
+  const angWordText = ang => {
+    const mx = Math.max(...ang);
+    if (mx < 90) {
+      const txt = ang[0] === ang[1] ? `α = β = ${ang[0]}°, γ = ${ang[2]}°` : ang.map((v, i) => GR[i] + " = " + v + "°").join(", ");
+      return `spitzwinklig, weil alle Winkel kleiner als 90° sind (${txt})`;
+    }
+    const i = ang.indexOf(mx);
+    return mx === 90 ? `rechtwinklig, weil ${GR[i]} = 90°` : `stumpfwinklig, weil ${GR[i]} = ${mx}° > 90°`;
+  };
+
+  // Lösungsschritt zur Winkelart in Niveau 1–2
+  const angExpl = (aw, mx) => aw === "spitzwinklig" ? `alle Winkel kleiner als 90° (größter Winkel ${mx}°) → spitzwinklig`
+    : aw === "rechtwinklig" ? "ein Winkel ist 90° → rechtwinklig"
+    : `ein Winkel ist größer als 90° (${mx}°) → stumpfwinklig`;
 
   // Niveau 1: alle drei Winkel gegeben
   // Niveau 2: zwei Winkel gegeben, dritter berechnen
@@ -387,7 +399,7 @@
       return {
         q: rich(`Im Dreieck ABC sind α = ${ang[0]}°, β = ${ang[1]}° und γ = ${ang[2]}° gegeben. Bestimme die Art des Dreiecks: spitzwinklig, rechtwinklig oder stumpfwinklig? Und gleichseitig, gleichschenklig oder allgemein?`),
         a: rich(`${aw}, ${sw}`),
-        steps: [rich(`größter Winkel: ${mx}° → ${aw}`), rich(`${sideExpl} → ${sw}`)],
+        steps: [rich(angExpl(aw, mx)), rich(`${sideExpl} → ${sw}`)],
         fig: sketch ? angleSketch(ang, -1, false) : undefined,
         inline: false,
         check: { ang, sides: null, hidden: null },
@@ -401,7 +413,7 @@
       a: rich(`${hidden}; ${aw}, ${sw}`),
       steps: [
         rich(`${GR[h]} = 180° − ${others.map(i => ang[i] + "°").join(" − ")} = ${ang[h]}°`),
-        rich(`größter Winkel: ${mx}° → ${aw}`),
+        rich(angExpl(aw, mx)),
         rich(`${sideExpl} → ${sw}`),
       ],
       fig: sketch ? angleSketch(ang, h, false) : undefined,
@@ -430,7 +442,7 @@
       });
       return {
         q: rich(`Im Dreieck ABC sind a = b = ${L} cm lang. Der Winkel γ misst ${g}°. Bestimme die Art des Dreiecks nach Winkeln und nach Seiten und begründe.`),
-        a: rich(`gleichschenklig, weil a = b; ${angWordText(g)}`),
+        a: rich(`gleichschenklig, weil a = b; ${angWordText([base, base, g])}`),
         steps: [rich(`a = b, also α = β (Basiswinkel)`), rich(`α = β = (180° − ${g}°) : 2 = ${base}°`)],
         fig, inline: false,
         check: { ang: [base, base, g], sides: [L, L, null] },
@@ -452,7 +464,7 @@
       });
       return {
         q: rich(`Im Dreieck ABC sind a = b = ${L} cm lang. Der Winkel α misst ${al}°. Bestimme die Art des Dreiecks nach Winkeln und nach Seiten und begründe.`),
-        a: rich(`gleichschenklig, weil a = b; ${angWordText(g)}`),
+        a: rich(`gleichschenklig, weil a = b; ${angWordText([al, al, g])}`),
         steps: [rich(`a = b, also β = α = ${al}°`), rich(`γ = 180° − ${al}° − ${al}° = ${g}°`)],
         fig, inline: false,
         check: { ang: [al, al, g], sides: [L, L, null] },
@@ -479,6 +491,7 @@
   }
 
   function verifyArt(t, level) {
+    const st = (t.steps || []).map(x => AG.plain(x)).join(" ");
     const k = t.check;
     if (!k) return "kein Prüfdatensatz";
     const s = AG.plain(t.a);
@@ -494,6 +507,8 @@
     for (const w of SIDE) if (has(w) !== (w === sw)) return `Seitenart: erwartet „${sw}“, steht „${s}“`;
     if (k.hidden && !s.includes(k.hidden)) return `Lösung „${k.hidden}“ fehlt in „${s}“`;
     if (level === 3 && !s.includes("weil")) return "Begründung fehlt";
+    if (aw === "spitzwinklig" && level === 3 && !s.includes("alle Winkel kleiner als 90°")) return "Spitzwinkel nicht über alle Winkel begründet";
+    if (aw === "spitzwinklig" && level < 3 && !st.includes("alle Winkel kleiner als 90°")) return "Lösungsschritt zur Spitzwinkligkeit fehlt";
     return true;
   }
 
