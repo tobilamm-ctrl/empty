@@ -440,6 +440,86 @@ body.tafel .blitz { position: fixed; }
 .dialog .fehler { color: var(--rot); font-weight: 700; font-size: .9rem; min-height: 1.2em; margin: 6px 0 0; }
 .dialog form { display: flex; flex-direction: column; gap: 10px; }
 
+/* Vertraulich */
+.vt-wahl { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.vt-wahl button { display: flex; gap: 12px; align-items: flex-start; text-align: left; border: 2px solid var(--linie); background: #fff; border-radius: 16px; padding: 12px 14px; cursor: pointer; font-size: clamp(1rem, 2.2vmin, 1.2rem); }
+.vt-wahl button small { display: block; color: var(--leise); font-size: .85em; margin-top: 2px; line-height: 1.35; }
+.vt-wahl button.an { border-color: var(--akzent); background: var(--akzent-hell); box-shadow: 0 0 0 2px var(--akzent) inset; }
+.vt-badge { border: 0; cursor: pointer; background: #fff3d6; color: #7a5a00; font-weight: 700; }
+.vt-karte { border: 2px dashed #e0c37a; }
+.vt-eintrag { border-top: 1px solid var(--linie); padding: 10px 0; }
+.vt-kopf { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.vt-thema { font-weight: 700; margin: 4px 0; }
+
+/* Zeitplan & Sprechzeit */
+.minuten { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--leise); white-space: nowrap; }
+.minuten input { width: 4.2em; padding: 4px 6px; }
+.zeitplan { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; font-size: .92rem; }
+.sprechzeit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; font-size: .88rem; color: var(--akzent-dunkel); font-weight: 600; }
+.timer.bald { border-top-color: var(--gelb); box-shadow: 0 0 0 3px var(--gelb), 0 8px 30px rgba(0,0,0,.18); }
+.timer-titel { text-align: center; color: var(--leise); font-size: .85rem; font-weight: 600; margin-top: 2px; }
+.anliegen-kopf [data-act=timer-start] { white-space: nowrap; }
+.timer-text { text-align: center; font-weight: 800; color: var(--akzent-dunkel); }
+.timer.ende .timer-text { color: var(--rot); }
+.tafel-uhr { font-size: clamp(1.3rem, 4vmin, 2.6rem); font-weight: 800; background: #fff; border-radius: 999px; padding: .15em .7em; font-variant-numeric: tabular-nums; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.tafel-uhr.bald { background: var(--gelb); }
+.tafel-uhr.um { background: var(--rot); color: #fff; animation: puls 1s infinite; }
+@keyframes puls { 50% { opacity: .6; } }
+
+/* Rollen an/aus */
+.rollen-schalter { margin-left: auto; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.rollen-schalter .knubbel { display: block; width: 34px; height: 20px; border-radius: 999px; background: #d6d3cb; position: relative; transition: background .2s; }
+.rollen-schalter .knubbel::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .2s; }
+.rollen-schalter.an .knubbel { background: var(--akzent); }
+.rollen-schalter.an .knubbel::after { left: 16px; }
+.rolle-aus > .zeile { color: var(--leise); }
+.namensfeld.aus { color: var(--leise); font-style: italic; background: #f3f1ec; border-style: dashed; cursor: default; }
+
+/* Rollen-Hilfen */
+.rh-vollbild { overflow-y: auto; z-index: 100; }
+.rh-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.rh-karte { background: #fff; border-radius: 20px; padding: 16px 18px; border-top: 8px solid var(--akzent); box-shadow: 0 4px 18px rgba(0,0,0,.07); break-inside: avoid; }
+.rh-kopf { display: flex; gap: 12px; align-items: center; }
+.rh-kopf b { display: block; font-size: 1.3rem; color: var(--akzent-dunkel); }
+.rh-kopf span { font-weight: 700; }
+.rh-aufgabe { color: var(--leise); margin: 6px 0 8px; font-weight: 600; }
+.rh-liste { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.rh-liste li { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; font-size: 1.05rem; line-height: 1.35; }
+.rh-liste .box { flex: none; width: 1.2em; height: 1.2em; border: 2px solid var(--akzent); border-radius: 5px; margin-top: .1em; }
+.rh-liste li.an .box { background: var(--akzent); box-shadow: inset 0 0 0 2px #fff; }
+.rh-liste li.an { color: var(--leise); }
+.rh-mini { background: #fff; border-radius: 12px; padding: 8px 14px; margin-bottom: 12px; border: 1px solid var(--linie); }
+.rh-mini summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.rh-mini .rh-liste { margin-top: 8px; }
+.rh-druck .rh-raster { grid-template-columns: 1fr 1fr; gap: 8mm; margin-top: 6mm; }
+.rh-druck .rh-karte { box-shadow: none; border: 2px solid var(--akzent); border-top-width: 8px; min-height: 100mm; }
+
+/* Protokoll-iPad */
+.fern.prot { bottom: 76px; }
+.prot-kind-kopf { display: flex; gap: 12px; align-items: center; background: var(--akzent-hell); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; }
+.dialog.prot-dialog { width: min(560px, 100%); }
+
+/* Weitergabe & Antrag */
+.wg-zeile { display: grid; grid-template-columns: minmax(180px, 1.2fr) auto minmax(160px, 1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--linie); padding: 10px 0; }
+.wg-info { display: flex; flex-direction: column; }
+@media (max-width: 900px) { .wg-zeile { grid-template-columns: 1fr; } }
+.antrag-meta { grid-template-columns: repeat(2, 1fr) !important; }
+.antrag-thema { font-size: 14pt; font-weight: 700; margin: 4px 0; }
+.antrag-text { font-size: 12.5pt; font-weight: 700; border-left: 4px solid var(--akzent); padding: 6px 10px; background: var(--akzent-hell); }
+.antwort-box { margin-top: 10mm; border: 1.5px dashed #888; border-radius: 8px; padding: 10px 14px; break-inside: avoid; }
+.antwort-box .box, .papier .box { display: inline-block; width: 3.4mm; height: 3.4mm; border: 1px solid #333; vertical-align: -.5mm; margin-right: 1mm; }
+.zeile-leer { height: 8mm; border-bottom: 1px solid #888; }
+.antwort-fuss { margin-top: 8mm; }
+
+/* Jahresrückblick */
+.jahr .kacheln { grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
+.jahr .kachel { border: 1.5px solid var(--linie); box-shadow: none; padding: 10px; flex-direction: column; text-align: center; gap: 4px; }
+.jahr .ah-karte { margin: 8px 0; padding: 8px 14px; }
+.jahr .ah-text { font-size: 13pt; }
+.jr-liste { margin: 4px 0 0; padding-left: 1.2em; }
+.jr-raster { margin-top: 6px; }
+.jahr .st-zeile { grid-template-columns: 105px 1fr 70px; }
+
 #druck { display: none; }
 @media print {
   @page { size: A4; margin: 12mm; }
@@ -488,6 +568,7 @@ body.tafel .blitz { position: fixed; }
 <div id="blitz"></div>
 <div id="moderation"></div>
 <div id="tafel-fern"></div>
+<div id="prot-leiste"></div>
 <div id="briefkasten-modus"></div>
 
 <script>
@@ -533,7 +614,11 @@ const TEXTE = {
   },
 };
 const ROLLEN = [["leitung", "glocke"], ["protokoll", "stift"], ["zeit", "uhr"], ["regel", "regel"]];
+// Rollen lassen sich je Sitzung abschalten (dann übernimmt die Lehrkraft); neue Sitzungen übernehmen die Auswahl der letzten
+const rolleAktiv = (s, r) => s?.rollenAktiv?.[r] !== false;
+const aktiveRollen = (s) => ROLLEN.filter(([r]) => rolleAktiv(s, r));
 const UNTERSCHRIFTEN = [["leitung"], ["protokoll"], ["lehrkraft"]];
+const unterschriftenFuer = (s) => UNTERSCHRIFTEN.filter(([r]) => r === "lehrkraft" || rolleAktiv(s, r));
 function unterschriftName(s, r, t) {
   if (r === "lehrkraft") return "Lehrkraft" + (klasse().lehrkraft ? ": " + esc(klasse().lehrkraft) : "");
   return t[r] + (s.rollen[r] ? ": " + esc(s.rollen[r]) : "");
@@ -596,6 +681,8 @@ const speicherOk = (() => {
 const istIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 let speicherTimer;
 function speichern() {
+  if (pr.kind) { prKindSendenSpaeter(); return; }  // Protokoll-iPad: nichts speichern, nur Änderungen schicken
+  if (pr.conn?.open) prStandSendenSpaeter();
   clearTimeout(speicherTimer);
   speicherTimer = setTimeout(() => {
     const el = document.getElementById("gespeichert");
@@ -652,26 +739,29 @@ function neueSitzung() {
   const letzte = liste.at(-1);
   const s = {
     id: id(), nr: (letzte?.nr || 0) + 1, datum: heute(), beginn: "", ende: "",
+    rollenAktiv: Object.fromEntries(ROLLEN.map(([r]) => [r, rolleAktiv(letzte, r)])),
     rollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, fehlend: [],
     positiv: [], rueckblick: {}, anliegen: [],
     feedback: { gut: 0, mittel: 0, schlecht: 0 }, vorsatz: "",
     naechsteRollen: { leitung: "", protokoll: "", zeit: "", regel: "" }, naechsterTermin: "", unterschriften: {},
   };
   if (letzte && Object.values(letzte.naechsteRollen || {}).some(Boolean)) s.rollen = { ...letzte.naechsteRollen };
-  else s.rollen = rollenVorschlag(k, []);
+  else s.rollen = rollenVorschlag(k, [], s);
+  for (const [r] of ROLLEN) if (!rolleAktiv(s, r)) s.rollen[r] = "";
   k.sitzungen.push(s);
   ui.sitzungId = s.id; ui.schritt = "start"; ui.view = "sitzung"; ui.ziel = null; ui.anliegenIdx = 0;
   speichern(); render();
 }
 
 // Wer am seltensten (und am längsten nicht) eine Rolle hatte, ist als Nächstes dran.
-function rollenVorschlag(k, fehlend) {
+function rollenVorschlag(k, fehlend, sitz) {
   const stat = Object.fromEntries(k.schueler.map((n) => [n, { anzahl: 0, zuletzt: 0 }]));
   for (const s of k.sitzungen) for (const n of Object.values(s.rollen)) if (stat[n]) { stat[n].anzahl++; stat[n].zuletzt = Math.max(stat[n].zuletzt, s.nr); }
   const kandidaten = k.schueler.filter((n) => !fehlend.includes(n))
     .sort((a, b) => stat[a].anzahl - stat[b].anzahl || stat[a].zuletzt - stat[b].zuletzt || Math.random() - .5);
   const r = {};
-  ROLLEN.forEach(([rolle], i) => (r[rolle] = kandidaten[i] || ""));
+  let i = 0;
+  for (const [rolle] of ROLLEN) r[rolle] = rolleAktiv(sitz, rolle) ? kandidaten[i++] || "" : "";
   return r;
 }
 
@@ -691,12 +781,29 @@ function beschluesse(k) {
 function offeneFuer(s) {
   return beschluesse(klasse()).filter((b) => b.sitzung.nr < s.nr && !b.verlauf.some((v) => v.nr < s.nr && ABGESCHLOSSEN.includes(v.status)));
 }
-// --- Sperre abgeschlossener Sitzungen --------------------------------------------
-// Schutz vor versehentlichen oder unbefugten Änderungen in der Oberfläche (keine Verschlüsselung).
-const istGesperrt = (s) => !!s?.gesperrt && ui.entsperrt !== s.id;
-async function pwHash(pw, salz) {
+// --- Passwort der Lehrkraft: Sperre, Briefkasten, Auswertung und Verschlüsselung der Sicherung ----------
+// Aus dem Passwort leitet PBKDF2 (absichtlich langsam) 512 Bit ab: die erste Hälfte prüft das Passwort,
+// die zweite ist der AES-Schlüssel für Sicherungsdateien. Das Passwort selbst wird nirgends gespeichert;
+// der Schlüssel liegt nicht auslesbar im Browser (IndexedDB), damit die automatische Sicherung weiterläuft.
+const istGesperrt = (s) => (!!s?.gesperrt && ui.entsperrt !== s.id) || (pr.kind && !pr.schreiben);
+const PW_RUNDEN = 300000;
+const kryptoOk = !!window.crypto?.subtle;
+const krypto = { schluessel: null, salz: null };
+function zuB64(buf) {
+  const u = new Uint8Array(buf); let s = "";
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function ausB64(t) { const s = atob(t), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+async function ableiten(pw, salz, runden = PW_RUNDEN) {
+  const roh = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: new TextEncoder().encode(salz), iterations: runden }, roh, 512));
+  const schluessel = await crypto.subtle.importKey("raw", bits.slice(32), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  return { hash: [...bits.slice(0, 32)].map((b) => b.toString(16).padStart(2, "0")).join(""), schluessel };
+}
+async function altHash(pw, salz) {  // früheres, schnelles Verfahren (wird beim nächsten Eingeben ersetzt)
   const text = salz + "|" + pw;
-  if (window.crypto?.subtle) {
+  if (kryptoOk) {
     const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
   }
@@ -704,15 +811,91 @@ async function pwHash(pw, salz) {
   for (const c of text) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
   return "fnv" + (h >>> 0).toString(16);
 }
-async function pwPruefen(pw) { return !!state.sperre && (await pwHash(pw, state.sperre.salz)) === state.sperre.hash; }
-async function pwSetzen(pw) { const salz = id() + id(); state.sperre = { salz, hash: await pwHash(pw, salz) }; speichern(); }
+const schluesselDa = () => !!krypto.schluessel && state.sperre?.art === "pbkdf2" && krypto.salz === state.sperre.salz;
+// Ist ein Passwort festgelegt, verlassen Sicherungen das Gerät nur verschlüsselt
+const verschluesseltSichern = () => kryptoOk && !!state.sperre;
+async function schluesselMerken(salz, schluessel) {
+  Object.assign(krypto, { salz, schluessel });
+  try { await idb("readwrite", (st) => st.put({ salz, schluessel }, "schluessel")); } catch (e) { /* dann nur bis zum Schließen */ }
+  if (ordner.status === "schluessel" && schluesselDa()) { ordner.status = "aktiv"; sichernInOrdnerSpaeter(); renderCloud(); }
+}
+async function schluesselLaden() {
+  try {
+    const x = await idb("readonly", (st) => st.get("schluessel"));
+    if (x?.schluessel) Object.assign(krypto, x);
+  } catch (e) { /* kein gespeicherter Schlüssel */ }
+}
+async function pwPruefen(pw) {
+  const sp = state.sperre;
+  if (!sp) return false;
+  if (sp.art === "pbkdf2") {
+    if (!kryptoOk) return false;
+    const r = await ableiten(pw, sp.salz, sp.runden || PW_RUNDEN);
+    if (r.hash !== sp.hash) return false;
+    if (!schluesselDa()) await schluesselMerken(sp.salz, r.schluessel);
+    return true;
+  }
+  if ((await altHash(pw, sp.salz)) !== sp.hash) return false;
+  if (kryptoOk) await pwSetzen(pw);  // auf das langsame Verfahren mit Schlüssel umstellen
+  return true;
+}
+async function pwSetzen(pw) {
+  if (!kryptoOk) { const salz = id() + id(); state.sperre = { salz, hash: await altHash(pw, salz) }; speichern(); return; }
+  const salz = zufallsCode(24), r = await ableiten(pw, salz);
+  state.sperre = { art: "pbkdf2", salz, runden: PW_RUNDEN, hash: r.hash };
+  await schluesselMerken(salz, r.schluessel);
+  speichern();
+}
+const istVerschluesselt = (d) => d?.klassenrat === "verschluesselt";
+async function verschluesseln(text) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const daten = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, krypto.schluessel, new TextEncoder().encode(text));
+  // außen nur der Zeitstempel (Welche Datei ist neuer?) und was zum Ableiten des Schlüssels nötig ist
+  return JSON.stringify({ klassenrat: "verschluesselt", version: 1, gespeichertAm: state.gespeichertAm, salz: krypto.salz,
+    runden: state.sperre.runden || PW_RUNDEN, iv: zuB64(iv), daten: zuB64(daten) });
+}
+// Text der Sicherungsdatei; null, wenn verschlüsselt werden muss, der Schlüssel aber fehlt
+async function sicherungsText() {
+  if (!verschluesseltSichern()) return JSON.stringify(state, null, 1);
+  if (!schluesselDa()) return null;
+  return verschluesseln(JSON.stringify(state));
+}
+async function sicherungsTextMitPasswort() {
+  let text = await sicherungsText();
+  if (text === null) {
+    if (!(await passwortAbfragen("Die Sicherung wird mit deinem Passwort verschlüsselt. Bitte gib es einmal ein."))) throw abbruch();
+    text = await sicherungsText();
+  }
+  return text;
+}
+const abbruch = () => Object.assign(new Error("abgebrochen"), { name: "AbortError" });
+// Entschlüsselt eine Sicherungsdatei; fragt nach dem Passwort, wenn der passende Schlüssel fehlt
+async function entschluesseln(d, name) {
+  if (!kryptoOk) throw new Error("Dieser Browser kann verschlüsselte Sicherungen nicht öffnen.");
+  const oeffnen = async (k) => JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: ausB64(d.iv) }, k, ausB64(d.daten))));
+  if (krypto.schluessel && krypto.salz === d.salz) { try { return await oeffnen(krypto.schluessel); } catch (e) { /* passt nicht */ } }
+  let inhalt = null;
+  const r = await dialog({ titel: "Verschlüsselte Sicherung", text: `„${esc(name || "Sicherung")}“ ist mit dem Passwort der Lehrkraft verschlüsselt
+      (Stand ${new Date(d.gespeichertAm || Date.now()).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}).`,
+    felder: ["Passwort"], knopf: "Öffnen",
+    pruefen: async ([pw]) => {
+      try {
+        const k = await ableiten(pw, d.salz, d.runden || PW_RUNDEN);
+        inhalt = await oeffnen(k.schluessel);
+        await schluesselMerken(d.salz, k.schluessel);
+        return "";
+      } catch (e) { return "Das Passwort passt nicht zu dieser Sicherung."; }
+    } });
+  if (!Array.isArray(r) || !inhalt) throw abbruch();
+  return inhalt;
+}
 
 // Kleiner Dialog mit Passwortfeldern. Liefert die Eingaben oder null (abgebrochen / zweiter Knopf).
 function dialog({ titel, text, felder, knopf, zweitKnopf, pruefen }) {
   return new Promise((fertig) => {
     const box = $("#dialog");
     box.innerHTML = `<div class="dialog-hg"><div class="dialog" role="dialog" aria-modal="true">
-      <h3>${bild("schloss", "m")} ${titel}</h3><p class="leise">${text}</p>
+      <h3>${bild("schloss", "m")} ${titel}</h3><p class="leise klein-dialog">${text}</p>
       <form>${felder.map((f, i) => `<label class="feld">${f}<input type="password" name="f${i}" autocomplete="off"></label>`).join("")}
         <p class="fehler"></p>
         <div class="aktionen"><button class="knopf" type="submit">${knopf}</button>
@@ -725,15 +908,26 @@ function dialog({ titel, text, felder, knopf, zweitKnopf, pruefen }) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const werte = felder.map((_, i) => form.elements["f" + i].value);
+      const knopfEl = form.querySelector("[type=submit]"), knopfText = knopfEl.textContent;
+      knopfEl.disabled = true; knopfEl.textContent = "Einen Moment …";  // Prüfen dauert absichtlich etwas
       const fehler = pruefen ? await pruefen(werte) : "";
+      knopfEl.disabled = false; knopfEl.textContent = knopfText;
       if (fehler) { form.querySelector(".fehler").textContent = fehler; return; }
       zu(werte);
     });
   });
 }
 async function neuesPasswortDialog(titel, text, zweitKnopf, knopf = "Passwort speichern") {
-  return dialog({ titel, text, felder: ["Neues Passwort (mind. 4 Zeichen)", "Passwort wiederholen"], knopf, zweitKnopf,
-    pruefen: ([a, b]) => (a.length < 4 ? "Bitte mindestens 4 Zeichen." : a !== b ? "Die Passwörter stimmen nicht überein." : "") });
+  let kurzOk = "";
+  const zusatz = kryptoOk ? `<br><br><b>Mit diesem Passwort werden auch die Sicherungen verschlüsselt.</b> Ist es vergessen, lassen sich
+    die Sicherungsdateien nicht mehr öffnen. Bitte sicher aufbewahren (z. B. im Passwort-Manager). Gut ist ein Satz mit mindestens 10 Zeichen.` : "";
+  return dialog({ titel, text: text + zusatz, felder: ["Neues Passwort (mind. 4 Zeichen)", "Passwort wiederholen"], knopf, zweitKnopf,
+    pruefen: ([a, b]) => {
+      if (a.length < 4) return "Bitte mindestens 4 Zeichen.";
+      if (a !== b) return "Die Passwörter stimmen nicht überein.";
+      if (kryptoOk && a.length < 10 && kurzOk !== a) { kurzOk = a; return "Kurze Passwörter schützen die Sicherung nur schwach. Trotzdem verwenden? Dann noch einmal tippen."; }
+      return "";
+    } });
 }
 async function passwortAbfragen(text) {
   const r = await dialog({ titel: "Passwort eingeben", text, felder: ["Passwort"], knopf: "Bestätigen",
@@ -760,6 +954,7 @@ function neuesAnliegen(vorlage) {
 // Darstellung
 // ---------------------------------------------------------------------------
 function render() {
+  if (pr.kind) return renderKind();
   const k = klasse();
   document.body.dataset.stufe = k?.stufe || "ms";
   document.title = k ? `Klassenrat ${k.name}` : "Klassenrat";
@@ -772,6 +967,9 @@ function render() {
   $("#nav").innerHTML = k ? navs.map(([v, t, b]) => `<button data-act="view" data-arg="${v}" title="${t}" class="${aktivNav === v ? "aktiv" : ""}">${bild(b, "s")}<span class="t">${t}</span></button>`).join("") : "";
 
   $("#warnung").innerHTML = speicherWarnung();
+  // Timer und Sprechzeit folgen dem geöffneten Anliegen (auch beim Verlassen der Sitzung) – vor dem Zeichnen
+  const zort = (ui.view === "sitzung" && sitzung() ? `${ui.sitzungId}:${ui.schritt}:${sitzung().anliegen[ui.anliegenIdx]?.id || ""}` : "");
+  if (zort !== ui.zeitOrt) { ui.zeitOrt = zort; zeitplanFolgen(); }
   const app = $("#app");
   if (!k) app.innerHTML = viewWillkommen();
   else if (ui.view === "sitzung" && sitzung()) app.innerHTML = viewSitzung();
@@ -783,6 +981,7 @@ function render() {
   else { ui.view = "sitzungen"; app.innerHTML = viewSitzungen(); }
   renderTimer();
   renderCloud();
+  renderProtLeiste();
   nachRender();
 }
 
@@ -796,12 +995,13 @@ function nachRender() {
   }
   document.querySelectorAll("canvas[data-pad]").forEach(padStarten);
   // Moderationskarten folgen dem Protokoll: neuer Schritt / neues Anliegen → passende Karte
-  const ort = ui.view === "sitzung" && sitzung() ? `${ui.sitzungId}:${ui.schritt}:${ui.anliegenIdx}` : null;
+  const ort = ui.view === "sitzung" && sitzung() ? `${ui.sitzungId}:${ui.schritt}:${ui.anliegenIdx}:${sitzung().anliegen[ui.anliegenIdx]?.id || ""}` : null;
   if (ort && ort !== mod.ort) {
     mod.ort = ort;
     const i = modOrtIdx(moderationsKarten());
     if (i >= 0) { mod.idx = i; mod.ortIdx = i; }
     if (ordner.status === "aktiv") sichernInOrdnerSpaeter();
+    if (pr.conn?.open) prStandSendenSpaeter();
   }
   if (tafelOffen() || direktOffen()) tafelSenden();
   document.querySelectorAll("#sperrbereich.gesperrt :is(input, textarea, select)").forEach((el) => (el.disabled = true));
@@ -957,14 +1157,16 @@ function viewSitzung() {
   const mitNamen = ui.schritt === "positiv" || (ui.schritt === "anliegen" && s.anliegen.length);
   return `
   <div class="titelzeile">
-    <button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>
-    <h2>Sitzung Nr. ${s.nr} <span class="leise klein">${datum(s.datum, true)}</span></h2>
+    ${pr.kind ? "" : `<button class="knopf rand" data-act="view" data-arg="sitzungen">← Übersicht</button>`}
+    <h2>${pr.kind ? (ui.schritt === "positiv" ? esc(t.positiv) : esc(t.anliegen)) : `Sitzung Nr. ${s.nr} <span class="leise klein">${datum(s.datum, true)}</span>`}</h2>
     ${Object.keys(s.unterschriften || {}).length ? `<span class="badge ja">${bild("unterschrift", "s")} unterschrieben</span>` : ""}
     ${s.gesperrt ? `<span class="badge">${bild(istGesperrt(s) ? "schloss" : "schloss_offen", "s")} ${istGesperrt(s) ? "gesperrt" : "entsperrt"}</span>` : ""}
-    <button class="knopf zweit" data-act="moderation" style="margin-left:auto" title="Karten zum Vorlesen für die Leitung">${bild("glocke", "s")} Moderationskarten</button>
+    ${pr.kind ? "" : `<span class="aktionen" style="margin-left:auto">
+      ${istGesperrt(s) || !rolleAktiv(s, "protokoll") ? "" : `<button class="knopf rand" data-act="prot-ipad" title="Die ${esc(t.protokoll)} schreibt am eigenen iPad mit">${bild("stift", "s")} ${pr.rolle === "lehrkraft" && pr.sid === s.id && pr.status === "verbunden" ? "Protokoll-iPad ✓" : "Protokoll-iPad"}</button>`}
+      <button class="knopf zweit" data-act="moderation" title="Karten zum Vorlesen für die Leitung">${bild("glocke", "s")} Moderationskarten</button></span>`}
   </div>
-  <div class="schritte">${SCHRITTE.map(([key, x, b], i) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${i + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}
-    <button class="schritt beenden" data-act="beenden"><span class="n">${SCHRITTE.length + 1}</span>${bild(istGesperrt(s) ? "schloss" : "haken", "s")}${istGesperrt(s) ? "Zur Übersicht" : "Sitzung beenden"}</button></div>
+  <div class="schritte">${schritteListe().map(([key, x, b]) => `<button class="schritt ${ui.schritt === key ? "aktiv" : ""}" data-act="schritt" data-arg="${key}"><span class="n">${SCHRITTE.findIndex(([y]) => y === key) + 1}</span>${bild(b, "s")}${titel(key, x)}</button>`).join("")}
+    ${pr.kind ? "" : `<button class="schritt beenden" data-act="beenden"><span class="n">${SCHRITTE.length + 1}</span>${bild(istGesperrt(s) ? "schloss" : "haken", "s")}${istGesperrt(s) ? "Zur Übersicht" : "Sitzung beenden"}</button>`}</div>
   ${s.gesperrt ? (istGesperrt(s)
     ? `<div class="sperr-box">${bild("schloss", "m")}<div><b>Abgeschlossen und gesperrt</b> seit ${new Date(s.gesperrt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}.<br>
         <span class="leise klein">Ansehen und Drucken ist möglich. Zum Ändern wird das Passwort benötigt.</span></div>
@@ -977,15 +1179,18 @@ function viewSitzung() {
   ${mitNamen && !istGesperrt(s) ? namenLeiste() : ""}
   ${inhalt}
   </div>
-  ${ui.schritt !== "protokoll" ? `<div class="fusszeile">
+  ${pr.kind ? `<div class="fusszeile">${schrittNachbar(-1) ? `<button class="knopf rand" data-act="schritt" data-arg="${schrittNachbar(-1)}">← Zurück</button>` : "<span></span>"}
+    ${schrittNachbar(1) ? `<button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button>` : ""}</div>`
+  : ui.schritt !== "protokoll" ? `<div class="fusszeile">
     ${schrittNachbar(-1) ? `<button class="knopf rand" data-act="schritt" data-arg="${schrittNachbar(-1)}">← Zurück</button>` : "<span></span>"}
     <button class="knopf" data-act="schritt" data-arg="${schrittNachbar(1)}">Weiter →</button></div>`
     : `<div class="fusszeile"><button class="knopf rand" data-act="schritt" data-arg="abschluss">← Zurück</button>
        <button class="knopf" data-act="beenden">${bild(istGesperrt(s) ? "schloss" : "haken", "s")} ${istGesperrt(s) ? "Zur Übersicht" : "Sitzung beenden"}</button></div>`}`;
 }
+const schritteListe = () => (pr.kind ? SCHRITTE.filter(([k]) => PROT_SCHRITTE.includes(k)) : SCHRITTE);
 function schrittNachbar(d) {
-  const i = SCHRITTE.findIndex(([k]) => k === ui.schritt) + d;
-  return SCHRITTE[i]?.[0];
+  const liste = schritteListe(), i = liste.findIndex(([k]) => k === ui.schritt) + d;
+  return liste[i]?.[0];
 }
 // --- Namen antippen ------------------------------------------------------------
 // Ein "Ziel" ist der Pfad, dem angetippte Namen zugeordnet werden:
@@ -1013,8 +1218,10 @@ function standardZiel() {
   if (ui.schritt === "anliegen") return s.anliegen[ui.anliegenIdx] ? `anliegen.${ui.anliegenIdx}.aussagen` : null;
   if (ui.schritt === "start" || ui.schritt === "abschluss") {
     const basis = ui.schritt === "start" ? "rollen" : "naechsteRollen";
-    const frei = ROLLEN.find(([r]) => !s[basis][r]);
-    return `${basis}.${(frei || ROLLEN[0])[0]}`;
+    const aktiv = aktiveRollen(s);
+    if (!aktiv.length) return null;
+    const frei = aktiv.find(([r]) => !s[basis][r]);
+    return `${basis}.${(frei || aktiv[0])[0]}`;
   }
   return null;
 }
@@ -1061,8 +1268,16 @@ function namensFeld(pfad, werte, text) {
       : `<span class="leer-hinweis">antippen, Namen wählen</span>`}</div>`;
 }
 function rollenFelder(obj, pfad, t) {
-  return `<div class="raster">${ROLLEN.map(([r, b]) => `<div class="feld"><span class="zeile">${bild(b)} ${t[r]}</span>
-    ${namensFeld(`${pfad}.${r}`, obj[r], t[r])}</div>`).join("")}</div>`;
+  const s = sitzung(), schalter = pfad === "rollen" && !pr.kind;
+  const rollen = schalter ? ROLLEN : aktiveRollen(s);
+  if (!rollen.length) return `<p class="leise">Ohne Rollen – die Lehrkraft leitet den Klassenrat.</p>`;
+  return `<div class="raster">${rollen.map(([r, b]) => {
+    const an = rolleAktiv(s, r);
+    const knopf = schalter ? `<button class="rollen-schalter ${an ? "an" : ""}" data-act="rolle-umschalten" data-arg="${r}" role="switch" aria-checked="${an}"
+      title="${an ? "Rolle abschalten – die Lehrkraft übernimmt" : "Rolle wieder an ein Kind vergeben"}"><span class="knubbel"></span></button>` : "";
+    return `<div class="feld ${an ? "" : "rolle-aus"}"><span class="zeile">${bild(b)} ${t[r]} ${knopf}</span>
+      ${an ? namensFeld(`${pfad}.${r}`, obj[r], t[r]) : `<div class="namensfeld aus">übernimmt die Lehrkraft</div>`}</div>`;
+  }).join("")}</div>`;
 }
 function namenZeilen(liste, pfad, platzhalter, titel) {
   zielTexte[pfad] = { text: `${titel} – neue Zeile`, liste: true };
@@ -1100,9 +1315,13 @@ function schrittStart(s, t) {
   ${namenLeiste()}
   <div class="karte">
     <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("leute")} Rollen</h3>
-      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="rollen" style="margin-left:auto">Rollen vorschlagen</button></div>
+      <span class="aktionen" style="margin-left:auto">
+        <button class="knopf mini rand" data-act="rollen-hilfe" data-arg="rollen">📋 Rollen-Hilfen</button>
+        <button class="knopf mini rand" data-act="rollen-alle">${aktiveRollen(s).length ? "Ohne Rollen" : "Alle Rollen vergeben"}</button>
+        ${aktiveRollen(s).length ? `<button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="rollen">Rollen vorschlagen</button>` : ""}</span></div>
     ${rollen}
-    <p class="leise klein">Der Vorschlag wählt die ${t.kinder}, die bisher am seltensten eine Rolle hatten.</p>
+    <p class="leise klein">Mit dem Schalter neben einer Rolle übernimmt die Lehrkraft diese Rolle – z. B. am Anfang, bis die Klasse geübt ist.
+      Die Auswahl gilt auch für die nächsten Sitzungen. Der Vorschlag wählt die ${t.kinder}, die bisher am seltensten eine Rolle hatten.</p>
   </div>`;
 }
 
@@ -1113,7 +1332,16 @@ function schrittPositiv(s, t) {
   </div>`;
 }
 
+function weitergabeBox(s) {
+  const k = klasse(), liste = weitergaben(k).filter((x) => x.s.nr < s.nr && !wgFertig(x.wg.status));
+  if (!liste.length) return "";
+  return `<div class="karte wg-karte"><h3 style="margin-top:0">${bild("brief", "m")} Weitergegeben – gibt es schon eine Antwort?</h3>
+    ${liste.map((x) => weitergabeZeile(k, x, true)).join("")}</div>`;
+}
 function schrittRueckblick(s, t) {
+  return weitergabeBox(s) + schrittRueckblickBeschluesse(s, t);
+}
+function schrittRueckblickBeschluesse(s, t) {
   const offen = offeneFuer(s);
   if (!offen.length) return `<div class="karte leer">${bild("haken", "l")}<p><b>Keine offenen Beschlüsse.</b><br>Aus früheren Sitzungen ist nichts zu überprüfen.</p></div>`;
   const opt = [["ja", "froh"], ["teils", "mittel"], ["nein", "traurig"], ["verworfen", "nicht_moeglich"]];
@@ -1179,11 +1407,22 @@ function schrittAnliegen(s, t) {
     <div class="aktionen abstand"><button class="knopf mini" data-act="bk-alle">Alle übernehmen</button></div></div></div>` : ""}
   ${vertagt.length ? `<div class="hinweis-box info">${bild("zurueck", "m")}<div><b>Vertagt aus Sitzung ${vorher.nr}:</b> ${vertagt.map((a) => esc(a.thema || "ohne Thema")).join(", ")}
     <div class="aktionen abstand"><button class="knopf mini" data-act="vertagt-uebernehmen">Übernehmen</button></div></div></div>` : ""}
+  ${s.anliegen.length && !pr.kind ? zeitplanZeile(s, k, t) : ""}
   ${s.anliegen.length ? anliegenKarte(s.anliegen[ui.anliegenIdx], ui.anliegenIdx, t, k)
     : `<div class="karte leer">${bild("wandzeitung", "l")}<p>Noch kein ${t.einAnliegen}. Trage die ${t.mehrere} von der Wandzeitung ein${(k.briefkasten || []).length ? " oder übernimm sie aus dem Briefkasten" : ""}.</p>
        <button class="knopf" data-act="anliegen-neu">＋ ${t.einAnliegen}</button></div>`}`;
 }
 
+// --- Zeitplan: geplante Minuten je Anliegen, Timer folgt dem geöffneten Anliegen -----------------
+const minutenFuer = (a, k = klasse()) => Math.max(1, +a.minuten || +k.timer || 10);
+function zeitplanZeile(s, k, t) {
+  const summe = s.anliegen.reduce((n, a) => n + minutenFuer(a, k), 0);
+  const offen = s.anliegen.filter((a) => !a.ergebnis).reduce((n, a) => n + minutenFuer(a, k), 0);
+  const ende = offen ? new Date(Date.now() + offen * 6e4).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+  return `<p class="zeitplan">${bild("uhr", "s")} <b>Zeitplan:</b> ${s.anliegen.length} ${s.anliegen.length === 1 ? t.einAnliegen : t.mehrere} · ${summe} min geplant
+    ${offen && offen !== summe ? ` · noch ${offen} min offen` : ""}${ende ? ` · fertig etwa um ${ende}` : ""}
+    <span class="leise klein">${k.autoTimer === false ? "· Timer von Hand starten" : "· Der Timer startet beim Öffnen eines " + (k.stufe === "gs" ? "Themas" : "Anliegens") + "."}</span></p>`;
+}
 function anliegenKarte(a, i, t, k) {
   const p = `anliegen.${i}`;
   const gs = k.stufe === "gs";
@@ -1192,9 +1431,11 @@ function anliegenKarte(a, i, t, k) {
     <div class="anliegen-kopf">
       <span class="nr">${i + 1}</span>
       <input type="text" data-k="${p}.thema" data-reiter value="${esc(a.thema)}" placeholder="${t.einAnliegen}: Worum geht es in einem Satz?">
-      <button class="knopf mini zweit" data-act="timer-start" title="Timer für dieses ${t.einAnliegen} starten">${bild("uhr", "s")} Timer</button>
-      <button class="x" data-act="anliegen-weg" data-arg="${i}" title="${t.einAnliegen} löschen">✕</button>
+      ${pr.kind ? "" : `<label class="minuten" title="Geplante Zeit für dieses ${t.einAnliegen}">${bild("uhr", "s")}<input type="number" min="1" max="90" data-k="${p}.minuten" data-typ="zahl" value="${minutenFuer(a, k)}"> min</label>
+      <button class="knopf mini zweit" data-act="timer-start" data-arg="${i}" title="Timer für dieses ${t.einAnliegen} starten / fortsetzen">${timer.aid === a.id && timer.laeuft ? "⏸ Pause" : "▶ Timer"}</button>
+      <button class="x" data-act="anliegen-weg" data-arg="${i}" title="${t.einAnliegen} löschen">✕</button>`}
     </div>
+    ${sprechzeitText(a) ? `<p class="sprechzeit">${bild("uhr", "s")} besprochen: ${sprechzeitText(a)}${a.minuten || k.timer ? ` <span class="leise">(geplant ${minutenFuer(a, k)} min)</span>` : ""}</p>` : ""}
     <div class="raster">
       <div class="feld"><span class="zeile">${t.von}</span>${namensFeld(`${p}.von`, a.von, nr(t.von))}</div>
     </div>
@@ -1232,7 +1473,11 @@ function anliegenKarte(a, i, t, k) {
         ${gs ? "" : `<label class="feld"><span class="zeile">Abstimmung</span><select class="feld" data-k="${p}.einstimmig"><option value="">–</option>
           <option ${a.einstimmig === "einstimmig" ? "selected" : ""}>einstimmig</option><option ${a.einstimmig === "mit Mehrheit" ? "selected" : ""}>mit Mehrheit</option></select></label>`}
       </div></div>` : ""}
-    ${a.ergebnis === "weiter" ? `<div class="beschluss-box"><label class="feld">Weitergeben an<input type="text" data-k="${p}.weiterAn" value="${esc(a.weiterAn)}" placeholder="${gs ? "Lehrkraft, Schulleitung …" : "Lehrkraft, SMV, Schulleitung …"}"></label></div>` : ""}
+    ${a.ergebnis === "weiter" ? `<div class="beschluss-box"><label class="feld">Weitergeben an<input type="text" data-k="${p}.weiterAn" value="${esc(a.weiterAn)}" placeholder="${gs ? "Lehrkraft, Schulleitung …" : "Lehrkraft, SMV, Schulleitung …"}"></label>
+      <label class="feld abstand">${gs ? "Das wünschen wir uns" : "Unser Antrag"}<textarea rows="2" data-k="${p}.antrag" placeholder="${esc(antragVorschlag(a) || (gs ? "Was soll passieren?" : "Was soll die SMV / Schulleitung tun?"))}">${esc(a.antrag)}</textarea></label>
+      ${pr.kind ? "" : `<div class="aktionen abstand"><button class="knopf mini zweit" data-act="antrag-drucken" data-arg="${sitzung().id}|${i}">📄 ${gs ? "Brief" : "Antrag"} drucken</button>
+        <button class="knopf mini rand" data-act="antrag-teilen" data-arg="${sitzung().id}|${i}">Als Text teilen / kopieren</button>
+        <span class="leise klein">Die Rückmeldung wird später unter „Beschlüsse“ eingetragen.</span></div>`}</div>` : ""}
     ${a.ergebnis === "vertagt" ? `<p class="leise klein">Wird in der nächsten Sitzung zur Übernahme vorgeschlagen.</p>` : ""}
   </div>
   ${ui.anliegenIdx < sitzung().anliegen.length - 1 ? `<div class="aktionen"><button class="knopf zweit" data-act="anliegen-tab" data-arg="${i + 1}">Nächstes ${t.einAnliegen} →</button></div>` : ""}`;
@@ -1297,7 +1542,8 @@ function schrittAbschluss(s, t) {
   ${istGesperrt(s) ? "" : namenLeiste()}
   <div class="karte">
     <div class="titelzeile" style="margin-bottom:6px"><h3 style="margin:0">${bild("kalender")} Nächste Sitzung</h3>
-      <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="naechsteRollen" style="margin-left:auto">Rollen vorschlagen</button></div>
+      <span class="aktionen" style="margin-left:auto">${aktiveRollen(s).length ? `<button class="knopf mini rand" data-act="rollen-hilfe" data-arg="naechsteRollen">📋 Rollen-Hilfen</button>
+        <button class="knopf mini zweit" data-act="rollen-vorschlag" data-arg="naechsteRollen">Rollen vorschlagen</button>` : ""}</span></div>
     ${rollen}
     <div class="raster abstand"><label class="feld">Nächster Klassenrat am<input type="date" data-k="naechsterTermin" value="${esc(s.naechsterTermin)}"></label>
     <label class="feld"><span class="zeile">Ende der Sitzung <button class="knopf mini rand" data-act="zeit" data-arg="ende">jetzt</button></span><input type="time" data-k="ende" value="${esc(s.ende)}"></label></div>
@@ -1328,7 +1574,7 @@ function moderationsKarten() {
   const n = (x) => esc((Array.isArray(x) ? x : x ? [x] : []).map((y) => kartenName(y)).join(", "));
   const karten = [];
   const add = (schritt, icon, titel, text, hinweis = "") => karten.push({ schritt, icon, titel, text, hinweis });
-  const rollen = ROLLEN.slice(1).filter(([r]) => s.rollen[r]).map(([r]) => `${t[r]}: <b>${n(s.rollen[r])}</b>`).join(" · ");
+  const rollen = aktiveRollen(s).filter(([r]) => r !== "leitung" && s.rollen[r]).map(([r]) => `${t[r]}: <b>${n(s.rollen[r])}</b>`).join(" · ");
   add("start", "glocke", "Eröffnung", gs ? "Ich begrüße euch zu unserem Klassenrat!" : `Ich eröffne den Klassenrat. Heute ist unsere Sitzung Nr. ${s.nr}.`,
     rollen ? `Heute helfen mit: ${rollen}` : "");
   add("start", "regel", "Unsere Regeln", gs ? "Wir hören einander zu. Wir lassen andere ausreden. Wir sind freundlich zueinander."
@@ -1353,9 +1599,10 @@ function moderationsKarten() {
   add("abschluss", "froh", t.abschluss, gs ? "Wie fandet ihr unseren Klassenrat heute?" : "Zum Schluss das Blitzlicht: Wie fandet ihr die heutige Sitzung?");
   karten.at(-1).blitz = true;
   // immer zeigen – die Namen erscheinen, sobald sie im Protokoll eingetragen werden
-  const neu = ROLLEN.map(([r]) => `${t[r]}: <b>${s.naechsteRollen[r] ? n(s.naechsteRollen[r]) : "…"}</b>`).join("<br>");
-  const termin = s.naechsterTermin ? `<br>${gs ? "Der nächste Klassenrat ist am" : "Nächster Klassenrat:"} <b>${datum(s.naechsterTermin, true)}</b>` : "";
-  add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu + termin);
+  const neu = aktiveRollen(s).map(([r]) => `${t[r]}: <b>${s.naechsteRollen[r] ? n(s.naechsteRollen[r]) : "…"}</b>`).join("<br>");
+  const terminText = s.naechsterTermin ? `${gs ? "Der nächste Klassenrat ist am" : "Nächster Klassenrat:"} <b>${datum(s.naechsterTermin, true)}</b>` : "";
+  if (neu) add("nach-blitz", "kalender", "Nächstes Mal", gs ? "Beim nächsten Klassenrat helfen:" : "In der nächsten Sitzung übernehmen:", neu + (terminText ? "<br>" + terminText : ""));
+  else add("nach-blitz", "kalender", "Nächstes Mal", terminText || (gs ? "Bald ist wieder Klassenrat." : "Der nächste Termin folgt."));
   add("nach-blitz", "haken", "Ende", gs ? "Der Klassenrat ist zu Ende. Danke an alle!" : "Ich beende den Klassenrat. Vielen Dank an alle!");
   karten.at(-1).ende = true;
   return karten;
@@ -1372,6 +1619,7 @@ function modHTML(karten, idx, opt) {
     <div class="oben"><span class="bild l">${opt.glocke}</span><h2>Moderationskarte</h2>
       <span class="badge">${idx + 1} / ${karten.length}</span>
       ${opt.hinweis ? `<span class="leise klein">${opt.hinweis}</span>` : ""}
+      ${opt.uhr ? `<span class="tafel-uhr" hidden></span>` : ""}
       <div class="aktionen">${knoepfe}</div></div>
     <div class="mod-karte">
       <div class="mod-schritt"><span class="n">${k.schrittNr}</span><span class="bild m">${k.ikon}</span> ${k.titel}</div>
@@ -1391,6 +1639,7 @@ function modKartenMitBild() {
 function modOrtIdx(karten) {
   // Nach dem Abschluss (Schritt „Protokoll“): Rollen für die nächste Sitzung bzw. Ende zeigen
   if (ui.schritt === "protokoll") return karten.findIndex((k) => k.schritt === "nach-blitz");
+  if (ui.schritt === "anliegen" && !sitzung()?.anliegen.length) return karten.findIndex((k) => k.schritt === "anliegen");
   return karten.findIndex((k) => k.schritt === ui.schritt && (ui.schritt !== "anliegen" || k.titel.startsWith(`${T().einAnliegen} ${ui.anliegenIdx + 1}`)));
 }
 const nachBlitzIdx = (karten) => karten.findIndex((k) => k.schritt === "nach-blitz");
@@ -1400,7 +1649,7 @@ function renderModeration() {
   if (!mod.offen || !sitzung()) { el.innerHTML = ""; return; }
   const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
-  el.innerHTML = modHTML(karten, mod.idx, { modus: "lokal", glocke: BILDER.glocke, blitzKnopf: true });
+  el.innerHTML = modHTML(karten, mod.idx, { modus: "lokal", glocke: BILDER.glocke, blitzKnopf: true, uhr: true });
 }
 
 // --- Tafel-Fenster: zweites Browserfenster auf dem Tafel-Bildschirm, live verbunden ------
@@ -1412,7 +1661,7 @@ function tafelSenden() {
   const karten = modKartenMitBild();
   mod.idx = Math.max(0, Math.min(mod.idx, karten.length - 1));
   const daten = { typ: "klassenrat-mod", karten, idx: mod.idx, stufe: klasse().stufe, glocke: BILDER.glocke,
-    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}`, blitz: blitzDaten() };
+    hinweis: `Klasse ${klasse().name} · Sitzung ${sitzung().nr}`, blitz: blitzDaten(), zeit: zeitDaten() };
   if (tafelOffen()) tafel.postMessage(daten, "*");
   if (direktOffen()) { try { direkt.conn.send(daten); } catch (e) { /* getrennt */ } }
   mod.anzahl = karten.length;
@@ -1531,7 +1780,7 @@ function renderDirektTafel() {
   const ende = `<button class="knopf" data-act="direkt-ende">Beenden</button>`;
   if (direkt.status === "verbunden" && tafelDaten) {
     el.innerHTML = tb.blitz && tafelDaten.blitz ? boardBlitzHTML(tafelDaten.blitz)
-      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "direkt", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true, ende });
+      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "direkt", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true, ende, uhr: true });
     return;
   }
   const text = { starte: "Verbindung wird vorbereitet …", wartet: "Am Protokollgerät „Moderationskarten“ → „Direkt mit der Tafel verbinden“ wählen und diesen Code eingeben:",
@@ -1564,6 +1813,19 @@ function stimmeZaehlen(k, rueck) {
   if (ui.view === "sitzung" && ui.schritt === "abschluss") render(); else tafelSenden();
 }
 setInterval(() => { if (tafel && tafel.closed) { tafel = null; renderFern(); } }, 1500);
+// Uhr des Zeitwächters auf den Moderationskarten (Tafel zählt selbst weiter)
+function uhrAktualisieren() {
+  const el = document.querySelector(".tafel-uhr");
+  if (!el) return;
+  const z = boardAktiv() ? boardDaten()?.zeit : zeitDaten();
+  if (!z) { el.hidden = true; return; }
+  const rest = z.bis ? Math.max(0, Math.round((z.bis - Date.now()) / 1000)) : z.rest;
+  const um = z.ende || rest === 0, bald = !um && rest <= 120 && z.gesamt > 120;
+  el.hidden = false;
+  el.className = "tafel-uhr" + (um ? " um" : bald ? " bald" : "");
+  el.textContent = um ? "⏱ Die Zeit ist um!" : `⏱ ${String(Math.floor(rest / 60)).padStart(2, "0")}:${String(rest % 60).padStart(2, "0")}${bald ? " · noch 2 Minuten" : ""}`;
+}
+setInterval(uhrAktualisieren, 500);
 
 // --- Tafel-Bildschirm (Tafel-Fenster oder Tafel-Rechner): Karten oder Blitzlicht ---------
 const tb = { blitz: false, zeigen: false, verlauf: [], sperre: false, danke: null };
@@ -1625,7 +1887,7 @@ function tafelStarten() {
   window.tafelZeigen = () => {
     if (!tafelDaten) return;
     $("#tafel-ansicht").innerHTML = tb.blitz && tafelDaten.blitz ? boardBlitzHTML(tafelDaten.blitz)
-      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "tafel", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true });
+      : modHTML(tafelDaten.karten, tafelDaten.idx, { modus: "tafel", glocke: tafelDaten.glocke, hinweis: tafelDaten.hinweis, blitzKnopf: true, uhr: true });
   };
   const senden = (aktion, d) => { try { window.opener?.postMessage({ typ: "klassenrat-tafel", aktion, d }, "*"); } catch (e) { /* getrennt */ } };
   window.addEventListener("message", (e) => {
@@ -1705,7 +1967,7 @@ function renderTafelOrdner() {
   document.body.dataset.stufe = d.stufe;
   const alt = (Date.now() - d.zeit) / 6e4;
   if (tb.blitz && d.blitz) { el.innerHTML = boardBlitzHTML(d.blitz); return; }
-  el.innerHTML = modHTML(d.karten, tafelOrdner.idx, { modus: "ordner", glocke: BILDER.glocke, ende, blitzKnopf: true,
+  el.innerHTML = modHTML(d.karten, tafelOrdner.idx, { modus: "ordner", glocke: BILDER.glocke, ende, blitzKnopf: true, uhr: true,
     hinweis: `Klasse ${esc(d.klasse)} · Sitzung ${d.nr} · Stand ${new Date(d.zeit).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}${alt > 30 ? " (älter als 30 Minuten)" : ""}` });
 }
 
@@ -1799,7 +2061,7 @@ const BLITZ_PAUSE = 300;  // ms – verhindert nur versehentliches Doppeltippen
 function schrittProtokoll(s, t) {
   return `<div class="karte akzent">
       <h3 style="margin-top:0">${bild("unterschrift", "m")} Unterschreiben <span class="leise klein">mit Finger, Stift oder Maus ins Feld schreiben</span></h3>
-      <div class="pads">${UNTERSCHRIFTEN.map(([r]) => `<div class="pad ${s.unterschriften?.[r] ? "fertig" : ""}">
+      <div class="pads">${unterschriftenFuer(s).map(([r]) => `<div class="pad ${s.unterschriften?.[r] ? "fertig" : ""}">
         <canvas data-pad="${r}"></canvas>
         <div class="unter"><span>${unterschriftName(s, r, t)}</span><button class="knopf mini rand" data-act="unterschrift-weg" data-arg="${r}">löschen</button></div></div>`).join("")}</div>
       <p class="leise klein">Die Unterschriften erscheinen automatisch im Protokoll. Bitte erst unterschreiben, wenn das Protokoll fertig ist.</p>
@@ -1828,7 +2090,7 @@ function protokollHTML(s) {
   <div class="prot-meta">
     <div><small>Datum</small>${datum(s.datum, true)}</div><div><small>Sitzung Nr.</small>${s.nr}</div>
     <div><small>Beginn – Ende</small>${esc(s.beginn || "–")} – ${esc(s.ende || "–")}</div><div><small>Anwesend</small>${anw}</div>
-    ${ROLLEN.map(([r]) => `<div><small>${t[r]}</small>${esc(s.rollen[r] || "–")}</div>`).join("")}
+    ${ROLLEN.map(([r]) => `<div><small>${t[r]}</small>${rolleAktiv(s, r) ? esc(s.rollen[r] || "–") : "Lehrkraft"}</div>`).join("")}
   </div>
   ${s.fehlend.length ? `<p><b>Es fehlen:</b> ${s.fehlend.map(esc).join(", ")}</p>` : ""}
 
@@ -1846,7 +2108,8 @@ function protokollHTML(s) {
     const vs = a.vorschlaege.filter((v) => v.text);
     const erg = { beschluss: t.beschluss, vertagt: "vertagt", keine: "keine Einigung", weiter: "weitergegeben an " + (a.weiterAn || "…") }[a.ergebnis] || "–";
     return `<div class="prot-block"><div class="bt">${t.einAnliegen} ${i + 1}: ${esc(a.thema || "")}</div>
-      <p><b>${t.von}:</b> ${esc(namenText(a.von) || "–")}${a.art ? ` &nbsp;·&nbsp; <b>Art:</b> ${esc(a.art)}` : ""}</p>
+      <p><b>${t.von}:</b> ${esc(namenText(a.von) || "–")}${a.art ? ` &nbsp;·&nbsp; <b>Art:</b> ${esc(a.art)}` : ""}${sprechzeitText(a)
+        ? ` &nbsp;·&nbsp; <b>Zeit:</b> ${sprechzeitText(a)} (geplant ${minutenFuer(a, k)} min)` : ""}</p>
       ${a.worum ? `<p><b>${t.worum.replace(/ \(.*\)/, "")}</b> ${esc(a.worum)}</p>` : ""}
       ${voll(a.aussagen).length ? `<p><b>${t.aussagen}</b></p>` + tab(["Name", "Aussage"], voll(a.aussagen).map((z) => [esc(namenText(z.namen)), esc(z.text)])) : ""}
       ${vs.length ? `<p><b>${t.vorschlaege}</b></p>` + tab([t.vorschlag, "von", "dafür", "dagegen", ...(k.stufe === "gs" ? [] : ["Enth."])],
@@ -1859,9 +2122,9 @@ function protokollHTML(s) {
   <h4>${bild("froh")} 4 · ${t.abschluss}</h4>
   <p><b>${t.feedback}</b> &nbsp; ${bild("froh", "s")} ${s.feedback.gut || 0} &nbsp; ${bild("mittel", "s")} ${s.feedback.mittel || 0} &nbsp; ${bild("traurig", "s")} ${s.feedback.schlecht || 0}</p>
   ${s.vorsatz ? `<p><b>Vorsatz:</b> ${esc(s.vorsatz)}</p>` : ""}
-  <p><b>Rollen nächste Sitzung:</b> ${ROLLEN.map(([r]) => `${t[r]}: ${esc(s.naechsteRollen[r] || "–")}`).join(" · ")}</p>
+  ${aktiveRollen(s).length ? `<p><b>Rollen nächste Sitzung:</b> ${aktiveRollen(s).map(([r]) => `${t[r]}: ${esc(s.naechsteRollen[r] || "–")}`).join(" · ")}</p>` : ""}
   <p><b>Nächster Klassenrat:</b> ${datum(s.naechsterTermin, true)}</p>
-  <div class="prot-unterschriften">${UNTERSCHRIFTEN.map(([r]) => {
+  <div class="prot-unterschriften">${unterschriftenFuer(s).map(([r]) => {
     const u = s.unterschriften?.[r];
     return `<div>${u ? `<img src="${u.bild}" alt="Unterschrift">` : `<div class="platz"></div>`}
       <div class="linie">${unterschriftName(s, r, t)}${u ? ` · unterschrieben ${new Date(u.zeit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}` : ""}</div></div>`;
@@ -1877,6 +2140,135 @@ function drucken(html) {
   setTimeout(() => window.print(), 50);
 }
 
+// --- Rollen-Hilfen: kurze Checklisten für jede Rolle (Vollbild, Druck, Protokoll-iPad) ------------------
+const ROLLEN_HILFE = {
+  gs: {
+    leitung: ["leitet den Klassenrat", ["Begrüßt alle und sagt, was jetzt dran ist.", "Ruft die Kinder der Reihe nach auf.", "Fragt: Wer hat eine Idee?", "Lässt abstimmen.", "Sagt am Ende danke."]],
+    protokoll: ["schreibt auf", ["Schreibt das Thema auf.", "Schreibt auf, was wir abmachen.", "Schreibt dazu: Wer? Bis wann?", "Liest es am Ende vor."]],
+    zeit: ["passt auf die Zeit auf", ["Stellt die Uhr für jedes Thema.", "Sagt: Noch 2 Minuten!", "Sagt: Die Zeit ist um."]],
+    regel: ["passt auf die Regeln auf", ["Kennt unsere Regeln.", "Sagt freundlich Stopp, wenn jemand dazwischenredet.", "Zeigt die Regelkarte.", "Passt auf, dass alle freundlich bleiben."]],
+  },
+  ms: {
+    leitung: ["leitet die Sitzung", ["Eröffnet die Sitzung und beendet sie.", "Liest die Anliegen von der Wandzeitung vor.", "Erteilt das Wort – der Reihe nach (Redeliste).",
+      "Fasst Vorschläge zusammen und lässt abstimmen.", "Fragt nach: Wer übernimmt das, bis wann?", "Bleibt fair und neutral."]],
+    protokoll: ["schreibt mit", ["Schreibt Anliegen, Vorschläge und Beschlüsse mit.", "Notiert bei Beschlüssen: Wer? Bis wann?", "Fragt nach, wenn etwas unklar ist.",
+      "Liest die Beschlüsse am Ende vor.", "Unterschreibt das Protokoll."]],
+    zeit: ["achtet auf die Zeit", ["Startet den Timer für jedes Anliegen.", "Sagt Bescheid, wenn noch 2 Minuten bleiben.", "Meldet, wenn die Zeit um ist.",
+      "Erinnert rechtzeitig an das Ende der Sitzung."]],
+    regel: ["achtet auf die Regeln", ["Kennt die Gesprächsregeln.", "Erinnert freundlich, wenn jemand dazwischenredet.", "Zeigt die Regelkarte, wenn eine Regel verletzt wird.",
+      "Achtet darauf, dass alle respektvoll bleiben."]],
+  },
+};
+const hilfeFuer = (r, stufe = klasse()?.stufe || "ms") => ROLLEN_HILFE[stufe][r];
+function rollenHilfeListe(r, stufe) {
+  return `<ul class="rh-liste">${hilfeFuer(r, stufe)[1].map((x) => `<li data-act="rh-haken"><span class="box"></span>${esc(x)}</li>`).join("")}</ul>`;
+}
+function rollenHilfeHTML(s, basis) {
+  const t = T(), rollen = ROLLEN.filter(([r]) => rolleAktiv(s, r));
+  if (!rollen.length) return `<p class="leise">In dieser Sitzung sind keine Rollen vergeben – die Lehrkraft leitet.</p>`;
+  return `<div class="rh-raster">${rollen.map(([r, b]) => `<div class="rh-karte">
+    <div class="rh-kopf">${bild(b, "m")}<div><b>${esc(t[r])}</b>${s?.[basis]?.[r] ? `<span>${esc(s[basis][r])}</span>` : ""}</div></div>
+    <p class="rh-aufgabe">… ${esc(hilfeFuer(r)[0])}</p>${rollenHilfeListe(r)}</div>`).join("")}</div>`;
+}
+
+// --- Weitergabe an SMV, Schülerrat oder Schulleitung: Antrag zum Ausdrucken oder als Text ----------------
+const antragVorschlag = (a) => a.vorschlaege.filter((v) => v.text).sort((x, y) => (y.ja || 0) - (x.ja || 0))[0]?.text || "";
+const WG_STATUS = [["gesendet", "abgegeben"], ["angenommen", "angenommen"], ["teilweise", "teilweise"], ["abgelehnt", "abgelehnt"]];
+const wgFertig = (st) => ["angenommen", "teilweise", "abgelehnt"].includes(st);
+// alle weitergegebenen Anliegen einer Klasse (Rückmeldung steht in k.weitergaben, nicht in der gesperrten Sitzung)
+function weitergaben(k) {
+  return sortiert(k).flatMap((s) => s.anliegen.map((a, i) => ({ s, a, i, wg: k.weitergaben?.[a.id] || {} })).filter((x) => x.a.ergebnis === "weiter"));
+}
+function antragHTML(k, s, a) {
+  const t = TEXTE[k.stufe], gs = k.stufe === "gs", vs = a.vorschlaege.filter((v) => v.text), antrag = a.antrag || antragVorschlag(a);
+  return `<div class="antrag">
+    <div class="prot-kopf">${logoBlock()}<div><h1>${gs ? "Post von unserem Klassenrat" : "Antrag des Klassenrats"}</h1>
+      <div>Klasse <b>${esc(k.name)}</b> · ${esc(k.schuljahr || "")}</div></div><div class="illu-k">${BILDER.klassenrat}</div></div>
+    <div class="prot-meta antrag-meta"><div><small>An</small>${esc(a.weiterAn || "…")}</div><div><small>Von</small>Klassenrat der Klasse ${esc(k.name)}</div>
+      <div><small>Besprochen</small>Sitzung Nr. ${s.nr} · ${datum(s.datum, true)}</div>
+      <div><small>Ansprechpartner/in</small>${rolleAktiv(s, "leitung") && s.rollen.leitung ? `${esc(s.rollen.leitung)} (${esc(t.leitung)})` : ""}${k.lehrkraft ? `${rolleAktiv(s, "leitung") && s.rollen.leitung ? "<br>" : ""}${esc(k.lehrkraft)} (Klassenlehrkraft)` : ""}</div></div>
+    <h4>${bild("sprechen")} ${gs ? "Unser Thema" : "Anliegen"}</h4><p class="antrag-thema">${esc(a.thema || "–")}</p>${a.worum ? `<p>${esc(a.worum)}</p>` : ""}
+    ${vs.length ? `<h4>${bild(gs ? "idee" : "hand")} ${gs ? "Unsere Ideen" : "Vorschläge und Abstimmung in der Klasse"}</h4>
+      <table><tr><th>${esc(t.vorschlag)}</th><th>dafür</th><th>dagegen</th>${gs ? "" : "<th>Enth.</th>"}</tr>
+      ${vs.map((v) => `<tr><td>${esc(v.text)}</td><td>${v.ja || 0}</td><td>${v.nein || 0}</td>${gs ? "" : `<td>${v.enth || 0}</td>`}</tr>`).join("")}</table>` : ""}
+    <h4>${bild("beschluss")} ${gs ? "Das wünschen wir uns" : "Unser Antrag"}</h4><p class="antrag-text">${esc(antrag || "…")}</p>
+    <div class="prot-unterschriften">${[rolleAktiv(s, "leitung") ? t.leitung : null, "Klassenlehrkraft"].filter(Boolean).map((x) => `<div><div class="platz"></div><div class="linie">${esc(x)}</div></div>`).join("")}</div>
+    <div class="antwort-box"><b>Antwort von: ${esc(a.weiterAn || "…")}</b> <span class="leise">– bitte ausfüllen und an die Klasse ${esc(k.name)} zurückgeben</span>
+      <p><span class="box"></span> angenommen &nbsp; <span class="box"></span> teilweise &nbsp; <span class="box"></span> abgelehnt &nbsp; <span class="box"></span> wird besprochen am ____________</p>
+      <p>Begründung / Rückmeldung:</p><div class="zeile-leer"></div><div class="zeile-leer"></div><div class="zeile-leer"></div>
+      <p class="antwort-fuss">Datum: ________________ &nbsp;&nbsp; Unterschrift: ________________________________</p></div>
+  </div>`;
+}
+function antragText(k, s, a) {
+  const t = TEXTE[k.stufe], gs = k.stufe === "gs", vs = a.vorschlaege.filter((v) => v.text);
+  return [`${gs ? "Post von unserem Klassenrat" : "Antrag des Klassenrats"} der Klasse ${k.name}`, `An: ${a.weiterAn || "…"}`,
+    `Besprochen in Sitzung Nr. ${s.nr} am ${datum(s.datum, true)}`, "",
+    `${gs ? "Thema" : "Anliegen"}: ${a.thema || "–"}`, ...(a.worum ? [`Worum geht es: ${a.worum}`] : []),
+    ...(vs.length ? ["", gs ? "Unsere Ideen:" : "Vorschläge und Abstimmung:", ...vs.map((v) => `– ${v.text} (${v.ja || 0} dafür, ${v.nein || 0} dagegen${gs ? "" : `, ${v.enth || 0} Enthaltungen`})`)] : []),
+    "", `${gs ? "Das wünschen wir uns" : "Unser Antrag"}: ${a.antrag || antragVorschlag(a) || "…"}`, "",
+    ...(rolleAktiv(s, "leitung") && s.rollen.leitung ? [`Ansprechpartner/in: ${s.rollen.leitung} (${t.leitung})`] : []),
+    ...(k.lehrkraft ? [`Klassenlehrkraft: ${k.lehrkraft}`] : []), `Bitte gebt der Klasse ${k.name} eine Rückmeldung. Danke!`].join("\n");
+}
+function weitergabeZeile(k, x, mitSitzung) {
+  const st = x.wg.status || "";
+  return `<div class="wg-zeile">
+    <div class="wg-info"><b>${esc(x.a.thema || "ohne Thema")}</b><span class="leise klein">an ${esc(x.a.weiterAn || "…")}${mitSitzung ? ` · Sitzung Nr. ${x.s.nr}, ${datum(x.s.datum)}` : ""}</span></div>
+    <div class="chips">${WG_STATUS.map(([v, l]) => `<button class="chip ${st === v ? "an" : ""}" data-act="wg-status" data-arg="${x.a.id}|${v}">${l}</button>`).join("")}</div>
+    <input type="text" data-wg="${x.a.id}" value="${esc(x.wg.antwort)}" placeholder="Antwort / Rückmeldung">
+    <button class="knopf mini rand" data-act="antrag-drucken" data-arg="${x.s.id}|${x.i}">📄 Antrag</button></div>`;
+}
+
+// --- Jahresrückblick zum Ausdrucken – ohne Namen ----------------------------------------------------
+function ohneNamen(text, k) {
+  let x = String(text || "");
+  const teile = new Set();
+  for (const n of k.schueler) { teile.add(n); teile.add(kartenName(n, k.schueler)); for (const w of n.split(/\s+/)) if (w.length >= 3) teile.add(w); }
+  for (const w of [...teile].sort((a, b) => b.length - a.length)) {
+    x = x.replace(new RegExp(`(?<![\\p{L}\\p{N}])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "gu"), "…");
+  }
+  return x.replace(/…(\s*…)+/g, "…");
+}
+function jahresrueckblickHTML(k) {
+  const t = TEXTE[k.stufe], gs = k.stufe === "gs", sitz = sortiert(k), alleB = beschluesse(k);
+  const on = (x) => esc(ohneNamen(x, k));
+  const anliegen = sitz.flatMap((s) => s.anliegen);
+  const positiv = sitz.reduce((n, s) => n + s.positiv.filter((z) => z.text || z.namen.length).length, 0);
+  const geschafft = alleB.filter((b) => b.status === "ja"), offen = alleB.filter(istOffen);
+  const kachel = (zahl, text, icon) => `<div class="kachel">${bild(icon, "m")}<div><b>${zahl}</b><span>${text}</span></div></div>`;
+  const artZahl = {};
+  for (const a of anliegen) { const x = a.art || "ohne Angabe"; artZahl[x] = (artZahl[x] || 0) + 1; }
+  const artListe = Object.entries(artZahl).sort((a, b) => b[1] - a[1]), maxArt = Math.max(1, ...artListe.map(([, z]) => z));
+  const summe = { gut: 0, mittel: 0, schlecht: 0 };
+  for (const s of sitz) for (const x in summe) summe[x] += s.feedback[x] || 0;
+  const umgesetztAm = (b) => b.verlauf.find((v) => v.status === "ja")?.datum;
+  return `<div class="jahr">
+    <div class="prot-kopf">${logoBlock()}<div><h1>${gs ? "Unser Klassenrat-Jahr" : "Unser Klassenratsjahr"}</h1>
+      <div>Klasse <b>${esc(k.name)}</b> · Schuljahr ${esc(k.schuljahr || schuljahr())}</div></div><div class="illu-k">${BILDER.klassenrat}</div></div>
+    <div class="kacheln">${kachel(sitz.length, gs ? "Klassenräte" : "Sitzungen", "kalender")}${kachel(anliegen.length, gs ? "Themen besprochen" : "Anliegen besprochen", "sprechen")}
+      ${kachel(alleB.length, gs ? "Abmachungen" : "Beschlüsse", "beschluss")}${kachel(geschafft.length, gs ? "davon geklappt" : "davon umgesetzt", "haken")}
+      ${kachel(positiv, gs ? "schöne Momente erzählt" : "Beiträge in der Positivrunde", "stern")}</div>
+    <h4>${bild("haken")} Das haben wir geschafft</h4>
+    ${geschafft.length ? geschafft.map((b) => `<div class="ah-karte">${bild("haken")}<div><div class="ah-text">${on(b.anliegen.beschluss)}</div>
+      <div class="ah-info"><span>beschlossen am ${datum(b.sitzung.datum)}${umgesetztAm(b) ? ` · ${gs ? "geklappt" : "umgesetzt"} (festgestellt am ${datum(umgesetztAm(b))})` : ""}</span></div></div></div>`).join("")
+      : `<p class="leise">Noch kein Beschluss als „${esc(t.status.ja)}“ markiert.</p>`}
+    ${offen.length ? `<h4>${bild("zurueck")} Daran arbeiten wir noch</h4><ul class="jr-liste">${offen.map((b) => `<li>${on(b.anliegen.beschluss)} <span class="leise">(seit ${datum(b.sitzung.datum)})</span></li>`).join("")}</ul>` : ""}
+    <div class="raster-2 jr-raster">
+      <div><h4>${bild("wandzeitung")} Worüber wir gesprochen haben</h4>
+        ${artListe.length ? `<div class="hbalken">${artListe.map(([x, z]) => `<div class="hb-zeile"><span class="hb-name">${on(x)}</span>
+          <span class="hb-spur"><span class="hb-balken" style="width:${(z / maxArt) * 100}%"></span></span><b>${z}</b></div>`).join("")}</div>` : `<p class="leise">–</p>`}</div>
+      <div><h4>${bild("froh")} Wie fanden wir unsere Sitzungen?</h4>
+        <div class="legende">${blitzOptionen().map(([x, ic, l]) => `<span><i style="background:${BLITZ_FARBEN[x]}"></i>${bild(ic, "s")} ${l}: <b>${summe[x]}</b></span>`).join("")}</div>
+        ${sitz.some((s) => s.feedback.gut + s.feedback.mittel + s.feedback.schlecht) ? `<div class="stapel">${sitz.map((s) => {
+          const f = s.feedback, sum = (f.gut || 0) + (f.mittel || 0) + (f.schlecht || 0);
+          return `<div class="st-zeile"><span class="st-name">Nr. ${s.nr} <small>${datum(s.datum)}</small></span>
+            <span class="st-spur">${sum ? blitzOptionen().map(([x]) => f[x] ? `<span class="st-teil" style="flex:${f[x]};background:${BLITZ_FARBEN[x]}">${f[x] / sum >= .12 ? f[x] : ""}</span>` : "").join("") : `<span class="leise klein">kein Blitzlicht</span>`}</span>
+            <span class="st-zahlen">${sum ? blitzOptionen().map(([x]) => f[x] || 0).join(" · ") : ""}</span></div>`;
+        }).join("")}</div>` : `<p class="leise">Noch kein Blitzlicht erfasst.</p>`}</div>
+    </div>
+    <div class="prot-fuss">Klassenrat ${esc(k.name)} · Jahresrückblick ohne Namen · erstellt am ${datum(heute())}</div>
+  </div>`;
+}
+
 // --- Beschlüsse ----------------------------------------------------------------
 function viewBeschluesse() {
   const k = klasse(), t = T();
@@ -1888,12 +2280,16 @@ function viewBeschluesse() {
   <div class="titelzeile"><h2>${bild("beschluss", "m")} Beschlüsse ${esc(k.name)}</h2>
     <span class="aktionen" style="margin-left:auto">
       <button class="knopf zweit" data-act="aushang">${bild("wandzeitung", "s")} Aushang fürs Klassenzimmer</button>
+      <button class="knopf zweit" data-act="jahresrueckblick" title="Zum Ausdrucken – ohne Namen">${bild("stern", "s")} Jahresrückblick</button>
       <button class="knopf rand" data-act="beschluesse-drucken">Liste drucken</button></span></div>
   <div class="chips" style="margin-bottom:14px">
     ${[["offen", "offen", istOffen], ["erledigt", t.status.ja, (b) => b.status === "ja"], ["verworfen", t.status.verworfen, (b) => b.status === "verworfen"], ["alle", "alle", () => true]]
       .map(([f, l, fn]) => `<button class="chip ${ui.filter === f ? "an" : ""}" data-act="filter" data-arg="${f}">${l} (${zahl(fn)})</button>`).join("")}
   </div>
-  <div class="karte">${liste.length ? beschlussTabelle(liste, t) : `<div class="leer">${bild("haken", "l")}<p>Keine Beschlüsse in dieser Ansicht.</p></div>`}</div>`;
+  <div class="karte">${liste.length ? beschlussTabelle(liste, t) : `<div class="leer">${bild("haken", "l")}<p>Keine Beschlüsse in dieser Ansicht.</p></div>`}</div>
+  ${weitergaben(k).length ? `<div class="karte wg-karte"><h3 style="margin-top:0">${bild("brief", "m")} Weitergegeben ${k.stufe === "gs" ? "" : "(SMV, Schülerrat, Schulleitung …)"}</h3>
+    <p class="leise klein">Hier die Antwort eintragen, sobald sie da ist. Noch offene Weitergaben erscheinen im ${esc(t.rueckblick)} der nächsten Sitzung.</p>
+    ${weitergaben(k).reverse().map((x) => weitergabeZeile(k, x, true)).join("")}</div>` : ""}`;
 }
 function beschlussTabelle(liste, t) {
   return `<table class="uebersicht"><tr><th>Beschluss</th><th>Sitzung</th><th>Wer?</th><th>Bis wann?</th><th>Stand</th></tr>
@@ -1939,11 +2335,13 @@ function viewAuswertung() {
 
   return `
   <div class="titelzeile"><h2>${bild("stern", "m")} Auswertung ${esc(k.name)} <span class="leise klein">${esc(k.schuljahr || "")}</span></h2>
-    <button class="knopf rand" data-act="view" data-arg="sitzungen" style="margin-left:auto">${bild("schloss", "s")} Schließen</button></div>
+    <span class="aktionen" style="margin-left:auto"><button class="knopf zweit" data-act="jahresrueckblick">${bild("stern", "s")} Jahresrückblick drucken</button>
+      <button class="knopf rand" data-act="view" data-arg="sitzungen">${bild("schloss", "s")} Schließen</button></span></div>
   <div class="kacheln">
     ${kachel(sitz.length, "Sitzungen", "kalender")}${kachel(anliegen.length, k.stufe === "gs" ? "Themen" : "Anliegen", "sprechen")}
     ${kachel(alleB.length, "Beschlüsse", "beschluss")}${kachel(alleB.length ? Math.round(100 * stand.ja / alleB.length) + " %" : "–", t.status.ja, "haken")}
     ${kachel(dauer.length ? Math.round(dauer.reduce((a, b) => a + b, 0) / dauer.length) + " min" : "–", "Ø Dauer", "uhr")}
+    ${(() => { const m = anliegen.filter((a) => sprechzeitText(a)).map(sprechMinuten); return m.length ? kachel(Math.round(m.reduce((a, b) => a + b, 0) / m.length) + " min", `Ø je ${k.stufe === "gs" ? "Thema" : "Anliegen"}`, "sprechen") : ""; })()}
   </div>
 
   <div class="karte akzent">
@@ -1982,20 +2380,43 @@ function viewAuswertung() {
 
 // --- Briefkasten: Kinder werfen Anliegen vor der Sitzung selbst ein ------------------
 // Daten je Klasse: k.briefkasten = [{ id, namen, art, thema, worum, zeit }], Einstellungen in k.bkEinst
-const bkEinst = (k = klasse()) => ({ anonym: false, proTag: 0, proGeraet: 3, wechselCode: false, ...(k?.bkEinst || {}) });
+const bkEinst = (k = klasse()) => ({ anonym: false, proTag: 0, proGeraet: 3, wechselCode: false, vertraulich: true, ...(k?.bkEinst || {}) });
+// Vertrauliche Nachrichten („Nur für die Lehrkraft“) liegen getrennt in k.vertraulich und erscheinen nie in einer Sitzung
+const bkInfo = (k) => ({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym, vertraulich: bkEinst(k).vertraulich });
 const datumKurz = (z) => new Date(z).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-const bk = { offen: false, name: null, art: "", thema: "", worum: "", danke: false, meldung: "" };
+const bk = { offen: false, name: null, art: "", thema: "", worum: "", vertraulich: false, danke: false, meldung: "" };
 
 function briefkastenKarte(k) {
   const n = (k.briefkasten || []).length;
   return `<div class="hinweis-box info">${bild("briefkasten", "m")}<div style="flex:1"><b>Briefkasten</b>
     ${n ? `<span class="badge offen">${n} Anliegen</span>` : `<span class="leise klein">leer</span>`}
+    ${(k.vertraulich || []).length ? `<button class="badge vt-badge" data-act="view" data-arg="briefkasten" title="Vertrauliche Nachrichten ansehen (mit Passwort)">🔒 ${k.vertraulich.length} vertraulich</button>` : ""}
     ${onlineSchalter(k)}
     <span class="leise klein">· Die Kinder werfen Anliegen vor der Sitzung selbst ein – am Klassen-Tablet oder per QR-Code am eigenen iPad.</span>
     <div class="aktionen abstand"><button class="knopf mini" data-act="bk-start">${bild("brief", "s")} Briefkasten für die Klasse öffnen</button>
       <button class="knopf mini zweit" data-act="view" data-arg="briefkasten">Einträge & Einstellungen</button></div></div></div>`;
 }
 
+function vertraulichKarte(k) {
+  const liste = k.vertraulich || [];
+  if (!liste.length) return "";
+  if (!ui.vertraulichFrei) return `<div class="karte vt-karte">
+    <h3 style="margin-top:0">${bild("schloss", "m")} Nur für die Lehrkraft <span class="badge offen">${liste.length}</span></h3>
+    <p class="leise">${liste.length === 1 ? "Eine vertrauliche Nachricht" : liste.length + " vertrauliche Nachrichten"} – nur mit dem Passwort zu lesen.</p>
+    <button class="knopf" data-act="vt-oeffnen">${state.sperre ? "Mit Passwort öffnen" : "Passwort festlegen und öffnen"}</button></div>`;
+  return `<div class="karte vt-karte">
+    <div class="titelzeile"><h3 style="margin:0">${bild("schloss_offen", "m")} Nur für die Lehrkraft <span class="badge offen">${liste.length}</span></h3>
+      <button class="knopf rand mini" data-act="vt-schliessen" style="margin-left:auto">${bild("schloss", "s")} Wieder verbergen</button></div>
+    <p class="leise klein">Diese Nachrichten erscheinen nie in einer Sitzung. Am besten mit dem Kind allein sprechen. Ins Klassenrat-Protokoll nur mit seinem Einverständnis übernehmen.</p>
+    ${[...liste].reverse().map((x) => `<div class="vt-eintrag">
+      <div class="vt-kopf"><b>${x.namen.length ? esc(namenText(x.namen)) : "<i>ohne Namen</i>"}</b><span class="leise klein">${datumKurz(x.zeit)}${x.art ? " · " + esc(x.art) : ""}${x.quelle === "online" ? " · online" : ""}</span></div>
+      <p class="vt-thema">${esc(x.thema)}</p>${x.worum ? `<p class="leise">${esc(x.worum)}</p>` : ""}
+      ${x.notiz ? `<p class="klein">${bild("stift", "s")} ${esc(x.notiz)}</p>` : ""}
+      <div class="aktionen"><button class="knopf mini zweit" data-act="vt-notiz" data-arg="${x.id}">Notiz …</button>
+        <button class="knopf mini rand" data-act="vt-klassenrat" data-arg="${x.id}">In den Klassenrat übernehmen</button>
+        <button class="knopf mini gefahr" data-act="vt-loeschen" data-arg="${x.id}">Erledigt – löschen</button></div></div>`).join("")}
+  </div>`;
+}
 function viewBriefkasten() {
   const k = klasse(), e = bkEinst(k), liste = k.briefkasten || [];
   return `
@@ -2011,12 +2432,16 @@ function viewBriefkasten() {
       <div class="aktionen abstand"><button class="knopf gefahr" data-act="bk-leeren">Briefkasten leeren</button></div>`
       : `<div class="leer">${bild("briefkasten", "l")}<p>Der Briefkasten ist leer.</p></div>`}
   </div>
+  ${vertraulichKarte(k)}
   ${onlineBkKarte(k, e)}
   <div class="karte">
     <h3 style="margin-top:0">Einstellungen</h3>
     <div class="ergebnis">
       <label><input type="checkbox" data-bk="anonym" ${e.anonym ? "checked" : ""}> Anliegen ohne Namen erlauben</label>
+      <label><input type="checkbox" data-bk="vertraulich" ${e.vertraulich ? "checked" : ""}> Nachrichten „Nur für meine Lehrkraft“ erlauben</label>
     </div>
+    <p class="leise klein">Vertrauliche Nachrichten kommen nie in eine Sitzung. Sie sind nur hier mit dem Passwort zu lesen – gedacht für Themen,
+      die nicht vor die ganze Klasse gehören (z. B. Mobbing oder Sorgen zu Hause).</p>
     <p class="leise klein">Im Klassenrat stehen Anliegen meist mit Namen. Ohne Namen kann bei heiklen Themen helfen.</p>
     <label class="feld" style="max-width:360px">Höchstens so viele Anliegen pro Kind und Tag (0 = unbegrenzt)
       <input type="number" min="0" max="10" data-bk="proTag" value="${e.proTag}"></label>
@@ -2073,7 +2498,7 @@ async function onlineBkStarten(k, { neuerCode = false, behalten = false } = {}) 
     });
     peer.on("disconnected", () => { if (nochAktuell() && peer === o.peer) { try { peer.reconnect(); } catch (x) { /* egal */ } } });
     peer.on("connection", (conn) => {
-      conn.on("open", () => { o.verbindungen.add(conn); conn.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); });
+      conn.on("open", () => { o.verbindungen.add(conn); conn.send(bkInfo(k)); });
       conn.on("close", () => o.verbindungen.delete(conn));
       conn.on("data", (d) => onlineAnliegen(k, conn, d));
     });
@@ -2101,10 +2526,13 @@ function onlineAnliegen(k, conn, d) {
     return antwort(false, `Von diesem Gerät sind heute schon ${e.proGeraet === 1 ? "ein Anliegen" : e.proGeraet + " Anliegen"} gekommen. Mehr geht heute nicht – sprich sonst mit deiner Lehrkraft.`);
   if (e.proTag > 0 && name && k.bkLog.filter((x) => x.n === name.toLowerCase()).length >= e.proTag)
     return antwort(false, "Du hast heute schon genug Anliegen eingeworfen. Sprich sonst mit deiner Lehrkraft.");
-  (k.briefkasten ||= []).push({ id: eid, namen: name ? [name] : [], art, thema, worum, zeit: Date.now(), quelle: "online" });
+  const vertraulich = !!d.vertraulich && e.vertraulich;
+  if ((k.vertraulich || []).some((x) => x.id === eid)) return antwort(true);
+  (vertraulich ? (k.vertraulich ||= []) : (k.briefkasten ||= [])).push({ id: eid, namen: name ? [name] : [], art, thema, worum, zeit: Date.now(), quelle: "online" });
   k.bkLog.push({ g: geraet, n: name.toLowerCase(), zeit: Date.now() });
   speichern(); antwort(true);
-  meldung(`📬 Neues Anliegen${name ? " von " + name : ""} – Klasse ${k.name}`);
+  // vertraulich: ohne Namen melden – der Bildschirm ist vielleicht für alle sichtbar
+  meldung(vertraulich ? `🔒 Neue vertrauliche Nachricht – Klasse ${k.name}` : `📬 Neues Anliegen${name ? " von " + name : ""} – Klasse ${k.name}`);
   if (["sitzungen", "briefkasten"].includes(ui.view)) render();
 }
 // Schalter „online geöffnet / geschlossen“ (Startseite)
@@ -2147,7 +2575,7 @@ function postfachStarten(code) {
   const lsSet = (x, v) => { try { localStorage.setItem(x, v); } catch (e) { /* egal */ } };
   let geraet = lsGet("klassenrat-geraet");
   if (!geraet) { geraet = zufallsCode(16); lsSet("klassenrat-geraet", geraet); }
-  const pf = window.pf = { status: "verbinde", info: null, conn: null, peer: null, name: lsGet("klassenrat-name") || "", art: "", thema: "", worum: "",
+  const pf = window.pf = { status: "verbinde", info: null, conn: null, peer: null, name: lsGet("klassenrat-name") || "", art: "", thema: "", worum: "", vertraulich: false,
     meldung: "", danke: false, sendet: null, versuche: 0 };
   const merken = () => { for (const f of ["name", "thema", "worum"]) { const el = document.getElementById("pf-" + f); if (el) pf[f] = el.value; } };
   const zeichnen = () => {
@@ -2163,7 +2591,9 @@ function postfachStarten(code) {
       return;
     }
     if (pf.danke) {
-      el.innerHTML = kopf + `<div class="karte leer">${bild("brief", "l")}<p><b>Danke! Dein Anliegen ist angekommen.</b><br>Es wird im nächsten Klassenrat besprochen.</p>
+      el.innerHTML = kopf + `<div class="karte leer">${bild(pf.danke === "vertraulich" ? "schloss" : "brief", "l")}<p>${pf.danke === "vertraulich"
+        ? "<b>Danke! Deine Nachricht ist bei deiner Lehrkraft angekommen.</b><br>Nur sie kann sie lesen."
+        : "<b>Danke! Dein Anliegen ist angekommen.</b><br>Es wird im nächsten Klassenrat besprochen."}</p>
         <button class="knopf" data-act="pf-weiteres">Noch ein Anliegen</button></div>`;
       return;
     }
@@ -2179,8 +2609,9 @@ function postfachStarten(code) {
       <section><h3><span class="n">3</span> ${gs ? "Worum geht es? Schreibe einen Satz." : "Dein Anliegen in einem Satz"}</h3>
         <input type="text" id="pf-thema" maxlength="200" value="${esc(pf.thema)}" placeholder="z. B. In der Pause ist es im Klassenzimmer zu laut.">
         <textarea id="pf-worum" rows="3" maxlength="1000" placeholder="Möchtest du noch etwas erklären? (freiwillig)">${esc(pf.worum)}</textarea></section>
+      ${i.vertraulich ? `<section><h3><span class="n">4</span> Wer soll es lesen?</h3>${vertraulichWahl(pf.vertraulich, "pf-vertraulich", gs)}</section>` : ""}
       ${pf.meldung ? `<p class="bk-meldung">${esc(pf.meldung)}</p>` : ""}
-      <div class="bk-senden"><button class="knopf gross" data-act="pf-senden" ${bereit ? "" : "disabled"}>${bild("brief", "s")} ${pf.sendet ? "Wird gesendet …" : "Abschicken"}</button></div>
+      <div class="bk-senden"><button class="knopf gross" data-act="pf-senden" ${bereit ? "" : "disabled"}>${bild(pf.vertraulich && i.vertraulich ? "schloss" : "brief", "s")} ${pf.sendet ? "Wird gesendet …" : "Abschicken"}</button></div>
     </div>`;
   };
   const verbinden = async () => {
@@ -2192,7 +2623,7 @@ function postfachStarten(code) {
       const conn = pf.conn = peer.connect(BK_PREFIX + code, { reliable: true });
       conn.on("data", (d) => {
         if (d?.typ === "bk-info") { pf.info = d; pf.status = "offen"; zeichnen(); }
-        if (d?.typ === "bk-ok" && d.id === pf.sendet) { clearTimeout(pf.zeit); pf.sendet = null; pf.danke = true; pf.art = ""; pf.thema = ""; pf.worum = ""; pf.meldung = ""; zeichnen(); }
+        if (d?.typ === "bk-ok" && d.id === pf.sendet) { clearTimeout(pf.zeit); pf.sendet = null; pf.danke = pf.vertraulich && pf.info?.vertraulich ? "vertraulich" : true; pf.art = ""; pf.thema = ""; pf.worum = ""; pf.vertraulich = false; pf.meldung = ""; zeichnen(); }
         if (d?.typ === "bk-fehler" && d.id === pf.sendet) { clearTimeout(pf.zeit); pf.sendet = null; pf.meldung = d.grund; zeichnen(); }
       });
       conn.on("close", () => { pf.status = "geschlossen"; zeichnen(); });
@@ -2208,6 +2639,7 @@ function postfachStarten(code) {
     "pf-neu"() { pf.versuche = 0; verbinden(); },
     "pf-art"(x) { merken(); pf.art = pf.art === x ? "" : x; zeichnen(); },
     "pf-anonym"() { merken(); pf.anonym = !pf.anonym; zeichnen(); },
+    "pf-vertraulich"(x) { merken(); pf.vertraulich = x === "1"; zeichnen(); },
     "pf-weiteres"() { pf.danke = false; zeichnen(); },
     "pf-senden"() {
       merken();
@@ -2215,7 +2647,7 @@ function postfachStarten(code) {
       const anonym = pf.info?.anonym && pf.anonym;
       if (!anonym) lsSet("klassenrat-name", pf.name.trim());
       pf.sendet = id(); pf.meldung = "";
-      pf.conn.send({ typ: "bk-anliegen", id: pf.sendet, name: anonym ? "" : pf.name, art: pf.art, thema: pf.thema, worum: pf.worum, geraet });
+      pf.conn.send({ typ: "bk-anliegen", id: pf.sendet, name: anonym ? "" : pf.name, art: pf.art, thema: pf.thema, worum: pf.worum, geraet, vertraulich: !!(pf.vertraulich && pf.info?.vertraulich) });
       zeichnen();
       pf.zeit = setTimeout(() => { if (pf.sendet) { pf.sendet = null; pf.meldung = "Keine Antwort vom Briefkasten – bitte noch einmal abschicken."; zeichnen(); } }, 10000);
     },
@@ -2229,12 +2661,21 @@ function postfachStarten(code) {
   verbinden();
 }
 
+// Auswahl „für den Klassenrat“ / „nur für die Lehrkraft“ (Briefkasten am Tablet und online)
+function vertraulichWahl(an, act, gs) {
+  return `<div class="vt-wahl">
+    <button class="${an ? "" : "an"}" data-act="${act}" data-arg="0">${bild("leute", "m")}<span><b>${gs ? "Für unseren Klassenrat" : "Für den Klassenrat"}</b>
+      <small>${gs ? "Wir sprechen alle zusammen darüber." : "Das Anliegen wird in der Sitzung besprochen."}</small></span></button>
+    <button class="${an ? "an" : ""}" data-act="${act}" data-arg="1">${bild("schloss", "m")}<span><b>Nur für meine Lehrkraft</b>
+      <small>${gs ? "Nur deine Lehrerin oder dein Lehrer liest das. Ihr redet allein darüber." : "Vertraulich – kommt nicht in den Klassenrat. Deine Lehrkraft spricht mit dir allein."}</small></span></button></div>`;
+}
 function renderBriefkasten() {
   const el = $("#briefkasten-modus"), k = klasse();
   if (!bk.offen || !k) { el.innerHTML = ""; return; }
   const t = T(), e = bkEinst(k), gs = k.stufe === "gs";
   if (bk.danke) {
-    el.innerHTML = `<div class="blitz bk"><div class="danke">${bild("brief", "l")}Danke!<small>Dein Anliegen ist im Briefkasten.</small></div></div>`;
+    el.innerHTML = `<div class="blitz bk"><div class="danke">${bild(bk.danke === "vertraulich" ? "schloss" : "brief", "l")}Danke!<small>${bk.danke === "vertraulich"
+      ? "Deine Nachricht ist bei deiner Lehrkraft. Nur sie kann sie lesen." : "Dein Anliegen ist im Briefkasten."}</small></div></div>`;
     return;
   }
   const bereit = (bk.name || (e.anonym && bk.name === "")) !== null && bk.name !== null && bk.thema.trim();
@@ -2250,13 +2691,255 @@ function renderBriefkasten() {
       <section><h3><span class="n">3</span> ${gs ? "Worum geht es? Schreibe einen Satz." : "Dein Anliegen in einem Satz"}</h3>
         <input type="text" id="bk-thema" maxlength="140" value="${esc(bk.thema)}" placeholder="${gs ? "z. B. Beim Fußball wird immer gedrängelt." : "z. B. In der Pause ist es im Klassenzimmer zu laut."}">
         <textarea id="bk-worum" rows="2" maxlength="600" placeholder="${gs ? "Willst du noch mehr erzählen? (freiwillig)" : "Möchtest du noch etwas erklären? (freiwillig)"}">${esc(bk.worum)}</textarea></section>
+      ${e.vertraulich ? `<section><h3><span class="n">4</span> Wer soll es lesen?</h3>${vertraulichWahl(bk.vertraulich, "bk-vertraulich", gs)}</section>` : ""}
       ${bk.meldung ? `<p class="bk-meldung">${esc(bk.meldung)}</p>` : ""}
-      <div class="bk-senden"><button class="knopf gross" data-act="bk-senden" ${bereit ? "" : "disabled"}>${bild("brief", "s")} In den Briefkasten werfen</button>
+      <div class="bk-senden"><button class="knopf gross" data-act="bk-senden" ${bereit ? "" : "disabled"}>${bild(bk.vertraulich ? "schloss" : "brief", "s")} ${bk.vertraulich ? "An die Lehrkraft schicken" : "In den Briefkasten werfen"}</button>
         <span class="leise klein" id="bk-hinweis">${bereit ? "" : "Bitte deinen Namen antippen und das Anliegen aufschreiben."}</span></div>
     </div>
   </div>`;
 }
-function bkLeeren() { Object.assign(bk, { name: null, art: "", thema: "", worum: "", meldung: "" }); }
+function bkLeeren() { Object.assign(bk, { name: null, art: "", thema: "", worum: "", vertraulich: false, meldung: "" }); }
+
+// --- Protokoll-iPad: Die Protokollantin / der Protokollant schreibt am eigenen iPad mit -----------------
+// Das Gerät der Lehrkraft bleibt maßgeblich: Das iPad schickt nur Änderungen (Pfad → Wert), die Lehrkraft
+// übernimmt sie, sieht sie sofort und schickt den Stand zurück. Auf dem iPad wird nichts gespeichert.
+const PROT_PREFIX = "klassenrat-jpw-prot-";
+const PROT_FELDER = ["positiv", "anliegen", "vorsatz"];  // nur das darf das Protokoll-iPad ändern
+const PROT_SCHRITTE = ["positiv", "anliegen"];
+const pr = { kind: false, rolle: null, peer: null, conn: null, code: "", status: "aus", schreiben: true, kid: null, sid: null,
+  meldung: "", qr: null, timer: null, basis: null, sendeTimer: null, ort: null, versuche: 0, dialogOffen: false };
+const kopie = (x) => JSON.parse(JSON.stringify(x));
+const protLink = (code) => location.href.split("#")[0] + "#protokoll=" + code;
+
+// Unterschiede zweier Stände als Liste [Pfad, Wert] bzw. [Pfad, null, 1] (gelöscht); Listen mit neuer Länge als Ganzes
+function aenderungen(alt, neu, pfad = "", aus = []) {
+  if (alt === neu) return aus;
+  const obj = (x) => x !== null && typeof x === "object";
+  if (!obj(alt) || !obj(neu) || Array.isArray(alt) !== Array.isArray(neu) || (Array.isArray(neu) && alt.length !== neu.length)) {
+    aus.push(neu === undefined ? [pfad, null, 1] : [pfad, neu]);
+    return aus;
+  }
+  for (const key of new Set([...Object.keys(alt), ...Object.keys(neu)])) aenderungen(alt[key], neu[key], pfad ? pfad + "." + key : key, aus);
+  return aus;
+}
+// Eine Änderung vom Protokoll-iPad prüfen und übernehmen
+function opAnwenden(s, pfad, wert, weg) {
+  if (typeof pfad !== "string" || pfad.length > 200) return false;
+  const teile = pfad.split(".");
+  if (!PROT_FELDER.includes(teile[0]) || teile.some((x) => !x || ["__proto__", "prototype", "constructor"].includes(x))) return false;
+  if (!weg && JSON.stringify(wert ?? null).length > 200000) return false;
+  let o = s;
+  for (const x of teile.slice(0, -1)) { if (!o || typeof o !== "object" || !Object.hasOwn(o, x)) return false; o = o[x]; }
+  if (!o || typeof o !== "object") return false;
+  const letzt = teile.at(-1), alt = o[letzt];
+  if (Array.isArray(o) && !/^\d+$/.test(letzt)) return false;
+  if (weg) { if (Array.isArray(o)) return false; delete o[letzt]; return true; }
+  if (alt != null && (typeof alt !== typeof wert || Array.isArray(alt) !== Array.isArray(wert))) return false;
+  o[letzt] = wert;
+  return true;
+}
+// Neu zeichnen, ohne jemandem beim Tippen das Feld wegzunehmen: Werte anderer Felder sofort, Rest beim Verlassen des Felds
+function liveAktualisieren() {
+  const f = document.activeElement;
+  if (!f?.matches?.("#app input, #app textarea, #app select")) { render(); return; }
+  document.querySelectorAll("#app [data-k]").forEach((el) => {
+    if (el === f || el.type === "radio" || el.type === "checkbox") return;
+    const w = wertAn(el.dataset.k);
+    if (w != null && el.value !== String(w)) el.value = w;
+  });
+  ui.spaeterZeichnen = true;
+}
+document.addEventListener("focusout", () => setTimeout(() => {
+  if (ui.spaeterZeichnen && !document.activeElement?.matches?.("#app input, #app textarea, #app select")) { ui.spaeterZeichnen = false; render(); }
+}, 120));
+
+// Gerät der Lehrkraft ------------------------------------------------------------------------
+async function prStarten() {
+  prBeenden();
+  const k = klasse(), s = sitzung();
+  Object.assign(pr, { rolle: "lehrkraft", code: zufallsCode(12), status: "starte", schreiben: true, kid: k.id, sid: s.id, meldung: "", qr: null, qrFehler: "" });
+  const meins = pr.code;
+  prDialogZeigen();
+  qrSvg(protLink(meins)).then((svg) => { if (pr.code === meins) { pr.qr = svg; prDialogZeigen(true); } })
+    .catch((e) => { pr.qrFehler = e.message; prDialogZeigen(true); });
+  try { await peerLaden(); } catch (e) { pr.status = "fehler"; pr.meldung = e.message; prAnzeigen(); return; }
+  if (pr.code !== meins) return;
+  const peer = pr.peer = new window.Peer(PROT_PREFIX + meins);
+  peer.on("open", () => { if (pr.peer === peer) { pr.status = pr.conn?.open ? "verbunden" : "wartet"; prAnzeigen(); } });
+  peer.on("error", (e) => {
+    if (pr.peer !== peer || e.type === "peer-unavailable") return;
+    if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) { pr.meldung = "Verbindungsdienst nicht erreichbar"; }
+    else { pr.status = "fehler"; pr.meldung = "Fehler: " + e.type; }
+    prAnzeigen();
+  });
+  peer.on("disconnected", () => { if (pr.peer === peer) { try { peer.reconnect(); } catch (x) { /* egal */ } } });
+  peer.on("connection", (conn) => {
+    conn.on("open", () => {
+      if (pr.conn?.open && pr.conn !== conn) { try { conn.send({ typ: "pr-belegt" }); } catch (x) { /* weg */ } setTimeout(() => conn.close(), 300); return; }
+      pr.conn = conn; pr.status = "verbunden";
+      if (document.querySelector("#dialog .prot-dialog")) { $("#dialog").innerHTML = ""; pr.dialogOffen = false; }
+      prAnzeigen(); prStandSenden();
+      meldung("📝 Protokoll-iPad verbunden");
+    });
+    conn.on("data", (d) => { if (conn === pr.conn) prNachricht(d); });
+    conn.on("close", () => { if (conn === pr.conn) { pr.conn = null; if (pr.rolle === "lehrkraft") { pr.status = "wartet"; prAnzeigen(); } } });
+  });
+}
+function prBeenden() {
+  clearTimeout(pr.sendeTimer);
+  if (pr.rolle !== "lehrkraft") return;
+  if (pr.conn?.open) { try { pr.conn.send({ typ: "pr-ende" }); } catch (e) { /* weg */ } }
+  const alt = pr.peer;
+  setTimeout(() => { try { alt?.destroy(); } catch (e) { /* egal */ } }, 400);  // Abschied noch zustellen
+  Object.assign(pr, { rolle: null, peer: null, conn: null, status: "aus", code: "", qr: null, sid: null });
+  prAnzeigen();
+}
+function prAnzeigen() { renderProtLeiste(); prDialogZeigen(true); }
+function renderProtLeiste() {
+  const el = $("#prot-leiste");
+  if (!el) return;
+  if (pr.rolle !== "lehrkraft") { el.innerHTML = ""; return; }
+  const text = { starte: "wird vorbereitet …", wartet: "wartet auf das iPad (QR-Code)", verbunden: pr.schreiben ? "verbunden · schreibt mit" : "verbunden · pausiert",
+    fehler: pr.meldung }[pr.status] || "";
+  el.innerHTML = `<div class="fern prot">${bild("stift", "s")} <b>Protokoll-iPad</b> <span class="leise klein">${esc(text)}</span>
+    ${pr.status === "verbunden" ? `<button class="knopf mini ${pr.schreiben ? "rand" : ""}" data-act="prot-schreiben">${pr.schreiben ? "⏸ Pausieren" : "▶ Weiter schreiben lassen"}</button>`
+      : `<button class="knopf mini rand" data-act="prot-ipad">QR-Code</button>`}
+    <button class="x" data-act="prot-ende" title="Verbindung zum Protokoll-iPad beenden">✕</button></div>`;
+}
+function prDialogZeigen(nurAktualisieren) {
+  if (nurAktualisieren && !document.querySelector("#dialog .prot-dialog")) { pr.dialogOffen = false; return; }
+  if (pr.rolle !== "lehrkraft") { if (nurAktualisieren) $("#dialog").innerHTML = ""; return; }
+  pr.dialogOffen = true;
+  const t = T();
+  const status = { starte: `<span class="badge offen">wird vorbereitet …</span>`, wartet: `<span class="badge offen">wartet auf das iPad</span>`,
+    verbunden: `<span class="badge ja">verbunden</span>`, fehler: `<span class="badge nein">${esc(pr.meldung)}</span>` }[pr.status] || "";
+  $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog prot-dialog">
+    <h3>${bild("stift", "m")} Protokoll-iPad verbinden</h3>
+    <p class="leise">Die ${esc(t.protokoll)} scannt den QR-Code mit dem eigenen iPad und schreibt dort mit (${esc(t.positiv)} und ${esc(t.anliegen)}).
+      Alles erscheint sofort hier – du kannst jederzeit korrigieren oder das Schreiben pausieren.</p>
+    ${location.protocol === "file:" ? `<p class="bk-meldung">Das Tool ist als Datei geöffnet. Für das Protokoll-iPad das Tool über seine Web-Adresse (GitHub Pages) öffnen.</p>` : ""}
+    <div class="qr-bereich"><div class="qr">${pr.qr || `<span class="leise klein">${esc(pr.qrFehler || "QR-Code wird erstellt …")}</span>`}</div>
+      <div style="flex:1;min-width:180px"><p><b>Status:</b> ${status}</p><p class="link-text">${esc(protLink(pr.code))}</p>
+        <div class="aktionen"><button class="knopf rand mini" data-act="prot-link">Link kopieren</button></div></div></div>
+    <p class="leise klein">Der Code gilt nur für diese Sitzung, bis die Verbindung beendet wird. Die Klassenliste wird nur für die Namen
+      übertragen und auf dem iPad nicht gespeichert. Rollen, Anwesenheit, ${esc(t.rueckblick)} und Unterschriften bleiben bei dir.</p>
+    <div class="aktionen abstand"><button class="knopf" data-act="prot-dialog-zu">Fertig</button>
+      <button class="knopf gefahr" data-act="prot-ende">Verbindung beenden</button></div></div></div>`;
+}
+function prStandSendenSpaeter() { clearTimeout(pr.sendeTimer); pr.sendeTimer = setTimeout(prStandSenden, 200); }
+function prStandSenden() {
+  if (pr.rolle !== "lehrkraft" || !pr.conn?.open) return;
+  const k = state.klassen.find((x) => x.id === pr.kid), s = k?.sitzungen.find((x) => x.id === pr.sid);
+  if (!s) { prBeenden(); return; }
+  const { unterschriften, ...rest } = s;
+  const ort = ui.view === "sitzung" && ui.sitzungId === s.id ? { schritt: ui.schritt, idx: ui.anliegenIdx } : null;
+  try {
+    pr.conn.send({ typ: "pr-stand", schreiben: pr.schreiben && !s.gesperrt, ort, sitzung: { ...rest, unterschriften: {} },
+      klasse: { id: k.id, name: k.name, stufe: k.stufe, schueler: k.schueler, arten: k.arten || null, bausteine: k.bausteine || null, timer: k.timer, lehrkraft: k.lehrkraft } });
+  } catch (e) { /* getrennt */ }
+}
+function prNachricht(d) {
+  if (d?.typ === "pr-hallo") { prStandSenden(); return; }
+  if (d?.typ !== "pr-aenderung" || !Array.isArray(d.ops)) return;
+  const k = state.klassen.find((x) => x.id === pr.kid), s = k?.sitzungen.find((x) => x.id === pr.sid);
+  if (!s || s.gesperrt || !pr.schreiben) { prStandSenden(); return; }
+  let neu = false;
+  for (const op of d.ops.slice(0, 300)) if (Array.isArray(op) && opAnwenden(s, op[0], op[1], op[2])) neu = true;
+  if (!neu) { prStandSenden(); return; }
+  speichern();  // sichert und schickt den Stand zurück
+  if (ui.view === "sitzung" && ui.sitzungId === s.id) liveAktualisieren();
+}
+
+// Protokoll-iPad (Link aus dem QR-Code: …#protokoll=CODE) ------------------------------------------
+function protokollantStarten(code) {
+  Object.assign(pr, { kind: true, code, status: "verbinde", schreiben: false });
+  state = { version: 2, klassen: [], aktiveKlasse: null, logo: null };
+  Object.assign(ui, { view: "sitzung", schritt: "anliegen" });
+  document.title = "Klassenrat – Protokoll";
+  render();
+  prKindVerbinden();
+}
+async function prKindVerbinden() {
+  if (["ende", "belegt"].includes(pr.status)) return;
+  try { await peerLaden(); } catch (e) { pr.status = "getrennt"; pr.meldung = e.message; render(); return; }
+  try { pr.peer?.destroy(); } catch (e) { /* egal */ }
+  const peer = pr.peer = new window.Peer();
+  const nochmal = () => {
+    if (["ende", "belegt"].includes(pr.status) || pr.versuche++ > 200) return;
+    clearTimeout(pr.timer);
+    pr.timer = setTimeout(() => { if (!pr.conn?.open) prKindVerbinden(); }, 3000);
+  };
+  peer.on("open", () => {
+    const conn = pr.conn = peer.connect(PROT_PREFIX + pr.code, { reliable: true });
+    conn.on("open", () => { pr.versuche = 0; conn.send({ typ: "pr-hallo" }); });
+    conn.on("data", prKindNachricht);
+    conn.on("close", () => {
+      if (["ende", "belegt"].includes(pr.status) || conn !== pr.conn) return;
+      pr.status = "getrennt"; pr.meldung = "Verbindung unterbrochen – verbinde neu …"; render(); nochmal();
+    });
+  });
+  peer.on("error", (e) => {
+    if (["ende", "belegt"].includes(pr.status) || peer !== pr.peer) return;
+    pr.status = "getrennt";
+    pr.meldung = e.type === "peer-unavailable" ? "Das Gerät der Lehrkraft ist gerade nicht erreichbar." : "Verbindung nicht möglich (" + e.type + ")";
+    render(); nochmal();
+  });
+}
+function prKindNachricht(d) {
+  if (d?.typ === "pr-belegt") { pr.status = "belegt"; render(); return; }
+  if (d?.typ === "pr-ende") { pr.status = "ende"; state.klassen = []; pr.basis = null; try { pr.conn?.close(); } catch (e) { /* egal */ } render(); return; }
+  if (d?.typ !== "pr-stand" || !d.sitzung || !d.klasse) return;
+  const offen = prKindSenden();  // eigene, noch nicht geschickte Änderungen zuerst
+  for (const [p, w, weg] of offen) opAnwenden(d.sitzung, p, w, weg);
+  const k = { ...d.klasse, arten: d.klasse.arten || undefined, bausteine: d.klasse.bausteine || undefined, sitzungen: [d.sitzung] };
+  const vorher = { status: pr.status, schreiben: pr.schreiben, sid: ui.sitzungId };
+  state.klassen = [k]; state.aktiveKlasse = k.id; ui.sitzungId = d.sitzung.id;
+  pr.basis = kopie(d.sitzung);
+  pr.status = "verbunden"; pr.schreiben = !!d.schreiben; pr.meldung = "";
+  let neuZeichnen = vorher.status !== "verbunden" || vorher.schreiben !== pr.schreiben || vorher.sid !== ui.sitzungId;
+  // dem Protokoll der Lehrkraft folgen (neuer Schritt / neues Anliegen)
+  if (d.ort && PROT_SCHRITTE.includes(d.ort.schritt) && JSON.stringify(d.ort) !== JSON.stringify(pr.ort)) {
+    ui.schritt = d.ort.schritt; ui.anliegenIdx = d.ort.idx || 0; ui.ziel = null; neuZeichnen = true;
+  }
+  pr.ort = d.ort;
+  if (!PROT_SCHRITTE.includes(ui.schritt)) ui.schritt = "anliegen";
+  neuZeichnen ? render() : liveAktualisieren();
+}
+function prKindSendenSpaeter() { clearTimeout(pr.sendeTimer); pr.sendeTimer = setTimeout(prKindSenden, 120); }
+function prKindSenden() {
+  clearTimeout(pr.sendeTimer);
+  const s = sitzung();
+  if (!s || !pr.basis || !pr.conn?.open || !pr.schreiben) return [];
+  const ops = aenderungen(pr.basis, s).filter(([p]) => PROT_FELDER.includes(p.split(".")[0]));
+  if (!ops.length) return [];
+  try { pr.conn.send({ typ: "pr-aenderung", ops }); } catch (e) { return []; }
+  pr.basis = kopie(s);
+  return ops;
+}
+function renderKind() {
+  const k = klasse(), s = sitzung(), t = T();
+  document.body.dataset.stufe = k?.stufe || "ms";
+  $("#logo").innerHTML = `<span class="app-symbol">${BILDER["app-icon"]}</span>`;
+  $("#klassenwahl").hidden = true; $("#nav").innerHTML = ""; $("#timer-bereich").innerHTML = ""; $("#warnung").innerHTML = "";
+  $("#cloud").innerHTML = pr.status === "verbunden" ? `<span class="badge ja">● ${pr.schreiben ? "verbunden" : "pausiert"}</span>`
+    : `<span class="badge offen">${pr.status === "getrennt" ? "getrennt" : "…"}</span>`;
+  const warte = { verbinde: ["uhr", "Verbinde mit dem Gerät der Lehrkraft …", ""],
+    getrennt: ["uhr", "Keine Verbindung zum Gerät der Lehrkraft.", pr.meldung + " Das Tool versucht es weiter."],
+    ende: ["haken", "Die Sitzung ist beendet. Danke fürs Protokollieren!", "Auf diesem iPad ist nichts gespeichert. Du kannst die Seite schließen."],
+    belegt: ["schloss", "Es ist schon ein anderes Protokoll-iPad verbunden.", "Bitte deine Lehrkraft, die andere Verbindung zu beenden, und lade die Seite neu."] };
+  if (!k || !s || pr.status === "ende" || pr.status === "belegt") {
+    const [ic, titel, text] = warte[pr.status] || warte.verbinde;
+    $("#app").innerHTML = `<div class="karte leer" style="max-width:560px;margin:30px auto">${bild(ic, "l")}<p><b>${esc(titel)}</b><br><span class="leise">${esc(text)}</span></p></div>`;
+    return;
+  }
+  $("#app").innerHTML = `<div class="prot-kind-kopf">${bild("stift", "m")}<div><b>Protokoll-iPad</b> · Klasse ${esc(k.name)} · Sitzung Nr. ${s.nr}
+      <br><span class="leise klein">Du schreibst das Protokoll. Deine Lehrkraft sieht alles sofort und kann korrigieren.</span></div></div>
+    <details class="rh-mini"><summary>${bild("leute", "s")} Was macht die ${esc(t.protokoll)}?</summary>${rollenHilfeListe("protokoll")}</details>
+    ${pr.status === "getrennt" ? `<div class="sperr-box">${bild("uhr", "m")}<div><b>Verbindung unterbrochen.</b><br><span class="leise klein">${esc(pr.meldung)}</span></div></div>`
+      : !pr.schreiben ? `<div class="sperr-box">${bild("schloss", "m")}<div><b>Die Lehrkraft hat das Schreiben gerade pausiert.</b><br><span class="leise klein">Es geht gleich weiter.</span></div></div>` : ""}
+    ${viewSitzung()}`;
+  nachRender();
+}
 
 // --- Klasse & Daten ------------------------------------------------------------
 function viewKlasse() {
@@ -2268,8 +2951,11 @@ function viewKlasse() {
       <label class="feld">Klasse<input type="text" data-kk="name" value="${esc(k.name)}"></label>
       <label class="feld">Schuljahr<input type="text" data-kk="schuljahr" value="${esc(k.schuljahr)}"></label>
       <label class="feld">Klassenlehrkraft<input type="text" data-kk="lehrkraft" value="${esc(k.lehrkraft)}"></label>
-      <label class="feld">Timer-Vorgabe (Minuten)<input type="number" min="1" max="60" data-kk="timer" data-typ="zahl" value="${k.timer || 10}"></label>
+      <label class="feld">Zeit pro ${k.stufe === "gs" ? "Thema" : "Anliegen"} (Minuten)<input type="number" min="1" max="60" data-kk="timer" data-typ="zahl" value="${k.timer || 10}"></label>
     </div>
+    <div class="ergebnis abstand"><label><input type="checkbox" data-kk="autoTimer" ${k.autoTimer === false ? "" : "checked"}> Timer startet beim Öffnen eines ${k.stufe === "gs" ? "Themas" : "Anliegens"} automatisch</label></div>
+    <p class="leise klein">Jedes ${k.stufe === "gs" ? "Thema" : "Anliegen"} bekommt diese Zeit; sie lässt sich im ${k.stufe === "gs" ? "Thema" : "Anliegen"} ändern. Beim Wechsel hält der Timer an
+      und läuft beim Zurückkehren weiter. Zwei Minuten vor Schluss gibt es einen kurzen Ton für die Zeitwächter/in; die Tafel zeigt die Restzeit.</p>
     <h3>Schulart</h3>
     <div class="ergebnis">
       <label><input type="radio" name="stufe" data-kk="stufe" data-neu-zeichnen value="gs" ${k.stufe === "gs" ? "checked" : ""}> Grundschule (Kl. 1–4)</label>
@@ -2327,6 +3013,7 @@ function viewDaten() {
       OneDrive lädt die Dateien selbstständig in die Cloud.</p>
       <p><b>Status:</b> ${{ aktiv: `<span class="badge ja">aktiv</span> Ordner „${esc(ordner.handle?.name)}“${ordner.zuletzt ? ` · zuletzt gesichert ${new Date(ordner.zuletzt).toLocaleString("de-DE")}` : ""}`,
         pausiert: `<span class="badge teils">pausiert</span> Der Browser fragt nach einem Neustart einmal nach der Erlaubnis.`,
+        schluessel: `<span class="badge teils">wartet auf das Passwort</span> Die Sicherung wird verschlüsselt. <button class="knopf mini" data-act="schluessel-eingeben">Passwort eingeben</button>`,
         fehler: `<span class="badge nein">Fehler</span> ${esc(ordner.fehler)}`,
         aus: `<span class="badge">nicht eingerichtet</span>` }[ordner.status]}</p>
       <div class="aktionen">
@@ -2357,13 +3044,21 @@ function viewDaten() {
     ${tafelKarte()}
   </div>
   <div class="karte">
-    <h3 style="margin-top:0">${bild("schloss", "m")} Passwort für abgeschlossene Sitzungen</h3>
-    <p class="leise">Mit „Sitzung beenden“ wird eine Sitzung gesperrt. Ansehen und Drucken bleibt möglich.
-      Ändern oder Löschen geht nur noch mit diesem Passwort. Jede nachträgliche Öffnung wird im Protokoll vermerkt.</p>
-    <p><b>Status:</b> ${state.sperre ? `<span class="badge ja">Passwort festgelegt</span>` : `<span class="badge">kein Passwort</span> Sitzungen werden nicht gesperrt.`}</p>
+    <h3 style="margin-top:0">${bild("schloss", "m")} Passwort der Lehrkraft</h3>
+    <p class="leise">Ein Passwort für alles: Es sperrt abgeschlossene Sitzungen (Ansehen und Drucken bleibt möglich), schützt die Auswertung,
+      vertrauliche Nachrichten und das Beenden des Briefkastens – und es <b>verschlüsselt die Sicherungen</b>
+      (OneDrive-Ordner, „Sicherung herunterladen“, Teilen am iPad).</p>
+    <p><b>Status:</b> ${!state.sperre ? `<span class="badge">kein Passwort</span> Sitzungen werden nicht gesperrt, Sicherungen nicht verschlüsselt.`
+      : !kryptoOk ? `<span class="badge ja">Passwort festgelegt</span> <span class="leise klein">Dieser Browser kann nicht verschlüsseln – Sicherungen bleiben unverschlüsselt.</span>`
+      : schluesselDa() ? `<span class="badge ja">Passwort festgelegt</span> <span class="badge ja">🔒 Sicherungen verschlüsselt</span>`
+      : `<span class="badge ja">Passwort festgelegt</span> <span class="badge teils">Passwort einmal eingeben</span>
+         <button class="knopf mini" data-act="schluessel-eingeben">Jetzt eingeben</button>
+         <span class="leise klein">Danach verschlüsselt das Tool jede Sicherung, ohne erneut zu fragen.</span>`}</p>
     <div class="aktionen"><button class="knopf zweit" data-act="passwort-setzen">${state.sperre ? "Passwort ändern …" : "Passwort festlegen …"}</button></div>
-    <p class="leise klein">Ein vergessenes Passwort lässt sich nicht wiederherstellen. Die Sperre schützt vor versehentlichen
-      oder unbefugten Änderungen im Tool. Sie ist keine Verschlüsselung der gespeicherten Daten.</p>
+    <p class="leise klein"><b>Ein vergessenes Passwort lässt sich nicht wiederherstellen</b> – verschlüsselte Sicherungen sind dann nicht mehr zu öffnen.
+      Bitte sicher aufbewahren (z. B. im Passwort-Manager oder versiegelt im Sekretariat). Nach einer Änderung werden neue Sicherungen mit dem
+      neuen Passwort verschlüsselt; ältere Fassungen im Ordner „Verlauf“ brauchen weiter das alte. Die Daten im Browser selbst schützt die Gerätesperre
+      (z. B. der Code des iPads). Nicht verschlüsselt wird <code>klassenrat-tafel.json</code> für einen Tafel-Rechner (nur die Karten der geöffneten Sitzung).</p>
   </div>
   <div class="karte">
     <h3 style="margin-top:0">${bild("logo", "m")} Schullogo</h3>
@@ -2381,15 +3076,23 @@ function viewDaten() {
 }
 
 // --- Timer ---------------------------------------------------------------------
-const timer = { offen: false, rest: 600, laeuft: false, int: null, ende: false };
+// timer.aid: Anliegen, zu dem der Timer gehört; timer.reste merkt sich die Restzeit, wenn ein anderes Anliegen geöffnet wird
+const timer = { offen: false, rest: 600, laeuft: false, int: null, ende: false, aid: null, reste: {}, gesamt: 600 };
+function timerTitel() {
+  const s = sitzung(), i = s?.anliegen.findIndex((a) => a.id === timer.aid);
+  return i >= 0 ? `${T().einAnliegen} ${i + 1}` : "";
+}
 function renderTimer() {
   const b = $("#timer-bereich");
-  if (!klasse()) { b.innerHTML = ""; return; }
+  if (!klasse() || pr.kind) { b.innerHTML = ""; return; }
   if (!timer.offen) { b.innerHTML = `<button class="knopf timer-knopf" data-act="timer-auf">${bild("uhr", "s")} Timer</button>`; return; }
-  const m = Math.floor(timer.rest / 60), s = timer.rest % 60;
-  b.innerHTML = `<div class="timer ${timer.ende ? "ende" : ""}">
-    <div class="kopf">${bild("uhr")} Zeitwächter/in <button class="x" data-act="timer-zu" title="Timer schließen">✕</button></div>
+  const m = Math.floor(timer.rest / 60), s = timer.rest % 60, titel = timerTitel();
+  const bald = !timer.ende && timer.rest <= 120 && timer.gesamt > 120;
+  b.innerHTML = `<div class="timer ${timer.ende ? "ende" : bald ? "bald" : ""}">
+    <div class="kopf">${bild("uhr")} Zeitwächter/in<button class="x" data-act="timer-zu" title="Timer schließen">✕</button></div>
+    ${titel ? `<div class="timer-titel">${esc(titel)}</div>` : ""}
     <div class="zeit">${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}</div>
+    ${timer.ende ? `<div class="timer-text">Die Zeit ist um!</div>` : bald ? `<div class="timer-text">Noch 2 Minuten – Bescheid geben!</div>` : ""}
     <div class="reihe"><button class="knopf mini rand" data-act="timer-plus" data-arg="-60">−1</button>
       <button class="knopf mini" data-act="timer-los">${timer.laeuft ? "Pause" : "Start"}</button>
       <button class="knopf mini rand" data-act="timer-plus" data-arg="60">+1</button></div>
@@ -2398,13 +3101,14 @@ function renderTimer() {
 }
 function timerTick() {
   timer.rest = Math.max(0, timer.rest - 1);
-  if (timer.rest === 0) { clearInterval(timer.int); timer.laeuft = false; timer.ende = true; piep(); }
+  if (timer.rest === 120 && timer.gesamt > 120) { piep(1); meldung("⏱ Noch 2 Minuten – Zeitwächter/in gibt Bescheid"); timerGeaendert(); }
+  if (timer.rest === 0) { clearInterval(timer.int); timer.laeuft = false; timer.ende = true; piep(); timerGeaendert(); }
   renderTimer();
 }
-function piep() {
+function piep(anzahl = 3) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, .35, .7].forEach((t) => {
+    [0, .35, .7].slice(0, anzahl).forEach((t) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
       g.gain.setValueAtTime(.25, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .3);
@@ -2412,13 +3116,87 @@ function piep() {
     });
   } catch (e) { /* kein Ton möglich */ }
 }
-function timerStarten(min) {
+function timerStarten(min, aid = null) {
   clearInterval(timer.int);
-  Object.assign(timer, { offen: true, rest: min * 60, laeuft: true, ende: false });
+  Object.assign(timer, { offen: true, rest: min * 60, gesamt: min * 60, laeuft: true, ende: false, aid });
   timer.int = setInterval(timerTick, 1000);
-  renderTimer();
+  renderTimer(); timerGeaendert();
 }
-
+function timerWeiter() {
+  if (timer.laeuft || timer.rest <= 0) return;
+  timer.ende = false; timer.laeuft = true; timer.int = setInterval(timerTick, 1000);
+}
+function timerPause() { clearInterval(timer.int); timer.laeuft = false; }
+// Was eine Tafel zur Uhr braucht (Restzeit als Zeitpunkt, damit die Tafel selbst weiterzählt)
+function zeitDaten() {
+  if (!timer.offen) return null;
+  return { bis: timer.laeuft ? Date.now() + timer.rest * 1000 : null, rest: timer.rest, ende: timer.ende, gesamt: timer.gesamt, titel: timerTitel() };
+}
+function timerGeaendert() {
+  if (tafelOffen() || direktOffen()) tafelSenden();
+  if (ordner.status === "aktiv" && ui.view === "sitzung") sichernInOrdnerSpaeter();
+  if (ui.view === "sitzung" && ui.schritt === "anliegen") {  // Knopf im Anliegen (Pause/Timer) aktualisieren
+    const knopf = document.querySelector(".anliegen-kopf [data-act=timer-start]");
+    if (knopf) knopf.textContent = timer.laeuft && timer.aid === sitzung()?.anliegen[ui.anliegenIdx]?.id ? "⏸ Pause" : "▶ Timer";
+  }
+}
+// Neues Anliegen geöffnet: Timer des vorigen anhalten (Restzeit merken), den des neuen starten oder fortsetzen
+function zeitplanFolgen() {
+  if (pr.kind) return;
+  const s = sitzung(), k = klasse();
+  const a = ui.view === "sitzung" && s && ui.schritt === "anliegen" ? s.anliegen[ui.anliegenIdx] : null;
+  sprechzeitWechsel(s, a);
+  if (timer.aid && a?.id !== timer.aid) {
+    timer.reste[timer.aid] = { rest: timer.rest, laeuft: timer.laeuft, ende: timer.ende, gesamt: timer.gesamt };
+    timerPause(); timer.aid = null; timer.offen = false;
+    renderTimer(); timerGeaendert();
+  }
+  if (!a || a.id === timer.aid || k.autoTimer === false || istGesperrt(s) || s.datum !== heute()) return;
+  if (timer.laeuft && !timer.aid) return;  // ein von Hand gestarteter Timer läuft weiter
+  timerFuerAnliegen(a, true);
+}
+// --- Sprechzeit: Ist der Zeitwächter aktiv, wird gespeichert, wann und wie lange ein Anliegen besprochen wurde ----
+// a.zeiten = [{ von, bis }] (Zeitstempel). Kurzes Durchblättern (unter 15 s) zählt nicht.
+const sprech = { sid: null, aid: null };
+function sprechzeitBeenden(sofort) {
+  if (!sprech.aid) return;
+  const a = state.klassen.flatMap((k) => k.sitzungen).find((x) => x.id === sprech.sid)?.anliegen.find((x) => x.id === sprech.aid);
+  const seg = a?.zeiten?.at(-1);
+  if (seg && !seg.bis) { if (Date.now() - seg.von < 15000) a.zeiten.pop(); else seg.bis = Date.now(); }
+  sprech.sid = sprech.aid = null;
+  if (sofort) { try { localStorage.setItem(SPEICHER, JSON.stringify(state)); } catch (e) { /* voll */ } } else speichern();
+}
+function sprechzeitWechsel(s, a) {
+  if (sprech.aid && (a?.id !== sprech.aid || s?.id !== sprech.sid)) sprechzeitBeenden();
+  if (!a || a.id === sprech.aid || !rolleAktiv(s, "zeit") || istGesperrt(s) || s.datum !== heute()) return;
+  const seg = (a.zeiten ||= []).at(-1);
+  if (seg && !seg.bis) seg.bis = seg.von;  // nicht sauber beendet (z. B. Seite geschlossen)
+  a.zeiten.push({ von: Date.now() });
+  Object.assign(sprech, { sid: s.id, aid: a.id });
+  speichern();
+}
+window.addEventListener("pagehide", () => { if (!pr.kind) sprechzeitBeenden(true); });
+const uhrzeit = (z) => new Date(z).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+function sprechMinuten(a) {
+  return Math.round((a.zeiten || []).reduce((n, z) => n + ((z.bis || (sprech.aid === a.id ? Date.now() : z.von)) - z.von), 0) / 6e4);
+}
+function sprechzeitText(a) {
+  const segs = [];
+  for (const z of (a.zeiten || []).filter((x) => x.bis !== x.von)) {  // Abschnitte mit kurzer Lücke zusammenfassen
+    const vor = segs.at(-1);
+    if (vor?.bis && z.von - vor.bis < 120000) vor.bis = z.bis; else segs.push({ ...z });
+  }
+  if (!segs.length) return "";
+  return `${segs.map((z) => `${uhrzeit(z.von)}–${z.bis ? uhrzeit(z.bis) : sprech.aid === a.id ? "jetzt" : "?"}`).join(", ")} · ${sprechMinuten(a)} min`;
+}
+function timerFuerAnliegen(a, auto) {
+  const alt = timer.reste[a.id];
+  if (alt) {
+    Object.assign(timer, { offen: true, rest: alt.rest, ende: alt.ende, gesamt: alt.gesamt, aid: a.id });
+    if (alt.laeuft || !auto) timerWeiter();
+    renderTimer(); timerGeaendert();
+  } else timerStarten(minutenFuer(a), a.id);
+}
 // --- Automatische Sicherung in einen Ordner (z. B. OneDrive) ---------------------
 // Der Browser schreibt die Sicherung in einen einmal gewählten Ordner. Liegt dieser im
 // OneDrive-Ordner des PCs, lädt OneDrive die Datei automatisch hoch.
@@ -2489,20 +3267,21 @@ async function schreibeDatei(dir, name, text) {
 let ordnerTimer;
 function sichernInOrdnerSpaeter() { clearTimeout(ordnerTimer); ordnerTimer = setTimeout(sichernInOrdner, 2000); }
 async function sichernInOrdner() {
-  if (ordner.status !== "aktiv" || !ordner.handle) return;
+  if (ordner.status !== "aktiv" || !ordner.handle || pr.kind) return;
   try {
+    const json = await sicherungsText();
+    if (json === null) { ordner.status = "schluessel"; renderCloud(); if (ui.view === "daten") render(); return; }  // erst Passwort eingeben
     // Nicht überschreiben, wenn ein anderes Gerät inzwischen neuere Daten abgelegt hat
     const vorhanden = await dateiStand(ordner.handle);
     if (vorhanden && vorhanden.zeit > (ordner.basis || 0) && vorhanden.zeit > (state.gespeichertAm || 0)) {
       ordner.konflikt = vorhanden; renderCloud(); if (ui.view === "sitzungen") render(); return;
     }
-    const json = JSON.stringify(state, null, 1);
     await schreibeDatei(ordner.handle, "klassenrat-sicherung.json", json);
     ordner.basis = state.gespeichertAm || Date.now(); ordner.konflikt = null;
     if (ui.view === "sitzung" && sitzung()) {  // Karten der geöffneten Sitzung für einen Tafel-Rechner
       await schreibeDatei(ordner.handle, "klassenrat-tafel.json", JSON.stringify({ typ: "klassenrat-tafel", zeit: Date.now(),
         klasse: klasse().name, sitzungId: sitzung().id, nr: sitzung().nr, stufe: klasse().stufe, karten: modKartenMitBild(),
-        ort: mod.ort, idx: mod.ortIdx ?? 0, blitz: blitzDaten() }));
+        ort: mod.ort, idx: mod.ortIdx ?? 0, blitz: blitzDaten(), zeit: zeitDaten() }));
     }
     const verlauf = await ordner.handle.getDirectoryHandle("Verlauf", { create: true });
     await schreibeDatei(verlauf, `klassenrat-${heute()}.json`, json);  // eine Fassung pro Tag
@@ -2518,17 +3297,20 @@ async function dateiStand(dir) {  // Stand der Sicherung im Ordner (null, wenn k
   try {
     const h = await dir.getFileHandle("klassenrat-sicherung.json"), f = await h.getFile();
     const d = JSON.parse(await f.text());
-    return Array.isArray(d.klassen) ? { handle: h, daten: d, zeit: d.gespeichertAm || f.lastModified } : null;
+    return Array.isArray(d.klassen) || istVerschluesselt(d) ? { handle: h, daten: d, zeit: d.gespeichertAm || f.lastModified } : null;
   } catch (e) { return null; }
 }
 async function letzteDateiMerken(h) { try { await idb("readwrite", (st) => st.put(h, "letzteDatei")); } catch (e) { /* egal */ } }
 // Lädt eine Sicherungsdatei. nurWennNeuer: nur übernehmen, wenn sie neuer ist als die Daten im Browser.
 async function dateiLaden(h, { nurWennNeuer = true, fragen = false } = {}) {
-  const f = await h.getFile(), neu = JSON.parse(await f.text());
-  if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
+  const f = await h.getFile();
+  let neu = JSON.parse(await f.text());
+  if (!Array.isArray(neu.klassen) && !istVerschluesselt(neu)) throw new Error("keine Klassenrat-Sicherung");
   const zeit = neu.gespeichertAm || f.lastModified;
   if (nurWennNeuer && zeit <= (state.gespeichertAm || 0)) return false;
   if (fragen && state.klassen.length && !confirm(`Sicherung vom ${new Date(zeit).toLocaleString("de-DE")} laden? Sie ersetzt die Daten in diesem Browser.`)) return false;
+  if (istVerschluesselt(neu)) neu = await entschluesseln(neu, h.name);
+  if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
   const logo = state.logo;
   state = migrieren(neu);
   if (!state.logo && logo) state.logo = logo;
@@ -2558,7 +3340,7 @@ async function ladenErlauben() {
     if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
     if (!(await dateiLaden(h))) { ui.ladenHandle = null; meldung("☁ Die Daten in diesem Browser sind bereits aktuell."); render(); }
     if (ordner.handle && ordner.status !== "aktiv") ordnerFortsetzen();
-  } catch (e) { ui.ladenHandle = null; render(); alert("Die Datei konnte nicht geladen werden: " + e.message); }
+  } catch (e) { ui.ladenHandle = null; render(); if (e.name !== "AbortError") alert("Die Datei konnte nicht geladen werden: " + e.message); }
 }
 function ladenHinweis() {
   if (ui.ladenHandle) return `<div class="hinweis-box">${bild("kalender", "m")}<div style="flex:1"><b>Daten aus OneDrive laden?</b>
@@ -2582,7 +3364,7 @@ async function ausOrdnerLaden() {
   try {
     if (ordner.status !== "aktiv") await ordnerFortsetzen();
     await dateiLaden(await ordner.handle.getFileHandle("klassenrat-sicherung.json"), { nurWennNeuer: false, fragen: true });
-  } catch (e) { alert("Im Ordner wurde keine gültige Sicherung gefunden. " + (e.message || "")); }
+  } catch (e) { if (e.name !== "AbortError") alert("Im Ordner wurde keine gültige Sicherung gefunden. " + (e.message || "")); }
 }
 function renderCloud() {
   const el = $("#cloud");
@@ -2599,8 +3381,9 @@ function renderCloud() {
   const zeit = ordner.zuletzt ? new Date(ordner.zuletzt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
   if (ordner.konflikt) { el.innerHTML = tafelKnopf + `<button class="warn" data-act="view" data-arg="sitzungen">☁ neuere Daten in OneDrive</button>`; return; }
   el.innerHTML = tafelKnopf + {
-    aktiv: `<button class="an" data-act="view" data-arg="daten" title="Automatische Sicherung aktiv">☁ gesichert ${zeit}</button>`,
+    aktiv: `<button class="an" data-act="view" data-arg="daten" title="Automatische Sicherung aktiv${verschluesseltSichern() ? " (verschlüsselt)" : ""}">${verschluesseltSichern() ? "🔒" : "☁"} gesichert ${zeit}</button>`,
     pausiert: `<button class="warn" data-act="ordner-fortsetzen" title="Zum Fortsetzen antippen">☁ Sicherung pausiert – fortsetzen</button>`,
+    schluessel: `<button class="warn" data-act="schluessel-eingeben" title="Die Sicherung wird verschlüsselt – dafür einmal das Passwort eingeben">🔒 Passwort eingeben – Sicherung fortsetzen</button>`,
     fehler: `<button class="warn" data-act="view" data-arg="daten" title="${esc(ordner.fehler)}">☁ Sicherung fehlgeschlagen</button>`,
     aus: `<button data-act="view" data-arg="daten">☁ Sicherung einrichten</button>`,
   }[ordner.status];
@@ -2623,9 +3406,11 @@ function dateiLesen(f, alsBild) {
 }
 async function sicherungAusDatei(f) {
   try {
-    const neu = JSON.parse(await dateiLesen(f));
-    if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
+    let neu = JSON.parse(await dateiLesen(f));
+    if (!Array.isArray(neu.klassen) && !istVerschluesselt(neu)) throw new Error("keine Klassenrat-Sicherung");
     if (state.klassen.length && !confirm("Die Sicherung ersetzt alle Daten auf diesem Gerät. Fortfahren?")) return;
+    if (istVerschluesselt(neu)) neu = await entschluesseln(neu, f.name);
+    if (!Array.isArray(neu.klassen)) throw new Error("keine Klassenrat-Sicherung");
     const logo = state.logo;
     state = migrieren(neu);
     if (!state.logo && logo) state.logo = logo;
@@ -2633,7 +3418,7 @@ async function sicherungAusDatei(f) {
     ui.view = "sitzungen"; speichern(); render();
     state.letzteDatei = { name: f.name, zeit: f.lastModified || Date.now() }; speichern();
     meldung(`☁ Sicherung geladen: ${f.name}`);
-  } catch (e) { alert("Diese Datei ist keine gültige Klassenrat-Sicherung (" + (e.message || e) + ")."); }
+  } catch (e) { if (e.name !== "AbortError") alert("Diese Datei ist keine gültige Klassenrat-Sicherung (" + (e.message || e) + ")."); }
 }
 document.addEventListener("change", async (e) => {
   const inp = e.target.closest?.("input[data-datei]");
@@ -2647,13 +3432,25 @@ document.addEventListener("change", async (e) => {
   }
 });
 async function exportieren() {
+  const vorher = state.letzterExport;
   state.letzterExport = Date.now();
-  const blob = new Blob([JSON.stringify(state, null, 1)], { type: "application/json" });
+  let text;
+  try { text = await sicherungsTextMitPasswort(); } catch (e) { state.letzterExport = vorher; if (e.name !== "AbortError") alert("Die Sicherung konnte nicht erstellt werden: " + e.message); return; }
+  const blob = new Blob([text], { type: "application/json" });
   // iPad/iPhone: Teilen-Menü öffnen → „In Dateien sichern“ → OneDrive-Ordner wählen
   const datei = new File([blob], `klassenrat-sicherung-${heute()}.json`, { type: "application/json" });
   if (istIOS && navigator.canShare?.({ files: [datei] })) {
     try { await navigator.share({ files: [datei], title: "Klassenrat-Sicherung" }); speichern(); render(); return; }
-    catch (e) { if (e.name === "AbortError") return; }
+    catch (e) {
+      if (e.name === "AbortError") return;
+      if (e.name === "NotAllowedError") {  // nach der Passworteingabe verlangt Safari einen neuen Tipp
+        ui.teilenDatei = datei;
+        $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog"><h3>${bild("schloss", "m")} Sicherung ist bereit</h3>
+          <p class="leise">Die Sicherung wurde verschlüsselt. Jetzt antippen, um sie in OneDrive / Dateien zu sichern.</p>
+          <div class="aktionen"><button class="knopf" data-act="teilen-jetzt">In Dateien sichern …</button><button class="knopf rand" data-act="dialog-zu">Abbrechen</button></div></div></div>`;
+        return;
+      }
+    }
   }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -2667,7 +3464,7 @@ async function exportieren() {
 // Ereignisse
 // ---------------------------------------------------------------------------
 const AKTIONEN = {
-  view(v) { ui.view = v; ui.entsperrt = null; if (v !== "auswertung") ui.auswertungFrei = false; render(); scrollTo(0, 0); },
+  view(v) { ui.view = v; ui.entsperrt = null; if (v !== "auswertung") ui.auswertungFrei = false; ui.vertraulichFrei = false; render(); scrollTo(0, 0); },
   async "auswertung-oeffnen"() {
     if (!state.sperre) {
       const r = await neuesPasswortDialog("Passwort festlegen", "Die Auswertung ist durch dasselbe Passwort geschützt wie abgeschlossene Sitzungen. Lege es einmalig fest.");
@@ -2707,7 +3504,7 @@ const AKTIONEN = {
       if (basis === "rollen" || basis === "naechsteRollen") {
         // eine Person hat höchstens eine Rolle
         for (const [r] of ROLLEN) if (r !== rolle && s[basis][r] === n) s[basis][r] = "";
-        const frei = ROLLEN.find(([r]) => !s[basis][r]);
+        const frei = aktiveRollen(s).find(([r]) => !s[basis][r]);
         if (frei) ui.ziel = `${basis}.${frei[0]}`;
       }
     }
@@ -2734,6 +3531,7 @@ const AKTIONEN = {
       }
       if (state.sperre) s.gesperrt ||= Date.now();
     }
+    if (pr.rolle === "lehrkraft" && pr.sid === s.id) prBeenden();
     // Moderationskarten (Tafel) auf „Ende“ stellen, bevor die Übersicht erscheint
     const ende = moderationsKarten().findIndex((k) => k.ende);
     if (ende >= 0) {
@@ -2754,7 +3552,7 @@ const AKTIONEN = {
   sperren() { ui.entsperrt = null; render(); },
   async "passwort-setzen"() {
     if (state.sperre && !(await passwortAbfragen("Zum Ändern zuerst das bisherige Passwort eingeben."))) return;
-    const r = await neuesPasswortDialog(state.sperre ? "Passwort ändern" : "Passwort festlegen", "Dieses Passwort schützt abgeschlossene Sitzungen.");
+    const r = await neuesPasswortDialog(state.sperre ? "Passwort ändern" : "Passwort festlegen", "Dieses Passwort schützt abgeschlossene Sitzungen, die Auswertung und den Briefkasten.");
     if (Array.isArray(r)) { await pwSetzen(r[0]); render(); }
   },
   "blitz-vollbild"() {
@@ -2860,6 +3658,46 @@ const AKTIONEN = {
       <div class="aktionen abstand"><button class="knopf rand" data-act="dialog-zu">Abbrechen</button></div></div></div>`;
   },
   "dialog-zu"() { $("#dialog").innerHTML = ""; },
+  "prot-ipad"() {
+    if (pr.rolle === "lehrkraft" && pr.sid === ui.sitzungId) prDialogZeigen(); else prStarten();
+  },
+  "prot-dialog-zu"() { $("#dialog").innerHTML = ""; pr.dialogOffen = false; },
+  "prot-ende"() {
+    if (pr.status === "verbunden" && !confirm("Verbindung zum Protokoll-iPad beenden? Auf dem iPad wird dann nichts mehr angezeigt.")) return;
+    $("#dialog").innerHTML = ""; pr.dialogOffen = false; prBeenden(); render();
+  },
+  "prot-schreiben"() { pr.schreiben = !pr.schreiben; prStandSenden(); prAnzeigen(); },
+  async "prot-link"() {
+    const link = protLink(pr.code);
+    try { await navigator.clipboard.writeText(link); meldung("Link kopiert"); } catch (e) { prompt("Link zum Kopieren:", link); }
+  },
+  "antrag-drucken"(arg) {
+    const [sid, i] = arg.split("|"), k = klasse(), s = k.sitzungen.find((x) => x.id === sid), a = s?.anliegen[i];
+    if (!a) return;
+    if (!k.weitergaben?.[a.id]?.status) { (k.weitergaben ||= {})[a.id] = { ...(k.weitergaben[a.id] || {}), status: "gesendet", datum: heute() }; speichern(); }
+    drucken(antragHTML(k, s, a));
+  },
+  async "antrag-teilen"(arg) {
+    const [sid, i] = arg.split("|"), k = klasse(), s = k.sitzungen.find((x) => x.id === sid), a = s?.anliegen[i];
+    if (!a) return;
+    const text = antragText(k, s, a);
+    if (navigator.share && istIOS) { try { await navigator.share({ title: `Antrag der Klasse ${k.name}`, text }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(text); meldung("Text kopiert – z. B. in eine E-Mail oder Teams einfügen"); return; } catch (e) { /* kein Zugriff */ }
+    $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog"><h3>${bild("brief", "m")} Antrag als Text</h3>
+      <textarea rows="12" readonly style="width:100%">${esc(text)}</textarea>
+      <div class="aktionen abstand"><button class="knopf" data-act="dialog-zu">Schließen</button></div></div></div>`;
+  },
+  "wg-status"(arg) {
+    const [aid, st] = arg.split("|"), k = klasse();
+    const alt = k.weitergaben?.[aid] || {};
+    (k.weitergaben ||= {})[aid] = { ...alt, status: alt.status === st ? "" : st, datum: heute() };
+    speichern(); render();
+  },
+  jahresrueckblick() {
+    const k = klasse();
+    if (!k.sitzungen.length) { alert("Es gibt noch keine Sitzungen für einen Rückblick."); return; }
+    drucken(jahresrueckblickHTML(k));
+  },
   "tafel-wahl"() {
     $("#dialog").innerHTML = `<div class="dialog-hg"><div class="dialog">
       <h3>${bild("wandzeitung", "m")} Dieses Gerät als Tafel nutzen</h3><p class="leise">Hier erscheinen die Moderationskarten, die das Protokollgerät schickt.</p>
@@ -2979,21 +3817,23 @@ const AKTIONEN = {
   },
   "bk-name"(n) { bk.name = bk.name === n ? null : n; bk.meldung = ""; bkFelderMerken(); renderBriefkasten(); },
   "bk-art"(x) { bk.art = bk.art === x ? "" : x; bkFelderMerken(); renderBriefkasten(); },
+  "bk-vertraulich"(x) { bk.vertraulich = x === "1"; bkFelderMerken(); renderBriefkasten(); },
   "bk-senden"() {
     bkFelderMerken();
     const k = klasse(), e = bkEinst(k);
     if (bk.name === null || !bk.thema.trim()) return;
     const namen = bk.name ? [bk.name] : [];
     if (e.proTag > 0 && namen.length) {
-      const heuteZahl = (k.briefkasten || []).filter((x) => x.namen.includes(bk.name) && new Date(x.zeit).toDateString() === new Date().toDateString()).length;
+      const heuteZahl = [...(k.briefkasten || []), ...(k.vertraulich || [])].filter((x) => x.namen.includes(bk.name) && new Date(x.zeit).toDateString() === new Date().toDateString()).length;
       if (heuteZahl >= e.proTag) {
         bk.meldung = `Du hast heute schon ${heuteZahl === 1 ? "ein Anliegen" : heuteZahl + " Anliegen"} eingeworfen. Mehr geht heute nicht – sprich sonst mit deiner Lehrkraft.`;
         renderBriefkasten(); return;
       }
     }
-    (k.briefkasten ||= []).push({ id: id(), namen, art: bk.art, thema: bk.thema.trim(), worum: bk.worum.trim(), zeit: Date.now() });
+    const vertraulich = bk.vertraulich && e.vertraulich;
+    (vertraulich ? (k.vertraulich ||= []) : (k.briefkasten ||= [])).push({ id: id(), namen, art: bk.art, thema: bk.thema.trim(), worum: bk.worum.trim(), zeit: Date.now() });
     speichern();
-    bkLeeren(); bk.danke = true; renderBriefkasten();
+    bkLeeren(); bk.danke = vertraulich ? "vertraulich" : true; renderBriefkasten();
     setTimeout(() => { bk.danke = false; renderBriefkasten(); }, 2500);
   },
   async "bk-beenden"() {
@@ -3003,6 +3843,33 @@ const AKTIONEN = {
     renderBriefkasten(); render();
   },
   "bk-online-auf"() { onlineBkStarten(klasse()); },
+  async "vt-oeffnen"() {
+    if (!state.sperre) {
+      const r = await neuesPasswortDialog("Passwort festlegen", "Vertrauliche Nachrichten sind durch das Passwort der Lehrkraft geschützt. Lege es einmalig fest.");
+      if (!Array.isArray(r)) return;
+      await pwSetzen(r[0]);
+    } else if (!(await passwortAbfragen("Vertrauliche Nachrichten sind nur für die Lehrkraft."))) return;
+    ui.vertraulichFrei = true; render();
+  },
+  "vt-schliessen"() { ui.vertraulichFrei = false; render(); },
+  "vt-notiz"(vid) {
+    const x = klasse().vertraulich.find((y) => y.id === vid);
+    const t = x && prompt("Notiz (z. B. „Gespräch am …“):", x.notiz || "");
+    if (t == null) return;
+    x.notiz = t.trim(); speichern(); render();
+  },
+  "vt-klassenrat"(vid) {
+    const k = klasse(), x = k.vertraulich.find((y) => y.id === vid);
+    if (!x || !confirm("In den normalen Briefkasten verschieben? Dann kann es in der nächsten Sitzung besprochen werden. Bitte nur mit Einverständnis des Kindes.")) return;
+    k.vertraulich = k.vertraulich.filter((y) => y.id !== vid);
+    const { notiz, ...rest } = x;
+    (k.briefkasten ||= []).push(rest); speichern(); render();
+  },
+  "vt-loeschen"(vid) {
+    const k = klasse();
+    if (!confirm("Diese vertrauliche Nachricht endgültig löschen?")) return;
+    k.vertraulich = k.vertraulich.filter((y) => y.id !== vid); speichern(); render();
+  },
   "bk-online-umschalten"() {
     const k = klasse();
     if (onlineBk[k.id]) { onlineBkStoppen(k.id); meldung("📬 Online-Briefkasten geschlossen"); render(); }
@@ -3063,9 +3930,37 @@ const AKTIONEN = {
     s.fehlend = s.fehlend.includes(name) ? s.fehlend.filter((n) => n !== name) : [...s.fehlend, name];
     speichern(); render();
   },
+  "rolle-umschalten"(r) {
+    const s = sitzung();
+    s.rollenAktiv = Object.fromEntries(ROLLEN.map(([x]) => [x, rolleAktiv(s, x)]));
+    s.rollenAktiv[r] = !s.rollenAktiv[r];
+    if (!s.rollenAktiv[r]) { s.rollen[r] = ""; s.naechsteRollen[r] = ""; }
+    ui.ziel = null; speichern(); render();
+  },
+  "rollen-alle"() {
+    const s = sitzung(), an = !aktiveRollen(s).length;
+    s.rollenAktiv = Object.fromEntries(ROLLEN.map(([x]) => [x, an]));
+    if (!an) for (const [x] of ROLLEN) { s.rollen[x] = ""; s.naechsteRollen[x] = ""; }
+    ui.ziel = null; speichern(); render();
+  },
+  "rollen-hilfe"(basis) {
+    const s = sitzung();
+    $("#dialog").innerHTML = `<div class="blitz rh-vollbild"><div class="oben">${bild("leute", "l")}<h2>Rollen-Hilfen</h2>
+      <span class="leise">${basis === "naechsteRollen" ? "für die nächste Sitzung" : `Sitzung Nr. ${s.nr}`} · zum Abhaken antippen</span>
+      <div class="aktionen"><button class="knopf rand" data-act="rollen-hilfe-drucken" data-arg="${basis}">Drucken</button>
+        <button class="knopf" data-act="dialog-zu">Schließen</button></div></div>${rollenHilfeHTML(s, basis)}</div>`;
+  },
+  "rollen-hilfe-drucken"(basis) {
+    const k = klasse(), s = sitzung();
+    $("#dialog").innerHTML = "";
+    drucken(`<div class="rh-druck"><div class="prot-kopf">${logoBlock()}<div><h1>${k.stufe === "gs" ? "Unsere Aufgaben im Klassenrat" : "Rollen im Klassenrat"}</h1>
+      <div>Klasse ${esc(k.name)} · ${basis === "naechsteRollen" ? `für die Sitzung nach Nr. ${s.nr}` : `Sitzung Nr. ${s.nr} · ${datum(s.datum, true)}`}</div></div>
+      <div class="illu-k">${BILDER.klassenrat}</div></div>${rollenHilfeHTML(s, basis)}</div>`);
+  },
+  "rh-haken"(_, el) { el?.classList.toggle("an"); },
   "rollen-vorschlag"(pfad) {
     const s = sitzung();
-    s[pfad] = rollenVorschlag(klasse(), pfad === "rollen" ? s.fehlend : []);
+    s[pfad] = rollenVorschlag(klasse(), pfad === "rollen" ? s.fehlend : [], s);
     speichern(); render();
   },
   "zeile-neu"(pfad) {
@@ -3143,6 +4038,17 @@ const AKTIONEN = {
     ta.value = ta.value.split("\n").map((x) => x.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, "de")).join("\n");
   },
   export: exportieren,
+  async "teilen-jetzt"() {
+    const datei = ui.teilenDatei; $("#dialog").innerHTML = "";
+    if (!datei) return;
+    try { await navigator.share({ files: [datei], title: "Klassenrat-Sicherung" }); speichern(); render(); } catch (e) { /* abgebrochen */ }
+  },
+  async "schluessel-eingeben"() {
+    if (await passwortAbfragen("Die automatische Sicherung wird mit deinem Passwort verschlüsselt. Bitte gib es einmal ein.")) {
+      if (ordner.status === "schluessel") ordner.status = "aktiv";
+      await sichernInOrdner(); render();
+    }
+  },
   async import() {
     if (window.showOpenFilePicker) {  // mit Dateizugriff: Datei merken und beim nächsten Start wieder öffnen
       try {
@@ -3156,13 +4062,15 @@ const AKTIONEN = {
   "alles-loeschen"() {
     if (confirm("Wirklich ALLE Daten löschen? Lade vorher eine Sicherung herunter, wenn du sie noch brauchst.")) {
       try { localStorage.removeItem(SPEICHER); } catch (e) { /* egal */ }
+      Object.assign(krypto, { schluessel: null, salz: null });
+      idb("readwrite", (st) => st.delete("schluessel")).catch(() => {});
       state = laden(); ui.view = "sitzungen"; render();
     }
   },
   "ordner-waehlen": ordnerWaehlen,
   "laden-erlauben": ladenErlauben,
   "laden-ignorieren"() { ui.ladenHandle = null; render(); },
-  async "konflikt-laden"() { if (ordner.konflikt) await dateiLaden(ordner.konflikt.handle, { nurWennNeuer: false }); },
+  async "konflikt-laden"() { if (ordner.konflikt) await dateiLaden(ordner.konflikt.handle, { nurWennNeuer: false }).catch(() => {}); },
   async "konflikt-behalten"() {
     if (!confirm("Deine Daten ersetzen dann die neueren Daten in OneDrive. Fortfahren?")) return;
     ordner.basis = ordner.konflikt?.zeit || Date.now(); ordner.konflikt = null; await sichernInOrdner(); render();
@@ -3170,30 +4078,39 @@ const AKTIONEN = {
   "ordner-fortsetzen": ordnerFortsetzen,
   "ordner-trennen": ordnerTrennen,
   "ordner-laden": ausOrdnerLaden,
-  "timer-auf"() { timer.offen = true; timer.rest = (klasse()?.timer || 10) * 60; timer.ende = false; renderTimer(); },
-  "timer-zu"() { clearInterval(timer.int); timer.offen = false; timer.laeuft = false; timer.ende = false; renderTimer(); },
-  "timer-start"() { timerStarten(klasse()?.timer || 10); },
-  "timer-los"() {
-    if (timer.laeuft) { clearInterval(timer.int); timer.laeuft = false; }
-    else if (timer.rest > 0) { timer.ende = false; timer.laeuft = true; timer.int = setInterval(timerTick, 1000); }
-    renderTimer();
+  "timer-auf"() { timer.offen = true; timer.rest = timer.gesamt = (klasse()?.timer || 10) * 60; timer.ende = false; renderTimer(); timerGeaendert(); },
+  "timer-zu"() {
+    timerPause(); if (timer.aid) delete timer.reste[timer.aid];
+    Object.assign(timer, { offen: false, ende: false, aid: null }); renderTimer(); timerGeaendert();
   },
-  "timer-plus"(d) { timer.rest = Math.max(0, timer.rest + +d); timer.ende = false; renderTimer(); },
-  "timer-setzen"(n) { clearInterval(timer.int); Object.assign(timer, { rest: n * 60, laeuft: false, ende: false }); renderTimer(); },
+  "timer-start"(i) {
+    const a = sitzung()?.anliegen[i];
+    if (!a) { timerStarten(klasse()?.timer || 10); return; }
+    if (timer.aid === a.id) { timer.laeuft ? timerPause() : timer.rest > 0 ? timerWeiter() : timerStarten(minutenFuer(a), a.id); renderTimer(); timerGeaendert(); return; }
+    if (timer.aid) timer.reste[timer.aid] = { rest: timer.rest, laeuft: false, ende: timer.ende, gesamt: timer.gesamt };
+    timerPause(); timerFuerAnliegen(a, false);
+  },
+  "timer-los"() {
+    if (timer.laeuft) timerPause(); else timerWeiter();
+    renderTimer(); timerGeaendert();
+  },
+  "timer-plus"(d) { timer.rest = Math.max(0, timer.rest + +d); if (+d > 0) timer.gesamt = Math.max(timer.gesamt, timer.rest); timer.ende = false; renderTimer(); timerGeaendert(); },
+  "timer-setzen"(n) { timerPause(); Object.assign(timer, { rest: n * 60, gesamt: n * 60, ende: false }); renderTimer(); timerGeaendert(); },
 };
 
-const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation", "mod-direkt", "tafel-wahl-direkt", "mod-tafel", "mod-hier", "mod-export", "mod-onedrive", "dialog-zu"];
+const ERLAUBT_GESPERRT = ["schritt", "anliegen-tab", "drucken", "view", "entsperren", "moderation", "mod-direkt", "tafel-wahl-direkt", "mod-tafel", "mod-hier", "mod-export", "mod-onedrive", "dialog-zu",
+  "rollen-hilfe", "antrag-drucken", "antrag-teilen"];
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
   if (!el || (el.tagName === "LABEL")) return;
   e.preventDefault();
   e.stopPropagation();
   if (el.closest("#sperrbereich.gesperrt") && !ERLAUBT_GESPERRT.includes(el.dataset.act)) return;
-  AKTIONEN[el.dataset.act]?.(el.dataset.arg);
+  AKTIONEN[el.dataset.act]?.(el.dataset.arg, el);
 });
 document.addEventListener("input", (e) => {
   const el = e.target;
-  const wert = el.dataset.typ === "zahl" ? (+el.value || 0) : el.value;
+  const wert = el.type === "checkbox" ? el.checked : el.dataset.typ === "zahl" ? (+el.value || 0) : el.value;
   if (el.dataset.k && sitzung()) {
     if (el.dataset.k.startsWith("rueckblick.")) { /* Notiz nur bei gesetztem Status */
       const [, bid] = el.dataset.k.split(".");
@@ -3226,6 +4143,11 @@ document.addEventListener("input", (e) => {
     if (knopf) knopf.disabled = !bereit;
     if ($("#bk-hinweis")) $("#bk-hinweis").textContent = bereit ? "" : "Bitte deinen Namen antippen und das Anliegen aufschreiben.";
   }
+  if (e.target.dataset?.wg && klasse()) {
+    const k = klasse(), aid = e.target.dataset.wg;
+    (k.weitergaben ||= {})[aid] = { ...(k.weitergaben[aid] || {}), antwort: e.target.value };
+    speichern();
+  }
   if (e.target.dataset?.bk && klasse()) {
     const k = klasse(), key = e.target.dataset.bk;
     k.bkEinst = { ...bkEinst(k), [key]: e.target.type === "checkbox" ? e.target.checked : Math.max(0, +e.target.value || 0) };
@@ -3233,7 +4155,7 @@ document.addEventListener("input", (e) => {
     document.querySelectorAll(`[data-bk="${key}"]`).forEach((x) => { if (x !== e.target && x.type === "checkbox") x.checked = e.target.checked; });
     // verbundene Kinder-iPads sofort informieren (z. B. „ohne Namen“ erlaubt)
     for (const c of onlineBk[k.id]?.verbindungen || []) {
-      try { if (c.open) c.send({ typ: "bk-info", klasse: k.name, stufe: k.stufe, arten: arten(k), anonym: bkEinst(k).anonym }); } catch (x) { /* weg */ }
+      try { if (c.open) c.send(bkInfo(k)); } catch (x) { /* weg */ }
     }
   }
 });
@@ -3241,6 +4163,13 @@ document.addEventListener("input", (e) => {
 document.addEventListener("input", (e) => {
   if (e.target.tagName === "TEXTAREA" && e.target.rows === 1) hoeheAnpassen(e.target);
   if ("frueher" in e.target.dataset) frueherZeigen(e.target);
+  // geplante Minuten geändert, während der Timer dieses Anliegens läuft → Restzeit anpassen
+  const m = e.target.dataset.k?.match(/^anliegen\.(\d+)\.minuten$/);
+  if (m && sitzung()?.anliegen[m[1]]?.id === timer.aid && timer.offen) {
+    const neu = minutenFuer(sitzung().anliegen[m[1]]) * 60;
+    timer.rest = Math.max(0, timer.rest + neu - timer.gesamt); timer.gesamt = neu; timer.ende = timer.rest === 0 && timer.ende;
+    renderTimer(); timerGeaendert();
+  }
   if ("reiter" in e.target.dataset) { const t = document.querySelector(".reiter button.aktiv .t"); if (t) t.textContent = e.target.value || T().einAnliegen; }
 });
 // Klick in eine Aussage-Zeile: angetippte Namen gehören zu dieser Zeile
@@ -3274,8 +4203,9 @@ window.addEventListener("afterprint", () => ($("#druck").innerHTML = ""));
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
 if (location.hash === "#tafel") tafelStarten();
 else if (location.hash.startsWith("#postfach=")) postfachStarten(decodeURIComponent(location.hash.slice(10)).replace(/[^a-z0-9]/gi, ""));
+else if (location.hash.startsWith("#protokoll=")) protokollantStarten(decodeURIComponent(location.hash.slice(11)).replace(/[^a-z0-9]/gi, ""));
 else {
-  render(); ordnerLaden().then(autoLaden);
+  render(); schluesselLaden().then(ordnerLaden).then(autoLaden);
   // Online-Briefkästen, die offen waren, wieder öffnen
   for (const k of state.klassen) if (k.bkOnline) onlineBkStarten(k);
   // war der Briefkasten offen (z. B. Seite neu geladen), geht es dort weiter
