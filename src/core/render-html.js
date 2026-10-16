@@ -8,7 +8,7 @@
       if (typeof seg === "string") return esc(AG.glue(seg)).replace(/ {2,}\|(.*)$/, '<span class="op">|$1</span>');
       if (seg.f) {
         const pre = (seg.s < 0 ? AG.MINUS : "") + (seg.w ? seg.w : "");
-        return `${esc(pre)}<span class="fr"><span>${seg.f[0]}</span><span>${seg.f[1]}</span></span>`;
+        return `<span class="nw">${esc(pre)}<span class="fr"><span>${seg.f[0]}</span><span>${seg.f[1]}</span></span></span>`;
       }
       if (seg.b !== undefined) return `<b>${esc(seg.b)}</b>`;
       if (seg.sup !== undefined) return `<sup>${esc(seg.sup)}</sup>`;
