@@ -284,6 +284,7 @@
     const { A, B, cfg } = lastSheets;
     const sheet = state.view === "B" && B ? B : A;
     const mode = state.view === "answers" ? state.solmode : "worksheet";
+    if (AG.rasterizeSheet) await AG.rasterizeSheet(sheet);
     const html = AG.oneNoteHtml(sheet, meta(cfg), mode, { merke: state.merke, workLines: state.work });
     const ok = await AG.copyForOneNote(html);
     const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;

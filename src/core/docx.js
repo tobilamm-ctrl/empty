@@ -205,6 +205,8 @@
           const tb = sol && t.aTable ? t.aTable : t.table;
           x += taskTableXml(tb, { width: colW - 380, color, indent: 380 }) + para("", { after: 40, size: 6 });
         }
+        const fig = sol && t.aFig ? t.aFig : t.fig;
+        if (fig) x += para(figRun(fig, (colW - 380) / 56.7), { indent: 380, after: 60, line: 240 });
       }
       const inline = sol && AG.isExpression(t);
       if (sol && mode === "steps" && t.steps && t.steps.length) {
@@ -247,7 +249,7 @@
     const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="${PAGE_W}" w:h="16838"/>` +
       `<w:pgMar w:top="900" w:right="${MARGIN}" w:bottom="900" w:left="${MARGIN}" w:header="500" w:footer="420" w:gutter="0"/></w:sectPr>`;
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body>${body}${sect}</w:body></w:document>`;
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}${sect}</w:body></w:document>`;
   }
 
   function footerXml(code) {
@@ -277,24 +279,44 @@
 
   // pages: [{sheet, mode: "worksheet"|"answers"|"steps"}]
   async function buildDocxAsync(pages, meta, opts) {
+    if (AG.rasterizeSheet) for (const pg of pages) await AG.rasterizeSheet(pg.sheet);
     return zip(await packFiles(docxFiles(pages, meta, opts)));
   }
   function buildDocx(pages, meta, opts) { return zip(docxFiles(pages, meta, opts)); }
 
+  // ---------- Skizzen als PNG-Bilder ----------
+  let IMAGES = [];
+  function figRun(fig, maxWmm) {
+    const png = AG.figPng ? AG.figPng(fig) : null;
+    if (!png) return run("[Skizze]", { color: GREY, i: true });
+    let img = IMAGES.find(im => im.png === png);
+    if (!img) { img = { png, n: IMAGES.length + 1 }; IMAGES.push(img); }
+    const sc = Math.min(1, maxWmm / fig.w);
+    const cx = Math.round(fig.w * sc * 36000), cy = Math.round(fig.h * sc * 36000);
+    const id = 1000 + IMAGES.length * 10 + Math.floor(Math.random() * 9);
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Skizze ${img.n}"/>` +
+      `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="skizze${img.n}.png"/><pic:cNvPicPr/></pic:nvPicPr>` +
+      `<pic:blipFill><a:blip r:embed="rIdImg${img.n}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  }
+
   function docxFiles(pages, meta, opts) {
+    IMAGES = [];
     const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0, pg.layout)).join("");
     const files = [
       ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
       ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`],
       ["docProps/core.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${esc(meta.title)}</dc:title><dc:creator>Aufgaben-Generator</dc:creator></cp:coreProperties>`],
       ["word/_rels/document.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`],
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${IMAGES.map(im => `<Relationship Id="rIdImg${im.n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/skizze${im.n}.png"/>`).join("")}</Relationships>`],
       ["word/styles.xml", STYLES],
       ["word/footer1.xml", footerXml(meta.code)],
       ["word/document.xml", documentXml(body, meta.code)],
+      ...IMAGES.map(im => [`word/media/skizze${im.n}.png`, im.png.bytes]),
     ];
     return files;
   }

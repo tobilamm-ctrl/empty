@@ -134,6 +134,7 @@
     $("tIns").textContent = ins;
     let q = AG.richHtml(task.q);
     if (task.table) q += `<div class="table-wrap">${tableHtml(task.table, false)}</div>`;
+    if (task.fig) q += AG.figHtml(task.fig);
     $("tQ").innerHTML = q;
 
     $("answerRow").hidden = !kind;
@@ -168,6 +169,7 @@
       else {
         let res = `<div class="step result">Ergebnis: ${AG.richHtml(cur.task.a)}</div>`;
         if (cur.task.aTable) res = `<div class="step table-wrap">${tableHtml(cur.task.aTable, true)}</div>` + res;
+        if (cur.task.aFig) res = `<div class="step">${AG.figHtml(cur.task.aFig)}</div>` + res;
         sol.insertAdjacentHTML("beforeend", res);
       }
       cur.step++;

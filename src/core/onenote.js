@@ -156,6 +156,9 @@
         } else {
           x += `<p style="margin:0 0 3pt 0">${lab}${rhtml(t.q, { color: TEXT, size: 11 })}</p>`;
           if (t.table) x += tableHtml(sol && t.aTable ? t.aTable : t.table, sol);
+          const fig = sol && t.aFig ? t.aFig : t.fig;
+          const png = fig && AG.figPng ? AG.figPng(fig) : null;
+          if (png) x += `<p style="margin:2pt 0 4pt 0"><img src="${png.dataUrl}" width="${Math.round(fig.w / 25.4 * 96)}" height="${Math.round(fig.h / 25.4 * 96)}"></p>`;
         }
         if (sol && mode === "steps" && t.steps && t.steps.length) {
           for (const s of t.steps) x += `<p style="margin:0 0 0 20px;color:${RED};font-size:10pt;line-height:15pt">${rhtml(s, { color: RED, size: 10 })}</p>`;

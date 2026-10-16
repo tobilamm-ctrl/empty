@@ -4,7 +4,7 @@ const root = path.join(__dirname, "..");
 const ctx = { console, TextEncoder, TextDecoder, btoa, atob, Blob, Response, CompressionStream };
 vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
-for (const f of ["rng.js", "content.js", "engine.js", "docx.js"]) load(path.join(root, "src/core", f));
+for (const f of ["rng.js", "content.js", "engine.js", "figures.js", "docx.js"]) load(path.join(root, "src/core", f));
 for (const f of fs.readdirSync(path.join(root, "src/types")).sort()) if (f.endsWith(".js")) load(path.join(root, "src/types", f));
 const AG = ctx.AG;
 const out = process.argv[2] || "beispiel.docx";

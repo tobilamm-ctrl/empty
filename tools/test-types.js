@@ -8,7 +8,7 @@ const root = path.join(__dirname, "..");
 const ctx = { console, TextEncoder, TextDecoder, btoa, atob };
 vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
-for (const f of ["rng.js", "content.js", "engine.js"]) load(path.join(root, "src/core", f));
+for (const f of ["rng.js", "content.js", "engine.js", "figures.js"]) load(path.join(root, "src/core", f));
 for (const f of fs.readdirSync(path.join(root, "src/types")).sort()) if (f.endsWith(".js")) load(path.join(root, "src/types", f));
 
 const AG = ctx.AG;
@@ -53,6 +53,7 @@ for (const type of AG.TYPES) {
         (t.steps || []).forEach((s, k) => checkRich(s, "steps[" + k + "]"));
         if (t.table) t.table.rows.forEach(r => r.forEach(c => checkRich(c, "table")));
         if (t.aTable) t.aTable.rows.forEach(r => r.forEach(c => checkRich(c, "aTable")));
+        for (const fg of [t.fig, t.aFig]) if (fg && (typeof fg.svg !== "string" || !fg.svg.startsWith("<svg") || !(fg.w > 0) || !(fg.h > 0) || /NaN|undefined/.test(fg.svg))) throw new Error("ungültige Skizze");
         if (type.verify) { const v = type.verify(t, level); if (v !== true) throw new Error("verify: " + v); }
         keys.add(AG.plain(t.q) + (t.table ? JSON.stringify(t.table.rows.map(r => r.map(AG.plain))) : ""));
         if (shown.length < samples) shown.push(t);

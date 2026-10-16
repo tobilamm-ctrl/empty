@@ -63,6 +63,7 @@
         else {
           body = `<div class="q">${richHtml(t.q)}</div>`;
           if (t.table) body += tableHtml(sol && t.aTable ? t.aTable : t.table, sol);
+          if (t.fig || t.aFig) body += AG.figHtml(sol && t.aFig ? t.aFig : t.fig);
         }
         if (sol && mode === "steps" && t.steps && t.steps.length) {
           body += `<div class="steps red">${t.steps.map(s => `<div>${richHtml(s)}</div>`).join("")}</div>`;

@@ -171,6 +171,8 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 .steps { font-size: 10pt; margin: 2pt 0 0 12pt; line-height: 1.42; }
 .work { flex: none; }
 .nw { white-space: nowrap; }
+.fig { margin: 3pt 0 4pt; }
+.fig svg { display: block; width: 100%; height: auto; }
 .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: 1em; line-height: 1.22; margin: 2px 1.5px; }
 .fr > span:first-child { border-bottom: 0.9px solid currentColor; padding: 0 2px; }
 .fr > span:last-child { padding: 0 2px; }
@@ -658,6 +660,157 @@ table.vt th { background: #f1f3f8; text-align: left; }
 
 </script>
 <script>
+// ---- src/core/figures.js ----
+// Skizzen für Aufgaben: kleines Zeichenwerkzeug (SVG in mm) und Umwandlung in PNG für Word/OneNote.
+//
+// Eine Aufgabe kann task.fig = { svg, w, h } haben (w, h in mm); Lösungen optional task.aFig.
+// Zeichnen:
+//   const s = AG.sketch(60, 40);              // Zeichenfläche 60 mm × 40 mm, Ursprung oben links, y nach unten
+//   s.poly([[5,35],[45,35],[55,8],[15,8]]);   // Vieleck
+//   s.line([15,8],[15,35], { dash: true });   // Linie, gestrichelt (Höhe, verdeckte Kante)
+//   s.side([5,35],[45,35], "6 cm");           // Seitenbeschriftung außen an der Strecke
+//   s.angle([5,35],[45,35],[15,8], "α");      // Winkelbogen am ersten Punkt zwischen zwei Richtungen
+//   s.right([15,35],[45,35],[15,8]);          // rechter Winkel (Quadrat mit Punkt)
+//   s.label([30,20], "A", { anchor: "middle" });
+//   const fig = s.done();                     // { svg, w, h }
+(function (AG) {
+  const INK = "#1b2130", GREY = "#5a6275", FILL = "#eaf0fc";
+  const FONT = "Arial, Helvetica, sans-serif";
+  const r1 = v => Math.round(v * 100) / 100;
+  const escX = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function sketch(w, h, opts = {}) {
+    const parts = [];
+    const size = opts.fontSize || 3.4; // mm, ca. 10 pt
+    const api = {
+      w, h, size,
+      poly(pts, o = {}) {
+        parts.push(`<polygon points="${pts.map(p => r1(p[0]) + "," + r1(p[1])).join(" ")}" fill="${o.fill === undefined ? FILL : o.fill || "none"}" stroke="${o.stroke || INK}" stroke-width="${o.width || 0.35}" stroke-linejoin="round"${o.dash ? ' stroke-dasharray="1.2 0.9"' : ""}/>`);
+        return api;
+      },
+      line(a, b, o = {}) {
+        parts.push(`<line x1="${r1(a[0])}" y1="${r1(a[1])}" x2="${r1(b[0])}" y2="${r1(b[1])}" stroke="${o.stroke || (o.dash ? GREY : INK)}" stroke-width="${o.width || 0.35}"${o.dash ? ' stroke-dasharray="1.2 0.9"' : ""} stroke-linecap="round"/>`);
+        return api;
+      },
+      path(d, o = {}) {
+        parts.push(`<path d="${d}" fill="${o.fill || "none"}" stroke="${o.stroke || INK}" stroke-width="${o.width || 0.35}"${o.dash ? ' stroke-dasharray="1.2 0.9"' : ""}/>`);
+        return api;
+      },
+      circle(c, r, o = {}) {
+        parts.push(`<circle cx="${r1(c[0])}" cy="${r1(c[1])}" r="${r1(r)}" fill="${o.fill || "none"}" stroke="${o.stroke || INK}" stroke-width="${o.width || 0.35}"${o.dash ? ' stroke-dasharray="1.2 0.9"' : ""}/>`);
+        return api;
+      },
+      rect(x, y, rw, rh, o = {}) {
+        parts.push(`<rect x="${r1(x)}" y="${r1(y)}" width="${r1(rw)}" height="${r1(rh)}" fill="${o.fill === undefined ? FILL : o.fill || "none"}" stroke="${o.stroke || INK}" stroke-width="${o.width || 0.35}"/>`);
+        return api;
+      },
+      // Text; anchor: start | middle | end; Grundlinie wird so verschoben, dass p die Textmitte ist
+      label(p, text, o = {}) {
+        const fs = o.size || size;
+        parts.push(`<text x="${r1(p[0])}" y="${r1(p[1] + fs * 0.35)}" font-family="${FONT}" font-size="${fs}" text-anchor="${o.anchor || "middle"}" fill="${o.color || INK}" stroke="#fff" stroke-width="${o.halo === false ? 0 : 0.9}" paint-order="stroke" stroke-linejoin="round"${o.bold ? ' font-weight="bold"' : ""}${o.italic ? ' font-style="italic"' : ""}>${escX(text)}</text>`);
+        return api;
+      },
+      // Seitenbeschriftung: mittig neben der Strecke a→b, auf der Seite, die vom Punkt "inside" weg zeigt
+      // (ohne inside: links von a→b in Zeichenrichtung)
+      side(a, b, text, o = {}) {
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        let nx = -(b[1] - a[1]), ny = b[0] - a[0];
+        const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+        if (o.inside) { const d = (o.inside[0] - mx) * nx + (o.inside[1] - my) * ny; if (d > 0) { nx = -nx; ny = -ny; } }
+        const off = o.offset || size * 0.95;
+        const p = [mx + nx * off, my + ny * off];
+        const anchor = Math.abs(nx) < 0.35 ? "middle" : nx > 0 ? "start" : "end";
+        return api.label([p[0] + (anchor === "start" ? -0.4 : anchor === "end" ? 0.4 : 0), p[1]], text, { ...o, anchor });
+      },
+      // Winkelbogen am Scheitel v zwischen den Richtungen v→p und v→q (kleinerer Winkel)
+      angle(v, p, q, text, o = {}) {
+        const rr = o.r || 4.5;
+        let a1 = Math.atan2(p[1] - v[1], p[0] - v[0]), a2 = Math.atan2(q[1] - v[1], q[0] - v[0]);
+        let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+        const s = [v[0] + rr * Math.cos(a1), v[1] + rr * Math.sin(a1)];
+        const e = [v[0] + rr * Math.cos(a1 + d), v[1] + rr * Math.sin(a1 + d)];
+        parts.push(`<path d="M${r1(s[0])},${r1(s[1])} A${rr},${rr} 0 0 ${d > 0 ? 1 : 0} ${r1(e[0])},${r1(e[1])}" fill="none" stroke="${o.stroke || INK}" stroke-width="0.3"/>`);
+        if (text) {
+          const m = a1 + d / 2, tr = rr + (o.textOffset || size * 0.9);
+          api.label([v[0] + tr * Math.cos(m), v[1] + tr * Math.sin(m)], text, { size: o.size, color: o.color });
+        }
+        return api;
+      },
+      // Zeichen für rechten Winkel am Scheitel v zwischen v→p und v→q
+      right(v, p, q, o = {}) {
+        const k = o.k || 2.8;
+        const u = norm([p[0] - v[0], p[1] - v[1]]), w2 = norm([q[0] - v[0], q[1] - v[1]]);
+        const a = [v[0] + u[0] * k, v[1] + u[1] * k], c = [v[0] + w2[0] * k, v[1] + w2[1] * k];
+        const b = [a[0] + w2[0] * k, a[1] + w2[1] * k];
+        parts.push(`<polyline points="${r1(a[0])},${r1(a[1])} ${r1(b[0])},${r1(b[1])} ${r1(c[0])},${r1(c[1])}" fill="none" stroke="${INK}" stroke-width="0.3"/>`);
+        const dot = [v[0] + (u[0] + w2[0]) * k * 0.5, v[1] + (u[1] + w2[1]) * k * 0.5];
+        parts.push(`<circle cx="${r1(dot[0])}" cy="${r1(dot[1])}" r="0.35" fill="${INK}"/>`);
+        return api;
+      },
+      raw(svgFragment) { parts.push(svgFragment); return api; },
+      done() {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}mm" height="${h}mm" viewBox="0 0 ${w} ${h}">${parts.join("")}</svg>`;
+        return { svg, w, h };
+      },
+    };
+    return api;
+  }
+  function norm(v) { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; }
+
+  // Punkte einer Figur in ein Feld (Breite × Höhe in mm, mit Rand) einpassen; Seitenverhältnis bleibt.
+  // pts in beliebigen Einheiten (y nach oben!), Rückgabe: Funktion f([x,y]) -> mm-Koordinate (y nach unten)
+  function fit(pts, w, h, pad = 6) {
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const sc = Math.min((w - 2 * pad) / ((maxX - minX) || 1), (h - 2 * pad) / ((maxY - minY) || 1));
+    const ox = (w - (maxX - minX) * sc) / 2, oy = (h - (maxY - minY) * sc) / 2;
+    return p => [ox + (p[0] - minX) * sc, h - oy - (p[1] - minY) * sc];
+  }
+
+  // ---------- SVG -> PNG (nur im Browser) ----------
+  const pngCache = new Map(); // svg -> { dataUrl, bytes, pxW, pxH }
+  async function rasterize(fig, scale = 4) {
+    if (pngCache.has(fig.svg)) return pngCache.get(fig.svg);
+    if (typeof document === "undefined" || typeof Image === "undefined") return null;
+    const pxW = Math.round(fig.w / 25.4 * 96 * scale), pxH = Math.round(fig.h / 25.4 * 96 * scale);
+    const img = new Image();
+    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(fig.svg.replace(/width="[^"]*mm" height="[^"]*mm"/, `width="${pxW}" height="${pxH}"`));
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error("Skizze ließ sich nicht umwandeln")); img.src = url; });
+    const canvas = document.createElement("canvas");
+    canvas.width = pxW; canvas.height = pxH;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, pxW, pxH);
+    ctx.drawImage(img, 0, 0, pxW, pxH);
+    const dataUrl = canvas.toDataURL("image/png");
+    const bin = atob(dataUrl.split(",")[1]);
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    const out = { dataUrl, bytes, pxW, pxH };
+    pngCache.set(fig.svg, out);
+    return out;
+  }
+  // alle Skizzen eines Blatts vorab umwandeln (für Word und OneNote)
+  async function rasterizeSheet(sheet) {
+    for (const p of sheet.parts) for (const t of p.tasks) {
+      if (t.fig) await rasterize(t.fig);
+      if (t.aFig) await rasterize(t.aFig);
+    }
+  }
+
+  function figHtml(fig, cls = "fig") {
+    return fig ? `<div class="${cls}" style="width:${fig.w}mm;max-width:100%">${fig.svg.replace(/ width="[^"]*mm" height="[^"]*mm"/, '')}</div>` : "";
+  }
+
+  AG.sketch = sketch;
+  AG.fitPoints = fit;
+  AG.rasterizeFig = rasterize;
+  AG.rasterizeSheet = rasterizeSheet;
+  AG.figPng = fig => pngCache.get(fig.svg) || null;
+  AG.figHtml = figHtml;
+  AG.SKETCH_COLORS = { INK, GREY, FILL };
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
 // ---- src/core/docx.js ----
 // Word-Datei (.docx) direkt im Browser erzeugen – ohne Bibliothek, funktioniert offline.
 (function (AG) {
@@ -866,6 +1019,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
           const tb = sol && t.aTable ? t.aTable : t.table;
           x += taskTableXml(tb, { width: colW - 380, color, indent: 380 }) + para("", { after: 40, size: 6 });
         }
+        const fig = sol && t.aFig ? t.aFig : t.fig;
+        if (fig) x += para(figRun(fig, (colW - 380) / 56.7), { indent: 380, after: 60, line: 240 });
       }
       const inline = sol && AG.isExpression(t);
       if (sol && mode === "steps" && t.steps && t.steps.length) {
@@ -908,7 +1063,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="${PAGE_W}" w:h="16838"/>` +
       `<w:pgMar w:top="900" w:right="${MARGIN}" w:bottom="900" w:left="${MARGIN}" w:header="500" w:footer="420" w:gutter="0"/></w:sectPr>`;
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body>${body}${sect}</w:body></w:document>`;
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}${sect}</w:body></w:document>`;
   }
 
   function footerXml(code) {
@@ -938,24 +1093,44 @@ table.vt th { background: #f1f3f8; text-align: left; }
 
   // pages: [{sheet, mode: "worksheet"|"answers"|"steps"}]
   async function buildDocxAsync(pages, meta, opts) {
+    if (AG.rasterizeSheet) for (const pg of pages) await AG.rasterizeSheet(pg.sheet);
     return zip(await packFiles(docxFiles(pages, meta, opts)));
   }
   function buildDocx(pages, meta, opts) { return zip(docxFiles(pages, meta, opts)); }
 
+  // ---------- Skizzen als PNG-Bilder ----------
+  let IMAGES = [];
+  function figRun(fig, maxWmm) {
+    const png = AG.figPng ? AG.figPng(fig) : null;
+    if (!png) return run("[Skizze]", { color: GREY, i: true });
+    let img = IMAGES.find(im => im.png === png);
+    if (!img) { img = { png, n: IMAGES.length + 1 }; IMAGES.push(img); }
+    const sc = Math.min(1, maxWmm / fig.w);
+    const cx = Math.round(fig.w * sc * 36000), cy = Math.round(fig.h * sc * 36000);
+    const id = 1000 + IMAGES.length * 10 + Math.floor(Math.random() * 9);
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Skizze ${img.n}"/>` +
+      `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="skizze${img.n}.png"/><pic:cNvPicPr/></pic:nvPicPr>` +
+      `<pic:blipFill><a:blip r:embed="rIdImg${img.n}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  }
+
   function docxFiles(pages, meta, opts) {
+    IMAGES = [];
     const body = pages.map((pg, i) => sheetXml(pg.sheet, meta, pg.mode, opts, i > 0, pg.layout)).join("");
     const files = [
       ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
       ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`],
       ["docProps/core.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${esc(meta.title)}</dc:title><dc:creator>Aufgaben-Generator</dc:creator></cp:coreProperties>`],
       ["word/_rels/document.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`],
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${IMAGES.map(im => `<Relationship Id="rIdImg${im.n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/skizze${im.n}.png"/>`).join("")}</Relationships>`],
       ["word/styles.xml", STYLES],
       ["word/footer1.xml", footerXml(meta.code)],
       ["word/document.xml", documentXml(body, meta.code)],
+      ...IMAGES.map(im => [`word/media/skizze${im.n}.png`, im.png.bytes]),
     ];
     return files;
   }
@@ -1035,6 +1210,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
         else {
           body = `<div class="q">${richHtml(t.q)}</div>`;
           if (t.table) body += tableHtml(sol && t.aTable ? t.aTable : t.table, sol);
+          if (t.fig || t.aFig) body += AG.figHtml(sol && t.aFig ? t.aFig : t.fig);
         }
         if (sol && mode === "steps" && t.steps && t.steps.length) {
           body += `<div class="steps red">${t.steps.map(s => `<div>${richHtml(s)}</div>`).join("")}</div>`;
@@ -1282,6 +1458,9 @@ table.vt th { background: #f1f3f8; text-align: left; }
         } else {
           x += `<p style="margin:0 0 3pt 0">${lab}${rhtml(t.q, { color: TEXT, size: 11 })}</p>`;
           if (t.table) x += tableHtml(sol && t.aTable ? t.aTable : t.table, sol);
+          const fig = sol && t.aFig ? t.aFig : t.fig;
+          const png = fig && AG.figPng ? AG.figPng(fig) : null;
+          if (png) x += `<p style="margin:2pt 0 4pt 0"><img src="${png.dataUrl}" width="${Math.round(fig.w / 25.4 * 96)}" height="${Math.round(fig.h / 25.4 * 96)}"></p>`;
         }
         if (sol && mode === "steps" && t.steps && t.steps.length) {
           for (const s of t.steps) x += `<p style="margin:0 0 0 20px;color:${RED};font-size:10pt;line-height:15pt">${rhtml(s, { color: RED, size: 10 })}</p>`;
@@ -1565,6 +1744,101 @@ table.vt th { background: #f1f3f8; text-align: left; }
       steps.push(rich("= ", num(res, { as: "improper" })));
       if (!res.isInt() && Math.abs(res.n) > res.d) steps.push(rich("= ", num(res)));
       return { q, a: num(res), steps };
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m7-flaechen.js ----
+// M7/R7 LB 4: Flächeninhalt von Parallelogramm und Dreieck – mit Skizze. Referenz-Aufgabentyp für Skizzen.
+(function (AG) {
+  const { Frac, num, rich, fmtDec } = AG;
+  const cm = x => fmtDec(x) + " cm";
+  const cm2 = x => fmtDec(x) + " cm²";
+
+  // Skizze: Parallelogramm oder Dreieck mit Grundseite g und Höhe h (Beschriftungen frei wählbar)
+  function sketchShape(kind, g, h, shift, labG, labH) {
+    const W = 62, H = 38;
+    h = Math.min(Math.max(h, 0.4 * g), 1.1 * g); // Skizze, nicht maßstabsgetreu: keine zu flachen/spitzen Figuren
+    shift = Math.min(shift, 0.8 * g);
+    // Punkte in cm (y nach oben)
+    const pts = kind === "para"
+      ? [[0, 0], [g, 0], [g + shift, h], [shift, h]]
+      : [[0, 0], [g, 0], [shift, h]];
+    const f = AG.fitPoints(pts.concat([[0, -0.15 * h]]), W, H, 7);
+    const P = pts.map(f);
+    const s = AG.sketch(W, H);
+    s.poly(P);
+    const top = kind === "para" ? P[3] : P[2];
+    const foot = [top[0], P[0][1]];
+    s.line(top, foot, { dash: true });
+    if (foot[0] > P[0][0] + 1 && foot[0] < P[1][0] - 1) s.right(foot, P[1], top);
+    s.side(P[0], P[1], labG, { inside: top });
+    // Höhe innen beschriften, wenn rechts der Höhe genug Platz ist, sonst links außen
+    const roomRight = (kind === "para" ? P[2][0] : P[1][0]) - foot[0];
+    if (roomRight > 16) s.label([foot[0] + 1.2, (top[1] + foot[1]) / 2], labH, { anchor: "start" });
+    else s.label([foot[0] - 1.2, (top[1] + foot[1]) / 2], labH, { anchor: "end" });
+    return s.done();
+  }
+
+  AG.registerType({
+    id: "m7-flaeche-para-dreieck",
+    klasse: "7",
+    zug: "RM",
+    lb: "4",
+    lbTitle: "Flächeninhalt",
+    title: "Parallelogramm und Dreieck",
+    instruction: {
+      1: "Berechne den Flächeninhalt.",
+      2: "Berechne den Flächeninhalt. Achte auf die Einheiten.",
+      3: "Berechne die fehlende Größe.",
+    },
+    merke: [
+      "Parallelogramm: ", { b: "A = g · h" }, ". Dreieck: ", { b: "A = g · h : 2" },
+      ". Die Höhe h steht immer senkrecht auf der Grundseite g. Beispiel: g = 6 cm, h = 4 cm → Dreieck A = 6 cm · 4 cm : 2 = 12 cm².",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      const kind = rng.chance(0.5) ? "para" : "tri";
+      let g, h;
+      if (level === 1) { g = new Frac(rng.int(3, 12)); h = new Frac(rng.int(2, 9)); }
+      else { g = new Frac(rng.int(25, 120), 10); h = new Frac(rng.int(15, 80), 10); }
+      if (kind === "tri" && level === 1 && g.mul(h).n % 2) h = h.add(1);
+      const A = kind === "para" ? g.mul(h) : g.mul(h).div(2);
+      const name = kind === "para" ? "Parallelogramm" : "Dreieck";
+      const shift = kind === "para" ? Number(g) * rng.pick([0.25, 0.35, 0.45]) : Number(g) * rng.pick([0.2, 0.35, 0.6, 0.75]);
+      const formula = kind === "para" ? "A = g · h" : "A = g · h : 2";
+
+      if (level < 3) {
+        // Niveau 2: eine Größe in mm angeben
+        const gTxt = level === 2 && rng.chance(0.5) ? fmtDec(g.mul(10)) + " mm" : cm(g);
+        const fig = sketchShape(kind, Number(g), Number(h), shift, "g = " + gTxt, "h = " + cm(h));
+        const steps = [];
+        if (gTxt.endsWith("mm")) steps.push(rich("g = ", gTxt, " = ", cm(g)));
+        steps.push(rich(formula));
+        steps.push(rich("A = ", cm(g), " · ", cm(h), kind === "tri" ? " : 2" : ""));
+        steps.push(rich("A = ", cm2(A)));
+        return { q: rich(name + ": g = ", gTxt, ", h = ", cm(h)), a: rich(cm2(A)), steps, fig, inline: false };
+      }
+      // Niveau 3: Umkehraufgabe – A und g gegeben, h gesucht (oder A und h, g gesucht)
+      const askH = rng.chance(0.5);
+      const fig = sketchShape(kind, Number(g), Number(h), shift, askH ? "g = " + cm(g) : "g = ?", askH ? "h = ?" : "h = " + cm(h));
+      const steps = [rich(formula)];
+      if (askH) {
+        steps.push(rich(cm2(A), " = ", cm(g), " · h", kind === "tri" ? " : 2" : ""));
+        steps.push(rich("h = ", cm2(A), kind === "tri" ? " · 2" : "", " : ", cm(g)));
+        steps.push(rich("h = ", cm(h)));
+      } else {
+        steps.push(rich(cm2(A), " = g · ", cm(h), kind === "tri" ? " : 2" : ""));
+        steps.push(rich("g = ", cm2(A), kind === "tri" ? " · 2" : "", " : ", cm(h)));
+        steps.push(rich("g = ", cm(g)));
+      }
+      return {
+        q: rich(name + ": A = ", cm2(A), askH ? ", g = " + cm(g) + ". Berechne h." : ", h = " + cm(h) + ". Berechne g."),
+        a: rich(askH ? "h = " + cm(h) : "g = " + cm(g)),
+        steps, fig, inline: false,
+      };
     },
   });
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
@@ -4130,6 +4404,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const { A, B, cfg } = lastSheets;
     const sheet = state.view === "B" && B ? B : A;
     const mode = state.view === "answers" ? state.solmode : "worksheet";
+    if (AG.rasterizeSheet) await AG.rasterizeSheet(sheet);
     const html = AG.oneNoteHtml(sheet, meta(cfg), mode, { merke: state.merke, workLines: state.work });
     const ok = await AG.copyForOneNote(html);
     const what = mode === "worksheet" ? `Arbeitsblatt (Gruppe ${sheet.group})` : `Lösungsblatt (Gruppe ${sheet.group})`;

@@ -21,5 +21,5 @@ def build(template, core, app, out):
     print(f"dist/{out}", len(html.encode()) // 1024, "KB,", len(files), "Skripte")
 
 
-build("index.html", ["rng.js", "content.js", "engine.js", "docx.js", "render-html.js", "onenote.js", "sheet-image.js"], "app.js", "aufgaben-generator.html")
-build("ueben.html", ["rng.js", "content.js", "engine.js", "docx.js", "render-html.js", "check-answer.js"], "ueben.js", "ueben.html")
+build("index.html", ["rng.js", "content.js", "engine.js", "figures.js", "docx.js", "render-html.js", "onenote.js", "sheet-image.js"], "app.js", "aufgaben-generator.html")
+build("ueben.html", ["rng.js", "content.js", "engine.js", "figures.js", "docx.js", "render-html.js", "check-answer.js"], "ueben.js", "ueben.html")
