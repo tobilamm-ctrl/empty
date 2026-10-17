@@ -251,7 +251,8 @@
     return {
       q,
       a,
-      steps: raw.map(r => rich("= ", r)),
+      // Schritte immer mit dem Ergebnis als letzter Zeile
+      steps: raw.map(r => rich("= ", r)).concat(AG.plain(rich(raw.length ? raw[raw.length - 1] : [])) === AG.plain(a) ? [] : [rich("= ", a)]),
       _A: A, _B: B, _vr: vr,
       _eval: x => sum(pieces.map(p => p.ev(x))),
     };

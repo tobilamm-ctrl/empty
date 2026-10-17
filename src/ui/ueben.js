@@ -217,7 +217,9 @@
     }
     addZoom(sol);
     const finished = cur.step > steps.length;
-    $("showStep").textContent = "Nächster Schritt";
+    // Fortschritt anzeigen: Schritte plus Ergebniszeile
+    const total = steps.length + 1;
+    $("showStep").textContent = `Nächster Schritt (${cur.step} von ${total} gezeigt)`;
     $("showStep").hidden = finished;
     $("showAll").hidden = finished || steps.length < 2;
     if (finished && !cur.counted) {

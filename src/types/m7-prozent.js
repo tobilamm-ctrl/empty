@@ -260,6 +260,20 @@
     cols: 3,
     generate(rng, level) {
       let val, pct, q, a, steps;
+      // p % als ungekürzter Bruch: 57 % = 57/100, 36,5 % = 365/1000
+      const rawFrac = p => {
+        let k = 0; while (!p.mul(10 ** k).isInt()) k++;
+        return { f: [Math.abs(p.mul(10 ** k).n), 100 * 10 ** k] };
+      };
+      let given = null; // gegebene Schreibweise bei Niveau 1
+      const pctToFracSteps = () => {
+        const raw = rawFrac(pct);
+        const s = [rich(pc(pct), " = ", raw)];
+        const reduced = !(val.d === raw.f[1] && val.n === raw.f[0]);
+        if (reduced) s.push(rich("= ", num(val), "   (gekürzt)"));
+        s.push(rich("= ", v(val)));
+        return s;
+      };
       if (level === 1) {
         const m = rng.int(0, 2);
         if (m < 2) {
@@ -275,6 +289,7 @@
             val = new Frac(n, d);
           }
           pct = val.mul(100);
+          given = bruch;
           q = rich("Schreibe als Prozentsatz: ", bruch);
           a = rich(bruch, " = ", v(val), " = ", pc(pct));
         } else {
@@ -282,28 +297,30 @@
           val = new Frac(rng.int(1, 99), 100);
           pct = val.mul(100);
           q = rich("Schreibe als Prozentsatz: ", v(val));
-          a = rich(num(val), " = ", v(val), " = ", pc(pct));
+          a = rich(v(val), " = ", pc(pct));
         }
-        steps = [rich(v(val), " · 100 = ", pc(pct))];
+        steps = [];
+        if (given) steps.push(rich(given, " = ", v(val)));
+        steps.push(rich(v(val), " = ", rawFrac(pct), " = ", pc(pct)));
       } else if (level === 2) {
         pct = new Frac(rng.int(1, 99), 1);
         val = pct.div(100);
         q = rich("Schreibe als gekürzten Bruch und als Dezimalzahl: ", pc(pct));
         a = rich(num(val), " = ", v(val), " = ", pc(pct));
-        steps = [rich(v(pct), "/100 = ", num(val), " = ", v(val))];
+        steps = pctToFracSteps();
       } else if (rng.chance(0.5)) {
         const d = rng.pick([8, 16, 20, 25, 40]);
         val = new Frac(rng.int(1, d - 1), d);
         pct = val.mul(100);
         q = rich("Schreibe als Dezimalzahl und als Prozentsatz: ", num(val));
         a = rich(num(val), " = ", v(val), " = ", pc(pct));
-        steps = [rich(v(val), " · 100 = ", pc(pct))];
+        steps = [rich(num(val), " = ", num(val.n), " : ", num(val.d), " = ", v(val)), rich(v(val), " = ", rawFrac(pct), " = ", pc(pct))];
       } else {
         pct = rng.chance(0.5) ? new Frac(2 * rng.int(1, 39) + 1, 2) : new Frac(rng.int(1, 99), 1);
         val = pct.div(100);
         q = rich("Schreibe als Bruch und als Dezimalzahl: ", pc(pct));
         a = rich(num(val), " = ", v(val), " = ", pc(pct));
-        steps = [rich(v(pct), "/100 = ", num(val), " = ", v(val))];
+        steps = pctToFracSteps();
       }
       return { q, a, steps, _val: val, _pct: pct };
     },
@@ -453,7 +470,7 @@
       const fac = p.div(100);
       const q = rich("Schreibe ", pc(p), " als Faktor und berechne ", pc(p), " von ", D(c, G), ".");
       const a = rich(v(fac), " · ", Q(c, G), " = ", Q(c, P));
-      const steps = [rich(v(p), " % = ", v(p), " : 100 = ", v(fac))];
+      const steps = [rich(pc(p), " = ", v(p), " : 100 = ", v(fac)), rich(v(fac), " · ", Q(c, G), " = ", Q(c, P))];
       return { q, a, steps, _G: G, _p: p, _P: P, _fac: fac };
     },
     verify(t) {
