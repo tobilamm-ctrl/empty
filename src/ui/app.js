@@ -278,6 +278,7 @@
         // jeder Teil hat nur noch eine Zeile: Aufgaben einzeln reduzieren oder letzten Teil entfernen
         const k = state.parts.findIndex(p => p.count > 1);
         if (k >= 0 && state.parts.some(p => p.count > 1)) state.parts[state.parts.reduce((m, p, j) => p.count > state.parts[m].count ? j : m, 0)].count--;
+        else if (!state.nParts && state.parts.length > 1) state.parts.pop();   // nur bei „auto“ einen Teil weglassen
         else return;   // Teile, die die Lehrkraft gewählt hat, bleiben alle erhalten
         continue;
       }

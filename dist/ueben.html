@@ -1051,8 +1051,8 @@ table.vt td.red { color: var(--red); font-weight: 700; }
 
   function taskTableXml(tbl, o) {
     const cols = tbl.rows[0].length;
-    const first = 1800;
-    const w = Math.max(700, Math.min(2200, Math.floor((o.width - first - 200) / (cols - 1))));
+    const first = cols > 8 ? 1000 : 1800;   // breite Tabellen (z. B. Stellenwerttafel): schmalere Kopfspalte
+    const w = Math.max(cols > 8 ? 380 : 700, Math.min(2200, Math.floor((o.width - first - 200) / (cols - 1))));
     const widths = [first, ...Array(cols - 1).fill(w)];
     const rows = tbl.rows.map((r, ri) => r.map((c, ci) => ({
       xml: para(richXml(c, { size: 20, color: o.color && ci > 0 && ri > 0 ? o.color : undefined, b: ci === 0 }), { after: 0, align: ci ? "center" : "left" }),
@@ -1589,6 +1589,4074 @@ table.vt td.red { color: var(--red); font-weight: 700; }
 
   AG.answerKind = answerKind;
   AG.checkAnswer = checkAnswer;
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-flaechen.js ----
+// M5 (Klasse 5 Mittelschule): Flächeninhalt von Rechteck und Quadrat (mit Skizze), Umkehraufgaben zu
+// Fläche und Umfang, Flächeneinheiten umrechnen, Platzhalteraufgaben und Umkehraufgaben mit Formeln.
+// Typen: m5-rechteck-flaeche (LB 4), m5-rechteck-umkehr (LB 4), m5-flaecheneinheiten (LB 4),
+//        m5-platzhalter (LB 7), m5-formel-umkehr (LB 7). Vorbild für Skizzen: m7-flaechen.js
+(function (AG) {
+  const { rich, fmtInt, fitPoints, sketch } = AG;
+
+  // ---------- Hilfen ----------
+  const I = n => fmtInt(n);                      // ganze Zahl („1400“, „10 000“ ab 5 Stellen)
+  const cm = n => I(n) + " cm";
+  const cm2 = n => I(n) + " cm²";
+  const m = n => I(n) + " m";
+  const m2 = n => I(n) + " m²";
+  const dm = n => I(n) + " dm";
+  const dm2 = n => I(n) + " dm²";
+  const MINUS = AG.MINUS;
+
+  // Figur (Punkte in beliebigen Einheiten, y nach oben) in ein Feld W × H mm einpassen,
+  // mit Rändern [links, rechts, oben, unten], damit die Beschriftungen Platz haben.
+  function place(pts, W, H, [ml, mr, mt, mb]) {
+    const g = fitPoints(pts, W - ml - mr, H - mt - mb, 0);
+    return p => { const q = g(p); return [q[0] + ml, q[1] + mt]; };
+  }
+  const centroid = P => [P.reduce((s, p) => s + p[0], 0) / P.length, P.reduce((s, p) => s + p[1], 0) / P.length];
+
+  const FW = 74, FH = 44; // Feldgröße der Skizzen (cols: 2)
+  const MARG = [18, 18, 8, 9]; // Randabstand links, rechts, oben, unten (Platz für Seitenbeschriftungen)
+
+  // Rechteck mit Länge a (unten) und Breite b (rechts). Nicht maßstabsgetreu: Breite höchstens 1,2-fach der Länge.
+  function rectFig(a, b, labA, labB) {
+    const bd = Math.min(Math.max(b, 0.5 * a), 1.2 * a);
+    const pts = [[0, 0], [a, 0], [a, bd], [0, bd]];
+    const f = place(pts, FW, FH, MARG);
+    const P = pts.map(f), C = centroid(P);
+    const s = sketch(FW, FH);
+    s.poly(P);
+    s.side(P[0], P[1], labA, { inside: C });
+    s.side(P[1], P[2], labB, { inside: C });
+    return s.done();
+  }
+
+  // L-Form: a unten (Breite), b links (Höhe), c oben links (Teilstrecke), d rechts unten (Teilstrecke)
+  function lFig(a, b, c, d) {
+    const pts = [[0, 0], [a, 0], [a, d], [c, d], [c, b], [0, b]];
+    const f = place(pts, FW, FH, MARG);
+    const P = pts.map(f), C = centroid(P);
+    const s = sketch(FW, FH);
+    s.poly(P);
+    s.side(P[0], P[1], "a = " + m(a), { inside: C });
+    s.side(P[5], P[0], "b = " + m(b), { inside: C });
+    s.side(P[4], P[5], "c = " + m(c), { inside: C });
+    s.side(P[1], P[2], "d = " + m(d), { inside: C });
+    return s.done();
+  }
+
+  // U-Form: a unten (Breite), b links (Höhe), c Innenbreite oben (Grund des Ausschnitts), d Tiefe des Ausschnitts
+  function uFig(a, b, c, d) {
+    const arm = (a - c) / 2;
+    const pts = [[0, 0], [a, 0], [a, b], [a - arm, b], [a - arm, b - d], [arm, b - d], [arm, b], [0, b]];
+    const f = place(pts, FW, FH, MARG);
+    const P = pts.map(f), C = centroid(P);
+    const s = sketch(FW, FH);
+    s.poly(P);
+    s.side(P[0], P[1], "a = " + m(a), { inside: C });
+    s.side(P[7], P[0], "b = " + m(b), { inside: C });
+    // c: unter dem Grund des Ausschnitts (im Steg), d: rechts neben der linken Kante des Ausschnitts (im Ausschnitt)
+    const midC = [(P[4][0] + P[5][0]) / 2, P[4][1]];
+    s.label([midC[0], midC[1] + 4], "c = " + m(c));
+    const midD = [P[5][0], (P[5][1] + P[6][1]) / 2];
+    s.label([midD[0] + 1.6, midD[1]], "d = " + m(d), { anchor: "start" });
+    return s.done();
+  }
+
+  // ---------- 1. Flächeninhalt Rechteck und Quadrat ----------
+  function lTask(rng) {
+    let a, b, c, d;
+    for (let i = 0; i < 500; i++) {
+      a = rng.int(6, 12); b = rng.int(6, 11); c = rng.int(2, a - 2); d = rng.int(2, b - 2);
+      if (a / b >= 0.8 && a / b <= 1.6) break;
+    }
+    const A = a * d + c * (b - d);
+    const zerlegen = rng.chance(0.5);
+    const steps = zerlegen
+      ? [
+        rich("Höhe oben links: b − d = ", m(b), " − ", m(d), " = ", m(b - d)),
+        rich("Teilfläche unten: a · d = ", m(a), " · ", m(d), " = ", m2(a * d)),
+        rich("Teilfläche oben: c · (b − d) = ", m(c), " · ", m(b - d), " = ", m2(c * (b - d))),
+        rich("A = ", m2(a * d), " + ", m2(c * (b - d)), " = ", m2(A)),
+      ]
+      : [
+        rich("Rechteck: a · b = ", m(a), " · ", m(b), " = ", m2(a * b)),
+        rich("Fehlendes Rechteck: (a − c) · (b − d) = ", m(a - c), " · ", m(b - d), " = ", m2((a - c) * (b - d))),
+        rich("A = ", m2(a * b), " − ", m2((a - c) * (b - d)), " = ", m2(A)),
+      ];
+    return {
+      q: rich("Ein Pausenhof hat die Form eines L. Gegeben: a = ", m(a), ", b = ", m(b), ", c = ", m(c), ", d = ", m(d),
+        " (siehe Skizze). Berechne den Flächeninhalt."),
+      a: rich(m2(A)),
+      steps,
+      fig: lFig(a, b, c, d),
+      inline: false,
+    };
+  }
+
+  function uTask(rng) {
+    let a, b, c, d, arm;
+    for (let i = 0; i < 500; i++) {
+      arm = rng.int(2, 3); c = rng.int(6, 9); a = c + 2 * arm;
+      b = rng.int(7, 11); d = rng.int(3, b - 3);
+      if (a <= 14 && a / b >= 0.9 && a / b <= 1.7) break;
+    }
+    const A = a * b - c * d;
+    const zerlegen = rng.chance(0.5);
+    const steps = zerlegen
+      ? [
+        rich("Breite eines Arms: (a − c) : 2 = (", m(a), " − ", m(c), ") : 2 = ", m(arm)),
+        rich("Unten: a · (b − d) = ", m(a), " · ", m(b - d), " = ", m2(a * (b - d))),
+        rich("Zwei Arme: 2 · ", m(arm), " · ", m(d), " = ", m2(2 * arm * d)),
+        rich("A = ", m2(a * (b - d)), " + ", m2(2 * arm * d), " = ", m2(A)),
+      ]
+      : [
+        rich("Rechteck: a · b = ", m(a), " · ", m(b), " = ", m2(a * b)),
+        rich("Ausschnitt: c · d = ", m(c), " · ", m(d), " = ", m2(c * d)),
+        rich("A = ", m2(a * b), " − ", m2(c * d), " = ", m2(A)),
+      ];
+    return {
+      q: rich("Ein Beet hat die Form eines U. Gegeben: a = ", m(a), ", b = ", m(b), ", c = ", m(c), ", d = ", m(d),
+        " (siehe Skizze). Berechne den Flächeninhalt."),
+      a: rich(m2(A)),
+      steps,
+      fig: uFig(a, b, c, d),
+      inline: false,
+    };
+  }
+
+  AG.registerType({
+    id: "m5-rechteck-flaeche",
+    klasse: "5",
+    zug: "RM",
+    lb: "4",
+    lbTitle: "Flächeninhalt – Rechtecke",
+    title: "Flächeninhalt von Rechteck und Quadrat",
+    topic: "flaechen",
+    instruction: {
+      1: "Berechne den Flächeninhalt. Schreibe die Rechnung auf.",
+      2: "Rechne zuerst alle Längen in die gleiche Einheit um. Gib das Ergebnis in der angegebenen Einheit an.",
+      3: "Berechne den Flächeninhalt der Figur. Zerlege sie in Rechtecke oder ergänze sie zu einem Rechteck.",
+    },
+    merke: [
+      "Rechteck: ", { b: "A = a · b" }, ". Quadrat: ", { b: "A = a · a" },
+      ". Beispiel: a = 6 cm, b = 4 cm → A = 6 cm · 4 cm = 24 cm². Zusammengesetzte Figuren zerlegt man in Rechtecke "
+      + "oder ergänzt sie zu einem Rechteck und zieht die fehlende Fläche ab.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) {
+        if (rng.chance(0.3)) {
+          const s = rng.int(3, 12);
+          return {
+            q: rich("Das Quadrat hat die Seite a = ", cm(s), ". Berechne den Flächeninhalt."),
+            a: rich(cm2(s * s)),
+            steps: [rich("A = a · a"), rich("A = ", cm(s), " · ", cm(s), " = ", cm2(s * s))],
+            fig: rectFig(s, s, "a = " + cm(s), "a"),
+            inline: false,
+          };
+        }
+        const a = rng.int(3, 12);
+        let b = rng.int(2, 9);
+        if (b === a) b = b + 1;
+        return {
+          q: rich("Das Rechteck hat die Seiten a = ", cm(a), " und b = ", cm(b), ". Berechne den Flächeninhalt."),
+          a: rich(cm2(a * b)),
+          steps: [rich("A = a · b"), rich("A = ", cm(a), " · ", cm(b), " = ", cm2(a * b))],
+          fig: rectFig(a, b, "a = " + cm(a), "b = " + cm(b)),
+          inline: false,
+        };
+      }
+      if (level === 2) {
+        const a = rng.int(2, 9); // Länge in m
+        if (rng.chance(0.5)) {
+          // Breite in dm (ganze Meter), Ergebnis in m²
+          const r = rng.int(2, 9);
+          return {
+            q: rich("Das Rechteck ist ", m(a), " lang und ", dm(10 * r), " breit. Berechne den Flächeninhalt in m²."),
+            a: rich(m2(a * r)),
+            steps: [rich("Breite: ", dm(10 * r), " = ", m(r)), rich("A = ", m(a), " · ", m(r), " = ", m2(a * r))],
+            fig: rectFig(a, r, "a = " + m(a), "b = " + dm(10 * r)),
+            inline: false,
+          };
+        }
+        // Breite in dm (Vielfache von 5), Ergebnis in dm²
+        const b = 5 * rng.int(3, 19);
+        return {
+          q: rich("Das Rechteck ist ", m(a), " lang und ", dm(b), " breit. Berechne den Flächeninhalt in dm²."),
+          a: rich(dm2(10 * a * b)),
+          steps: [rich("Länge: ", m(a), " = ", dm(10 * a)), rich("A = ", dm(10 * a), " · ", dm(b), " = ", dm2(10 * a * b))],
+          fig: rectFig(a, b / 10, "a = " + m(a), "b = " + dm(b)),
+          inline: false,
+        };
+      }
+      return rng.chance(0.5) ? lTask(rng) : uTask(rng);
+    },
+  });
+
+  // ---------- 2. Umkehraufgaben Rechteck und Quadrat ----------
+  AG.registerType({
+    id: "m5-rechteck-umkehr",
+    klasse: "5",
+    zug: "RM",
+    lb: "4",
+    lbTitle: "Flächeninhalt – Rechtecke",
+    title: "Seite aus Fläche oder Umfang berechnen",
+    topic: "flaechen",
+    instruction: {
+      1: "Berechne die fehlende Seite.",
+      2: "Berechne die fehlende Seite. Denke rückwärts.",
+      3: "Löse die Sachaufgabe. Rechne rückwärts.",
+    },
+    merke: [
+      "Ist die Fläche gegeben, teilt man sie durch die bekannte Seite: ", { b: "andere Seite = Fläche : Seite" },
+      ". Beispiel: A = 48 cm², a = 6 cm → b = 48 cm² : 6 cm = 8 cm. Ist der Umfang gegeben, zieht man zuerst die "
+      + "bekannten Seiten ab und halbiert den Rest.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) {
+        if (rng.chance(0.35)) {
+          const s = rng.int(2, 12);
+          return {
+            q: rich("Ein Quadrat hat den Flächeninhalt ", cm2(s * s), ". Wie lang ist eine Seite?"),
+            a: rich(cm(s)),
+            steps: [rich("a · a = ", cm2(s * s)), rich(cm(s), " · ", cm(s), " = ", cm2(s * s)), rich("Eine Seite ist ", cm(s), " lang.")],
+            inline: false,
+          };
+        }
+        const a = rng.int(2, 12);
+        let b = rng.int(2, 12);
+        if (b === a) b = b < 12 ? b + 1 : b - 1;
+        const A = a * b;
+        return {
+          q: rich("Ein Rechteck hat den Flächeninhalt ", cm2(A), ". Eine Seite ist ", cm(a), " lang. Wie lang ist die andere Seite?"),
+          a: rich(cm(b)),
+          steps: [rich("Andere Seite: ", cm2(A), " : ", cm(a), " = ", cm(b)), rich("Probe: ", cm(a), " · ", cm(b), " = ", cm2(A))],
+          inline: false,
+        };
+      }
+      if (level === 2) {
+        if (rng.chance(0.35)) {
+          const s = rng.int(3, 12);
+          return {
+            q: rich("Ein Quadrat hat den Umfang ", cm(4 * s), ". Wie lang ist eine Seite?"),
+            a: rich(cm(s)),
+            steps: [rich("Alle 4 Seiten sind gleich lang."), rich(cm(4 * s), " : 4 = ", cm(s))],
+            inline: false,
+          };
+        }
+        const a = rng.int(2, 12);
+        let b = rng.int(2, 12);
+        if (b === a) b = b < 12 ? b + 1 : b - 1;
+        const u = 2 * (a + b);
+        return {
+          q: rich("Ein Rechteck hat den Umfang ", cm(u), ". Eine Seite ist ", cm(a), " lang. Wie lang ist die andere Seite?"),
+          a: rich(cm(b)),
+          steps: [
+            rich("Zwei Seiten zusammen: 2 · ", cm(a), " = ", cm(2 * a)),
+            rich("Die anderen zwei Seiten zusammen: ", cm(u), " − ", cm(2 * a), " = ", cm(u - 2 * a)),
+            rich("Eine Seite: ", cm(u - 2 * a), " : 2 = ", cm(b)),
+          ],
+          inline: false,
+        };
+      }
+      // Sachaufgaben
+      const kind = rng.int(0, 3);
+      if (kind === 0) {
+        const a = rng.int(2, 12), b = rng.int(2, 10), A = a * b;
+        return {
+          q: rich("Ein rechteckiges Blumenbeet hat eine Fläche von ", m2(A), ". Es ist ", m(a), " lang. Wie breit ist das Beet?"),
+          a: rich(m(b)),
+          steps: [rich("Breite = Fläche : Länge"), rich(m2(A), " : ", m(a), " = ", m(b))],
+          inline: false,
+        };
+      }
+      if (kind === 1) {
+        const a = rng.int(6, 10), b = rng.int(4, 8), A = a * b;
+        return {
+          q: rich("Der Fußboden eines Klassenzimmers ist ", m(a), " lang und hat eine Fläche von ", m2(A), ". Wie breit ist das Zimmer?"),
+          a: rich(m(b)),
+          steps: [rich("Breite = Fläche : Länge"), rich(m2(A), " : ", m(a), " = ", m(b))],
+          inline: false,
+        };
+      }
+      if (kind === 2) {
+        const a = rng.int(4, 12);
+        let b = rng.int(3, 10);
+        if (b === a) b = b < 10 ? b + 1 : b - 1;
+        const u = 2 * (a + b);
+        return {
+          q: rich("Ein rechteckiger Hühnerhof wird mit einem Zaun umgeben. Der Zaun ist ", m(u), " lang. Der Hof ist ", m(a), " lang. Wie breit ist der Hof?"),
+          a: rich(m(b)),
+          steps: [
+            rich("Zwei Längsseiten: 2 · ", m(a), " = ", m(2 * a)),
+            rich("Zwei Breiten zusammen: ", m(u), " − ", m(2 * a), " = ", m(u - 2 * a)),
+            rich("Eine Breite: ", m(u - 2 * a), " : 2 = ", m(b)),
+          ],
+          inline: false,
+        };
+      }
+      const s = rng.int(2, 6);
+      return {
+        q: rich("Ein quadratischer Sandkasten hat einen Umfang von ", m(4 * s), ". Wie lang ist eine Seite?"),
+        a: rich(m(s)),
+        steps: [rich("Alle 4 Seiten sind gleich lang."), rich(m(4 * s), " : 4 = ", m(s))],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 3. Flächeneinheiten ----------
+  // Jede Stufe ist 100-mal so groß wie die nächstkleinere Einheit (m² → dm² → cm² → mm²)
+  const STUFEN = [["m²", "dm²"], ["dm²", "cm²"], ["cm²", "mm²"]];
+  // Kommaschreibweise: k/100 (k von 10 bis 999) als Dezimalzahl mit Komma
+  const dec = k => AG.fmtDec(new AG.Frac(k, 100));
+
+  AG.registerType({
+    id: "m5-flaecheneinheiten",
+    klasse: "5",
+    zug: "RM",
+    lb: "4",
+    lbTitle: "Flächeninhalt – Rechtecke",
+    title: "Flächeneinheiten umrechnen",
+    topic: "groessen",
+    instruction: {
+      1: "Rechne in die angegebene Einheit um.",
+      2: "Rechne um. Bei gemischten Einheiten rechnest du zuerst jede Einheit um, dann addierst du.",
+      3: "Rechne um. Bei den Vergleichen setze <, > oder = ein.",
+    },
+    merke: [
+      "Von einer Einheit zur nächsten kleineren Einheit mal 100, zur nächsten größeren geteilt durch 100: ",
+      { b: "1 m² = 100 dm²" }, ", ", { b: "1 dm² = 100 cm²" }, ", ", { b: "1 cm² = 100 mm²" },
+      ". Beispiel: 3 m² = 300 dm², 5 m² 12 dm² = 500 dm² + 12 dm² = 512 dm², 3,5 m² = 350 dm².",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) {
+        const [big, small] = rng.pick(STUFEN);
+        const n = rng.int(2, 12);
+        if (rng.chance(0.6)) {
+          return {
+            q: rich(I(n), " ", big, " = ", { blank: 4 }, " ", small),
+            a: rich(I(n * 100), " ", small),
+            steps: [rich("1 ", big, " = 100 ", small), rich(I(n), " · 100 ", small, " = ", I(n * 100), " ", small)],
+            inline: false,
+          };
+        }
+        return {
+          q: rich(I(n * 100), " ", small, " = ", { blank: 4 }, " ", big),
+          a: rich(I(n), " ", big),
+          steps: [rich("1 ", big, " = 100 ", small), rich(I(n * 100), " ", small, " : 100 = ", I(n), " ", big)],
+          inline: false,
+        };
+      }
+      if (level === 2) {
+        if (rng.chance(0.5)) {
+          // zwei Stufen: m² → cm² bzw. dm² → mm²
+          const [big, mid, small] = rng.chance(0.5) ? ["m²", "dm²", "cm²"] : ["dm²", "cm²", "mm²"];
+          const n = rng.int(2, 12);
+          return {
+            q: rich(I(n), " ", big, " = ", { blank: 4 }, " ", small),
+            a: rich(I(n * 10000), " ", small),
+            steps: [rich("1 ", big, " = 100 ", mid, " = 10 000 ", small), rich(I(n), " · 10 000 ", small, " = ", I(n * 10000), " ", small)],
+            inline: false,
+          };
+        }
+        // gemischte Einheiten: 5 m² 12 dm² = 512 dm²
+        const [big, small] = rng.pick([["m²", "dm²"], ["dm²", "cm²"]]);
+        const x = rng.int(2, 9), y = rng.int(5, 95);
+        return {
+          q: rich(I(x), " ", big, " ", I(y), " ", small, " = ", { blank: 4 }, " ", small),
+          a: rich(I(x * 100 + y), " ", small),
+          steps: [rich(I(x), " ", big, " = ", I(x * 100), " ", small), rich(I(x * 100), " ", small, " + ", I(y), " ", small, " = ", I(x * 100 + y), " ", small)],
+          inline: false,
+        };
+      }
+      // Kommaschreibweise und Vergleiche
+      const kind = rng.int(0, 2);
+      const k = rng.int(10, 999);
+      if (kind === 0) {
+        return {
+          q: rich(dec(k), " m² = ", { blank: 4 }, " dm²"),
+          a: rich(I(k), " dm²"),
+          steps: [rich("1 m² = 100 dm²"), rich(dec(k), " m² = ", dec(k), " · 100 dm² = ", I(k), " dm²")],
+          inline: false,
+        };
+      }
+      if (kind === 1) {
+        return {
+          q: rich(dec(k), " dm² = ", { blank: 4 }, " cm²"),
+          a: rich(I(k), " cm²"),
+          steps: [rich("1 dm² = 100 cm²"), rich(dec(k), " dm² = ", dec(k), " · 100 cm² = ", I(k), " cm²")],
+          inline: false,
+        };
+      }
+      // Vergleich: m² (Kommazahl) mit dm² (ganze Zahl)
+      let y = k + rng.int(-60, 60);
+      if (y < 1) y = k + 60;
+      const sign = k > y ? ">" : k < y ? "<" : "=";
+      return {
+        q: rich(dec(k), " m² ", { blank: 3 }, " ", I(y), " dm²"),
+        a: rich(dec(k), " m² ", sign, " ", I(y), " dm²"),
+        steps: [rich(dec(k), " m² = ", I(k), " dm²"), rich(I(k), " dm² ", sign, " ", I(y), " dm²")],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 4. Platzhalteraufgaben ----------
+  AG.registerType({
+    id: "m5-platzhalter",
+    klasse: "5",
+    zug: "RM",
+    lb: "7",
+    lbTitle: "Gleichungen und Formeln",
+    title: "Zahlen mit □ finden",
+    topic: "terme",
+    instruction: {
+      1: "Finde die Zahl für das □. Rechne die Umkehraufgabe.",
+      2: "Finde die Zahl für das □. Die Zahlen sind größer.",
+      3: "Finde die gesuchte Zahl. Achte auf die Reihenfolge der Rechenschritte.",
+    },
+    merke: [
+      "Das □ steht für eine gesuchte Zahl. Mit der Umkehraufgabe findet man sie: ", { b: "□ + 17 = 42" },
+      ", also □ = 42 − 17 = 25. Probe: 25 + 17 = 42.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level < 3) {
+        const big = level === 2;
+        const op = rng.pick(["+", "−", "·", ":"]);
+        if (op === "+") {
+          const x = big ? rng.int(120, 900) : rng.int(3, 60);
+          const a = big ? rng.int(100, 600) : rng.int(3, 40);
+          const c = x + a;
+          return {
+            q: rich("□ + ", I(a), " = ", I(c)),
+            a: rich(I(x)),
+            steps: [rich("□ = ", I(c), " ", MINUS, " ", I(a)), rich("□ = ", I(x))],
+            inline: false,
+          };
+        }
+        if (op === "−") {
+          const x = big ? rng.int(100, 900) : rng.int(3, 60);
+          const r = big ? rng.int(100, 900) : rng.int(3, 60);
+          const c = x + r;
+          return {
+            q: rich(I(c), " ", MINUS, " □ = ", I(r)),
+            a: rich(I(x)),
+            steps: [rich("□ = ", I(c), " ", MINUS, " ", I(r)), rich("□ = ", I(x))],
+            inline: false,
+          };
+        }
+        if (op === "·") {
+          const x = big ? rng.int(12, 99) : rng.int(2, 12);
+          const a = big ? rng.int(11, 49) : rng.int(2, 9);
+          const c = x * a;
+          return {
+            q: rich("□ · ", I(a), " = ", I(c)),
+            a: rich(I(x)),
+            steps: [rich("□ = ", I(c), " : ", I(a)), rich("□ = ", I(x))],
+            inline: false,
+          };
+        }
+        const c = big ? rng.int(12, 99) : rng.int(2, 12);
+        const a = big ? rng.int(11, 49) : rng.int(2, 9);
+        const x = c * a;
+        return {
+          q: rich("□ : ", I(a), " = ", I(c)),
+          a: rich(I(x)),
+          steps: [rich("□ = ", I(c), " · ", I(a)), rich("□ = ", I(x))],
+          inline: false,
+        };
+      }
+      // Stufe 3: zweischrittig oder Zahlenrätsel in Worten
+      const x = rng.int(2, 30), a = rng.int(2, 9);
+      const minus = rng.chance(0.4);
+      const b = minus ? rng.int(1, Math.min(20, a * x - 1)) : rng.int(1, 20);
+      const c = minus ? a * x - b : a * x + b;
+      const sgn = minus ? MINUS : "+";
+      const rev = minus ? [rich(I(a), " · □ = ", I(c), " + ", I(b), " = ", I(c + b)), rich("□ = ", I(c + b), " : ", I(a), " = ", I(x))]
+        : [rich(I(a), " · □ = ", I(c), " − ", I(b), " = ", I(c - b)), rich("□ = ", I(c - b), " : ", I(a), " = ", I(x))];
+      if (rng.chance(0.5)) {
+        return {
+          q: rich(I(a), " · □ ", sgn, " ", I(b), " = ", I(c)),
+          a: rich(I(x)),
+          steps: [rich(I(a), " · □ ", sgn, " ", I(b), " = ", I(c)), ...rev],
+          inline: false,
+        };
+      }
+      const verb = minus ? "subtrahiere" : "addiere";
+      return {
+        q: rich("Ich denke mir eine Zahl. Ich multipliziere sie mit ", I(a), " und ", verb, " ", I(b), ". Ich erhalte ", I(c),
+          ". Welche Zahl habe ich mir gedacht?"),
+        a: rich(I(x)),
+        steps: [rich(I(a), " · □ ", sgn, " ", I(b), " = ", I(c)), ...rev],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 5. Umkehraufgaben mit Formeln ----------
+  AG.registerType({
+    id: "m5-formel-umkehr",
+    klasse: "5",
+    zug: "RM",
+    lb: "7",
+    lbTitle: "Gleichungen und Formeln",
+    title: "Seite mit der Formel berechnen",
+    topic: "terme",
+    instruction: {
+      1: "Berechne die gesuchte Seite mit der Formel.",
+      2: "Stelle die Formel nach der gesuchten Größe um. Rechne Schritt für Schritt.",
+      3: "Löse die Sachaufgabe mit der Formel. Schreibe die Formel zuerst auf.",
+    },
+    merke: [
+      "Formeln für das Rechteck: ", { b: "u = 2 · a + 2 · b" }, " und ", { b: "A = a · b" },
+      ". Die gesuchte Seite setzt man ein und löst die Gleichung. Beispiel: u = 26 cm, a = 8 cm → "
+      + "26 cm = 2 · 8 cm + 2 · b → 10 cm = 2 · b → b = 5 cm.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) {
+        const a = rng.int(2, 12);
+        let b = rng.int(2, 12);
+        if (b === a) b = b < 12 ? b + 1 : b - 1;
+        const u = 2 * (a + b);
+        const g = rng.pick(["a", "b"]);
+        const known = g === "a" ? "b" : "a";
+        const gv = g === "a" ? a : b, kv = g === "a" ? b : a;
+        const sub = letter => (letter === known ? cm(kv) : letter);
+        return {
+          q: rich("Formel: u = 2 · a + 2 · b. Berechne ", g, " für u = ", cm(u), ", ", known, " = ", cm(kv), "."),
+          a: rich(g, " = ", cm(gv)),
+          steps: [
+            rich("u = 2 · a + 2 · b"),
+            rich(cm(u), " = 2 · ", sub("a"), " + 2 · ", sub("b")),
+            g === "b"
+              ? rich(cm(u), " = ", cm(2 * kv), " + 2 · b")
+              : rich(cm(u), " = 2 · a + ", cm(2 * kv)),
+            rich(cm(u - 2 * kv), " = 2 · ", g),
+            rich(g, " = ", cm(u - 2 * kv), " : 2 = ", cm(gv)),
+          ],
+          inline: false,
+        };
+      }
+      if (level === 2) {
+        if (rng.chance(0.3)) {
+          const s = rng.int(5, 15);
+          return {
+            q: rich("Formel für das Quadrat: u = 4 · a. Berechne a für u = ", cm(4 * s), "."),
+            a: rich("a = ", cm(s)),
+            steps: [rich("u = 4 · a"), rich(cm(4 * s), " = 4 · a"), rich("a = ", cm(4 * s), " : 4 = ", cm(s))],
+            inline: false,
+          };
+        }
+        const a = rng.int(2, 12);
+        let b = rng.int(2, 12);
+        if (b === a) b = b < 12 ? b + 1 : b - 1;
+        const A = a * b;
+        const g = rng.pick(["a", "b"]);
+        const known = g === "a" ? "b" : "a";
+        const gv = g === "a" ? a : b, kv = g === "a" ? b : a;
+        return {
+          q: rich("Formel: A = a · b. Berechne ", g, " für A = ", cm2(A), ", ", known, " = ", cm(kv), "."),
+          a: rich(g, " = ", cm(gv)),
+          steps: [
+            rich("A = a · b"),
+            rich(cm2(A), " = ", g === "a" ? "a" : cm(kv), " · ", g === "a" ? cm(kv) : "b"),
+            rich(g, " = ", cm2(A), " : ", cm(kv), " = ", cm(gv)),
+          ],
+          inline: false,
+        };
+      }
+      // Sachaufgaben mit Formel
+      const kind = rng.int(0, 2);
+      if (kind === 0) {
+        const a = rng.int(4, 12);
+        let b = rng.int(3, 10);
+        if (b === a) b = b < 10 ? b + 1 : b - 1;
+        const u = 2 * (a + b);
+        return {
+          q: rich("Ein rechteckiger Garten hat einen Zaun mit dem Umfang u = ", m(u), ". Er ist a = ", m(a), " lang. "
+            + "Berechne die Breite b mit der Formel u = 2 · a + 2 · b."),
+          a: rich("b = ", m(b)),
+          steps: [
+            rich("u = 2 · a + 2 · b"),
+            rich(m(u), " = 2 · ", m(a), " + 2 · b"),
+            rich(m(u), " = ", m(2 * a), " + 2 · b"),
+            rich(m(u - 2 * a), " = 2 · b"),
+            rich("b = ", m(u - 2 * a), " : 2 = ", m(b)),
+          ],
+          inline: false,
+        };
+      }
+      if (kind === 1) {
+        const a = rng.int(4, 10), b = rng.int(3, 9), A = a * b;
+        return {
+          q: rich("Ein Zimmer hat die Fläche A = ", m2(A), ". Es ist a = ", m(a), " lang. Berechne die Breite b mit der Formel A = a · b."),
+          a: rich("b = ", m(b)),
+          steps: [rich("A = a · b"), rich(m2(A), " = ", m(a), " · b"), rich("b = ", m2(A), " : ", m(a), " = ", m(b))],
+          inline: false,
+        };
+      }
+      const s = rng.int(2, 6);
+      return {
+        q: rich("Ein quadratischer Sandkasten hat den Umfang u = ", m(4 * s), ". Berechne die Seite a mit der Formel u = 4 · a."),
+        a: rich("a = ", m(s)),
+        steps: [rich("u = 4 · a"), rich(m(4 * s), " = 4 · a"), rich("a = ", m(4 * s), " : 4 = ", m(s))],
+        inline: false,
+      };
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-ganze-zahlen.js ----
+// M5 LB 2: Ganze Zahlen. Vier Aufgabentypen: Vergleichen und Ordnen, Zustandsänderungen,
+// Thermometer und Zahlengerade (mit Skizze), Sachaufgaben (Höhen, Temperaturen, Stockwerke).
+(function (AG) {
+  const { num, rich, MINUS } = AG;
+
+  const LB = { klasse: "5", zug: "RM", lb: "2", lbTitle: "Ganze Zahlen", topic: "zahlen" };
+  const OP = { "+": " + ", "-": " " + MINUS + " " };
+  const N = x => num(x);                 // ganze Zahl als Rich; negativ mit Minuszeichen, ohne Klammer am Anfang
+  const S = x => AG.plain(num(x));       // dasselbe als Text für Sätze
+  const UN = u => (u ? " " + u : "");
+  const ab = Math.abs;
+
+  // ---------- Hilfen ----------
+  const gen = cand => (rng, level) => {
+    for (let i = 0; i < 500; i++) {
+      const t = cand(rng, level);
+      if (t) return t;
+    }
+    throw new Error("Keine passende Aufgabe gefunden (Niveau " + level + ")");
+  };
+  const distinct = (rng, n, lo, hi) => {
+    const set = new Set();
+    while (set.size < n) set.add(rng.int(lo, hi));
+    return [...set];
+  };
+  const list = vals => rich(vals.map((v, i) => (i ? [", ", N(v)] : [N(v)])));
+  const chain = (vals, sym) => rich(vals.map((v, i) => (i ? [" " + sym + " ", N(v)] : [N(v)])));
+
+  // Rechnung a ± b mit natürlichem b in Schritten. Geht sie über 0, wird am Nullpunkt zerlegt:
+  // −4 + 9 = −4 + 4 + 5 = 0 + 5 = 5   bzw.   7 − 10 = 7 − 7 − 3 = 0 − 3 = −3
+  function calcLines(a, op, b, unit = "") {
+    const res = op === "+" ? a + b : a - b;
+    if (op === "+" && a < 0 && b > -a) {
+      return [
+        rich(N(a), OP["+"], N(b), " = ", N(a), " + ", N(-a), " + ", N(b + a)),
+        rich("= 0 + ", N(b + a)),
+        rich("= ", N(res), UN(unit)),
+      ];
+    }
+    if (op === "-" && a > 0 && b > a) {
+      return [
+        rich(N(a), OP["-"], N(b), " = ", N(a), OP["-"], N(a), OP["-"], N(b - a)),
+        rich("= 0", OP["-"], N(b - a)),
+        rich("= ", N(res), UN(unit)),
+      ];
+    }
+    return [rich(N(a), OP[op], N(b), " = ", N(res), UN(unit))];
+  }
+
+  // Abstand zwischen lo < hi ohne Rechnen mit zwei negativen Zahlen: über 0 zusammenzählen, sonst subtrahieren
+  function distSteps(lo, hi, unit) {
+    const d = hi - lo;
+    if (lo >= 0) return [rich(N(hi), " − ", N(lo), " = ", S(d), UN(unit))];
+    if (hi > 0) {
+      return [
+        rich("Von ", N(lo), " bis 0: ", S(-lo)),
+        rich("Von 0 bis ", N(hi), ": ", S(hi)),
+        rich(S(-lo), " + ", S(hi), " = ", S(d), UN(unit)),
+      ];
+    }
+    return [
+      rich("Von ", N(lo), " bis 0: ", S(-lo)),
+      rich("Von ", N(hi), " bis 0: ", S(-hi)),
+      rich(S(-lo), " − ", S(-hi), " = ", S(d), UN(unit)),
+    ];
+  }
+
+  // ---------- Typ 1: Vergleichen und Ordnen ----------
+  function vergleich(rng) {
+    const a = rng.int(-25, 25), b = rng.int(-25, 25);
+    if (a === b) return null;
+    const sym = a < b ? "<" : ">";
+    const first = a < 0 && b < 0
+      ? rich("Beträge: ", S(-a), " und ", S(-b), ". Je größer der Betrag einer negativen Zahl, desto kleiner ist sie.")
+      : rich("Auf dem Zahlenstrahl liegt die kleinere Zahl weiter links.");
+    return {
+      q: rich(N(a), " ", { blank: 3 }, " ", N(b)),
+      a: rich(N(a), " ", sym, " ", N(b)),
+      steps: [first, rich(N(a), " ", sym, " ", N(b))],
+    };
+  }
+
+  function ordnen(rng, n, lo, hi) {
+    const vals = distinct(rng, n, lo, hi);
+    const asc = rng.chance(0.7);
+    const sorted = vals.slice().sort((x, y) => x - y);
+    const ordered = asc ? sorted : sorted.slice().reverse();
+    const sym = asc ? "<" : ">";
+    const negs = sorted.filter(v => v < 0);
+    const steps = [rich("Negative Zahlen liegen links von 0, positive Zahlen rechts von 0.")];
+    if (negs.length >= 2) {
+      steps.push(rich("Beträge der negativen Zahlen: ", negs.map(v => S(-v)).join(" > "),
+        ". Je größer der Betrag, desto kleiner die Zahl."));
+    }
+    steps.push(rich("= ", chain(ordered, sym)));
+    return {
+      q: rich(asc ? "Ordne von klein nach groß: " : "Ordne von groß nach klein: ", list(vals)),
+      a: chain(ordered, sym),
+      steps,
+    };
+  }
+
+  function mitte(rng) {
+    const a = -rng.int(1, 12), b = rng.int(1, 12), d = b - a;
+    if (d % 2) return null;
+    const h = d / 2, m = a + h;
+    return {
+      q: rich("Welche Zahl liegt genau in der Mitte zwischen ", N(a), " und ", N(b), "?"),
+      a: N(m),
+      steps: [
+        rich("Abstand von ", N(a), " bis ", N(b), ": ", S(-a), " + ", S(b), " = ", S(d)),
+        rich("Halber Abstand: ", S(d), " : 2 = ", S(h)),
+        rich(N(a), " + ", S(h), " = ", N(m)),
+      ],
+    };
+  }
+
+  function zaehlen(rng) {
+    const a = -rng.int(1, 9), b = rng.int(1, 9), D = b - a, cnt = D - 1;
+    return {
+      q: rich("Wie viele ganze Zahlen liegen echt zwischen ", N(a), " und ", N(b), "?"),
+      a: rich(S(cnt), cnt === 1 ? " Zahl" : " Zahlen"),
+      steps: [
+        rich("Von ", N(a), " bis ", N(b), " sind es ", S(D), " Schritte."),
+        rich("Die Endzahlen ", N(a), " und ", N(b), " zählen nicht mit: ", S(D), " − 1 = ", S(cnt)),
+      ],
+    };
+  }
+
+  function gegen(rng) {
+    const a = rng.signedInt(1, 20);
+    return {
+      q: rich("Wie lautet die Gegenzahl von ", N(a), "?"),
+      a: N(-a),
+      steps: [rich("Gegenzahl: Das Vorzeichen wechselt. ", N(a), " → ", N(-a))],
+    };
+  }
+
+  function betrag(rng) {
+    const k = rng.int(1, 20);
+    if (rng.chance(0.5)) {
+      return {
+        q: rich("Wie groß ist der Betrag von ", N(-k), "?"),
+        a: N(k),
+        steps: [rich("Abstand von 0 auf dem Zahlenstrahl: ", S(k), " Schritte."), rich("|", N(-k), "| = ", S(k))],
+      };
+    }
+    return {
+      q: rich("Welche negative Zahl hat den Betrag ", S(k), "?"),
+      a: N(-k),
+      steps: [rich("Auf dem Zahlenstrahl ", S(k), " Schritte links von 0."), rich("Die Zahl ist ", N(-k), ".")],
+    };
+  }
+
+  const ORD3 = [mitte, zaehlen, gegen, betrag, rng => ordnen(rng, 5, -15, 15)];
+  const cand1 = (rng, level) => (level === 1 ? vergleich(rng)
+    : level === 2 ? ordnen(rng, 4, -20, 20)
+      : rng.pick(ORD3)(rng));
+
+  // ---------- Typ 2: Zustandsänderungen ----------
+  function zustand(rng, level) {
+    if (level === 1) {
+      const a = rng.signedInt(1, 12), b = rng.int(1, 12), op = rng.pick(["+", "-"]);
+      const res = op === "+" ? a + b : a - b;
+      if (res === 0) return null;
+      return { q: rich("Berechne: ", N(a), OP[op], N(b)), a: N(res), steps: calcLines(a, op, b) };
+    }
+    if (level === 2) {
+      const up = rng.chance(0.5), op = up ? "+" : "-", kind = rng.int(0, 2);
+      if (kind === 0) {
+        const a = rng.int(-15, 5), b = rng.int(1, 15);
+        if (a === 0) return null;
+        const res = op === "+" ? a + b : a - b;
+        if (ab(res) > 25) return null;
+        return {
+          q: rich("Es ist ", N(a), " °C. Die Temperatur ", up ? "steigt" : "fällt", " um ", N(b), " °C. Wie warm ist es danach?"),
+          a: rich(N(res), " °C"),
+          steps: calcLines(a, op, b, "°C"),
+        };
+      }
+      if (kind === 1) {
+        const a = 5 * rng.int(-8, 6), b = 5 * rng.int(1, 8);
+        if (a === 0) return null;
+        const res = op === "+" ? a + b : a - b;
+        return {
+          q: rich("Lenas Kontostand ist ", N(a), " €. Lena ", up ? "zahlt " : "hebt ", N(b), " € ", up ? "ein" : "ab",
+            ". Wie hoch ist der Kontostand danach?"),
+          a: rich(N(res), " €"),
+          steps: calcLines(a, op, b, "€"),
+        };
+      }
+      const a = rng.pick([-3, -2, -1, 1, 2, 3, 4, 5]), b = rng.int(2, 6);
+      const res = op === "+" ? a + b : a - b;
+      if (res === 0 || ab(res) > 8) return null;
+      return {
+        q: rich("Der Aufzug steht im Stockwerk ", N(a), ". Er fährt ", N(b), " Stockwerke ", up ? "nach oben" : "nach unten",
+          ". In welchem Stockwerk hält er danach?"),
+        a: rich("Stockwerk ", N(res)),
+        steps: calcLines(a, op, b),
+      };
+    }
+    if (rng.chance(0.5)) {
+      // zwei Änderungen nacheinander
+      const a = rng.int(-12, -1), b1 = rng.int(3, 10), b2 = rng.int(2, 9);
+      const mid = a + b1, res = mid - b2;
+      if (ab(res) > 15) return null;
+      return {
+        q: rich("Morgens sind es ", N(a), " °C. Am Vormittag steigt die Temperatur um ", N(b1),
+          " °C. Am Nachmittag fällt sie um ", N(b2), " °C. Wie warm ist es am Nachmittag?"),
+        a: rich(N(res), " °C"),
+        steps: [...calcLines(a, "+", b1), ...calcLines(mid, "-", b2, "°C")],
+      };
+    }
+    // Änderung gesucht
+    const a = rng.int(-9, 6), c = rng.int(-9, 6);
+    const lo = Math.min(a, c), hi = Math.max(a, c), d = hi - lo;
+    if (d < 3 || a === 0 || c === 0) return null;
+    return {
+      q: rich("Um 6 Uhr sind es ", N(a), " °C. Um 12 Uhr sind es ", N(c), " °C. Um wie viel Grad ist es ",
+        c > a ? "wärmer" : "kälter", " geworden?"),
+      a: rich(S(d), " °C"),
+      steps: distSteps(lo, hi, "°C"),
+    };
+  }
+
+  // ---------- Typ 3: Thermometer und Zahlengerade (Skizzen) ----------
+  // Senkrechtes Thermometer, Skala −20 … 30 °C. liquid: Füllhöhe (oder null), marks: [{ v, t }] Markierungen
+  function thermoSketch(liquid, marks, minor) {
+    const INK = AG.SKETCH_COLORS.INK;
+    const W = 36, H = 44, tx = 16, top = 6, sh = 30;      // 50 Grad auf 30 mm
+    const Y = t => top + (30 - t) * sh / 50;
+    const yB = Y(-20) + 3.4;                               // Mitte der Kugel
+    const s = AG.sketch(W, H);
+    s.rect(tx - 1.6, top, 3.2, yB - top, { fill: "none" });
+    s.circle([tx, yB], 3.4, { fill: "none" });
+    if (liquid !== null) {
+      s.rect(tx - 1.0, Y(liquid), 2.0, yB - Y(liquid), { fill: INK });
+      s.circle([tx, yB], 2.4, { fill: INK });
+    }
+    for (let t = -20; t <= 30; t += minor) {
+      const major = t % 10 === 0;
+      s.line([tx + 2, Y(t)], [tx + 2 + (major ? 2.6 : 1.4), Y(t)], { width: 0.35 });
+      if (major) s.label([tx + 6.2, Y(t)], AG.plain(num(t)), { anchor: "start", bold: t === 0 });
+    }
+    s.line([tx - 2, Y(0)], [tx + 4.8, Y(0)], { width: 0.6 });   // Nulllinie
+    s.label([tx + 6.2, top - 3.4], "°C", { anchor: "start" });
+    marks.forEach(m => {
+      s.line([tx - 3.6, Y(m.v)], [tx - 1.6, Y(m.v)], { width: 0.6 });
+      s.label([tx - 4.4, Y(m.v)], m.t, { anchor: "end", bold: true });
+    });
+    return s.done();
+  }
+
+  // Zahlengerade von lo bis hi; Start mit Punkt, Pfeile (a → b) übereinander; endMark: „?“ am letzten Pfeilende
+  function lineSketch(lo, hi, start, arrows, endMark) {
+    const INK = AG.SKETCH_COLORS.INK;
+    const W = 74, H = 28, yA = 21;
+    const X = v => 4 + (v - lo) * (W - 8) / (hi - lo);
+    const s = AG.sketch(W, H);
+    s.line([X(lo) - 1.5, yA], [X(hi) + 1.5, yA], { width: 0.4 });
+    for (let v = lo; v <= hi; v++) {
+      const z = v === 0;
+      s.line([X(v), yA - (z ? 2 : 1.2)], [X(v), yA + (z ? 2 : 1.2)], { width: z ? 0.6 : 0.35 });
+      if (v % 2 === 0) s.label([X(v), yA + 4.8], AG.plain(num(v)), { bold: z });
+    }
+    s.circle([X(start), yA], 1.1, { fill: INK });
+    let yFrom = yA - 1.4, last = [X(start), yA];
+    arrows.forEach((ar, i) => {
+      const y = yA - 6 - 6 * i, dir = Math.sign(ar.b - ar.a);
+      s.line([X(ar.a), yFrom], [X(ar.a), y], { dash: true, width: 0.3 });
+      s.line([X(ar.a), y], [X(ar.b) - dir * 1.8, y], { width: 0.5 });
+      s.poly([[X(ar.b), y], [X(ar.b) - dir * 2.8, y - 1.2], [X(ar.b) - dir * 2.8, y + 1.2]], { fill: INK, width: 0.2 });
+      yFrom = y;
+      last = [X(ar.b), y];
+    });
+    if (endMark) s.label([last[0], last[1] - 3], "?", { bold: true });
+    return s.done();
+  }
+
+  function thermoTask(rng) {
+    const v = rng.pick([-20, -15, -10, -5, 5, 10, 15, 20, 25]);
+    const k = ab(v) / 5;
+    const h = rng.int(6, 22);
+    const q = rng.pick([
+      `Welche Temperatur zeigt das Thermometer um ${S(h)} Uhr?`,
+      `Wie warm ist es um ${S(h)} Uhr laut Thermometer?`,
+      `Lies die Temperatur um ${S(h)} Uhr am Thermometer ab.`,
+    ]);
+    return {
+      q: rich(q),
+      a: rich(N(v), " °C"),
+      steps: [
+        rich("Ein Strich entspricht 5 °C. Vom Nullstrich ", k === 1 ? "ist es " : "sind es ", S(k),
+          k === 1 ? " Strich" : " Striche", v > 0 ? " nach oben." : " nach unten."),
+        rich(S(k), " · 5 °C = ", S(ab(v)), " °C"),
+        rich("Temperatur: ", N(v), " °C"),
+      ],
+      fig: thermoSketch(v, [], 5),
+      inline: false,
+    };
+  }
+
+  function thermoAB(rng) {
+    const A = 2 * rng.int(-9, 4), B = A + 2 * rng.int(3, 10);
+    if (B > 26 || B === 0) return null;
+    const h1 = rng.int(6, 18), h2 = h1 + rng.int(2, 6);
+    return {
+      q: rich(`Die Temperatur wird um ${S(h1)} Uhr (A) und um ${S(h2)} Uhr (B) gemessen. `,
+        `Wie groß ist der Temperaturunterschied zwischen ${S(h1)} Uhr und ${S(h2)} Uhr?`),
+      a: rich(S(B - A), " °C"),
+      steps: [rich("A = ", N(A), " °C, B = ", N(B), " °C"), ...distSteps(A, B, "°C")],
+      fig: thermoSketch(null, [{ v: A, t: "A" }, { v: B, t: "B" }], 2),
+      inline: false,
+    };
+  }
+
+  function pfeil(rng) {
+    const s0 = rng.int(-6, 6), d = rng.int(1, 6), op = rng.pick(["+", "-"]);
+    const e = op === "+" ? s0 + d : s0 - d;
+    if (ab(e) > 10) return null;
+    const wo = rng.chance(0.5);
+    const fig = lineSketch(-10, 10, s0, [{ a: s0, b: e }], wo);
+    const dir = op === "+" ? "rechts" : "links";
+    if (wo) {
+      return {
+        q: rich("Der Pfeil startet bei ", N(s0), ". Er ist ", S(d), " Einheiten lang und zeigt nach ", dir, ". Wo endet er?"),
+        a: N(e),
+        steps: calcLines(s0, op, d),
+        fig,
+        inline: false,
+      };
+    }
+    return {
+      q: rich("Der Pfeil startet bei ", N(s0), " und zeigt nach ", dir, ". Welche Rechnung zeigt er? Schreibe sie mit Zahlen auf."),
+      a: rich(N(s0), OP[op], N(d), " = ", N(e)),
+      steps: calcLines(s0, op, d),
+      fig,
+      inline: false,
+    };
+  }
+
+  function pfeilKette(rng) {
+    const s0 = rng.int(-6, 6), d1 = rng.int(1, 6), d2 = rng.int(1, 6);
+    const op1 = rng.pick(["+", "-"]), op2 = rng.pick(["+", "-"]);
+    const e1 = op1 === "+" ? s0 + d1 : s0 - d1;
+    const e2 = op2 === "+" ? e1 + d2 : e1 - d2;
+    if (ab(e1) > 10 || ab(e2) > 10) return null;
+    return {
+      q: rich("Man startet bei ", N(s0), ". Der erste Pfeil zeigt nach ", op1 === "+" ? "rechts" : "links",
+        ", der zweite nach ", op2 === "+" ? "rechts" : "links", ". Welche Rechnung zeigen die Pfeile? Wo landet man?"),
+      a: rich(N(s0), OP[op1], N(d1), OP[op2], N(d2), " = ", N(e2)),
+      steps: [...calcLines(s0, op1, d1), ...calcLines(e1, op2, d2)],
+      fig: lineSketch(-10, 10, s0, [{ a: s0, b: e1 }, { a: e1, b: e2 }], true),
+      inline: false,
+    };
+  }
+
+  const cand3 = (rng, level) => (level === 1 ? thermoTask(rng)
+    : level === 2 ? pfeil(rng)
+      : rng.chance(0.5) ? thermoAB(rng) : pfeilKette(rng));
+
+  // ---------- Typ 4: Sachaufgaben ----------
+  const done = (q, a, steps, antwort) => ({ q: rich(q), a: rich(a), steps: [...steps, rich(antwort)] });
+
+  function sach1(rng) {
+    const k = rng.int(0, 3);
+    if (k === 0) {
+      const b = rng.int(2, 15), a = -(b + rng.int(1, 25)), res = a + b;
+      return done(`Ein Taucher ist ${S(-a)} m unter dem Meeresspiegel. Er taucht ${S(b)} m nach oben. Wie tief ist er jetzt?`,
+        rich(N(res), " m"), calcLines(a, "+", b, "m"), `Der Taucher ist jetzt ${S(-res)} m unter dem Meeresspiegel.`);
+    }
+    if (k === 1) {
+      const D = rng.int(2, 20), b = rng.int(2, 12), res = -D - b;
+      return done(`Ein Taucher ist ${S(D)} m unter dem Meeresspiegel. Er taucht ${S(b)} m tiefer. Wie tief ist er jetzt?`,
+        rich(N(res), " m"), calcLines(-D, "-", b, "m"), `Der Taucher ist jetzt ${S(-res)} m unter dem Meeresspiegel.`);
+    }
+    if (k === 2) {
+      const a = rng.pick([-3, -2, -1]), b = rng.int(2, 4), res = a + b;
+      if (res === 0) return null;
+      return done(`Der Aufzug steht im Stockwerk ${S(a)} in der Tiefgarage. Er fährt ${S(b)} Stockwerke nach oben. In welchem Stockwerk hält er jetzt?`,
+        rich("Stockwerk ", N(res)), calcLines(a, "+", b), `Der Aufzug hält im Stockwerk ${S(res)}.`);
+    }
+    const a = rng.int(-9, -1), b = rng.int(3, 12), res = a + b;
+    if (res === 0) return null;
+    return done(`Morgens um 6 Uhr sind es ${S(a)} °C. Bis Mittag steigt die Temperatur um ${S(b)} °C. Wie warm ist es mittags?`,
+      rich(N(res), " °C"), calcLines(a, "+", b, "°C"), `Mittags sind es ${S(res)} °C.`);
+  }
+
+  function sach2(rng) {
+    const k = rng.int(0, 2);
+    if (k === 0) {
+      const D = rng.int(5, 30), H = rng.int(10, 60);
+      return done(`Ein Taucher ist ${S(D)} m unter dem Meeresspiegel. Eine Möwe fliegt ${S(H)} m über dem Meeresspiegel. Wie groß ist der Höhenunterschied zwischen Möwe und Taucher?`,
+        rich(N(H + D), " m"), distSteps(-D, H, "m"), `Der Höhenunterschied beträgt ${S(H + D)} m.`);
+    }
+    if (k === 1) {
+      const t = rng.int(-12, -1), h = rng.int(2, 12);
+      return done(`Am Tag wird es höchstens ${S(h)} °C warm. In der Nacht sinkt die Temperatur auf ${S(t)} °C. Wie groß ist der Unterschied zwischen Tageshöchst- und Tiefsttemperatur?`,
+        rich(S(h - t), " °C"), distSteps(t, h, "°C"), `Der Temperaturunterschied beträgt ${S(h - t)} °C.`);
+    }
+    const d1 = rng.int(5, 20), d2 = d1 + rng.int(3, 15);
+    return done(`Ein Taucher ist ${S(d1)} m unter dem Meeresspiegel. Ein Fisch schwimmt ${S(d2)} m unter dem Meeresspiegel. Wie groß ist der Höhenunterschied zwischen Taucher und Fisch?`,
+      rich(S(d2 - d1), " m"), distSteps(-d2, -d1, "m"), `Der Höhenunterschied beträgt ${S(d2 - d1)} m.`);
+  }
+
+  const BERGE = [["Die Zugspitze", 2962], ["Der Watzmann", 2713], ["Der Wendelstein", 1838]];
+  function sach3(rng) {
+    const k = rng.int(0, 2);
+    if (k === 0) {
+      const a = rng.pick([-3, -2, -1]), b1 = rng.int(2, 6), b2 = rng.int(1, 4);
+      const mid = a + b1, res = mid - b2;
+      if (res === 0) return null;
+      return done(`Der Aufzug steht im Stockwerk ${S(a)}. Er fährt ${S(b1)} Stockwerke nach oben und danach ${S(b2)} Stockwerke nach unten. In welchem Stockwerk hält er jetzt?`,
+        rich("Stockwerk ", N(res)), [...calcLines(a, "+", b1), ...calcLines(mid, "-", b2)], `Der Aufzug hält im Stockwerk ${S(res)}.`);
+    }
+    if (k === 1) {
+      const [name, H] = rng.pick(BERGE), D = rng.int(5, 40);
+      return done(`${name} ist ${S(H)} m hoch. Ein Taucher ist ${S(D)} m unter dem Meeresspiegel. Wie groß ist der Höhenunterschied zwischen dem Gipfel und dem Taucher?`,
+        rich(N(H + D), " m"), distSteps(-D, H, "m"), `Der Höhenunterschied beträgt ${S(H + D)} m.`);
+    }
+    const a = rng.int(-9, -1), b1 = rng.int(4, 10), b2 = rng.int(3, 9);
+    const mid = a + b1, res = mid - b2;
+    return done(`Um 6 Uhr sind es ${S(a)} °C. Bis 12 Uhr steigt die Temperatur um ${S(b1)} °C. Bis 18 Uhr fällt sie um ${S(b2)} °C. Wie warm ist es um 18 Uhr?`,
+      rich(N(res), " °C"), [...calcLines(a, "+", b1), ...calcLines(mid, "-", b2, "°C")], `Um 18 Uhr sind es ${S(res)} °C.`);
+  }
+
+  const cand4 = (rng, level) => (level === 1 ? sach1(rng) : level === 2 ? sach2(rng) : sach3(rng));
+
+  // ---------- Registrierung ----------
+  AG.registerType({
+    id: "m5-ganze-ordnen",
+    ...LB,
+    title: "Ganze Zahlen ordnen",
+    instruction: {
+      1: "Setze das Zeichen < oder > ein.",
+      2: "Ordne die Zahlen der Größe nach.",
+      3: "Beantworte die Fragen zu den ganzen Zahlen.",
+    },
+    merke: [
+      { b: "Zahlenstrahl: " },
+      "Die größere Zahl liegt weiter rechts. Negative Zahlen sind kleiner als 0. Je größer der Betrag einer negativen Zahl, desto kleiner ist sie. Beispiel: −20 < −12 < −3 < 0 < 5.",
+    ],
+    cols: 2,
+    generate: gen(cand1),
+  });
+
+  AG.registerType({
+    id: "m5-zustandsaenderung",
+    ...LB,
+    title: "Zustandsänderungen",
+    instruction: {
+      1: "Berechne. Achte auf das Vorzeichen.",
+      2: "Schreibe die Rechnung auf und berechne das Ergebnis.",
+      3: "Berechne. Schreibe die Rechnung in Schritten auf.",
+    },
+    merke: [
+      { b: "Zustandsänderung: " },
+      "Steigt die Temperatur um b, rechnet man a + b. Fällt sie um b, rechnet man a − b. Beispiel: −4 °C steigt um 9 °C: −4 + 9 = 5 °C.",
+    ],
+    cols: 2,
+    generate: gen(zustand),
+  });
+
+  AG.registerType({
+    id: "m5-thermometer",
+    ...LB,
+    title: "Thermometer und Zahlengerade",
+    instruction: {
+      1: "Lies die Temperatur am Thermometer ab.",
+      2: "Welche Rechnung zeigt der Pfeil?",
+      3: "Lies ab bzw. rechne mit dem Zahlenstrahl. Die Nulllinie hilft dir.",
+    },
+    merke: [
+      { b: "Zahlenstrahl: " },
+      "Nach rechts wird die Zahl größer, nach links kleiner. Pfeil nach rechts bedeutet +, Pfeil nach links bedeutet −. Beispiel: Start bei −4, 6 Schritte nach rechts: −4 + 6 = 2.",
+    ],
+    cols: 2,
+    generate: gen(cand3),
+  });
+
+  AG.registerType({
+    id: "m5-ganze-sachaufgaben",
+    ...LB,
+    title: "Sachaufgaben mit ganzen Zahlen",
+    instruction: {
+      1: "Rechne und schreibe einen Antwortsatz.",
+      2: "Berechne den Unterschied und schreibe einen Antwortsatz.",
+      3: "Rechne in Schritten und schreibe einen Antwortsatz.",
+    },
+    merke: [
+      { b: "Höhen und Temperaturen: " },
+      "Unter dem Meeresspiegel und unter 0 °C stehen die Zahlen mit Minuszeichen. Für einen Unterschied zählt man von der kleineren bis zur größeren Zahl. Beispiel: Taucher −15 m, Möwe 40 m: 15 m + 40 m = 55 m Unterschied.",
+    ],
+    cols: 1,
+    generate: gen(cand4),
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-geometrie.js ----
+// M5 LB 3: Geometrische Figuren und Lagebeziehungen – Koordinaten im 1. Quadranten, Winkelarten,
+// Umfang und Längeneinheiten. Typen: m5-koordinaten, m5-winkelart, m5-umfang, m5-laengen.
+// Koordinatensystem aus m8-funktionen.js übernommen, Skizzen wie in m7-flaechen.js.
+(function (AG) {
+  const { Frac, num, rich, plain, fmtInt, MINUS, SKETCH_COLORS } = AG;
+  const { INK, GREY } = SKETCH_COLORS;
+
+  const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
+  const sInt = n => fmtInt(n);
+  const dec = f => num(f, { as: "dec" });                  // Zahl oder Bruch als Dezimalzahl mit Komma
+  const E = n => (n === 1 ? "Einheit" : "Einheiten");
+  const listDe = a => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " und " + a[a.length - 1]);
+  const opT = (v, d) => (d >= 0 ? `${sInt(v)} + ${sInt(d)}` : `${sInt(v)} ${MINUS} ${sInt(-d)}`);
+
+  // ---------- Koordinatensystem (aus m8-funktionen.js) ----------
+  // cfg: W, H (mm), xr/yr [min, max], gx/gy Gitterabstand, lx/ly Zahl an jedem lx-ten Strich, xName/yName
+  function coords(cfg) {
+    const W = cfg.W, H = cfg.H, ml = 12, mr = 7, mt = 5, mb = 10;
+    const [x0, x1] = cfg.xr, [y0, y1] = cfg.yr;
+    const sx = (W - ml - mr) / (x1 - x0), sy = (H - mt - mb) / (y1 - y0);
+    const P = (x, y) => [ml + (x - x0) * sx, H - mb - (y - y0) * sy];
+    const s = AG.sketch(W, H);
+    // Gitter (hell), dann Achsen darüber
+    for (let x = x0; x <= x1; x += cfg.gx) if (x !== 0) s.line(P(x, y0), P(x, y1), { stroke: GREY, width: 0.12 });
+    for (let y = y0; y <= y1; y += cfg.gy) if (y !== 0) s.line(P(x0, y), P(x1, y), { stroke: GREY, width: 0.12 });
+    s.line(P(x0, 0), P(x1, 0), { width: 0.4 });
+    s.line(P(0, y0), P(0, y1), { width: 0.4 });
+    // Pfeile an den Achsenenden
+    const ax = P(x1, 0), ay = P(0, y1);
+    s.poly([[ax[0] + 2, ax[1]], [ax[0] - 0.4, ax[1] - 1], [ax[0] - 0.4, ax[1] + 1]], { fill: INK, stroke: INK, width: 0.1 });
+    s.poly([[ay[0], ay[1] - 2], [ay[0] - 1, ay[1] + 0.4], [ay[0] + 1, ay[1] + 0.4]], { fill: INK, stroke: INK, width: 0.1 });
+    // Zahlen an den Achsen (Null einmal am Ursprung)
+    for (let x = Math.ceil(x0 / cfg.lx) * cfg.lx; x <= x1; x += cfg.lx) if (x !== 0) { const p = P(x, 0); s.label([p[0], p[1] + 4], sInt(x)); }
+    for (let y = Math.ceil(y0 / cfg.ly) * cfg.ly; y <= y1; y += cfg.ly) if (y !== 0) { const p = P(0, y); s.label([p[0] - 1.6, p[1]], sInt(y), { anchor: "end" }); }
+    const o = P(0, 0);
+    s.label([o[0] + 1.6, o[1] + 4], "0", { anchor: "start" });
+    s.label([W - 1.5, H - 1.5], cfg.xName, { anchor: "end" });
+    s.label([ay[0] + 2, 2.5], cfg.yName, { anchor: "start" });
+    return { s, P };
+  }
+
+  const KO_CFG = { W: 74, H: 50, xr: [0, 10], yr: [0, 10], gx: 1, gy: 1, lx: 1, ly: 1, xName: "x", yName: "y" };
+
+  // Punkte mit Buchstaben. o.edges: durchgezogene Strecken [i, j], o.dashEdges: gestrichelte,
+  // o.guides: Hilfslinien zu den Achsen (nur im Lösungsbild)
+  function pointFig(pts, o = {}) {
+    const cs = coords(KO_CFG), P = cs.P;
+    for (const [i, j] of o.dashEdges || []) cs.s.line(P(pts[i].x, pts[i].y), P(pts[j].x, pts[j].y), { dash: true });
+    for (const [i, j] of o.edges || []) cs.s.line(P(pts[i].x, pts[i].y), P(pts[j].x, pts[j].y), { width: 0.5 });
+    for (const p of pts) {
+      const q = P(p.x, p.y);
+      if (o.guides) { cs.s.line(q, P(p.x, 0), { dash: true }); cs.s.line(q, P(0, p.y), { dash: true }); }
+      cs.s.circle(q, 0.9, { fill: INK });
+      cs.s.label([q[0] + 2.6, q[1] - 2.6], p.name, { anchor: "start", bold: true });
+    }
+    return cs.s.done();
+  }
+
+  // ================= 1. Koordinaten im 1. Quadranten =================
+  function koLevel1(rng) {
+    const n = rng.pick([2, 3]);
+    const xs = rng.shuffle(range(1, 9)).slice(0, n);
+    const ys = rng.shuffle(range(1, 9)).slice(0, n);
+    // zufällige Buchstaben, damit jede Aufgabe anders aussieht (die Punkte stehen nur in der Skizze)
+    const letters = rng.shuffle("ABCDEFGHIJKLMNOPRSTUVWXYZ".split("")).slice(0, n);
+    const pts = letters.map((name, i) => ({ name, x: xs[i], y: ys[i] }));
+    const exp = pts.map(p => `${p.name}(${p.x} | ${p.y})`).join("; ");
+    return {
+      q: rich(`Lies die Koordinaten der Punkte ${listDe(letters)} ab. Schreibe sie so: ${letters[0]}(x | y).`),
+      a: rich(exp),
+      steps: pts.map(p => rich(`${p.name}: von ${p.name} nach unten bis zur x-Achse: x = ${sInt(p.x)}; `
+        + `von ${p.name} nach links bis zur y-Achse: y = ${sInt(p.y)}. Also ${p.name}(${p.x} | ${p.y}).`)),
+      fig: pointFig(pts),
+      aFig: pointFig(pts, { guides: true }),
+      inline: false,
+      check: { lvl: 1, exp },
+    };
+  }
+
+  // Rechteck oder Quadrat ABCD: A, B, C gegeben (AB waagerecht, BC senkrecht), D gesucht
+  function koLevel2(rng) {
+    const square = rng.chance(0.4);
+    const s = rng.int(2, 6), t = square ? s : rng.intExcept(2, 6, [s]);
+    const x0 = rng.int(1, 9 - s), y0 = rng.int(1, 9 - t);
+    const A = { name: "A", x: x0, y: y0 }, B = { name: "B", x: x0 + s, y: y0 };
+    const C = { name: "C", x: x0 + s, y: y0 + t }, D = { name: "D", x: x0, y: y0 + t };
+    const exp = `D(${D.x} | ${D.y})`;
+    const steps = [
+      rich(`AB ist waagerecht: ${sInt(B.x)} ${MINUS} ${sInt(A.x)} = ${sInt(s)} Einheiten.`),
+      rich(`BC ist senkrecht: ${sInt(C.y)} ${MINUS} ${sInt(B.y)} = ${sInt(t)} Einheiten.`),
+    ];
+    if (square) steps.push(rich(`Im Quadrat sind alle Seiten gleich lang: AB und BC sind beide ${sInt(s)} Einheiten lang.`));
+    steps.push(rich(`D liegt senkrecht über A, hat also die x-Koordinate ${sInt(A.x)}.`));
+    steps.push(rich(`D liegt waagerecht in der Höhe von C, hat also die y-Koordinate ${sInt(C.y)}.`));
+    steps.push(rich(`Also ${exp}.`));
+    return {
+      q: rich(`Die Punkte A(${A.x} | ${A.y}), B(${B.x} | ${B.y}) und C(${C.x} | ${C.y}) sind Eckpunkte eines `
+        + `${square ? "Quadrats" : "Rechtecks"} ABCD. Gib die Koordinaten des Punktes D an.`),
+      a: rich(exp),
+      steps,
+      fig: pointFig([A, B, C], { edges: [[0, 1], [1, 2]] }),
+      aFig: pointFig([A, B, C, D], { edges: [[0, 1], [1, 2], [2, 3], [3, 0]], guides: true }),
+      inline: false,
+      check: { lvl: 2, exp },
+    };
+  }
+
+  // Dreieck oder Rechteck verschieben: neue Punkte A′, B′, … mit Koordinaten
+  function koLevel3(rng) {
+    const quad = rng.chance(0.5);
+    for (let tries = 0; tries < 500; tries++) {
+      const dx = rng.pick([-3, -2, -1, 1, 2, 3]), dy = rng.pick([-2, -1, 1, 2, 3]);
+      let raw;
+      if (quad) {
+        const s = rng.int(2, 5), t = rng.int(2, 5), x0 = rng.int(1, 9 - s), y0 = rng.int(1, 9 - t);
+        raw = [[x0, y0], [x0 + s, y0], [x0 + s, y0 + t], [x0, y0 + t]];
+      } else {
+        const s = rng.int(2, 6), u = rng.int(0, s), t = rng.int(2, 5), x0 = rng.int(1, 9 - s), y0 = rng.int(1, 9 - t);
+        raw = [[x0, y0], [x0 + s, y0], [x0 + u, y0 + t]];
+      }
+      const names = quad ? ["A", "B", "C", "D"] : ["A", "B", "C"];
+      const pts = raw.map((p, i) => ({ name: names[i], x: p[0], y: p[1] }));
+      const moved = pts.map(p => ({ name: p.name + "′", x: p.x + dx, y: p.y + dy }));
+      if (moved.some(p => p.x < 1 || p.x > 9 || p.y < 1 || p.y > 9)) continue;
+      const n = pts.length;
+      const edges = range(0, n - 1).map(i => [i, (i + 1) % n]);
+      const edgesNew = edges.map(([i, j]) => [i + n, j + n]);
+      const dxTxt = `${Math.abs(dx)} ${E(Math.abs(dx))} nach ${dx > 0 ? "rechts" : "links"}`;
+      const dyTxt = `${Math.abs(dy)} ${E(Math.abs(dy))} nach ${dy > 0 ? "oben" : "unten"}`;
+      const exp = moved.map(p => `${p.name}(${p.x} | ${p.y})`).join("; ");
+      const steps = pts.map((p, i) => {
+        const q = moved[i];
+        return rich(`${p.name}(${p.x} | ${p.y}): x: ${opT(p.x, dx)} = ${sInt(q.x)}; y: ${opT(p.y, dy)} = ${sInt(q.y)}. `
+          + `Also ${q.name}(${q.x} | ${q.y}).`);
+      });
+      return {
+        q: rich(`${quad ? "Das Rechteck ABCD hat" : "Das Dreieck ABC hat"} die Punkte ${listDe(pts.map(p => `${p.name}(${p.x} | ${p.y})`))}. `
+          + `Die Figur wird ${dxTxt} und ${dyTxt} verschoben. `
+          + `Gib die Koordinaten der neuen Punkte ${listDe(moved.map(p => p.name))} an.`),
+        a: rich(exp),
+        steps,
+        fig: pointFig(pts, { edges }),
+        aFig: pointFig([...pts, ...moved], { dashEdges: edges, edges: edgesNew }),
+        inline: false,
+        check: { lvl: 3, exp, pts, dx, dy },
+      };
+    }
+    throw new Error("Koordinaten: keine passende Figur gefunden");
+  }
+
+  AG.registerType({
+    id: "m5-koordinaten",
+    klasse: "5",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren und Lagebeziehungen",
+    title: "Koordinaten im 1. Quadranten",
+    topic: "winkel",
+    instruction: {
+      1: "Lies die Koordinaten der Punkte ab. Schreibe zuerst den x-Wert, dann den y-Wert.",
+      2: "Ergänze den vierten Eckpunkt des Rechtecks bzw. Quadrats.",
+      3: "Verschiebe die Figur und gib die Koordinaten der neuen Punkte an.",
+    },
+    merke: [
+      "Der erste Wert ist der ", { b: "x-Wert" }, " (waagerecht, von links), der zweite der ", { b: "y-Wert" },
+      " (senkrecht, von unten). Beispiel: A(3 | 5) heißt: 3 nach rechts und 5 nach oben. Zuerst x, dann y.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) return koLevel1(rng);
+      if (level === 2) return koLevel2(rng);
+      return koLevel3(rng);
+    },
+    verify(t, level) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      if (k.lvl === 3) {
+        const exp = k.pts.map(p => `${p.name}′(${p.x + k.dx} | ${p.y + k.dy})`).join("; ");
+        if (k.exp !== exp) return "Verschiebung falsch";
+      }
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 2. Winkelart =================
+  const WKEY = g => (g < 90 ? "spitz" : g === 90 ? "recht" : g < 180 ? "stumpf" : "gestreckt");
+  const WNAME = { spitz: "spitzer", recht: "rechter", stumpf: "stumpfer", gestreckt: "gestreckter" };
+  const WREL = g => (g < 90 ? `${g}° < 90°` : g === 90 ? "90° = 90°" : g < 180 ? `90° < ${g}° < 180°` : "180° = 180°");
+
+  // Skizze des Winkels mit der angegebenen Größe (maßstabsgetreu, Scheitel v, Strahl nach rechts als Ausgang)
+  function angleFig(g) {
+    const W = 46, H = 40, L = 17, v = [W / 2, H / 2 + 2];
+    const th = g * Math.PI / 180;
+    const p = [v[0] + L, v[1]];
+    const q = [v[0] + L * Math.cos(th), v[1] - L * Math.sin(th)];
+    const s = AG.sketch(W, H);
+    s.line(v, p, { width: 0.45 });
+    s.line(v, q, { width: 0.45 });
+    s.circle(v, 0.7, { fill: INK });
+    if (g === 90) {
+      s.right(v, p, q);
+      s.label([v[0] + 6.5, v[1] - 6.5], "90°");
+    } else {
+      s.angle(v, p, q, `${g}°`);
+    }
+    return s.done();
+  }
+
+  function winkelLevel1(rng) {
+    const cat = rng.pick(["spitz", "recht", "stumpf", "gestreckt"]);
+    const g = cat === "spitz" ? rng.int(10, 85)
+      : cat === "recht" ? 90
+        : cat === "stumpf" ? rng.int(95, 175) : 180;
+    const art = WKEY(g);
+    return {
+      q: rich(`Der Winkel ist ${g}° groß. Welche Winkelart ist das? (spitz, recht, stumpf oder gestreckt)`),
+      a: rich(art),
+      steps: [
+        rich(`Vergleich: ${WREL(g)}.`),
+        rich(`Also ein ${WNAME[art]} Winkel: ${art}.`),
+      ],
+      fig: angleFig(g),
+      inline: false,
+      check: { lvl: 1, art },
+    };
+  }
+
+  function winkelLevel2(rng) {
+    for (let tries = 0; tries < 500; tries++) {
+      const vals = rng.shuffle([rng.pick(range(85, 95)), rng.pick([rng.int(10, 80), rng.int(100, 175)]), rng.int(10, 179)]);
+      if (new Set(vals).size !== 3) continue;
+      const items = ["α", "β", "γ"].map((name, i) => ({ name, g: vals[i], art: WKEY(vals[i]) }));
+      const exp = items.map(it => `${it.name} = ${it.g}°: ${it.art}`).join("; ");
+      return {
+        q: rich(`Gib für jeden Winkel die Winkelart an: ${items.map(it => `${it.name} = ${it.g}°`).join(", ")}.`),
+        a: rich(exp),
+        steps: items.map(it => rich(`${it.name} = ${it.g}°: ${WREL(it.g)}, also ${it.art}.`)),
+        inline: false,
+        check: { lvl: 2, exp, items },
+      };
+    }
+    throw new Error("Winkelart: keine Winkel gefunden");
+  }
+
+  function winkelLevel3(rng) {
+    for (let tries = 0; tries < 500; tries++) {
+      const vals = [rng.int(10, 89), rng.pick([90, rng.int(91, 120)]), rng.int(121, 179), rng.pick([180, rng.int(100, 175)])];
+      if (new Set(vals).size !== 4) continue;
+      const vs = rng.shuffle(vals);
+      const items = ["α", "β", "γ", "δ"].map((name, i) => ({ name, g: vs[i], art: WKEY(vs[i]) }));
+      const order = items.slice().sort((x, y) => x.g - y.g);
+      const exp = order.map(it => `${it.name} (${it.g}°, ${it.art})`).join(" < ");
+      return {
+        q: rich(`Ordne die Winkel der Größe nach, mit dem kleinsten beginnend, und gib jeweils die Art an: `
+          + `${items.map(it => `${it.name} = ${it.g}°`).join(", ")}.`),
+        a: rich(exp),
+        steps: [
+          ...items.map(it => rich(`${it.name} = ${it.g}°: ${WREL(it.g)}, also ${it.art}.`)),
+          rich("Größe nach: ", order.map(it => `${it.name} = ${it.g}°`).join(" < ")),
+        ],
+        inline: false,
+        check: { lvl: 3, exp, items },
+      };
+    }
+    throw new Error("Winkelart: keine Winkel gefunden");
+  }
+
+  AG.registerType({
+    id: "m5-winkelart",
+    klasse: "5",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren und Lagebeziehungen",
+    title: "Winkelart bestimmen",
+    topic: "winkel",
+    instruction: {
+      1: "Bestimme die Winkelart aus der Gradzahl. Antworte mit einem Wort.",
+      2: "Bestimme die Winkelart jedes Winkels. Achte auf Winkel nahe bei 90°.",
+      3: "Ordne die Winkel der Größe nach und gib jeweils die Art an.",
+    },
+    merke: [
+      { b: "Spitzer Winkel" }, ": kleiner als 90°. ", { b: "Rechter Winkel" }, ": genau 90° (eine Ecke wie beim Quadrat). ",
+      { b: "Stumpfer Winkel" }, ": größer als 90° und kleiner als 180°. ", { b: "Gestreckter Winkel" },
+      ": genau 180° (eine gerade Linie). Beispiel: 125° ist stumpf, weil 90° < 125° < 180° gilt.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) return winkelLevel1(rng);
+      if (level === 2) return winkelLevel2(rng);
+      return winkelLevel3(rng);
+    },
+    verify(t, level) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      if (k.lvl === 1) return plain(t.a) === k.art || `Art falsch: „${plain(t.a)}“`;
+      const expOk = k.items.every(it => it.art === WKEY(it.g));
+      if (!expOk) return "Art falsch";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 3. Umfang =================
+  // Dreieck mit AB = c, BC = a, CA = b (cm): Eckpunkte in cm (y nach oben), null wenn es nicht passt oder zu flach ist
+  function triPts(a, b, c) {
+    const x = (b * b + c * c - a * a) / (2 * c), y2 = b * b - x * x;
+    if (!(y2 > 0)) return null;
+    const y = Math.sqrt(y2);
+    if (y < 0.4 * c) return null;
+    return [[0, 0], [c, 0], [x, y]];
+  }
+
+  // Skizze einer Figur: pts in beliebigen Einheiten (y nach oben), labels je Seite pts[i] → pts[i+1]
+  // flip: Seiten, deren Beschriftung auf die Innenseite gesetzt wird (sonst außen, weg vom Schwerpunkt)
+  function polyFig(pts, labels, W, H, pad = 8, flip = []) {
+    const f = AG.fitPoints(pts, W, H, pad);
+    const P = pts.map(f);
+    const s = AG.sketch(W, H);
+    s.poly(P);
+    const n = P.length;
+    const cx = P.reduce((acc, p) => acc + p[0], 0) / n, cy = P.reduce((acc, p) => acc + p[1], 0) / n;
+    for (let i = 0; i < n; i++) {
+      if (!labels[i]) continue;
+      const A = P[i], B = P[(i + 1) % n];
+      // Innenseite: Punkt weit über der Seite (y nach unten gezählt), dann liegt die Beschriftung darunter
+      const inside = flip.includes(i) ? [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2 - 1000] : [cx, cy];
+      s.side(A, B, labels[i], { inside });
+    }
+    return s.done();
+  }
+
+  function umfangLevel1(rng) {
+    const kind = rng.pick(["dreieck", "rechteck", "quadrat"]);
+    const lab = v => `${v} cm`;
+    if (kind === "dreieck") {
+      for (let tries = 0; tries < 500; tries++) {
+        const c = rng.int(3, 9), a = rng.int(3, 9), b = rng.int(3, 9);
+        const pts = triPts(a, b, c);
+        if (!pts || a + b <= c || a + c <= b || b + c <= a) continue;
+        const sum = a + b + c;
+        return {
+          q: rich(`Berechne den Umfang des Dreiecks. Die Seiten sind ${listDe([lab(c), lab(a), lab(b)])} lang.`),
+          a: rich(lab(sum)),
+          steps: [rich(`u = ${lab(c)} + ${lab(a)} + ${lab(b)} = ${sum} cm`)],
+          fig: polyFig(pts, [lab(c), lab(a), lab(b)], 62, 40),
+          inline: false,
+          check: { lvl: 1, exp: lab(sum) },
+        };
+      }
+      throw new Error("Umfang: kein Dreieck gefunden");
+    }
+    if (kind === "rechteck") {
+      const a = rng.int(2, 12), b = rng.intExcept(2, 12, [a]);
+      const sum = 2 * (a + b);
+      return {
+        q: rich(`Berechne den Umfang des Rechtecks. Es ist ${lab(a)} lang und ${lab(b)} breit.`),
+        a: rich(lab(sum)),
+        steps: [rich("Gegenseiten sind gleich lang: ", `u = ${lab(a)} + ${lab(b)} + ${lab(a)} + ${lab(b)} = ${sum} cm`)],
+        fig: polyFig([[0, 0], [a, 0], [a, b], [0, b]], [lab(a), lab(b), lab(a), lab(b)], 62, 42),
+        inline: false,
+        check: { lvl: 1, exp: lab(sum) },
+      };
+    }
+    const a = rng.int(2, 12);
+    return {
+      q: rich(`Berechne den Umfang des Quadrats. Eine Seite ist ${lab(a)} lang.`),
+      a: rich(lab(4 * a)),
+      steps: [rich(`u = ${lab(a)} + ${lab(a)} + ${lab(a)} + ${lab(a)} = ${4 * a} cm`)],
+      fig: polyFig([[0, 0], [a, 0], [a, a], [0, a]], [lab(a), lab(a), lab(a), lab(a)], 56, 42),
+      inline: false,
+      check: { lvl: 1, exp: lab(4 * a) },
+    };
+  }
+
+  // Längen als ganze mm (Vielfache von 5 mm); cm-Schreibweise nur bei vollen Zehnern
+  function umfangLevel2(rng) {
+    const L = () => {
+      const mm = rng.pick(range(3, 19).map(v => v * 5));
+      return { mm, cm: mm % 10 === 0 && rng.chance(0.5) };
+    };
+    const val = l => new Frac(l.mm, 10);                                  // Länge in cm als Bruch
+    const txt = l => (l.cm ? `${dec(val(l))} cm` : `${l.mm} mm`);         // Schreibweise in der Aufgabe
+    const disp = l => `${dec(val(l))} cm`;                                // Schreibweise in der Rechnung
+    const conv = ls => ls.filter(l => !l.cm).map(l => rich(`${l.mm} mm = ${dec(val(l))} cm`));
+    const sumOf = ls => ls.reduce((acc, l) => acc.add(val(l)), new Frac(0));
+    const kind = rng.pick(["Dreieck", "Viereck", "Rechteck"]);
+
+    if (kind === "Dreieck") {
+      for (let tries = 0; tries < 500; tries++) {
+        const X = L(), Y = L(), Z = L();                                  // AB, BC, CA
+        const pts = triPts(Number(val(Y)), Number(val(Z)), Number(val(X)));
+        if (!pts) continue;
+        const ls = [X, Y, Z];
+        return {
+          q: rich(`Berechne den Umfang des Dreiecks. Die Seiten sind ${listDe(ls.map(txt))} lang.`),
+          a: rich(dec(sumOf(ls)), " cm"),
+          steps: [...conv(ls), rich(`u = ${ls.map(disp).join(" + ")} = ${dec(sumOf(ls))} cm`)],
+          fig: polyFig(pts.map(p => [p[0], p[1]]), ls.map(txt), 62, 40),
+          inline: false,
+          check: { lvl: 2, exp: `${dec(sumOf(ls))} cm` },
+        };
+      }
+      throw new Error("Umfang: kein Dreieck gefunden");
+    }
+    if (kind === "Viereck") {
+      const shapes = [[[0, 0], [7, 0], [6, 4], [1, 3]], [[0, 0], [6, 0], [8, 3], [2, 4]], [[0, 0], [8, 0], [5, 3], [0, 3]]];
+      const ls = [L(), L(), L(), L()];
+      return {
+        q: rich(`Berechne den Umfang des Vierecks ABCD. Die Seiten sind ${listDe(ls.map(txt))} lang.`),
+        a: rich(dec(sumOf(ls)), " cm"),
+        steps: [...conv(ls), rich(`u = ${ls.map(disp).join(" + ")} = ${dec(sumOf(ls))} cm`)],
+        fig: polyFig(rng.pick(shapes), ls.map(txt), 62, 42),
+        inline: false,
+        check: { lvl: 2, exp: `${dec(sumOf(ls))} cm` },
+      };
+    }
+    for (let tries = 0; tries < 500; tries++) {
+      const A = L(), B = L();
+      if (A.mm === B.mm) continue;
+      const ls = [A, B, A, B];
+      return {
+        q: rich(`Berechne den Umfang des Rechtecks. Es ist ${txt(A)} lang und ${txt(B)} breit.`),
+        a: rich(dec(sumOf(ls)), " cm"),
+        steps: [...conv([A, B]), rich(`u = ${ls.map(disp).join(" + ")} = ${dec(sumOf(ls))} cm`)],
+        fig: polyFig([[0, 0], [Number(val(A)), 0], [Number(val(A)), Number(val(B))], [0, Number(val(B))]], ls.map(txt), 62, 42),
+        inline: false,
+        check: { lvl: 2, exp: `${dec(sumOf(ls))} cm` },
+      };
+    }
+    throw new Error("Umfang: kein Rechteck gefunden");
+  }
+
+  // Zusammengesetzte rechtwinklige Figur: L-Form (1 Stufe) oder Treppe (2 Stufen).
+  // Gegeben: untere Seite a, linke Seite h und die Stufenmaße; gesucht: rechte Seite und obere Seite.
+  function umfangLevel3(rng) {
+    for (let tries = 0; tries < 500; tries++) {
+      const k = rng.pick([1, 2]);
+      const a = rng.int(7, 12), h = rng.int(6, 10);
+      const s = [], v = [];
+      for (let i = 0; i < k; i++) { s.push(rng.int(3, 4)); v.push(rng.int(3, 4)); }
+      const sumS = s.reduce((x, y) => x + y, 0), sumV = v.reduce((x, y) => x + y, 0);
+      if (sumS > a - 2 || sumV > h - 2) continue;
+      const y1 = h - sumV, p = a - sumS;
+      // Eckpunkte gegen den Uhrzeigersinn ab (0,0); Seiten: pts[i] → pts[i+1]
+      const pts = [[0, 0], [a, 0], [a, y1]];
+      const labels = [`${a} cm`, "?"];
+      let x = a, y = y1;
+      for (let i = 0; i < k; i++) {
+        x -= s[i]; pts.push([x, y]); labels.push(`${s[i]} cm`);
+        y += v[i]; pts.push([x, y]); labels.push(`${v[i]} cm`);
+      }
+      pts.push([0, h]); labels.push("?");
+      labels.push(`${h} cm`);
+      const sides = [a, y1];
+      for (let i = 0; i < k; i++) sides.push(s[i], v[i]);
+      sides.push(p, h);
+      const u = sides.reduce((acc, n) => acc + n, 0);
+      const lineMinus = (first, rest) => [`${first} cm`, ...rest.map(n => `${n} cm`)].join(` ${MINUS} `);
+      const given = [`unten ${a} cm`, `links ${h} cm`, ...s.map(n => `waagerechte Stufe ${n} cm`), ...v.map(n => `senkrechte Stufe ${n} cm`)];
+      return {
+        q: rich(`Die Figur hat ${k === 1 ? "die Form eines L" : "zwei Stufen"}. Alle Ecken sind rechte Winkel. `
+          + `Gegeben sind ${listDe(given)}. Berechne den Umfang. Die Seiten mit ? musst du zuerst berechnen.`),
+        a: rich(`${u} cm`),
+        steps: [
+          rich(`Rechte Seite: ${lineMinus(h, v)} = ${y1} cm`),
+          rich(`Obere Seite: ${lineMinus(a, s)} = ${p} cm`),
+          rich(`u = ${sides.map(n => `${n} cm`).join(" + ")} = ${u} cm`),
+          rich(`Kontrolle: 2 · (${a} cm + ${h} cm) = ${u} cm`),
+        ],
+        fig: polyFig(pts, labels, 72, 46, 8, range(0, 2 * k + 3).filter(i => i % 2 === 0 && i >= 2 && i < 2 * k + 2)),
+        inline: false,
+        check: { lvl: 3, exp: `${u} cm`, a, h },
+      };
+    }
+    throw new Error("Umfang: keine Figur gefunden");
+  }
+
+  AG.registerType({
+    id: "m5-umfang",
+    klasse: "5",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren und Lagebeziehungen",
+    title: "Umfang von Figuren",
+    topic: "flaechen",
+    instruction: {
+      1: "Berechne den Umfang. Addiere alle Seiten.",
+      2: "Rechne zuerst alle Längen in dieselbe Einheit um, dann addiere.",
+      3: "Berechne zuerst die fehlenden Seiten, dann den Umfang.",
+    },
+    merke: [
+      "Der ", { b: "Umfang" }, " ist die Länge des ganzen Randes: alle Seiten addieren. Gleiche Einheiten zuerst: 1 cm = 10 mm. "
+      + "Beispiel: Rechteck 5 cm lang und 3 cm breit: u = 5 cm + 3 cm + 5 cm + 3 cm = 16 cm.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) return umfangLevel1(rng);
+      if (level === 2) return umfangLevel2(rng);
+      return umfangLevel3(rng);
+    },
+    verify(t, level) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      if (k.lvl === 3) {
+        const u = 2 * (k.a + k.h);
+        if (plain(t.a) !== `${u} cm`) return `Umfang falsch: „${plain(t.a)}“`;
+        return true;
+      }
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 4. Längeneinheiten =================
+  const UNITS = { m: 1000, dm: 100, cm: 10, mm: 1 };   // Umrechnung in mm
+
+  // Zahl mit genau d Nachkommastellen (letzte Stelle ≠ 0) als Ganzzahl n; Wert = n / 10^d
+  function decNum(rng, d) {
+    const p = 10 ** d;
+    for (;;) {
+      const n = rng.int(10, 9 * p - 1);
+      if (n % 10 !== 0) return n;
+    }
+  }
+
+  function laengenLevel1(rng) {
+    const [big, small] = rng.pick([["m", "dm"], ["m", "cm"], ["m", "mm"], ["dm", "cm"], ["dm", "mm"], ["cm", "mm"]]);
+    const f = UNITS[big] / UNITS[small];
+    if (rng.chance(0.6)) {
+      // groß → klein: mit der Umrechnungszahl multiplizieren
+      const v = rng.int(2, 9), res = v * f;
+      return {
+        q: rich(`Wandle um: ${v} ${big} = ? ${small}`),
+        a: rich(`${res} ${small}`),
+        steps: [rich(`1 ${big} = ${f} ${small}`), rich(`${v} ${big} = ${v} · ${f} ${small} = ${res} ${small}`)],
+        inline: true,
+        check: { lvl: 1, exp: `${res} ${small}` },
+      };
+    }
+    // klein → groß: durch die Umrechnungszahl teilen (ohne Rest)
+    const k = rng.int(2, 9), v = k * f;
+    return {
+      q: rich(`Wandle um: ${v} ${small} = ? ${big}`),
+      a: rich(`${k} ${big}`),
+      steps: [rich(`1 ${big} = ${f} ${small}`), rich(`${v} ${small} = ${v} : ${f} ${big} = ${k} ${big}`)],
+      inline: true,
+      check: { lvl: 1, exp: `${k} ${big}` },
+    };
+  }
+
+  function laengenLevel2(rng) {
+    const [big, small] = rng.pick([["m", "dm"], ["m", "cm"], ["dm", "cm"], ["cm", "mm"]]);
+    const f = UNITS[big] / UNITS[small];
+    const b = rng.int(1, 9), s = rng.int(1, f - 1), total = b * f + s;
+    if (rng.chance(0.5)) {
+      // gemischte Einheiten → eine Einheit
+      return {
+        q: rich(`Wandle um: ${b} ${big} ${s} ${small} = ? ${small}`),
+        a: rich(`${total} ${small}`),
+        steps: [
+          rich(`${b} ${big} = ${b} · ${f} ${small} = ${b * f} ${small}`),
+          rich(`${b * f} ${small} + ${s} ${small} = ${total} ${small}`),
+        ],
+        inline: true,
+        check: { lvl: 2, exp: `${total} ${small}` },
+      };
+    }
+    // eine Einheit → gemischte Einheiten
+    return {
+      q: rich(`Schreibe in ${big} und ${small}: ${total} ${small} = ?`),
+      a: rich(`${b} ${big} ${s} ${small}`),
+      steps: [
+        rich(`1 ${big} = ${f} ${small}`),
+        rich(`${total} ${small} : ${f} = ${b} Rest ${s}`),
+        rich(`${total} ${small} = ${b} ${big} ${s} ${small}`),
+      ],
+      inline: true,
+      check: { lvl: 2, exp: `${b} ${big} ${s} ${small}` },
+    };
+  }
+
+  function laengenLevel3(rng) {
+    const [big, small, d] = rng.pick([["m", "dm", 1], ["m", "cm", 2], ["dm", "cm", 1], ["cm", "mm", 1]]);
+    const f = UNITS[big] / UNITS[small];                            // f = 10^d, daher ist n die Zahl in „small“
+    const n = decNum(rng, d), xs = dec(new Frac(n, 10 ** d));      // Wert = n · 10^(−d) in „big“
+    if (rng.chance(0.6)) {
+      // Komma-Umrechnung in beide Richtungen
+      if (rng.chance(0.5)) {
+        return {
+          q: rich(`Wandle um: ${xs} ${big} = ? ${small}`),
+          a: rich(`${n} ${small}`),
+          steps: [rich(`1 ${big} = ${f} ${small}`), rich(`${xs} ${big} = ${xs} · ${f} ${small} = ${n} ${small}`)],
+          inline: true,
+          check: { lvl: 3, exp: `${n} ${small}` },
+        };
+      }
+      return {
+        q: rich(`Wandle um: ${n} ${small} = ? ${big}`),
+        a: rich(`${xs} ${big}`),
+        steps: [rich(`1 ${big} = ${f} ${small}`), rich(`${n} ${small} : ${f} = ${xs} ${big}`)],
+        inline: true,
+        check: { lvl: 3, exp: `${xs} ${big}` },
+      };
+    }
+    // Vergleich: linke Länge in „big“, rechte in „small“; gleich oder knapp daneben
+    const eq = rng.chance(0.3);
+    let second = n;
+    if (!eq) {
+      do { second = n + rng.pick([-1, 1]) * rng.int(1, 25); } while (second < 1);
+    }
+    const sym = n === second ? "=" : n < second ? "<" : ">";
+    return {
+      q: rich(`Setze <, = oder > ein: ${xs} ${big} ___ ${second} ${small}`),
+      a: rich(sym),
+      steps: [
+        rich(`${xs} ${big} = ${xs} · ${f} ${small} = ${n} ${small}`),
+        rich(`${n} ${small} ${sym} ${second} ${small}`),
+      ],
+      inline: true,
+      check: { lvl: 3, exp: sym },
+    };
+  }
+
+  AG.registerType({
+    id: "m5-laengen",
+    klasse: "5",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren und Lagebeziehungen",
+    title: "Längeneinheiten umrechnen",
+    topic: "groessen",
+    instruction: {
+      1: "Wandle die Länge in die angegebene Einheit um.",
+      2: "Wandle um. Achte auf die gemischten Einheiten.",
+      3: "Wandle um oder vergleiche. Schreibe die Zahlen mit Komma.",
+    },
+    merke: [
+      "1 m = 10 dm = 100 cm = 1000 mm. ", "Beim Umrechnen in eine kleinere Einheit wird mit der Umrechnungszahl ",
+      { b: "multipliziert" }, ", in eine größere ", { b: "geteilt" }, ". Beispiele: 2 m 5 cm = 205 cm; 2,35 m = 235 cm.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) return laengenLevel1(rng);
+      if (level === 2) return laengenLevel2(rng);
+      return laengenLevel3(rng);
+    },
+    verify(t, level) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-groessen.js ----
+// M5 LB 5 (Größen im Alltag) und LB 6 (Daten): Umrechnen von Größen, Brüche bei Größen,
+// Kommaschreibweise bei Geld und Längen, Sachaufgaben mit Größen sowie Strichliste → Tabelle → Säulendiagramm.
+(function (AG) {
+  const { Frac, num, rich, plain, fmtInt, fmtDec, MINUS } = AG;
+  const COLORS = ["#1f3f9e", "#2e7d5b", "#b5541b", "#6b3fa0", "#9aa3b8"];
+  const N = x => fmtInt(x);                                   // ganze Zahl („2040“, „12 345“)
+  const S = x => String(x);                                   // Zahl als Text (Faktoren, Anzahlen, Stellen)
+  const frac = (n, d) => ({ f: [n, d] });                     // Bruch als Segment
+  const dec2 = c => fmtDec(new Frac(c, 100), 2);              // Cent als Euro mit zwei Stellen („3,05“)
+  const dmin = (n, d) => fmtDec(new Frac(n, d));              // Dezimalzahl mit so vielen Stellen wie nötig
+  const clock = t => `${Math.floor(t / 60) % 24}:${String(t % 60).padStart(2, "0")} Uhr`; // t in Minuten ab 0:00
+  const durStr = t => {
+    const h = Math.floor(t / 60), m = t % 60;
+    return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`;
+  };
+  const kmStr = x => {
+    const k = Math.floor(x / 1000), m = x % 1000;
+    return m ? `${k} km ${m} m` : `${k} km`;
+  };
+  const Pron = gend => (gend === "sie" ? "Sie" : "Er");
+  // Begrenzte Wiederholung: fn liefert einen Wert oder null; nach k Versuchen ein Fehler (keine Endlosschleife)
+  const tryN = (k, fn) => {
+    for (let i = 0; i < k; i++) {
+      const v = fn();
+      if (v !== null) return v;
+    }
+    throw new Error("m5-groessen: keine passende Zufallszahl gefunden");
+  };
+
+  // ---------- 1. Größen umrechnen ----------
+  // Ketten von groß nach klein. r[i] = Umrechnungszahl zwischen u[i] und u[i + 1].
+  const CHAINS = [
+    { u: ["km", "m", "dm", "cm", "mm"], r: [1000, 10, 10, 10] },
+    { u: ["l", "ml"], r: [1000] },
+    { u: ["t", "kg", "g", "mg"], r: [1000, 1000, 1000] },
+    { u: ["d", "h", "min", "s"], r: [24, 60, 60] },
+    { u: ["€", "ct"], r: [100] },
+  ];
+  // Schrittweite für gemischte Angaben („2 kg 40 g“, „3 h 25 min“, „4 € 35 ct“)
+  const STEP = {
+    "km-m": 50, "m-dm": 1, "dm-cm": 1, "cm-mm": 1, "l-ml": 50, "t-kg": 100, "kg-g": 10, "g-mg": 100,
+    "d-h": 1, "h-min": 5, "min-s": 5, "€-ct": 5,
+  };
+  const stepOf = (a, b) => STEP[a + "-" + b];
+  // Vielfaches der Schrittweite, kleiner als r (der Rest in der kleineren Einheit)
+  const remOf = (rng, st, r) => st * rng.int(1, Math.floor((r - 1) / st));
+
+  // Niveau 1: eine Stufe, groß → klein (mal) oder klein → groß (geteilt, ohne Rest)
+  function umrOne(rng) {
+    const c = rng.pick(CHAINS), i = rng.int(0, c.u.length - 2);
+    const big = c.u[i], small = c.u[i + 1], r = c.r[i];
+    if (rng.chance(0.6)) {
+      const x = rng.chance(0.8) ? rng.int(2, 9) : rng.int(10, 30), y = x * r;
+      return {
+        q: rich("Rechne um: ", S(x), " ", big, " = ? ", small),
+        a: rich(N(y), " ", small),
+        steps: [rich(S(x), " ", big, " = ", S(x), " · ", N(r), " ", small, " = ", N(y), " ", small)],
+      };
+    }
+    const k = rng.int(2, 9), v = k * r;
+    return {
+      q: rich("Rechne um: ", N(v), " ", small, " = ? ", big),
+      a: rich(S(k), " ", big),
+      steps: [rich(N(v), " ", small, " : ", N(r), " = ", S(k), " ", big)],
+    };
+  }
+
+  // Niveau 2: gemischte Einheiten in eine Einheit (3 h 25 min = 205 min), oder zwei Stufen (2 d = 2880 min)
+  function umrTwo(rng) {
+    if (rng.chance(0.5)) {
+      const c = rng.pick(CHAINS), i = rng.int(0, c.u.length - 2);
+      const big = c.u[i], small = c.u[i + 1], r = c.r[i];
+      const a = rng.int(1, 6), b = remOf(rng, stepOf(big, small), r), T = a * r + b;
+      return {
+        q: rich("Rechne um: ", S(a), " ", big, " ", N(b), " ", small, " = ? ", small),
+        a: rich(N(T), " ", small),
+        steps: [
+          rich(S(a), " ", big, " = ", S(a), " · ", N(r), " ", small, " = ", N(a * r), " ", small),
+          rich(N(a * r), " ", small, " + ", N(b), " ", small, " = ", N(T), " ", small),
+        ],
+      };
+    }
+    const [c, i] = rng.pick([[CHAINS[0], 1], [CHAINS[0], 2], [CHAINS[3], 0], [CHAINS[3], 1]]);
+    const big = c.u[i], mid = c.u[i + 1], small = c.u[i + 2], r1 = c.r[i], r2 = c.r[i + 1];
+    const x = rng.int(2, r1 * r2 > 1000 ? 5 : 9);
+    return {
+      q: rich("Rechne um: ", S(x), " ", big, " = ? ", small),
+      a: rich(N(x * r1 * r2), " ", small),
+      steps: [
+        rich(S(x), " ", big, " = ", S(x), " · ", N(r1), " ", mid, " = ", N(x * r1), " ", mid),
+        rich(N(x * r1), " ", mid, " = ", N(x * r1), " · ", N(r2), " ", small, " = ", N(x * r1 * r2), " ", small),
+      ],
+    };
+  }
+
+  // Niveau 3: in die größere Einheit mit Rest (4300 m = 4 km 300 m)
+  function umrThree(rng) {
+    const c = rng.pick(CHAINS), i = rng.int(0, c.u.length - 2);
+    const big = c.u[i], small = c.u[i + 1], r = c.r[i];
+    const a = rng.int(1, 9), b = remOf(rng, stepOf(big, small), r), T = a * r + b;
+    return {
+      q: rich("Rechne um: ", N(T), " ", small, " = ? ", big, " ", small),
+      a: rich(S(a), " ", big, " ", N(b), " ", small),
+      steps: [
+        rich(N(T), " ", small, " = ", S(a), " · ", N(r), " ", small, " + ", N(b), " ", small),
+        rich(N(T), " ", small, " = ", S(a), " ", big, " ", N(b), " ", small),
+      ],
+    };
+  }
+
+  AG.registerType({
+    id: "m5-groessen-umrechnen",
+    klasse: "5",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Größen im Alltag",
+    title: "Größen umrechnen",
+    topic: "groessen",
+    instruction: {
+      1: "Rechne in die angegebene Einheit um.",
+      2: "Rechne in die angegebene Einheit um. Achte auf gemischte Angaben und auf mehrere Umrechnungsschritte.",
+      3: "Rechne in die größere Einheit um. Der Rest bleibt in der kleineren Einheit.",
+    },
+    merke: [
+      "Länge: 1 km = 1000 m = 10 dm = 100 cm = 1000 mm. Geld: 1 € = 100 ct. Zeit: 1 d = 24 h, 1 h = 60 min, 1 min = 60 s; 1 Jahr = 12 Monate. ",
+      "In eine kleinere Einheit wird mit der Umrechnungszahl multipliziert, in eine größere geteilt. Beispiel: 3 km = 3 · 1000 m = 3000 m; 4300 m = 4 km 300 m.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) return umrOne(rng);
+      if (level === 2) return umrTwo(rng);
+      return umrThree(rng);
+    },
+  });
+
+  // ---------- 2. Brüche bei Größen ----------
+  const F = (n, d) => new Frac(n, d);
+  const SIMPLE = [F(1, 2), F(1, 4), F(3, 4)];
+  const MIXED = [F(3, 2), F(9, 4), F(7, 4), F(5, 2)];
+  const TENTHS = [F(1, 10), F(3, 10), F(7, 10), F(9, 10)];
+  const FIFTHS = [F(1, 5), F(2, 5), F(3, 5), F(4, 5)];   // nur bei Stunden und Metern
+  const PAIRS = [
+    { u: "h", v: "min", r: 60, fifth: true },
+    { u: "km", v: "m", r: 1000, fifth: true },
+    { u: "m", v: "cm", r: 100, fifth: true },
+    { u: "l", v: "ml", r: 1000 },
+    { u: "kg", v: "g", r: 1000 },
+    { u: "t", v: "kg", r: 1000 },
+    { u: "€", v: "ct", r: 100 },
+    { u: "d", v: "h", r: 24 },
+  ];
+  // Brüche, die in der kleineren Einheit eine ganze Zahl ergeben
+  const poolOf = (level, p) => {
+    const base = level === 1 ? SIMPLE : [...SIMPLE, ...MIXED, ...TENTHS, ...(p.fifth ? FIFTHS : [])];
+    return base.filter(f => f.mul(p.r).isInt());
+  };
+
+  // Bruch der großen Einheit → kleine Einheit: ¾ h = 45 min
+  function brForward(p, f) {
+    const r = p.r, d = f.d, w = Math.floor(f.n / d), rem = f.n - w * d;
+    const unit = r / d, part = rem * unit, val = f.mul(r).n;
+    const steps = [];
+    if (w > 0) steps.push(rich(S(w), " ", p.u, " = ", N(w * r), " ", p.v));
+    if (rem > 0) steps.push(rich(frac(1, d), " ", p.u, " = ", N(r), " ", p.v, " : ", S(d), " = ", N(unit), " ", p.v));
+    if (rem > 1) steps.push(rich(frac(rem, d), " ", p.u, " = ", S(rem), " · ", N(unit), " ", p.v, " = ", N(part), " ", p.v));
+    if (w > 0 && rem > 0) steps.push(rich(N(w * r), " ", p.v, " + ", N(part), " ", p.v, " = ", N(val), " ", p.v));
+    return {
+      q: rich(num(f), " ", p.u, " = ? ", p.v),
+      a: rich(N(val), " ", p.v),
+      steps,
+      check: { f, r, t: val, rev: false },
+    };
+  }
+
+  // Kleine Einheit → Bruch der großen Einheit: 750 g = ¾ kg
+  function brReverse(p, f) {
+    const t = f.mul(p.r).n;
+    const steps = [rich(N(t), " ", p.v, " = ", frac(t, p.r), " ", p.u), rich("= ", frac(f.n, f.d), " ", p.u)];
+    if (f.n > f.d) steps.push(rich("= ", num(f), " ", p.u));
+    return {
+      q: rich(N(t), " ", p.v, " = ? ", p.u),
+      a: rich(num(f), " ", p.u),
+      steps,
+      check: { f, r: p.r, t, rev: true },
+    };
+  }
+
+  AG.registerType({
+    id: "m5-groessen-brueche",
+    klasse: "5",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Größen im Alltag",
+    title: "Brüche bei Größen",
+    topic: "groessen",
+    instruction: {
+      1: "Rechne in die angegebene Einheit um.",
+      2: "Rechne in die angegebene Einheit um. Die Bruchzahl gehört zur großen Einheit.",
+      3: "Rechne um. Achte auf die Richtung: Manchmal ist eine Bruchzahl gesucht.",
+    },
+    merke: [
+      "Einen Bruchteil einer Größe berechnet man über die kleine Einheit: ", frac(3, 4), " h = 3 · (60 min : 4) = 3 · 15 min = 45 min. ",
+      "Umgekehrt: 750 g = ", frac(750, 1000), " kg = ", frac(3, 4), " kg.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      for (let i = 0; i < 500; i++) {
+        const p = rng.pick(PAIRS);
+        const pool = poolOf(level, p);
+        if (!pool.length) continue;
+        const f = rng.pick(pool);
+        const rev = level === 1 ? rng.chance(0.4) : level === 3 && rng.chance(0.5);
+        return rev ? brReverse(p, f) : brForward(p, f);
+      }
+      throw new Error("m5-groessen-brueche: keine Aufgabe gefunden");
+    },
+    verify(t) {
+      const m = t.check;
+      if (!m) return "kein Prüfdatensatz";
+      if (!m.f.mul(m.r).eq(m.t)) return "Umrechnung stimmt nicht";
+      const want = m.rev ? plain(num(m.f)) : S(m.t);
+      if (!plain(t.a).includes(want)) return "Ergebnis fehlt im Lösungstext: " + want;
+      return true;
+    },
+  });
+
+  // ---------- 3. Kommaschreibweise bei Geld und Längen ----------
+  // Niveau 1: 3 € 45 ct = 3,45 €  und  2 m 5 cm = 2,05 m
+  function komOne(rng) {
+    if (rng.chance(0.5)) {
+      const E = rng.int(1, 9), R = 5 * rng.int(1, 19);
+      return {
+        q: rich("Schreibe in Euro mit Komma: ", S(E), " € ", S(R), " ct"),
+        a: rich(dec2(E * 100 + R), " €"),
+        steps: [
+          rich(S(R), " ct = ", dec2(R), " €"),
+          rich(S(E), " € + ", dec2(R), " € = ", dec2(E * 100 + R), " €"),
+        ],
+      };
+    }
+    const E = rng.int(1, 9), R = rng.int(1, 99), tot = dmin(E * 100 + R, 100);
+    return {
+      q: rich("Schreibe in Metern mit Komma: ", S(E), " m ", S(R), " cm"),
+      a: rich(tot, " m"),
+      steps: [
+        rich(S(R), " cm = ", dmin(R, 100), " m"),
+        rich(S(E), " m + ", dmin(R, 100), " m = ", tot, " m"),
+      ],
+    };
+  }
+
+  // Niveau 2: Komma in die kleine Einheit: 3,45 € = 345 ct, 1,5 m = 150 cm, 0,05 € = 5 ct
+  function komTwo(rng) {
+    if (rng.chance(0.5)) {
+      const C = 5 * rng.int(1, 300);
+      return {
+        q: rich("Rechne um: ", dec2(C), " € = ? ct"),
+        a: rich(N(C), " ct"),
+        steps: [rich(dec2(C), " € = ", dec2(C), " · 100 ct = ", N(C), " ct")],
+      };
+    }
+    const C = tryN(100, () => { const c = rng.int(1, 999); return c % 100 === 0 ? null : c; });
+    return {
+      q: rich("Rechne um: ", dmin(C, 100), " m = ? cm"),
+      a: rich(N(C), " cm"),
+      steps: [rich(dmin(C, 100), " m = ", dmin(C, 100), " · 100 cm = ", N(C), " cm")],
+    };
+  }
+
+  // Niveau 3: km und m (2,35 km = 2350 m) sowie Ordnen von Längen
+  function komThree(rng) {
+    if (rng.chance(0.5)) {
+      const M = tryN(100, () => { const m = rng.int(100, 999) * 10; return m % 1000 === 0 ? null : m; });
+      const km = dmin(M, 1000);
+      if (rng.chance(0.5)) {
+        return {
+          q: rich("Rechne um: ", km, " km = ? m"),
+          a: rich(N(M), " m"),
+          steps: [rich(km, " km = ", km, " · 1000 m = ", N(M), " m")],
+        };
+      }
+      return {
+        q: rich("Rechne um: ", N(M), " m = ? km"),
+        a: rich(km, " km"),
+        steps: [rich(N(M), " m = ", N(M), " : 1000 km = ", km, " km")],
+      };
+    }
+    // drei Längen: eine in km mit einer Nachkommastelle, eine in m, eine in km mit zwei Stellen
+    const a10 = tryN(100, () => { const v = rng.int(11, 59); return v % 10 === 0 ? null : v; });
+    const vA = a10 * 100;
+    const o1 = rng.pick([-300, -200, -150, -100, 100, 150, 200, 300]);
+    const o2 = rng.pick([-90, -50, -30, -10, 10, 30, 50, 90]);
+    const items = [
+      { lab: dmin(vA, 1000) + " km", v: vA, km: true },
+      { lab: N(vA + o1) + " m", v: vA + o1, km: false },
+      { lab: dmin(vA + o2, 1000) + " km", v: vA + o2, km: true },
+    ];
+    const sorted = [...items].sort((x, y) => x.v - y.v);
+    return {
+      q: rich("Ordne die Längen der Größe nach. Beginne mit der kürzesten: ", rng.shuffle(items).map(x => x.lab).join("; "), "."),
+      a: rich(sorted.map(x => x.lab).join(" < ")),
+      steps: [
+        ...items.filter(x => x.km).map(x => rich(x.lab, " = ", N(x.v), " m")),
+        rich("Vergleich in m: ", sorted.map(x => N(x.v) + " m").join(" < ")),
+      ],
+    };
+  }
+
+  AG.registerType({
+    id: "m5-kommaschreibweise",
+    klasse: "5",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Größen im Alltag",
+    title: "Kommaschreibweise bei Geld und Längen",
+    topic: "groessen",
+    instruction: {
+      1: "Schreibe die Größe mit Komma.",
+      2: "Rechne um. Achte auf die Nullen nach dem Komma.",
+      3: "Rechne um oder ordne die Längen der Größe nach.",
+    },
+    merke: [
+      "Das Komma trennt die großen Einheiten von den kleinen: 1 € = 100 ct, also 45 ct = 0,45 €. 1 m = 100 cm, also 5 cm = 0,05 m. 1 km = 1000 m, also 2,5 km = 2500 m. ",
+      "Beispiel: 3 € 45 ct = 3,45 €; 1,5 m = 150 cm.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) return komOne(rng);
+      if (level === 2) return komTwo(rng);
+      return komThree(rng);
+    },
+  });
+
+  // ---------- 4. Sachaufgaben mit Größen ----------
+  const PERS = [["Lena", "sie"], ["Tim", "er"], ["Mia", "sie"], ["Ben", "er"], ["Anna", "sie"], ["Paul", "er"]];
+  const WARE = [["Hefte", 125], ["Brötchen", 45], ["Packungen Nudeln", 139], ["Tafeln Schokolade", 89], ["Becher Joghurt", 65], ["Stifte", 35]];
+  const ZUT = ["Mehl", "Nudeln", "Hackfleisch", "Reis", "Zucker", "Käse"];
+
+  // Einkauf mit Wechselgeld (ein Artikel)
+  function saEinkauf1(rng) {
+    const [name, gend] = rng.pick(PERS);
+    const [ware, p] = rng.pick(WARE);
+    const n = rng.int(2, 6), sum = n * p;
+    const paid = rng.pick([500, 1000, 2000].filter(x => x > sum));
+    const back = paid - sum;
+    return {
+      q: rich(name, " kauft ", S(n), " ", ware, " zu je ", dec2(p), " €. ", Pron(gend), " zahlt mit ", dec2(paid), " €. Wie viel Wechselgeld bekommt ", gend, " zurück?"),
+      a: rich(dec2(back), " €"),
+      steps: [
+        rich(S(n), " · ", dec2(p), " € = ", dec2(sum), " €"),
+        rich(dec2(paid), " € ", MINUS, " ", dec2(sum), " € = ", dec2(back), " €"),
+        rich("Antwort: ", name, " bekommt ", dec2(back), " € Wechselgeld zurück."),
+      ],
+    };
+  }
+
+  // Einkauf mit zwei Posten
+  function saEinkauf2(rng) {
+    const [name, gend] = rng.pick(PERS);
+    const p = rng.pick([35, 40, 45, 50, 55]), n = rng.int(2, 5), k = rng.pick([120, 150, 180, 210, 240, 275, 300]);
+    const sum = n * p + k;
+    const paid = rng.pick([1000, 2000].filter(x => x > sum));
+    const back = paid - sum;
+    return {
+      q: rich(name, " kauft ", S(n), " Brötchen zu je ", dec2(p), " € und ein Stück Kuchen für ", dec2(k), " €. ", Pron(gend), " zahlt mit ", dec2(paid), " €. Wie viel Wechselgeld bekommt ", gend, " zurück?"),
+      a: rich(dec2(back), " €"),
+      steps: [
+        rich(S(n), " · ", dec2(p), " € = ", dec2(n * p), " €"),
+        rich(dec2(n * p), " € + ", dec2(k), " € = ", dec2(sum), " €"),
+        rich(dec2(paid), " € ", MINUS, " ", dec2(sum), " € = ", dec2(back), " €"),
+        rich("Antwort: ", name, " bekommt ", dec2(back), " € Wechselgeld zurück."),
+      ],
+    };
+  }
+
+  // Fahrplan: Abfahrt und Fahrtdauer, Ankunft gesucht
+  function saBus1(rng) {
+    const dep = rng.int(6, 17) * 60 + 5 * rng.int(0, 11);
+    const d = 5 * rng.int(2, 28), arr = dep + d;
+    const hh = Math.floor(d / 60), mm = d % 60;
+    const steps = [];
+    let cur = dep;
+    if (hh > 0) {
+      steps.push(rich(clock(cur), " + ", S(hh), " h = ", clock(cur + 60 * hh)));
+      cur += 60 * hh;
+    }
+    if (mm > 0) steps.push(rich(clock(cur), " + ", S(mm), " min = ", clock(arr)));
+    steps.push(rich("Der Bus kommt um ", clock(arr), " an."));
+    return {
+      q: rich("Der Bus fährt um ", clock(dep), " ab. Die Fahrt dauert ", durStr(d), ". Wann kommt er an?"),
+      a: rich(clock(arr)),
+      steps,
+    };
+  }
+
+  // Fahrplan rückwärts: Abfahrt und Ankunft gegeben, Fahrtdauer gesucht (Übergang über volle Stunden)
+  function saZugRueck(rng) {
+    const dep = rng.int(6, 19) * 60 + 5 * rng.int(0, 11);
+    const d = 5 * rng.int(4, 40), end = dep + d;
+    const steps = [];
+    let cur = dep;
+    const nextFull = Math.ceil(cur / 60) * 60;
+    if (cur % 60 !== 0 && end > nextFull) {
+      steps.push(rich("Von ", clock(cur), " bis ", clock(nextFull), ": ", S(nextFull - cur), " min"));
+      cur = nextFull;
+    }
+    while (end - cur >= 60) {
+      steps.push(rich("Von ", clock(cur), " bis ", clock(cur + 60), ": 1 h"));
+      cur += 60;
+    }
+    if (end - cur > 0) steps.push(rich("Von ", clock(cur), " bis ", clock(end), ": ", S(end - cur), " min"));
+    steps.push(rich("Die Fahrt dauert also ", durStr(d), "."));
+    return {
+      q: rich("Der Zug fährt um ", clock(dep), " ab und kommt um ", clock(end), " an. Wie lange dauert die Fahrt?"),
+      a: rich(durStr(d)),
+      steps,
+    };
+  }
+
+  // Wanderung: Strecke zum Ziel (Differenz) oder Gesamtstrecke (Summe), jeweils in km und m
+  function saWander(rng) {
+    if (rng.chance(0.5)) {
+      const k = rng.int(3, 9), T = 1000 * k + 50 * rng.int(1, 19);
+      const B = tryN(100, () => {
+        const b = 1000 * rng.int(1, k - 1) + 50 * rng.int(1, 19);
+        return T - b < 1000 ? null : b;
+      }), R = T - B;
+      return {
+        q: rich("Die Wanderung ist ", kmStr(T), " lang. Nach ", kmStr(B), " machen wir eine Pause. Wie weit ist es danach noch bis zum Ziel?"),
+        a: rich(kmStr(R)),
+        steps: [
+          rich(kmStr(T), " = ", N(T), " m"),
+          rich(kmStr(B), " = ", N(B), " m"),
+          rich(N(T), " m ", MINUS, " ", N(B), " m = ", N(R), " m"),
+          rich("Bis zum Ziel sind es noch ", kmStr(R), "."),
+        ],
+      };
+    }
+    const A = 1000 * rng.int(1, 5) + 50 * rng.int(1, 19), B = 1000 * rng.int(1, 4) + 50 * rng.int(1, 19), T = A + B;
+    return {
+      q: rich("Am Vormittag wandern wir ", kmStr(A), ". Am Nachmittag sind es ", kmStr(B), ". Wie weit sind wir insgesamt gewandert?"),
+      a: rich(kmStr(T)),
+      steps: [
+        rich(kmStr(A), " = ", N(A), " m"),
+        rich(kmStr(B), " = ", N(B), " m"),
+        rich(N(A), " m + ", N(B), " m = ", N(T), " m"),
+        rich("Insgesamt sind wir ", kmStr(T), " gewandert."),
+      ],
+    };
+  }
+
+  // Zutaten für ein Rezept: für 4 Personen → für p Personen
+  function saZutaten(rng) {
+    const z = rng.pick(ZUT), g = 4 * rng.int(20, 150), p = rng.pick([2, 6, 8, 10, 12]);
+    const pro = g / 4, res = pro * p;
+    return {
+      q: rich("Für 4 Personen braucht man ", N(g), " g ", z, ". Wie viel g braucht man für ", S(p), " Personen?"),
+      a: rich(N(res), " g"),
+      steps: [
+        rich(N(g), " g : 4 = ", N(pro), " g (für 1 Person)"),
+        rich(N(pro), " g · ", S(p), " = ", N(res), " g"),
+        rich("Für ", S(p), " Personen braucht man ", N(res), " g ", z, "."),
+      ],
+    };
+  }
+
+  // Sinnvoll runden: Busse (aufrunden)
+  function saBusse(rng) {
+    const [S_, P] = tryN(100, () => {
+      const s = rng.int(31, 95), p = rng.pick([20, 25, 30]);
+      return s % p === 0 ? null : [s, p];
+    });
+    const q0 = Math.floor(S_ / P), need = q0 + 1;
+    return {
+      q: rich("Die Klasse 5a fährt ins Museum. Es fahren ", S(S_), " Kinder mit. In einen Bus passen ", S(P), " Kinder. Wie viele Busse braucht man?"),
+      a: rich(S(need), " Busse"),
+      steps: [
+        rich(N(S_), " : ", S(P), " = ", S(q0), " Rest ", S(S_ % P)),
+        rich(q0 === 1 ? "Ein Bus reicht" : S(q0) + " Busse reichen", " nicht für alle Kinder, also braucht man ", S(need), " Busse."),
+      ],
+    };
+  }
+
+  // Sinnvoll runden: Packungen (aufrunden)
+  function saPack(rng) {
+    const [nm, gend] = rng.pick(PERS);
+    const P = rng.pick([250, 500]);
+    const g = tryN(100, () => {
+      const v = 50 * rng.int(5, 25);
+      return v % P === 0 || v < P ? null : v;
+    });
+    const q0 = Math.floor(g / P), need = q0 + 1;
+    return {
+      q: rich("Für einen Kuchen braucht ", nm, " ", dmin(g, 1000), " kg Mehl. Mehl gibt es nur in Packungen zu ", S(P), " g. Wie viele Packungen muss ", gend, " kaufen?"),
+      a: rich(S(need), " Packungen"),
+      steps: [
+        rich(dmin(g, 1000), " kg = ", N(g), " g"),
+        rich(N(g), " g : ", S(P), " g = ", dmin(g, P), " Packungen"),
+        rich(q0 === 1 ? "Eine Packung reicht" : S(q0) + " Packungen reichen", " nicht, also braucht ", nm, " ", S(need), " Packungen."),
+      ],
+    };
+  }
+
+  AG.registerType({
+    id: "m5-groessen-sachaufgaben",
+    klasse: "5",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Größen im Alltag",
+    title: "Sachaufgaben mit Größen",
+    topic: "groessen",
+    instruction: {
+      1: "Rechne. Schreibe am Ende einen Antwortsatz.",
+      2: "Rechne. Achte auf die Einheiten und schreibe am Ende einen Antwortsatz.",
+      3: "Rechne. Runde sinnvoll und beantworte die Frage mit einem Antwortsatz.",
+    },
+    merke: [
+      "Zuerst die Angaben und die Frage herausschreiben, dann rechnen. Die Einheiten müssen zusammenpassen: 2 km 350 m = 2350 m. ",
+      "Anzahlen wie Busse rundet man aufrunden, wenn ein Rest übrig bleibt. Beispiel: 52 Kinder, 30 Plätze pro Bus: 52 : 30 = 1 Rest 22, also 2 Busse.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      if (level === 1) return rng.chance(0.5) ? saEinkauf1(rng) : saBus1(rng);
+      if (level === 2) return rng.pick([saEinkauf2, saWander, saZutaten])(rng);
+      return rng.pick([saBusse, saPack, saZugRueck])(rng);
+    },
+  });
+
+  // ---------- 5. Strichliste → Häufigkeitstabelle → Säulendiagramm ----------
+  const SURVEYS = [
+    { intro: "Die Klasse 5a hat die Kinder nach ihrem Lieblingstier gefragt.", head: "Lieblingstier", names: ["Hund", "Katze", "Pferd", "Hase", "Fisch", "Hamster"] },
+    { intro: "Die Klasse 5a hat notiert, wie die Kinder zur Schule kommen.", head: "Verkehrsmittel", names: ["Bus", "Fahrrad", "zu Fuß", "Auto", "Bahn"] },
+    { intro: "Die Klasse 5a hat die Kinder nach ihrem Lieblingssport gefragt.", head: "Lieblingssport", names: ["Fußball", "Schwimmen", "Turnen", "Tanzen", "Radfahren"] },
+  ];
+  // Strichliste: Fünfergruppen „|||||“, Rest einzeln, Gruppen durch Leerzeichen getrennt
+  const strokes = n => {
+    const g = [];
+    for (let k = 0; k < Math.floor(n / 5); k++) g.push("|||||");
+    if (n % 5) g.push("|".repeat(n % 5));
+    return g.join(" ");
+  };
+  // Zählen einer Fünfergruppe in Worten: „2 · 5 + 2 = 12“
+  const brk = n => {
+    const f5 = Math.floor(n / 5), r = n % 5;
+    return f5 ? `${f5} · 5` + (r ? ` + ${r}` : "") : `${r} Striche`;
+  };
+  // Häufigkeiten zwischen 2 und 9, Summe zwischen 20 und 28 (realistische Klassengröße)
+  const counts = (rng, n) => {
+    return tryN(200, () => {
+      const v = Array.from({ length: n }, () => rng.int(2, 9));
+      const s = v.reduce((a, b) => a + b, 0);
+      return s < 20 || s > 28 || new Set(v).size < 2 ? null : v;
+    });
+  };
+  // Tabelle: Kopf, je eine Zeile je Antwort, Summe. blank: Zellen leer lassen
+  function freqTable(head, names, vals, blank) {
+    const total = vals.reduce((a, b) => a + b, 0);
+    const cell = v => [blank ? { blank: 3 } : S(v)];
+    return {
+      rows: [
+        [[{ b: head }], [{ b: "absolute Häufigkeit" }]],
+        ...names.map((nm, i) => [[nm], cell(vals[i])]),
+        [[{ b: "Summe" }], cell(total)],
+      ],
+    };
+  }
+  // Säulendiagramm mit absoluten Häufigkeiten: Achse mit Schritt 1, keine Werte über den Säulen
+  function columnFig(names, vals) {
+    const W = 140, H = 60, xA = 14, yB = 50, yT = 8;
+    const T = Math.max(...vals) + 1;
+    const sy = v => yB - (v / T) * (yB - yT);
+    const s = AG.sketch(W, H);
+    s.line([xA, yT - 2], [xA, yB]);
+    s.line([xA, yB], [W - 3, yB]);
+    for (let t = 0; t <= T; t++) {
+      s.line([xA - 1, sy(t)], [xA, sy(t)]);
+      s.label([xA - 2, sy(t)], String(t), { anchor: "end" });
+    }
+    const slot = (W - xA - 4) / names.length, bw = slot * 0.5;
+    names.forEach((nm, i) => {
+      const x = xA + slot * i + (slot - bw) / 2;
+      s.rect(x, sy(vals[i]), bw, yB - sy(vals[i]), { fill: COLORS[i] });
+      s.label([x + bw / 2, yB + 4.5], nm);
+    });
+    return s.done();
+  }
+
+  AG.registerType({
+    id: "m5-strichliste",
+    klasse: "5",
+    zug: "RM",
+    lb: "6",
+    lbTitle: "Daten",
+    title: "Strichliste, Tabelle, Säulendiagramm",
+    topic: "daten",
+    instruction: {
+      1: "Übertrage die Strichliste in eine Häufigkeitstabelle.",
+      2: "Lies die absoluten Häufigkeiten im Säulendiagramm ab und trage sie in die Tabelle ein.",
+      3: "Lies die Werte im Säulendiagramm ab und beantworte die Fragen.",
+    },
+    merke: [
+      "In einer Strichliste steht jeder Strich für ein Kind. Fünfergruppen ||||| zählt man zuerst. Die absolute Häufigkeit ist die Anzahl der Kinder. ",
+      "Beispiel: ||||| || bedeutet 5 + 2 = 7 Kinder.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      const sv = rng.pick(SURVEYS);
+      const n = level === 1 ? 4 : rng.int(4, 5);
+      const names = rng.shuffle(sv.names).slice(0, n);
+      const vals = counts(rng, n);
+      const total = vals.reduce((a, b) => a + b, 0);
+
+      if (level === 1) {
+        const lines = names.map((nm, i) => [{ br: true }, nm + ": " + strokes(vals[i])]);
+        return {
+          q: rich(sv.intro, " Jeder Strich steht für ein Kind.", lines, { br: true }, "Übertrage die Strichliste in die Tabelle und ergänze die Summe."),
+          table: freqTable(sv.head, names, vals, true),
+          aTable: freqTable(sv.head, names, vals, false),
+          a: rich(names.map((nm, i) => nm + ": " + S(vals[i])).join("; "), "; Summe: ", S(total)),
+          steps: [
+            ...names.map((nm, i) => rich(nm, ": ", brk(vals[i]), " = ", S(vals[i]))),
+            rich("Summe: ", vals.map(S).join(" + "), " = ", S(total)),
+          ],
+        };
+      }
+
+      if (level === 2) {
+        return {
+          q: rich("Das Säulendiagramm zeigt, wie die Kinder der Klasse 5a geantwortet haben: ", names.join(", "), ". Lies die absoluten Häufigkeiten ab und trage sie in die Tabelle ein. Ergänze die Summe."),
+          table: freqTable(sv.head, names, vals, true),
+          aTable: freqTable(sv.head, names, vals, false),
+          fig: columnFig(names, vals),
+          inline: false,
+          a: rich(names.map((nm, i) => nm + ": " + S(vals[i])).join("; "), "; Summe: ", S(total)),
+          steps: [
+            rich("Ablesen: ", names.map((nm, i) => nm + " " + S(vals[i])).join(", ")),
+            rich("Summe: ", vals.map(S).join(" + "), " = ", S(total)),
+          ],
+        };
+      }
+
+      // Niveau 3: Unterschied, Summe und Summe zweier Antworten aus dem Diagramm
+      let ia = rng.int(0, n - 1);
+      let ib = tryN(100, () => { const j = rng.int(0, n - 1); return vals[j] === vals[ia] ? null : j; });
+      if (vals[ib] > vals[ia]) [ia, ib] = [ib, ia];
+      const d = vals[ia] - vals[ib];
+      const ic = rng.int(0, n - 1);
+      const id = tryN(100, () => { const j = rng.int(0, n - 1); return j === ic ? null : j; });
+      return {
+        q: rich(sv.intro, " Das Diagramm zeigt das Ergebnis. (a) Wie viele Kinder mehr nennen „", names[ia], "“ als „", names[ib], "“? (b) Wie viele Kinder wurden insgesamt befragt? (c) Wie viele Kinder nennen „", names[ic], "“ oder „", names[id], "“ zusammen?"),
+        fig: columnFig(names, vals),
+        inline: false,
+        a: rich("(a) ", S(d), d === 1 ? " Kind mehr; (b) " : " Kinder mehr; (b) ", S(total), " Kinder; (c) ", S(vals[ic] + vals[id]), " Kinder."),
+        steps: [
+          rich("(a) ", S(vals[ia]), " ", MINUS, " ", S(vals[ib]), " = ", S(d)),
+          rich("(b) ", vals.map(S).join(" + "), " = ", S(total)),
+          rich("(c) ", S(vals[ic]), " + ", S(vals[id]), " = ", S(vals[ic] + vals[id])),
+        ],
+      };
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-rechenregeln.js ----
+// M5 LB 1.2: Grundrechenarten mit natürlichen Zahlen – Rechenregeln. Vier Aufgabentypen:
+// Punkt vor Strich und Klammern, vorteilhaft rechnen, Fachbegriffe, Sachaufgaben.
+// Nur natürliche Zahlen; alle Zwischenergebnisse ganzzahlig und ≥ 0; Divisionen gehen auf.
+(function (AG) {
+  const { rich, num, MINUS } = AG;
+
+  const LB = { klasse: "5", zug: "RM", lb: "1.2", lbTitle: "Grundrechenarten mit natürlichen Zahlen", topic: "zahlen" };
+  const OPTXT = { "+": " + ", "-": " " + MINUS + " ", "*": " · ", "/": " : " };
+  const PREC = { "+": 1, "-": 1, "*": 2, "/": 2 };
+  const APPLY = { "+": (a, b) => a + b, "-": (a, b) => a - b, "*": (a, b) => a * b, "/": (a, b) => a / b };
+
+  // ---------- Ausdrucksbaum (nur ganze Zahlen) ----------
+  // Blatt: { v: Zahl }; Knoten: { op, l, r, br } – br: Klammer um den ganzen Knoten
+  const isLeaf = n => n.v !== undefined;
+  const leaf = v => ({ v });
+  const bin = (op, l, r, br = false) => ({ op, l, r, br });
+  const ev = n => (isLeaf(n) ? n.v : APPLY[n.op](ev(n.l), ev(n.r)));
+  const leaves = (n, out = []) => {
+    if (isLeaf(n)) out.push(n.v);
+    else { leaves(n.l, out); leaves(n.r, out); }
+    return out;
+  };
+  const ser = n => (isLeaf(n) ? { v: n.v } : { o: n.op, l: ser(n.l), r: ser(n.r) });
+  const evalOps = s => (s.v !== undefined ? s.v : APPLY[s.o](evalOps(s.l), evalOps(s.r)));
+  const nr = v => num(v, { as: "int" }); // ganze Zahl (Tausenderpunkt erst ab 5 Stellen, wie in der ganzen App)
+
+  // Klammern nur dort, wo sie nötig sind; rechts von gleichrangigem Zeichen immer (a − (b + c), a · (b : c))
+  function needsParens(c, p, right) {
+    if (isLeaf(c) || c.br) return false;
+    if (PREC[c.op] < PREC[p.op]) return true;
+    return PREC[c.op] === PREC[p.op] && right;
+  }
+  function rend(n) {
+    if (isLeaf(n)) return nr(n.v);
+    const part = (c, right) => (needsParens(c, n, right) ? rich("(", rend(c), ")") : rend(c));
+    const body = rich(part(n.l, false), OPTXT[n.op], part(n.r, true));
+    return n.br ? rich("(", body, ")") : body;
+  }
+
+  // Nächster Rechenschritt: zuerst Klammern, dann Punkt, dann Strich, sonst von links
+  function pickNext(root) {
+    const cand = [];
+    (function walk(n, inBr) {
+      if (isLeaf(n)) return;
+      const flag = inBr || n.br;
+      walk(n.l, flag);
+      walk(n.r, flag);
+      if (isLeaf(n.l) && isLeaf(n.r)) cand.push({ n, flag });
+    })(root, false);
+    cand.sort((x, y) => Number(y.flag) - Number(x.flag) || PREC[y.n.op] - PREC[x.n.op]);
+    return cand[0].n;
+  }
+  function replaceNode(n, target, repl) {
+    if (n === target) return repl;
+    if (isLeaf(n)) return n;
+    return { op: n.op, l: replaceNode(n.l, target, repl), r: replaceNode(n.r, target, repl), br: n.br };
+  }
+  // Jede Zeile zeigt den ganzen restlichen Ausdruck nach einem Rechenschritt
+  function reductionSteps(tree) {
+    const steps = [];
+    let cur = tree;
+    while (!isLeaf(cur)) {
+      const t = pickNext(cur);
+      cur = replaceNode(cur, t, leaf(APPLY[t.op](t.l.v, t.r.v)));
+      steps.push(rich("= ", isLeaf(cur) ? nr(cur.v) : rend(cur)));
+    }
+    return steps;
+  }
+  // Term zuerst, dann rechnen
+  const termFirst = tree => [rich("= ", rend(tree)), ...reductionSteps(tree)];
+
+  // Prüfung: alle Zahlen ≥ 2, jedes Zwischenergebnis ganz und ≥ 0, Divisionen gehen auf, keine Trivialaufgaben
+  function sane(tree, bound) {
+    if (!leaves(tree).every(v => Number.isInteger(v) && v >= 2 && v <= 999)) return false;
+    let ok = true;
+    (function walk(n) {
+      if (!ok || isLeaf(n)) return;
+      walk(n.l);
+      walk(n.r);
+      if (!ok) return;
+      const a = ev(n.l), b = ev(n.r);
+      if (n.op === "-" && a < b) ok = false;
+      if (n.op === "/" && (b === 0 || a % b !== 0)) ok = false;
+      if (a === b) ok = false;                                            // a − a, a : a, a + a
+      if ((n.op === "*" || n.op === "/") && (a === 1 || b === 1)) ok = false; // · 1, : 1
+      const r = APPLY[n.op](a, b);
+      if (!Number.isInteger(r) || r < 0 || r > bound) ok = false;
+    })(tree);
+    return ok;
+  }
+
+  // Wrapper: Kandidat erzeugen, bis er die Prüfungen besteht.
+  // cand liefert { tree, q?, steps? }; ohne q/steps: Ausdruck und Schritt für Schritt.
+  function makeGenerate(cand, bound) {
+    return function generate(rng, level) {
+      for (let i = 0; i < 500; i++) {
+        const c = cand(rng, level);
+        if (!c || !sane(c.tree, bound)) continue;
+        const res = ev(c.tree);
+        return {
+          q: c.q || rend(c.tree),
+          a: nr(res),
+          steps: c.steps || reductionSteps(c.tree),
+          _ops: ser(c.tree),
+          _res: res,
+        };
+      }
+      throw new Error("Keine passende Aufgabe gefunden (Niveau " + level + ")");
+    };
+  }
+
+  // Rechnung unabhängig nachrechnen; letzte Zeile der Lösung muss beim Ergebnis stehen
+  function verify(task) {
+    if (task._res === undefined) return "kein Ergebnis";
+    if (evalOps(task._ops) !== task._res) return "Rechnung weicht ab";
+    const last = AG.plain(task.steps[task.steps.length - 1]);
+    if (last !== "= " + AG.plain(task.a)) return "Lösungsschritte enden nicht beim Ergebnis";
+    return true;
+  }
+
+  // ---------- Typ 1: Punkt vor Strich und Klammern ----------
+  function pvsCand(rng, level) {
+    if (level === 1) {
+      // drei Zahlen, ein Punkt- und ein Strichrechenzeichen: 48 − 6 · 5, 12 + 3 · 4, 60 : 5 + 7
+      const opP = rng.pick(["*", "*", "/"]);
+      let P;
+      if (opP === "*") P = bin("*", leaf(rng.int(2, 12)), leaf(rng.int(2, 12)));
+      else { const x = rng.int(2, 12), y = rng.int(2, 12); P = bin("/", leaf(x * y), leaf(x)); }
+      const S = leaf(rng.int(2, 99));
+      const opS = rng.pick(["+", "-"]);
+      return { tree: rng.chance(0.5) ? bin(opS, P, S) : bin(opS, S, P) };
+    }
+    if (level === 2) {
+      // eine Klammer, vier Zahlen: (a ± b) · x ± c oder (a ± b) : d ± c
+      const bop = rng.pick(["+", "-"]);
+      const B = bin(bop, leaf(rng.int(5, 60)), leaf(rng.int(2, 30)), true);
+      const vB = ev(B);
+      let M;
+      if (rng.chance(0.5)) {
+        const x = leaf(rng.int(2, 12));
+        M = rng.chance(0.5) ? bin("*", B, x) : bin("*", x, B);
+      } else {
+        const divs = [];
+        for (let d = 2; d < vB; d++) if (vB % d === 0) divs.push(d);
+        if (!divs.length) return null;
+        M = bin("/", B, leaf(rng.pick(divs)));
+      }
+      const opT = rng.pick(["+", "-"]);
+      const w = leaf(rng.int(2, 60));
+      return { tree: rng.chance(0.5) ? bin(opT, M, w) : bin(opT, w, M) };
+    }
+    // Niveau 3: zwei Klammern, fünf Zahlen: (a ± b) · x ± (c ± d) bzw. (a ± b) : x ± (c ± d)
+    const B1 = bin(rng.pick(["+", "-"]), leaf(rng.int(5, 60)), leaf(rng.int(2, 30)), true);
+    const B2 = bin(rng.pick(["+", "-"]), leaf(rng.int(5, 60)), leaf(rng.int(2, 30)), true);
+    const v1 = ev(B1);
+    let M;
+    if (rng.chance(0.5)) {
+      const x = leaf(rng.int(2, 9));
+      M = rng.chance(0.5) ? bin("*", B1, x) : bin("*", x, B1);
+    } else {
+      const divs = [];
+      for (let d = 2; d < v1; d++) if (v1 % d === 0) divs.push(d);
+      if (!divs.length) return null;
+      M = bin("/", B1, leaf(rng.pick(divs)));
+    }
+    const opT = rng.pick(["+", "-"]);
+    return { tree: rng.chance(0.5) ? bin(opT, M, B2) : bin(opT, B2, M) };
+  }
+
+  // ---------- Typ 2: Vorteilhaft rechnen ----------
+  const PAIRS = [[4, 25], [5, 2], [2, 50], [20, 5], [25, 4], [50, 2], [5, 20]]; // Produkt rund
+  const ROUND = [10, 20, 50, 100];                                              // Summe rund
+
+  // (p op q) op c mit p, q zusammen rund. order: Reihenfolge der Zahlen in der Aufgabe.
+  function regroup3(order, p, q, c, op) {
+    const tree = bin(op, bin(op, leaf(order[0]), leaf(order[1])), leaf(order[2]));
+    const steps = [];
+    if (order[0] !== p || order[1] !== q) steps.push(rich("= ", nr(p), OPTXT[op], nr(q), OPTXT[op], nr(c)));
+    steps.push(rich("= (", nr(p), OPTXT[op], nr(q), ")", OPTXT[op], nr(c)));
+    const mid = APPLY[op](p, q);
+    steps.push(rich("= ", nr(mid), OPTXT[op], nr(c)));
+    steps.push(rich("= ", nr(APPLY[op](mid, c))));
+    return { tree, steps };
+  }
+  // Kommutativ- und Assoziativgesetz: 25 · 17 · 4 = 25 · 4 · 17 = (25 · 4) · 17 = 100 · 17 = 1700
+  function mul3(rng) {
+    const [a, b] = rng.pick(PAIRS);
+    let c = rng.int(11, 49);
+    if (c % 10 === 0) c++;
+    const order = rng.pick([[a, c, b], [c, a, b], [a, b, c]]);
+    return regroup3(order, a, b, c, "*");
+  }
+  // 37 + 48 + 63 = 37 + 63 + 48 = (37 + 63) + 48 = 100 + 48 = 148
+  function add3(rng) {
+    const N = rng.pick(ROUND);
+    const p = rng.int(N >= 40 ? 11 : 3, N - (N >= 40 ? 11 : 3)), q = N - p;
+    if (p === q) return null;
+    const c = rng.int(11, 99);
+    const order = rng.pick([[p, c, q], [c, p, q], [p, q, c]]);
+    return regroup3(order, p, q, c, "+");
+  }
+  // a · N ± d = a · (N ± d) → a · N ± a · d: 12 · 99 = 12 · (100 − 1) = 12 · 100 − 12 = 1200 − 12 = 1188
+  function dist(rng, aMin, aMax, Ns, dMax) {
+    const a = rng.int(aMin, aMax), N = rng.pick(Ns), d = rng.int(1, dMax);
+    const plus = rng.chance(0.5);
+    const sop = plus ? "+" : "-";
+    const inner = plus ? N + d : N - d;
+    const tree = bin("*", leaf(a), leaf(inner));
+    const steps = [
+      rich("= ", nr(a), OPTXT["*"], "(", nr(N), OPTXT[sop], nr(d), ")"),
+      rich("= ", nr(a), OPTXT["*"], nr(N), OPTXT[sop], nr(a), d === 1 ? "" : rich(OPTXT["*"], nr(d))),
+      rich("= ", nr(a * N), OPTXT[sop], nr(a * d)),
+      rich("= ", nr(a * inner)),
+    ];
+    return { tree, steps };
+  }
+  // a · b + a · c = a · (b + c) = a · N: 7 · 13 + 7 · 7 = 7 · (13 + 7) = 7 · 20 = 140
+  function distRev(rng, aMin, aMax, Ns) {
+    const a = rng.int(aMin, aMax), N = rng.pick(Ns);
+    const b = rng.int(2, N - 2), c = N - b;
+    if (b === c) return null;
+    const tree = bin("+", bin("*", leaf(a), leaf(b)), bin("*", leaf(a), leaf(c)));
+    const steps = [
+      rich("= ", nr(a), OPTXT["*"], "(", nr(b), OPTXT["+"], nr(c), ")"),
+      rich("= ", nr(a), OPTXT["*"], nr(N)),
+      rich("= ", nr(a * N)),
+    ];
+    return { tree, steps };
+  }
+  // 37 + 48 + 63 + 52 = (37 + 63) + (48 + 52) = 100 + 100 = 200
+  function add4(rng) {
+    const N1 = rng.pick([50, 100]), N2 = rng.pick([50, 100]);
+    const p = rng.int(2, N1 - 2), q = N1 - p;
+    const r = rng.int(2, N2 - 2), s = N2 - r;
+    const order = rng.pick([[p, r, q, s], [r, p, s, q], [p, s, r, q]]);
+    const tree = bin("+", bin("+", bin("+", leaf(order[0]), leaf(order[1])), leaf(order[2])), leaf(order[3]));
+    const steps = [];
+    if (order.some((v, i) => v !== [p, q, r, s][i])) steps.push(rich("= ", nr(p), OPTXT["+"], nr(q), OPTXT["+"], nr(r), OPTXT["+"], nr(s)));
+    steps.push(rich("= (", nr(p), OPTXT["+"], nr(q), ")", OPTXT["+"], "(", nr(r), OPTXT["+"], nr(s), ")"));
+    steps.push(rich("= ", nr(N1), OPTXT["+"], nr(N2)));
+    steps.push(rich("= ", nr(N1 + N2)));
+    return { tree, steps };
+  }
+
+  function vorCand(rng, level) {
+    if (level === 1) return rng.pick([() => mul3(rng), () => dist(rng, 3, 12, [100], 2)])();
+    if (level === 2) return rng.pick([() => add3(rng), () => mul3(rng), () => distRev(rng, 2, 12, ROUND)])();
+    return rng.pick([() => add4(rng), () => dist(rng, 11, 35, [50, 100], 3), () => distRev(rng, 11, 35, [50, 100])])();
+  }
+
+  // ---------- Typ 3: Fachbegriffe Summe, Differenz, Produkt, Quotient ----------
+  // Zusammengesetzte Terme mit Wortlaut: ph = Bezeichnung als Text, tree = Term
+  const COMP = [
+    rng => { // das Produkt aus der Summe von a und b und der Zahl c
+      const a = rng.int(3, 50), b = rng.int(3, 50), c = rng.int(2, 12);
+      return { tree: bin("*", bin("+", leaf(a), leaf(b), true), leaf(c)),
+        ph: rich("das Produkt aus der Summe von ", nr(a), " und ", nr(b), " und der Zahl ", nr(c)) };
+    },
+    rng => { // der Quotient aus der Differenz von a und b und der Zahl c
+      const c = rng.int(2, 9), k = rng.int(2, 12), b = rng.int(5, 60), a = b + c * k;
+      return { tree: bin("/", bin("-", leaf(a), leaf(b), true), leaf(c)),
+        ph: rich("der Quotient aus der Differenz von ", nr(a), " und ", nr(b), " und der Zahl ", nr(c)) };
+    },
+    rng => { // die Differenz aus a und dem Produkt von b und c
+      const b = rng.int(2, 12), c = rng.int(2, 12), a = rng.int(b * c + 10, 300);
+      return { tree: bin("-", leaf(a), bin("*", leaf(b), leaf(c))),
+        ph: rich("die Differenz aus ", nr(a), " und dem Produkt von ", nr(b), " und ", nr(c)) };
+    },
+    rng => { // die Summe aus dem Produkt von a und b und der Zahl c
+      const a = rng.int(2, 12), b = rng.int(2, 12), c = rng.int(10, 200);
+      return { tree: bin("+", bin("*", leaf(a), leaf(b)), leaf(c)),
+        ph: rich("die Summe aus dem Produkt von ", nr(a), " und ", nr(b), " und der Zahl ", nr(c)) };
+    },
+    rng => { // die Summe aus dem Quotienten von a und b und der Zahl c
+      const b = rng.int(2, 9), k = rng.int(2, 12), a = b * k, c = rng.int(10, 100);
+      return { tree: bin("+", bin("/", leaf(a), leaf(b)), leaf(c)),
+        ph: rich("die Summe aus dem Quotienten von ", nr(a), " und ", nr(b), " und der Zahl ", nr(c)) };
+    },
+    rng => { // das Produkt aus der Differenz von a und b und der Zahl c
+      const a = rng.int(20, 80), b = rng.int(2, a - 10), c = rng.int(2, 9);
+      return { tree: bin("*", bin("-", leaf(a), leaf(b), true), leaf(c)),
+        ph: rich("das Produkt aus der Differenz von ", nr(a), " und ", nr(b), " und der Zahl ", nr(c)) };
+    },
+  ];
+  const COMP_L2 = [0, 2, 3, 4, 5];   // Niveau 2: Summe, Differenz, Produkt, Quotient zusammen
+  const COMP_L3 = [1, 4, 5, 0, 2];   // Niveau 3: mit Quotient bzw. Differenz in Klammern
+
+  function fbCand(rng, level) {
+    const c = fbRaw(rng, level);
+    return c && !c.steps ? { ...c, steps: termFirst(c.tree) } : c;
+  }
+  function fbRaw(rng, level) {
+    if (level === 1) {
+      const k = rng.pick(["sum", "diff", "prod", "quot"]);
+      if (k === "sum") {
+        const a = rng.int(100, 999), b = rng.int(20, 899);
+        return { tree: bin("+", leaf(a), leaf(b)), q: rich("Berechne die Summe aus ", nr(a), " und ", nr(b), ".") };
+      }
+      if (k === "diff") {
+        const a = rng.int(200, 999), b = rng.int(20, a - 20);
+        return { tree: bin("-", leaf(a), leaf(b)), q: rich("Berechne die Differenz aus ", nr(a), " und ", nr(b), ".") };
+      }
+      if (k === "prod") {
+        const a = rng.int(11, 25), b = rng.int(3, 12);
+        return { tree: bin("*", leaf(a), leaf(b)), q: rich("Berechne das Produkt aus ", nr(a), " und ", nr(b), ".") };
+      }
+      const b = rng.int(3, 12), q2 = rng.int(3, 25);
+      return { tree: bin("/", leaf(b * q2), leaf(b)), q: rich("Berechne den Quotienten aus ", nr(b * q2), " und ", nr(b), ".") };
+    }
+    if (level === 2) {
+      const { tree, ph } = rng.pick(COMP_L2.map(i => COMP[i]))(rng);
+      return { tree, q: rich("Berechne: ", ph, "."), steps: termFirst(tree) };
+    }
+    // Niveau 3: Text zu Term und berechnen, oder Term mit Worten beschreiben und berechnen
+    const { tree, ph } = rng.pick(COMP_L3.map(i => COMP[i]))(rng);
+    if (rng.chance(0.5)) return { tree, q: rich("Stelle einen Term auf und berechne ihn: ", ph, "."), steps: termFirst(tree) };
+    return { tree, q: rich("Schreibe den Term mit Worten und berechne ihn: ", rend(tree), "."),
+      steps: [rich("Mit Worten: ", ph), ...reductionSteps(tree)] };
+  }
+
+  // ---------- Typ 4: Sachaufgaben ----------
+  const ANT = (...t) => rich("Antwort: ", ...t);
+  const S1 = [
+    rng => { // Busse
+      const n = rng.int(2, 6), k = rng.int(20, 30), r = n * k;
+      return {
+        q: rich("Die Klasse 5b fährt mit ", nr(n), " Bussen zum Sportfest. In jedem Bus sitzen ", nr(k), " Kinder. Wie viele Kinder fahren insgesamt mit?"),
+        a: rich(nr(r), " Kinder"),
+        steps: [rich(nr(n), " · ", nr(k), " = ", nr(r)), ANT("Insgesamt fahren ", nr(r), " Kinder mit.")],
+      };
+    },
+    rng => { // Einkauf
+      const n = rng.int(3, 8), p = rng.int(2, 6), r = n * p;
+      return {
+        q: rich("Für das Sportfest kauft die Klasse ", nr(n), " Packungen Wasser. Eine Packung kostet ", nr(p), " €. Wie viel € kosten alle Packungen zusammen?"),
+        a: rich(nr(r), " €"),
+        steps: [rich(nr(n), " · ", nr(p), " € = ", nr(r), " €"), ANT("Alle Packungen kosten zusammen ", nr(r), " €.")],
+      };
+    },
+    rng => { // Teilen
+      const n = rng.pick([4, 5, 6, 8, 10]), x = rng.int(20, 90), t = n * x;
+      return {
+        q: rich("Für die Klassenfahrt bezahlen ", nr(n), " Kinder zusammen ", nr(t), " €. Alle zahlen gleich viel. Wie viel € zahlt ein Kind?"),
+        a: rich(nr(x), " €"),
+        steps: [rich(nr(t), " € : ", nr(n), " = ", nr(x), " €"), ANT("Ein Kind zahlt ", nr(x), " €.")],
+      };
+    },
+    rng => { // Addition
+      const a = rng.int(12, 45), b = rng.int(15, 60), r = a + b;
+      return {
+        q: rich("Am Montag sammeln die Kinder ", nr(a), " € für den Ausflug. Am Dienstag kommen ", nr(b), " € dazu. Wie viel € sind es insgesamt?"),
+        a: rich(nr(r), " €"),
+        steps: [rich(nr(a), " € + ", nr(b), " € = ", nr(r), " €"), ANT("Insgesamt sind es ", nr(r), " €.")],
+      };
+    },
+    rng => { // Subtraktion
+      const a = rng.int(100, 300), b = rng.int(20, a - 20), r = a - b;
+      return {
+        q: rich("Die Klasse hat ", nr(a), " € für den Ausflug. Der Bus kostet ", nr(b), " €. Wie viel € bleiben übrig?"),
+        a: rich(nr(r), " €"),
+        steps: [rich(nr(a), " € ", MINUS, " ", nr(b), " € = ", nr(r), " €"), ANT("Es bleiben ", nr(r), " € übrig.")],
+      };
+    },
+  ];
+  const S2 = [
+    rng => { // Klassenfahrt: Kosten auf Kinder aufteilen
+      const n = rng.pick([4, 5, 6, 8, 10, 12]), b = n * rng.int(10, 60), u = n * rng.int(10, 60);
+      const t = b + u, x = t / n;
+      return {
+        q: rich("Die Busfahrt kostet ", nr(b), " €, die Unterkunft kostet ", nr(u), " €. Die ", nr(n), " Kinder teilen die Kosten gleich auf. Wie viel € zahlt jedes Kind?"),
+        a: rich(nr(x), " €"),
+        steps: [rich(nr(b), " € + ", nr(u), " € = ", nr(t), " €"), rich(nr(t), " € : ", nr(n), " = ", nr(x), " €"),
+          ANT("Jedes Kind zahlt ", nr(x), " €.")],
+      };
+    },
+    rng => { // Einkauf mit Rückgeld
+      const n = rng.int(2, 4), p = rng.int(8, 15), c = n * p;
+      const sum = [20, 50, 100].find(v => v > c), r = sum - c;
+      return {
+        q: rich("Lena kauft ", nr(n), " Bücher. Ein Buch kostet ", nr(p), " €. Sie bezahlt mit einem Schein über ", nr(sum), " €. Wie viel € bekommt sie zurück?"),
+        a: rich(nr(r), " €"),
+        steps: [rich(nr(n), " · ", nr(p), " € = ", nr(c), " €"), rich(nr(sum), " € ", MINUS, " ", nr(c), " € = ", nr(r), " €"),
+          ANT("Lena bekommt ", nr(r), " € zurück.")],
+      };
+    },
+    rng => { // Personen in Bussen
+      const b = rng.int(2, 6), k = rng.int(20, 28), l = rng.int(1, 3), s = k + l, t = b * s;
+      return {
+        q: rich("Die Klasse fährt mit ", nr(b), " Bussen zum Sportfest. In jedem Bus sitzen ", nr(k), " Kinder und ", nr(l), " Begleitpersonen. Wie viele Personen fahren insgesamt mit?"),
+        a: rich(nr(t), " Personen"),
+        steps: [rich(nr(k), " + ", nr(l), " = ", nr(s), " Personen pro Bus"), rich(nr(b), " · ", nr(s), " = ", nr(t)),
+          ANT("Insgesamt fahren ", nr(t), " Personen mit.")],
+      };
+    },
+    rng => { // Busfahrten zum Schwimmbad
+      const d = rng.int(3, 5), m = rng.int(2, 4), p = rng.int(2, 9), f = d * m, t = f * p;
+      return {
+        q: rich("Der Schulbus fährt an ", nr(d), " Tagen jeweils ", nr(m), " Mal zum Schwimmbad. Eine Fahrt kostet ", nr(p), " €. Wie viel € kostet das insgesamt?"),
+        a: rich(nr(t), " €"),
+        steps: [rich(nr(d), " · ", nr(m), " = ", nr(f), " Fahrten"), rich(nr(f), " · ", nr(p), " € = ", nr(t), " €"),
+          ANT("Die Fahrten kosten insgesamt ", nr(t), " €.")],
+      };
+    },
+  ];
+  const S3 = [
+    rng => { // Einkauf für das Sportfest, Rest der Klassenkasse
+      const n = rng.int(2, 5), p = rng.int(3, 6), m = rng.int(2, 4), q = rng.int(2, 5);
+      const s = rng.pick([60, 100]), w = n * p, x = m * q, t = w + x, r = s - t; // t ≤ 50 < s: Rest immer > 0
+      return {
+        q: rich("Für das Sportfest kauft die Klasse ", nr(n), " Packungen Wasser zu je ", nr(p), " € und ", nr(m), " Packungen Saft zu je ", nr(q), " €. Die Klasse hat ", nr(s), " € Geld. Wie viel € bleiben übrig?"),
+        a: rich(nr(r), " €"),
+        steps: [rich(nr(n), " · ", nr(p), " € + ", nr(m), " · ", nr(q), " € = ", nr(w), " € + ", nr(x), " €"),
+          rich(nr(t), " €"), rich(nr(s), " € ", MINUS, " ", nr(t), " € = ", nr(r), " €"),
+          ANT("Es bleiben ", nr(r), " € übrig.")],
+      };
+    },
+    rng => { // Ausflug: Eintritt und Busfahrten
+      const k = rng.int(20, 28), e = rng.int(3, 6), m = rng.int(2, 4), f = rng.int(10, 20);
+      const E = k * e, B = m * f, G = E + B;
+      return {
+        q: rich("Die Klasse 5a besteht aus ", nr(k), " Kindern. Jedes Kind zahlt ", nr(e), " € Eintritt für das Schwimmbad. Dazu kommen ", nr(m), " Busfahrten zu je ", nr(f), " €. Wie viel € kostet der Ausflug insgesamt?"),
+        a: rich(nr(G), " €"),
+        steps: [rich("Eintritt: ", nr(k), " · ", nr(e), " € = ", nr(E), " €"), rich("Busfahrten: ", nr(m), " · ", nr(f), " € = ", nr(B), " €"),
+          rich("Gesamt: ", nr(E), " € + ", nr(B), " € = ", nr(G), " €"), ANT("Der Ausflug kostet insgesamt ", nr(G), " €.")],
+      };
+    },
+    rng => { // Schulkiosk: Rückgeld
+      const n = rng.int(2, 4), p = rng.int(6, 9), m = rng.int(1, 3), q = rng.int(3, 5);
+      const A = n * p, B = m * q, s = [20, 50, 100].find(v => v > A + B), r = s - A - B;
+      return {
+        q: rich("Im Kino kostet eine Karte ", nr(p), " € und eine Tüte Popcorn ", nr(q), " €. Lena kauft ", nr(n), " Karten und ", nr(m), m === 1 ? " Tüte" : " Tüten", " Popcorn und bezahlt mit ", nr(s), " €. Wie viel € bekommt sie zurück?"),
+        a: rich(nr(r), " €"),
+        steps: [rich("Karten: ", nr(n), " · ", nr(p), " € = ", nr(A), " €"), rich("Popcorn: ", nr(m), " · ", nr(q), " € = ", nr(B), " €"),
+          rich("Rückgeld: ", nr(s), " € ", MINUS, " ", nr(A), " € ", MINUS, " ", nr(B), " € = ", nr(r), " €"),
+          ANT("Lena bekommt ", nr(r), " € zurück.")],
+      };
+    },
+  ];
+  const SACH = { 1: S1, 2: S2, 3: S3 };
+
+  function verifySach(task) {
+    const last = AG.plain(task.steps[task.steps.length - 1]);
+    if (!last.startsWith("Antwort: ")) return "Antwortsatz fehlt";
+    if (!last.includes(AG.plain(task.a).split(" ")[0])) return "Antwortsatz passt nicht zum Ergebnis";
+    return true;
+  }
+
+  // ---------- Registrierung ----------
+  AG.registerType({
+    id: "m5-punkt-vor-strich",
+    ...LB,
+    title: "Punkt vor Strich und Klammern",
+    instruction: {
+      1: "Berechne. Beachte Punkt vor Strich.",
+      2: "Berechne. Rechne zuerst in der Klammer.",
+      3: "Berechne Schritt für Schritt. Beachte die Klammern.",
+    },
+    merke: [
+      { b: "Reihenfolge: " },
+      "Zuerst Klammern, dann Punktrechnung (· und :), zuletzt Strichrechnung (+ und " + MINUS + "). Beispiel: 48 " + MINUS + " 6 · 5 = 48 " + MINUS + " 30 = 18 und (48 " + MINUS + " 6) · 5 = 42 · 5 = 210.",
+    ],
+    cols: 3,
+    generate: makeGenerate(pvsCand, 1000),
+    verify,
+  });
+
+  AG.registerType({
+    id: "m5-vorteilhaft",
+    ...LB,
+    title: "Vorteilhaft rechnen",
+    instruction: {
+      1: "Berechne vorteilhaft. Nutze die Rechengesetze.",
+      2: "Berechne vorteilhaft. Fasse passende Zahlen zusammen.",
+      3: "Berechne vorteilhaft. Zerlege die Zahlen geschickt.",
+    },
+    merke: [
+      { b: "Rechengesetze: " },
+      "Vertauschen und Zusammenfassen dürfen Zahlen umgeordnet werden. Beispiel: 25 · 17 · 4 = 25 · 4 · 17 = 100 · 17 = 1700. Zerlegen mit dem Distributivgesetz: 12 · 99 = 12 · 100 " + MINUS + " 12 = 1188.",
+    ],
+    cols: 2,
+    generate: makeGenerate(vorCand, 2000),
+    verify,
+  });
+
+  AG.registerType({
+    id: "m5-fachbegriffe",
+    ...LB,
+    title: "Summe, Differenz, Produkt, Quotient",
+    instruction: {
+      1: "Berechne die Summe, die Differenz, das Produkt oder den Quotienten.",
+      2: "Schreibe zuerst den Term auf. Berechne dann.",
+      3: "Stelle den Term auf oder schreibe ihn mit Worten. Berechne dann.",
+    },
+    merke: [
+      { b: "Fachbegriffe: " },
+      "Summe: a + b. Differenz: a " + MINUS + " b (größere Zahl zuerst). Produkt: a · b. Quotient: a : b. Beispiel: die Summe aus 345 und 78 = 345 + 78 = 423.",
+    ],
+    cols: 2,
+    generate: makeGenerate(fbCand, 1000),
+    verify,
+  });
+
+  AG.registerType({
+    id: "m5-sachaufgaben",
+    ...LB,
+    title: "Sachaufgaben zu den Grundrechenarten",
+    instruction: {
+      1: "Löse die Aufgabe. Schreibe die Rechnung und einen Antwortsatz.",
+      2: "Löse die Aufgabe in zwei Schritten. Schreibe die Rechnungen und einen Antwortsatz.",
+      3: "Löse die Aufgabe in mehreren Schritten. Beachte Punkt vor Strich. Schreibe einen Antwortsatz.",
+    },
+    merke: [
+      { b: "Sachaufgaben: " },
+      "Frage lesen, Rechnung aufstellen, rechnen, mit einem Antwortsatz antworten. Beispiel: 4 Busse mit je 28 Kindern: 4 · 28 = 112. Antwort: Es fahren 112 Kinder mit.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      return rng.pick(SACH[level])(rng);
+    },
+    verify: verifySach,
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-schriftlich.js ----
+// Klasse 5, LB 1.2: Grundrechenarten mit natürlichen Zahlen – Kopfrechnen, Überschlag,
+// schriftliches Addieren und Subtrahieren, schriftliches Multiplizieren und Dividieren.
+(function (AG) {
+  const { rich, fmtInt, MINUS } = AG;
+  const I = n => fmtInt(n);
+  const PLUS = " + ";
+  const MIN = " " + MINUS + " ";
+  const TIMES = " · ";
+  const DIV = " : ";
+  const POS = ["E", "Z", "H", "T", "ZT", "HT", "M", "ZM", "HM"];
+  const LB = { klasse: "5", zug: "RM", lb: "1.2", lbTitle: "Grundrechenarten mit natürlichen Zahlen", topic: "zahlen" };
+
+  // ---------- Hilfen ----------
+  // Zufallszahl mit genau k Ziffern (erste Ziffer ≠ 0); endNZ: letzte Ziffer ≠ 0
+  function kDigit(rng, k, endNZ) {
+    for (let g = 0; ; g++) {
+      if (g > 10000) throw new Error("kDigit: keine Zahl gefunden");
+      let s = String(rng.int(1, 9));
+      for (let i = 1; i < k; i++) s += rng.int(0, 9);
+      if (!endNZ || !s.endsWith("0")) return Number(s);
+    }
+  }
+  // Rundung auf die Stelle u (Rundung auf halbe Stelle ist ausgeschlossen, damit nichts mehrdeutig ist)
+  const round = (x, u) => Math.round(x / u) * u;
+  const okNum = (x, u) => x % u !== 0 && x % u !== u / 2;
+  const unitFor = k => (k <= 5 ? 1000 : k === 6 ? 10000 : 100000);
+  const join = (xs, sep) => xs.map(I).join(sep);
+  const digitsRev = n => String(n).split("").reverse().map(Number);
+
+  // Schriftliche Addition, stellenweise von rechts. Liefert Zeilen und ob ein Übertrag vorkommt.
+  function addCols(nums) {
+    const cols = nums.map(digitsRev);
+    const maxLen = Math.max(...cols.map(c => c.length));
+    const lines = [];
+    let carry = 0, carried = false;
+    for (let i = 0; i < maxLen || carry > 0; i++) {
+      const present = cols.filter(c => i < c.length).map(c => c[i]);
+      const sum = present.reduce((s, d) => s + d, 0) + carry;
+      const base = (present.length ? present.join(" + ") : "0") + (carry ? " + " + carry + " (Übertrag)" : "");
+      const digit = sum % 10, next = Math.floor(sum / 10);
+      if (next) carried = true;
+      lines.push(rich(POS[i], ": ", base, " = ", I(sum), ", schreibe ", String(digit), next ? ", Übertrag " + next : ""));
+      carry = next;
+    }
+    return { lines, carried };
+  }
+
+  // Schriftliche Subtraktion a − s, stellenweise von rechts. Liefert Zeilen und ob geborgt wird.
+  function subCols(a, s) {
+    const A = digitsRev(a), B = digitsRev(s);
+    const lines = [];
+    let borrow = 0, borrowed = false;
+    for (let i = 0; i < A.length; i++) {
+      const bi = i < B.length ? B[i] : 0;
+      const out = A[i] - borrow < bi ? 1 : 0;
+      const M = A[i] + 10 * out;
+      const diff = M - borrow - bi;
+      if (out) borrowed = true;
+      lines.push(rich(POS[i], ": ", String(M), borrow ? " " + MINUS + " 1 (geliehen)" : "", " " + MINUS + " ", String(bi),
+        " = ", I(diff), ", schreibe ", String(diff), out ? ", 1 geliehen" : ""));
+      borrow = out;
+    }
+    return { lines, borrowed };
+  }
+
+  // Division Schritt für Schritt: Teildivisionen „61 : 12 = 5 Rest 1“, Quotient, Rest
+  function divSteps(D, d) {
+    const s = String(D);
+    let i = 0, cur = 0;
+    while (cur < d) { cur = cur * 10 + Number(s[i]); i++; }
+    let q = Math.floor(cur / d), r = cur % d;
+    const lines = [rich(I(cur), DIV, I(d), " = ", I(q), " Rest ", I(r))];
+    let qs = String(q);
+    while (i < s.length) {
+      cur = r * 10 + Number(s[i]); i++;
+      q = Math.floor(cur / d); r = cur % d;
+      lines.push(rich(I(cur), DIV, I(d), " = ", I(q), " Rest ", I(r)));
+      qs += String(q);
+    }
+    return { lines, q: Number(qs), r };
+  }
+
+  // Überschlag Plus oder Minus mit k-stelligen Zahlen, gerundet auf u
+  function pm(rng, k, u) {
+    for (let g = 0; ; g++) {
+      if (g > 10000) throw new Error("pm: keine Aufgabe gefunden");
+      const add = rng.chance(0.5);
+      let x = kDigit(rng, k, false), y = kDigit(rng, k, false);
+      if (!add) { if (x < y) [x, y] = [y, x]; if (x === y) continue; }
+      if (!okNum(x, u) || !okNum(y, u)) continue;
+      const rx = round(x, u), ry = round(y, u);
+      const E = add ? rx + ry : rx - ry;
+      if (E <= 0) continue;
+      return { add, x, y, rx, ry, E, res: add ? x + y : x - y, op: add ? PLUS : MIN };
+    }
+  }
+
+  // ==========================================================
+  // 1. Kopfrechnen
+  // ==========================================================
+  function kopfL1(rng) {
+    const f = rng.int(0, 3);
+    if (f === 0) { // Plus mit vollen Zehnern: 340 + 260
+      let x, y;
+      do { x = rng.int(11, 89); y = rng.int(11, 89); } while (x + y > 99);
+      return {
+        q: rich(I(10 * x), PLUS, I(10 * y)), res: 10 * (x + y),
+        steps: [rich(I(x), PLUS, I(y), " = ", I(x + y)), rich(I(10 * x), PLUS, I(10 * y), " = ", I(10 * (x + y)))],
+      };
+    }
+    if (f === 1) { // Minus mit vollen Zehnern: 800 − 350
+      const x = rng.int(13, 99);
+      const y = rng.int(11, x - 2);
+      return {
+        q: rich(I(10 * x), MIN, I(10 * y)), res: 10 * (x - y),
+        steps: [rich(I(x), MIN, I(y), " = ", I(x - y)), rich(I(10 * x), MIN, I(10 * y), " = ", I(10 * (x - y)))],
+      };
+    }
+    if (f === 2) { // Mal mit Zehnern: 7 · 80
+      const n = rng.int(3, 9), m = rng.int(2, 9);
+      return {
+        q: rich(I(n), TIMES, I(10 * m)), res: n * m * 10,
+        steps: [rich(I(n), TIMES, I(m), " = ", I(n * m)), rich(I(n), TIMES, I(10 * m), " = ", I(n * m), TIMES, "10 = ", I(10 * n * m))],
+      };
+    }
+    // Geteilt mit Zehnern: 480 : 60
+    const m = rng.int(2, 9), q = rng.int(3, 9);
+    return {
+      q: rich(I(10 * m * q), DIV, I(10 * m)), res: q,
+      steps: [rich(I(m * q), DIV, I(m), " = ", I(q)), rich(I(10 * m * q), DIV, I(10 * m), " = ", I(q))],
+    };
+  }
+
+  function kopfL2(rng) {
+    const f = rng.int(0, 2);
+    if (f === 0) { // Minus über den Tausender: 4 500 − 1 750
+      const a = 100 * rng.int(21, 99);
+      let b;
+      do { b = 50 * rng.int(21, Math.floor((a - 50) / 50)); } while (b % 1000 === 0 || b < 1000);
+      const bt = Math.floor(b / 1000) * 1000, br = b - bt;
+      return {
+        q: rich(I(a), MIN, I(b)), res: a - b,
+        steps: [rich(I(a), MIN, I(bt), " = ", I(a - bt)), rich(I(a - bt), MIN, I(br), " = ", I(a - b))],
+      };
+    }
+    if (f === 1) { // Mal mit 5, 25 oder 50 über Hundert: 36 · 25
+      let a;
+      do a = rng.int(12, 99); while (a % 10 === 0);
+      const m = rng.pick([5, 25, 50]);
+      const steps = m === 25
+        ? [rich(I(a), TIMES, "25 = ", I(a), TIMES, "100 : 4"), rich(I(100 * a), " : 4 = ", I(25 * a))]
+        : m === 50
+          ? [rich(I(a), TIMES, "50 = ", I(a), TIMES, "100 : 2"), rich(I(100 * a), " : 2 = ", I(50 * a))]
+          : [rich(I(a), TIMES, "5 = ", I(a), TIMES, "10 : 2"), rich(I(10 * a), " : 2 = ", I(5 * a))];
+      return { q: rich(I(a), TIMES, I(m)), res: a * m, steps };
+    }
+    // Geteilt durch Vielfache von 10: 4 200 : 70
+    const d = 10 * rng.int(2, 9);
+    let q, D;
+    do { q = rng.int(12, 99); D = d * q; } while (D < 1000);
+    return {
+      q: rich(I(D), DIV, I(d)), res: q,
+      steps: [rich(I(D), DIV, I(d), " = ", I(D / 10), DIV, I(d / 10)), rich(I(D / 10), DIV, I(d / 10), " = ", I(q))],
+    };
+  }
+
+  function kopfL3(rng) {
+    const f = rng.int(0, 3);
+    const c = () => { let x; do x = rng.int(11, 199); while (x % 10 === 0); return x; };
+    if (f === 0) { // Mal und Plus: 8 · 25 + 170
+      const a = rng.int(3, 9), b = rng.pick([15, 25, 35, 50, 125]), cc = c(), P = a * b;
+      return {
+        q: rich(I(a), TIMES, I(b), PLUS, I(cc)), res: P + cc,
+        steps: [rich(I(a), TIMES, I(b), " = ", I(P)), rich(I(P), PLUS, I(cc), " = ", I(P + cc))],
+      };
+    }
+    if (f === 1) { // Geteilt und Plus: 600 : 30 + 45
+      const d = rng.pick([4, 5, 6, 8, 9, 12, 15, 25]);
+      let qq;
+      do qq = rng.int(11, 99); while (qq % 10 === 0);
+      const cc = c(), a = d * qq;
+      return {
+        q: rich(I(a), DIV, I(d), PLUS, I(cc)), res: qq + cc,
+        steps: [rich(I(a), DIV, I(d), " = ", I(qq)), rich(I(qq), PLUS, I(cc), " = ", I(qq + cc))],
+      };
+    }
+    if (f === 2) { // Minus und Mal: a − b · c, z. B. 1 000 − 4 · 125
+      const b = rng.int(3, 9);
+      let c2;
+      do c2 = rng.int(11, 49); while (c2 % 10 === 0);
+      const P = b * c2;
+      let x;
+      do x = rng.int(11, 399); while (x % 10 === 0);
+      const a = P + x;
+      return {
+        q: rich(I(a), MIN, I(b), TIMES, I(c2)), res: x,
+        steps: [rich(I(b), TIMES, I(c2), " = ", I(P)), rich(I(a), MIN, I(P), " = ", I(x))],
+      };
+    }
+    // Klammer, Plus und Geteilt: (480 + 320) : 8
+    const cc = rng.pick([4, 5, 6, 8, 9, 12]);
+    let qq;
+    do qq = rng.int(11, 99); while (qq % 10 === 0);
+    const S = cc * qq;
+    let a, b;
+    do { a = rng.int(11, S - 11); b = S - a; } while (a % 10 === 0 || b % 10 === 0 || b < 11);
+    return {
+      q: rich("(", I(a), PLUS, I(b), ")", DIV, I(cc)), res: qq,
+      steps: [rich("(", I(a), PLUS, I(b), ") = ", I(S)), rich(I(S), DIV, I(cc), " = ", I(qq))],
+    };
+  }
+
+  AG.registerType({
+    ...LB,
+    id: "m5-kopfrechnen",
+    title: "Kopfrechnen",
+    instruction: {
+      1: "Rechne im Kopf.",
+      2: "Rechne im Kopf. Zerlege die Zahlen geschickt.",
+      3: "Rechne im Kopf. Rechne zuerst Klammern, dann Mal und Geteilt, dann Plus und Minus.",
+    },
+    merke: [
+      "Mit vollen Zehnern rechnen: 34 + 26 = 60, also ", { b: I(340) + " + " + I(260) + " = " + I(600) },
+      ". Mal und Geteilt kommen vor Plus und Minus. Beispiel: ", { b: I(36) + " · 25 = " + I(36) + " · 100 : 4 = " + I(900) }, ".",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      const t = level === 1 ? kopfL1(rng) : level === 2 ? kopfL2(rng) : kopfL3(rng);
+      return { q: t.q, a: rich(I(t.res)), steps: t.steps };
+    },
+  });
+
+  // ==========================================================
+  // 2. Überschlag
+  // ==========================================================
+  function uebL1(rng) { // dreistellig, auf Hunderter runden
+    const t = pm(rng, 3, 100);
+    return {
+      q: rich(I(t.x), t.op, I(t.y)), a: rich("≈ ", I(t.E)),
+      steps: [rich(I(t.x), t.op, I(t.y), " ≈ ", I(t.rx), t.op, I(t.ry), " = ", I(t.E))],
+    };
+  }
+
+  function uebL2(rng) {
+    if (rng.chance(0.5)) { // vierstellig, auf Tausender runden: 4873 + 2145
+      const t = pm(rng, 4, 1000);
+      return {
+        q: rich(I(t.x), t.op, I(t.y)), a: rich("≈ ", I(t.E)),
+        steps: [rich(I(t.x), t.op, I(t.y), " ≈ ", I(t.rx), t.op, I(t.ry), " = ", I(t.E))],
+      };
+    }
+    // zweistellig · dreistellig, auf Zehner bzw. Hunderter runden: 38 · 412
+    let a, b;
+    do { a = rng.int(21, 98); } while (a % 5 === 0);
+    do { b = rng.int(112, 899); } while (b % 50 === 0);
+    const ra = round(a, 10), rb = round(b, 100), E = ra * rb;
+    return {
+      q: rich(I(a), TIMES, I(b)), a: rich("≈ ", I(E)),
+      steps: [rich(I(a), TIMES, I(b), " ≈ ", I(ra), TIMES, I(rb), " = ", I(E))],
+    };
+  }
+
+  function uebL3(rng) { // vierstellig, auf Hunderter runden; drei Ergebnisse, nur eines passt
+    for (let g = 0; ; g++) {
+      if (g > 10000) throw new Error("uebL3: keine Aufgabe gefunden");
+      const t = pm(rng, 4, 100);
+      const { res, E } = t;
+      const d1 = res * 10;                       // Stellenfehler: zehnmal zu groß
+      const off = rng.pick([300, 400, 500, 600]);
+      let d2 = rng.chance(0.5) ? res + off : res - off;
+      if (d2 <= 0) d2 = res + off;               // Rechenfehler, weit vom Überschlag entfernt
+      // Der Überschlag ist auf 100 genau: nur das richtige Ergebnis liegt in E ± 100.
+      if (Math.abs(res - E) >= 100 || Math.abs(d1 - E) <= 100 || Math.abs(d2 - E) <= 100) continue;
+      const opts = rng.shuffle([
+        { v: res, good: true },
+        { v: d1, why: "zehnmal zu groß" },
+        { v: d2, why: (d2 > E ? "zu groß" : "zu klein") + ", weicht zu stark ab" },
+      ]);
+      const L = ["A", "B", "C"];
+      const letter = L[opts.findIndex(o => o.good)];
+      const q = [rich(I(t.x), t.op, I(t.y), " = ?"), { br: true }, "Welches Ergebnis kann stimmen?"];
+      opts.forEach((o, i) => q.push({ br: true }, L[i] + ") " + I(o.v)));
+      const steps = [rich(I(t.x), t.op, I(t.y), " ≈ ", I(t.rx), t.op, I(t.ry), " = ", I(E))];
+      opts.forEach((o, i) => steps.push(rich(L[i], ") ", I(o.v), ": ", o.good ? "passt, liegt nahe bei " + I(E) : o.why)));
+      steps.push(rich("Ergebnis: ", letter, ") ", I(res)));
+      return { q: rich(q), a: rich(letter, ") ", I(res)), steps };
+    }
+  }
+
+  AG.registerType({
+    ...LB,
+    id: "m5-ueberschlag",
+    title: "Überschlag",
+    instruction: {
+      1: "Überschlage. Runde zuerst, dann rechne.",
+      2: "Überschlage. Runde zuerst, dann rechne.",
+      3: "Entscheide per Überschlag, welches Ergebnis stimmen kann. Nur eines passt.",
+    },
+    merke: [
+      "Erst runden, dann rechnen. Beispiel: ", { b: I(4873) + " + " + I(2145) + " ≈ " + I(5000) + " + " + I(2000) + " = " + I(7000) },
+      ". Der Überschlag zeigt, in welcher Größenordnung das Ergebnis liegt.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) return uebL1(rng);
+      if (level === 2) return uebL2(rng);
+      return uebL3(rng);
+    },
+  });
+
+  // ==========================================================
+  // 3. Schriftlich addieren und subtrahieren
+  // ==========================================================
+  function genAddSub(rng, level) {
+    for (let tries = 0; tries < 5000; tries++) {
+      const k = level === 1 ? rng.pick([4, 5]) : level === 2 ? rng.pick([5, 6]) : rng.pick([6, 7]);
+      const add = rng.chance(0.5);
+      const n = add ? (level === 1 ? 2 : 3) : (level === 3 ? 3 : 2); // Anzahl der Zahlen (bei Minus: 1 Minuend + Subtrahenden)
+      const nums = Array.from({ length: n }, () => kDigit(rng, k, level > 1));
+      const u = unitFor(k);
+      if (nums.some(x => x % u === u / 2)) continue; // Rundung ohne Mehrdeutigkeit
+      const r = nums.map(x => round(x, u));
+      if (add) {
+        const res = nums.reduce((s, x) => s + x, 0);
+        const E = r.reduce((s, x) => s + x, 0);
+        const cols = addCols(nums);
+        if (level > 1 && !cols.carried) continue;
+        const steps = [rich("Überschlag: ", join(nums, PLUS), " ≈ ", join(r, PLUS), " = ", I(E)), ...cols.lines,
+          rich(join(nums, PLUS), " = ", I(res))];
+        return { q: rich(join(nums, PLUS)), a: rich(I(res)), steps };
+      }
+      const [a, ...subs] = nums;
+      const sSum = subs.reduce((s, x) => s + x, 0);
+      const res = a - sSum;
+      if (res <= 0) continue;
+      const E = r[0] - r.slice(1).reduce((s, x) => s + x, 0);
+      if (E <= 0) continue;
+      const cols = subCols(a, sSum);
+      if (level > 1 && !cols.borrowed) continue;
+      const steps = [rich("Überschlag: ", join(nums, MIN), " ≈ ", join(r, MIN), " = ", I(E))];
+      if (subs.length > 1) steps.push(rich("Subtrahenden zusammen: ", join(subs, PLUS), " = ", I(sSum)));
+      steps.push(...cols.lines, rich(join(nums, MIN), " = ", I(res)));
+      return { q: rich(join(nums, MIN)), a: rich(I(res)), steps };
+    }
+    throw new Error("m5-schriftlich-addsub: keine passende Aufgabe gefunden");
+  }
+
+  AG.registerType({
+    ...LB,
+    id: "m5-schriftlich-addsub",
+    title: "Schriftlich addieren und subtrahieren",
+    instruction: {
+      1: "Rechne schriftlich.",
+      2: "Rechne schriftlich. Überschlage vorher.",
+      3: "Rechne schriftlich. Überschlage vorher und prüfe dein Ergebnis.",
+    },
+    merke: [
+      "Schriftlich rechnen: Stelle für Stelle von rechts nach links. Ist eine Summe zehn oder mehr, schreibe die Einer und merke dir die Zehner als Übertrag. Beispiel: ",
+      { b: I(4873) + " + " + I(2145) + " = " + I(7018) }, ".",
+    ],
+    cols: 3,
+    generate(rng, level) { return genAddSub(rng, level); },
+  });
+
+  // ==========================================================
+  // 4. Schriftlich multiplizieren
+  // ==========================================================
+  function genMul(rng, level) {
+    if (level === 1) { // ein Faktor einstellig
+      const a = kDigit(rng, rng.pick([3, 4]), true), b = rng.int(2, 9), P = a * b;
+      return { q: rich(I(a), TIMES, I(b)), a: rich(I(P)), steps: [rich(I(a), TIMES, I(b), " = ", I(P))] };
+    }
+    // ein Faktor zweistellig (Ziffern 2 bis 9), große erste Faktoren; Teilprodukte a · (Zehner) und a · (Einer)
+    for (let g = 0; ; g++) {
+      if (g > 10000) throw new Error("genMul: keine Aufgabe gefunden");
+      const a = kDigit(rng, level === 2 ? rng.pick([3, 4]) : rng.pick([4, 5]), true);
+      const t = rng.int(2, 9), u = rng.int(2, 9), b = 10 * t + u;
+      if (a * b > 999999) continue;
+      const P1 = a * 10 * t, P2 = a * u, res = a * b;
+      return {
+        q: rich(I(a), TIMES, I(b)), a: rich(I(res)),
+        steps: [
+          rich(I(a), TIMES, I(10 * t), " = ", I(P1)),
+          rich(I(a), TIMES, I(u), " = ", I(P2)),
+          rich("Summe: ", I(P1), PLUS, I(P2), " = ", I(res)),
+        ],
+      };
+    }
+  }
+
+  AG.registerType({
+    ...LB,
+    id: "m5-schriftlich-mul",
+    title: "Schriftlich multiplizieren",
+    instruction: {
+      1: "Multipliziere schriftlich.",
+      2: "Multipliziere schriftlich. Rechne mit Teilprodukten.",
+      3: "Multipliziere schriftlich. Rechne mit Teilprodukten und addiere sie.",
+    },
+    merke: [
+      "Den zweiten Faktor in Zehner und Einer zerlegen, zwei Teilprodukte rechnen und addieren. Beispiel: ",
+      { b: I(2345) + " · " + I(37) + " = " + I(2345) + " · " + I(30) + " + " + I(2345) + " · 7 = " + I(70350) + " + " + I(16415) + " = " + I(86765) },
+      ".",
+    ],
+    cols: 3,
+    generate(rng, level) { return genMul(rng, level); },
+  });
+
+  // ==========================================================
+  // 5. Schriftlich dividieren
+  // ==========================================================
+  function genDiv(rng, level) {
+    let d, qv;
+    if (level === 1) { // Divisor einstellig
+      d = rng.int(3, 9);
+      do qv = rng.int(101, 999); while (qv % 10 === 0);
+    } else if (level === 2) { // Divisor zweistellig
+      do d = rng.int(11, 99); while (d % 10 === 0);
+      do qv = rng.int(12, 499); while (qv % 10 === 0);
+    } else { // Nullen im Ergebnis: 61 236 : 12 = 5 103
+      do d = rng.int(11, 99); while (d % 10 === 0);
+      do qv = rng.int(1001, 9999); while (!/0/.test(String(qv).slice(1, -1)) || qv % 10 === 0);
+    }
+    const D = d * qv;
+    const { lines, q, r } = divSteps(D, d);
+    if (q !== qv || r !== 0) throw new Error("m5-schriftlich-div: Division geht nicht auf");
+    return {
+      q: rich(I(D), DIV, I(d)), a: rich(I(qv)),
+      steps: [...lines, rich("Probe: ", I(qv), TIMES, I(d), " = ", I(D)), rich("Ergebnis: ", I(D), DIV, I(d), " = ", I(qv))],
+    };
+  }
+
+  AG.registerType({
+    ...LB,
+    id: "m5-schriftlich-div",
+    title: "Schriftlich dividieren",
+    instruction: {
+      1: "Dividiere schriftlich. Mache die Probe.",
+      2: "Dividiere schriftlich. Mache die Probe.",
+      3: "Dividiere schriftlich. Achte auf Nullen im Ergebnis. Mache die Probe.",
+    },
+    merke: [
+      "Stelle für Stelle teilen und die nächste Ziffer herunterholen. Passt die Zahl nicht, steht eine 0 im Ergebnis. Probe: Ergebnis · Teiler = Ausgangszahl. Beispiel: ",
+      { b: I(61236) + " : " + I(12) + " = " + I(5103) }, ".",
+    ],
+    cols: 3,
+    generate(rng, level) { return genDiv(rng, level); },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m5-zahlen.js ----
+// M5 LB 1.1 (Der Zahlenraum über eine Milliarde hinaus): Großzahlen lesen und schreiben, Zahlen
+// vergleichen und ordnen, Zahlenfolgen fortsetzen, Runden, Zahlenstrahl und Diagramme ablesen.
+// Mit Skizzen (AG.sketch) und Stellenwerttafel (table mit Lücken).
+(function (AG) {
+  const { rich, fmtInt, plain } = AG;
+  const MI = AG.MINUS;
+  const KL = "5", ZUG = "RM", LB = "1.1", LBT = "Der Zahlenraum über eine Milliarde hinaus", TOPIC = "zahlen";
+  const COLORS = ["#1f3f9e", "#2e7d5b", "#b5541b", "#6b3fa0", "#9aa3b8"];
+
+  // ---------- Hilfen ----------
+  const fmt = n => fmtInt(n);            // Tausenderleerzeichen ab 5 Stellen
+  const t = x => String(x);              // Zahl als Text für rich(...)
+  // zufällige Zahl mit k Stellen (erste Stelle ≠ 0); zeroP: Anteil der Nullen in den übrigen Stellen
+  function randNum(rng, k, zeroP = 0) {
+    let s = t(rng.int(1, 9));
+    for (let i = 1; i < k; i++) s += rng.chance(zeroP) ? "0" : t(rng.int(0, 9));
+    return Number(s);
+  }
+  const digitAt = (n, p) => Math.floor(n / 10 ** p) % 10;
+  // Stellennamen, Index = Zehnerpotenz (E = Einer … Mrd = Milliarden)
+  const PL = ["E", "Z", "H", "T", "ZT", "HT", "M", "ZM", "HM", "Mrd"];
+
+  // ---------- Zahlwörter (Duden: Zahlwort klein, „Million“, „Milliarde“, „Billion“ als Nomen groß und getrennt) ----------
+  const ONES = ["", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"];
+  const ONES_C = ["", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"]; // in Zusammensetzungen
+  const TEENS = ["zehn", "elf", "zwölf", "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"];
+  const TENS = ["", "", "zwanzig", "dreißig", "vierzig", "fünfzig", "sechzig", "siebzig", "achtzig", "neunzig"];
+  const UNITS = [[1e12, "Billion", "Billionen"], [1e9, "Milliarde", "Milliarden"], [1e6, "Million", "Millionen"]];
+
+  // 0–99
+  function w2(x) {
+    if (x < 10) return ONES[x];
+    if (x < 20) return TEENS[x - 10];
+    const o = x % 10, z = Math.floor(x / 10);
+    return o === 0 ? TENS[z] : ONES_C[o] + "und" + TENS[z];
+  }
+  // 0–999. mode: "end" = letzte Gruppe, "comp" = vor „tausend“, "mio" = vor „Million“ o. Ä.
+  function w3(x, mode) {
+    if (!x) return "";
+    const h = Math.floor(x / 100), r = x % 100;
+    let s = "";
+    if (h === 1) s = mode === "comp" || (mode === "mio" && r === 0) ? "hundert" : "einhundert";
+    else if (h > 1) s = ONES[h] + "hundert";
+    if (!r) return s;
+    return s + (r === 1 && mode === "comp" ? "ein" : w2(r));
+  }
+  // 0–999 999 als ein Wort (Tausender und Einer zusammen)
+  function w6(x) {
+    if (!x) return "";
+    const th = Math.floor(x / 1000), o = x % 1000;
+    const pre = th === 0 ? "" : th === 1 ? "eintausend" : w3(th, "comp") + "tausend";
+    return pre + w3(o, "end");
+  }
+  // Gruppen einer Zahl: { v: Wert der Gruppe, words }
+  function parts(n) {
+    const out = [];
+    for (const u of UNITS) {
+      const g = Math.floor(n / u[0]) % 1000;
+      if (g) out.push({ v: g * u[0], words: g === 1 ? "eine " + u[1] : w3(g, "mio") + " " + u[2] });
+    }
+    if (n % 1e6) out.push({ v: n % 1e6, words: w6(n % 1e6) });
+    return out;
+  }
+  const words = n => parts(n).map(p => p.words).join(" ");
+
+  // Zahlwort → Zahl (Gegenprobe für verify)
+  const SMALL = { eins: 1, ein: 1, eine: 1, zwei: 2, drei: 3, vier: 4, fünf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9,
+    zehn: 10, elf: 11, zwölf: 12, dreizehn: 13, vierzehn: 14, fünfzehn: 15, sechzehn: 16, siebzehn: 17, achtzehn: 18,
+    neunzehn: 19, zwanzig: 20, dreißig: 30, vierzig: 40, fünfzig: 50, sechzig: 60, siebzig: 70, achtzig: 80, neunzig: 90 };
+  function p2(w) {
+    if (w === "") return 0;
+    if (SMALL[w] !== undefined) return SMALL[w];
+    const i = w.indexOf("und");
+    if (i < 0) throw new Error("Zahlwort unbekannt: " + w);
+    return SMALL[w.slice(0, i)] + SMALL[w.slice(i + 3)];
+  }
+  function p3(w) {
+    if (w === "") return 0;
+    const i = w.indexOf("hundert");
+    if (i < 0) return p2(w);
+    const hp = w.slice(0, i);
+    return (hp === "" ? 1 : SMALL[hp]) * 100 + p2(w.slice(i + 7));
+  }
+  function p6(w) {
+    if (w === "") return 0;
+    const i = w.indexOf("tausend");
+    if (i < 0) return p3(w);
+    return p3(w.slice(0, i)) * 1000 + p3(w.slice(i + 7));
+  }
+  function parseWords(s) {
+    let total = 0, pend = [];
+    for (const tk of s.split(" ")) {
+      const u = UNITS.find(x => x[1] === tk || x[2] === tk);
+      if (u) { total += p6(pend.join("")) * u[0]; pend = []; }
+      else pend.push(tk);
+    }
+    return total + p6(pend.join(""));
+  }
+
+  // ---------- Stellenwerttafel ----------
+  const ORDER = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];   // Spalten von links (Mrd) nach rechts (E)
+
+  // ---------- Vergleichen und Ordnen ----------
+  // Begründung für lo < hi: an der ersten verschiedenen Stelle von links
+  function reasonText(lo, hi) {
+    const sl = t(lo), sh = t(hi);
+    if (sl.length !== sh.length) return "die kleinere Zahl hat weniger Stellen";
+    const i = [...sl].findIndex((c, j) => c !== sh[j]);
+    return "an der Stelle " + PL[sl.length - 1 - i] + " ist " + sl[i] + " kleiner als " + sh[i];
+  }
+  // Zahl mit einer oder zwei geänderten Ziffern (ähnliche Ziffern)
+  function variant(base, rng) {
+    const s = t(base).split("");
+    const c = rng.int(1, 2);
+    for (let j = 0; j < c; j++) {
+      const i = rng.int(0, s.length - 1);
+      s[i] = t(i === 0 ? rng.int(1, 9) : rng.int(0, 9));
+    }
+    return Number(s.join(""));
+  }
+  // zwei Ziffern vertauschen (Fallen wie 1 090 000 und 1 009 000)
+  function swapDigits(base, rng) {
+    const s = t(base).split("");
+    for (let k = 0; k < 30; k++) {
+      const i = rng.int(0, s.length - 1), j = rng.int(0, s.length - 1);
+      if (s[i] === s[j]) continue;
+      const u = s.slice();
+      [u[i], u[j]] = [u[j], u[i]];
+      if (u[0] !== "0") return Number(u.join(""));
+    }
+    return variant(base, rng);
+  }
+  function makeSet(rng, level, cnt) {
+    for (let tries = 0; tries < 300; tries++) {
+      const k = level === 1 ? rng.int(4, 6) : level === 2 ? rng.int(6, 9) : rng.int(7, 10);
+      const base = randNum(rng, k, level === 3 ? 0.3 : 0);
+      const set = [base];
+      let guard = 0;
+      while (set.length < cnt && guard++ < 200) {
+        const x = level === 1 ? randNum(rng, rng.int(4, 6))
+          : level === 3 && rng.chance(0.6) ? swapDigits(base, rng)
+          : variant(base, rng);
+        if (!set.includes(x)) set.push(x);
+      }
+      if (set.length === cnt) return rng.shuffle(set);
+    }
+    throw new Error("m5-zahlen-ordnen: keine Zahlenmenge gefunden");
+  }
+
+  // ---------- Zahlenfolgen ----------
+  // Schritt j (von Glied j-1 zu Glied j): Rechenzeichen und Zahl
+  function stepOp(sq, j) {
+    if (sq.kind === "add") return { op: "+", v: sq.d };
+    if (sq.kind === "sub") return { op: MI, v: sq.d };
+    if (sq.kind === "mul") return { op: "·", v: sq.f };
+    return j % 2 ? { op: "+", v: sq.d1 } : { op: MI, v: sq.d2 };
+  }
+  function applyOp(prev, o) {
+    if (o.op === "+") return prev + o.v;
+    if (o.op === MI) return prev - o.v;
+    return prev * o.v;
+  }
+  function makeSeq(rng, level) {
+    for (let tries = 0; tries < 200; tries++) {
+      const sq = makeSeqOnce(rng, level);
+      if (sq) return sq;
+    }
+    throw new Error("m5-zahlenfolgen: keine Folge gefunden");
+  }
+  function makeSeqOnce(rng, level) {
+    const V = level === 3 ? 5 : 4, N = V + 3;
+    const kind = rng.pick(level === 1 ? ["add", "add", "sub"] : level === 2 ? ["add", "sub", "mul"] : ["alt", "alt", "add"]);
+    const sq = { V, N, kind };
+    let a0;
+    if (kind === "add" || kind === "sub") {
+      sq.d = level === 1 ? rng.pick([100, 200, 500, 1000, 2000, 5000])
+        : level === 2 ? rng.pick([1000, 2000, 5000, 20000, 50000])
+        : rng.pick([5000, 10000, 20000, 50000, 100000]);
+      if (kind === "add") a0 = (sq.d / 10) * rng.int(3, 99);
+      else a0 = (sq.d / 10) * rng.int(80, 140);   // Folge bleibt positiv
+    } else if (kind === "mul") {
+      sq.f = rng.pick([2, 3, 5, 10]);
+      const starts = { 2: [1, 3, 5, 10, 25, 100], 3: [1, 2, 4, 10, 100], 5: [1, 2, 4, 10], 10: [1, 2, 5] }[sq.f];
+      a0 = rng.pick(starts);
+    } else {
+      sq.d1 = rng.pick([2000, 3000, 5000, 10000, 20000]);
+      sq.d2 = rng.pick([1000, 2000, 5000].filter(x => x < sq.d1));
+      a0 = rng.int(2, 90) * 1000;
+    }
+    sq.full = [a0];
+    for (let j = 1; j < N; j++) sq.full.push(applyOp(sq.full[j - 1], stepOp(sq, j)));
+    if (sq.full[N - 1] > 9999999 || sq.full.some(x => x <= 0)) return null;
+    return sq;
+  }
+  const ruleText = sq => sq.kind === "add" ? "+ " + fmt(sq.d)
+    : sq.kind === "sub" ? MI + " " + fmt(sq.d)
+    : sq.kind === "mul" ? "· " + t(sq.f)
+    : "abwechselnd + " + fmt(sq.d1) + " und " + MI + " " + fmt(sq.d2);
+
+  // ---------- Runden ----------
+  const RPHR = { 1: "auf Zehner", 2: "auf Hunderter", 3: "auf Tausender", 4: "auf Zehntausender", 5: "auf Hunderttausender", 6: "auf Millionen" };
+  const RNAME = { 1: "Zehner", 2: "Hunderter", 3: "Tausender", 4: "Zehntausender", 5: "Hunderttausender", 6: "Millionen" };
+  function roundTo(n, p) {
+    const q = Math.floor(n / 10 ** p);
+    return digitAt(n, p - 1) >= 5 ? (q + 1) * 10 ** p : q * 10 ** p;
+  }
+
+  // ---------- Zahlenstrahl ----------
+  function numberLineFig(S, s, N, labeled, points) {
+    const W = 150, H = 36, x0 = 10, x1 = 140, y = 18;
+    const X = k => x0 + ((x1 - x0) * k) / N;
+    const sk = AG.sketch(W, H);
+    sk.line([x0 - 4, y], [x1 + 4, y]);
+    for (let k = 0; k <= N; k++) {
+      sk.line([X(k), y - 1.8], [X(k), y + 1.8]);
+      if (labeled.includes(k)) sk.label([X(k), y + 6.5], fmt(S + k * s));
+    }
+    for (const pt of points) {
+      sk.line([X(pt.k), y - 5.5], [X(pt.k), y - 1.6]);
+      sk.circle([X(pt.k), y], 0.9, { fill: AG.SKETCH_COLORS.INK });
+      sk.label([X(pt.k), y - 8], pt.letter, { bold: true });
+    }
+    return sk.done();
+  }
+
+  // ---------- Diagramme (Werte in Tausend, Achse mit Skala, Werte nicht aufgedruckt) ----------
+  function niceTop(max) { return Math.ceil((max + 5) / 10) * 10; }
+  function columnFig(names, vals) {
+    const W = 140, H = 60, xA = 18, yB = 50, yT = 8;
+    const T = niceTop(Math.max(...vals));
+    const sy = v => yB - (v / T) * (yB - yT);
+    const s = AG.sketch(W, H);
+    s.line([xA, yT - 2], [xA, yB]);
+    s.line([xA, yB], [W - 3, yB]);
+    for (let v = 0; v <= T; v += 5) {
+      s.line([xA - (v % 10 ? 0.8 : 1.6), sy(v)], [xA, sy(v)]);
+      if (v % 10 === 0) s.label([xA - 2.5, sy(v)], t(v), { anchor: "end" });
+    }
+    s.label([xA + 2, yT - 4], "Tausend", { anchor: "start" });
+    const slot = (W - xA - 4) / names.length, bw = slot * 0.6;
+    names.forEach((nm, i) => {
+      const x = xA + slot * i + (slot - bw) / 2;
+      s.rect(x, sy(vals[i]), bw, yB - sy(vals[i]), { fill: COLORS[i] });
+      s.label([x + bw / 2, yB + 4.5], nm);
+    });
+    return s.done();
+  }
+  function barFig(names, vals) {
+    const W = 140, H = 60, xL = 36, x0 = 38, xw = 92, yT = 6, yB = 45;
+    const T = niceTop(Math.max(...vals));
+    const sx = v => x0 + (v / T) * xw;
+    const slot = (yB - yT) / names.length, bh = slot * 0.6;
+    const s = AG.sketch(W, H);
+    s.line([x0, yT - 1], [x0, yB + 1]);
+    s.line([x0, yB], [x0 + xw, yB]);
+    for (let v = 0; v <= T; v += 5) {
+      s.line([sx(v), yB], [sx(v), yB + (v % 10 ? 0.8 : 1.6)]);
+      if (v % 10 === 0) s.label([sx(v), yB + 5], t(v));
+    }
+    s.label([x0 + xw, yB + 10], "Tausend", { anchor: "end" });
+    names.forEach((nm, i) => {
+      const yc = yT + slot * (i + 0.5);
+      s.label([xL, yc], nm, { anchor: "end" });
+      s.rect(x0, yc - bh / 2, sx(vals[i]) - x0, bh, { fill: COLORS[i] });
+    });
+    return s.done();
+  }
+
+  // ==================== Aufgabentypen ====================
+
+  // ---------- 1. Große Zahlen: Ziffern ↔ Wortform, Stellenwerttafel ----------
+  AG.registerType({
+    id: "m5-grosse-zahlen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Große Zahlen lesen und schreiben",
+    instruction: {
+      1: "Schreibe die Zahl mit Worten oder mit Ziffern. Ergänze die Stellenwerttafel.",
+      2: "Schreibe die Zahl mit Worten oder mit Ziffern. Achte auf Millionen und Milliarden.",
+      3: "Schreibe die Zahl um. Achte auf die vielen Nullen und die Billionen.",
+    },
+    merke: [
+      "Eine Zahl wird in Dreiergruppen gelesen: Einer, Tausender, Millionen, Milliarden, Billionen. Million, Milliarde und Billion sind eigene Wörter und werden großgeschrieben. Beispiel: 3 405 020 = drei Millionen vierhundertfünftausendzwanzig.",
+      " Stellenwerttafel: M = Millionen, HT = Hunderttausender, ZT = Zehntausender, T = Tausender, H = Hunderter, Z = Zehner, E = Einer.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      const n = level === 1 ? randNum(rng, rng.int(4, 7))
+        : level === 2 ? randNum(rng, rng.int(7, 10), 0.1)
+        : randNum(rng, rng.int(9, 13), 0.5);
+      let mode = rng.pick(["wort", "ziffer", "tafel"]);
+      if (mode === "tafel" && n >= 1e10) mode = rng.pick(["wort", "ziffer"]);   // Tafel reicht bis Milliarden
+      const P = parts(n), w = words(n);
+
+      if (mode === "wort") {
+        const steps = P.map(p => rich(fmt(p.v), " = ", p.words));
+        if (P.length > 1) steps.push(rich(fmt(n), " = ", w));
+        return { q: rich("Schreibe die Zahl mit Worten: ", fmt(n)), a: rich(w), steps, inline: false, meta: { mode, n } };
+      }
+      if (mode === "ziffer") {
+        const steps = P.map(p => rich(p.words, " = ", fmt(p.v)));
+        if (P.length > 1) steps.push(rich(w, " = ", fmt(n)));
+        return { q: rich("Schreibe die Zahl mit Ziffern: „", w, "“"), a: rich(fmt(n)), steps, inline: false, meta: { mode, n, w } };
+      }
+
+      // Stellenwerttafel mit Lücken (nur Stellen bis zur höchsten Ziffer)
+      const top = t(n).length - 1;
+      const k = level === 1 ? 2 : level === 2 ? 3 : 4;
+      const blanks = rng.shuffle([...Array(top + 1).keys()]).slice(0, k);
+      const head = [[{ b: "Stelle" }], ...ORDER.map(p => [{ b: PL[p] }])];
+      const row = bl => [[{ b: "Ziffer" }], ...ORDER.map(p => (p > top ? [] : bl.includes(p) ? [{ blank: 2 }] : [t(digitAt(n, p))]))];
+      const table = { rows: [head, row(blanks)] };
+      const aTable = { rows: [head, row([])] };
+      const steps = [...blanks].sort((x, y) => y - x).map(p =>
+        rich(PL[p], ": ", t(digitAt(n, p)), " · ", fmt(10 ** p), " = ", fmt(digitAt(n, p) * 10 ** p)));
+      const nonZero = ORDER.filter(p => p <= top && digitAt(n, p) !== 0).map(p => fmt(digitAt(n, p) * 10 ** p));
+      steps.push(rich(nonZero.join(" + "), " = ", fmt(n)));
+      return {
+        q: rich("Ergänze die fehlenden Ziffern in der Stellenwerttafel. Welche Zahl ist das?"),
+        a: rich(fmt(n)), table, aTable, steps, inline: false, meta: { mode, n, blanks },
+      };
+    },
+    verify(task, level) {
+      const m = task.meta;
+      if (!m) return "meta fehlt";
+      if (m.mode === "wort") return parseWords(plain(task.a)) === m.n && plain(task.a) === words(m.n) ? true : "Wortform falsch";
+      if (m.mode === "ziffer") return parseWords(m.w) === m.n && plain(task.a) === fmt(m.n) ? true : "Ziffern falsch";
+      const digits = task.aTable.rows[1].slice(1).map(c => plain(c)).join("");
+      if (Number(digits) !== m.n) return "Stellenwerttafel falsch: " + digits;
+      const nb = task.table.rows[1].slice(1).filter(c => c.some(x => typeof x === "object" && "blank" in x)).length;
+      return nb === m.blanks.length ? true : "Anzahl der Lücken falsch";
+    },
+  });
+
+  // ---------- 2. Zahlen vergleichen und ordnen ----------
+  AG.registerType({
+    id: "m5-zahlen-ordnen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Zahlen vergleichen und ordnen",
+    instruction: {
+      1: "Setze das Zeichen < oder > ein. Ordne die Zahlen der Größe nach.",
+      2: "Setze das Zeichen < oder > ein. Ordne die Zahlen der Größe nach.",
+      3: "Vergleiche genau. Achte auf die Stellen, die sich unterscheiden.",
+    },
+    merke: [
+      "Zuerst die Anzahl der Stellen vergleichen, dann von links die erste Ziffer, die sich unterscheidet. Beispiel: 1 009 000 < 1 090 000, denn an der Stelle ZT ist 0 kleiner als 9.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      const vergleich = rng.chance(level === 3 ? 0.3 : 0.4);
+      const cnt = vergleich ? 2 : level === 1 ? 4 : level === 2 ? 5 : 6;
+      const set = makeSet(rng, level, cnt);
+      if (vergleich) {
+        const x = set[0], y = set[1];
+        const lo = Math.min(x, y), hi = Math.max(x, y);
+        const sign = x < y ? "<" : ">";
+        return {
+          q: rich("Setze das Zeichen < oder > ein: ", fmt(x), " ", { blank: 2 }, " ", fmt(y)),
+          a: rich(fmt(x), " ", sign, " ", fmt(y)),
+          steps: [rich(fmt(lo), " < ", fmt(hi), ", denn ", reasonText(lo, hi)), rich(fmt(x), " ", sign, " ", fmt(y))],
+          inline: false, meta: { sub: "vergleich", x, y, sign },
+        };
+      }
+      const asc = rng.chance(0.5);
+      const sorted = [...set].sort((a, b) => a - b);
+      const ordered = asc ? sorted : sorted.slice().reverse();
+      const sign = asc ? " < " : " > ";
+      const a = ordered.map(fmt).join(sign);
+      const steps = [];
+      for (let i = 0; i + 1 < sorted.length; i++) {
+        steps.push(rich(fmt(sorted[i]), " < ", fmt(sorted[i + 1]), ", denn ", reasonText(sorted[i], sorted[i + 1])));
+      }
+      steps.push(rich(a));
+      return {
+        q: rich("Ordne die Zahlen der Größe nach. Beginne mit der ", asc ? "kleinsten" : "größten", " Zahl: ", set.map(fmt).join(", ")),
+        a: rich(a), steps, inline: false, meta: { sub: "ordnen", set, asc, sorted },
+      };
+    },
+    verify(task) {
+      const m = task.meta;
+      if (!m) return "meta fehlt";
+      if (m.sub === "vergleich") return m.x !== m.y && (m.x < m.y ? "<" : ">") === m.sign && plain(task.a).includes(m.sign) ? true : "Zeichen falsch";
+      const want = (m.asc ? m.sorted : m.sorted.slice().reverse()).map(fmt).join(m.asc ? " < " : " > ");
+      return plain(task.a) === want && new Set(m.set).size === m.set.length ? true : "Reihenfolge falsch";
+    },
+  });
+
+  // ---------- 3. Zahlenfolgen fortsetzen ----------
+  AG.registerType({
+    id: "m5-zahlenfolgen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Zahlenfolgen fortsetzen",
+    instruction: {
+      1: "Setze die Zahlenfolge fort. Die Regel steht in der Lösung.",
+      2: "Setze die Zahlenfolge fort. Finde zuerst die Regel.",
+      3: "Setze die Zahlenfolge fort. Die Schritte wechseln ab.",
+    },
+    merke: [
+      "Bei einer Zahlenfolge bleibt die Regel gleich: immer + (oder − bzw. ·) dieselbe Zahl. Bei abwechselnden Schritten wechseln die Zeichen. Beispiel: 1 200, 1 400, 1 600 hat die Regel + 200.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      const sq = makeSeq(rng, level);
+      const { V, N, full } = sq;
+      const steps = [rich("Regel: ", ruleText(sq))];
+      for (let j = V; j < N; j++) {
+        const o = stepOp(sq, j);
+        steps.push(rich(fmt(full[j - 1]), " ", o.op, " ", fmt(o.v), " = ", fmt(full[j])));
+      }
+      return {
+        q: rich("Setze die Zahlenfolge fort: ", full.slice(0, V).map(fmt).join(", "), ", ", { blank: 3 }, ", ", { blank: 3 }, ", ", { blank: 3 }),
+        a: rich(full.slice(V).map(fmt).join(", ")),
+        steps, inline: false, meta: { sq },
+      };
+    },
+    verify(task) {
+      const sq = task.meta && task.meta.sq;
+      if (!sq) return "meta fehlt";
+      for (let j = 1; j < sq.N; j++) {
+        if (applyOp(sq.full[j - 1], stepOp(sq, j)) !== sq.full[j]) return "Regel verletzt bei Glied " + j;
+      }
+      return plain(task.a) === sq.full.slice(sq.V).map(fmt).join(", ") ? true : "Lösung falsch";
+    },
+  });
+
+  // ---------- 4. Runden ----------
+  AG.registerType({
+    id: "m5-runden",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Auf Zehner, Hunderter … runden",
+    instruction: {
+      1: "Runde die Zahl auf die angegebene Stelle.",
+      2: "Runde die Zahl auf die angegebene Stelle. Achte auf die entscheidende Ziffer.",
+      3: "Runde die Zahl. Achte auf die Überträge, z. B. bei 1 996.",
+    },
+    merke: [
+      "Die entscheidende Ziffer ist die Ziffer direkt rechts von der Rundungsstelle. Ist sie 5 oder mehr, wird aufgerundet, sonst abgerundet. Beispiel: 1 996 auf Hunderter sind 2 000, denn die 9 wird zu einem Übertrag.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      const P = level === 1 ? [1, 2, 3] : level === 2 ? [2, 3, 4, 5] : [1, 2, 3, 4, 5, 6];
+      const p = rng.pick(P);
+      let n;
+      for (let tries = 0; ; tries++) {
+        if (tries > 500) throw new Error("m5-runden: keine Zahl gefunden");
+        const k = level === 1 ? rng.int(3, 5) : level === 2 ? rng.int(4, 7) : rng.int(6, 9);
+        if (level === 3 && rng.chance(0.45)) {
+          // Übertrag-Falle: knapp unter einer runden Zahl (1 996 → 2 000)
+          const base = randNum(rng, k);
+          n = (Math.floor(base / 10 ** p) + 1) * 10 ** p - rng.int(1, 4);
+        } else {
+          n = randNum(rng, k, 0.1);
+        }
+        if (n % 10 ** p !== 0 && n >= 10 ** p) break;
+      }
+      const up = digitAt(n, p - 1) >= 5;
+      const r = roundTo(n, p);
+      const steps = [
+        rich("Entscheidende Ziffer: ", t(digitAt(n, p - 1)), up ? " → aufrunden" : " → abrunden"),
+        rich("Die Ziffern rechts von der Stelle „", RNAME[p], "“ werden 0", up ? "; die Zahl links davon wird um 1 größer." : "."),
+        rich(fmt(n), " ≈ ", fmt(r)),
+      ];
+      return {
+        q: rich("Runde ", fmt(n), " ", RPHR[p], "."),
+        a: rich(fmt(r)), steps, inline: false, meta: { n, p, r },
+      };
+    },
+    verify(task) {
+      const m = task.meta;
+      if (!m) return "meta fehlt";
+      const r = roundTo(m.n, m.p);
+      if (r !== m.r || r % 10 ** m.p !== 0 || Math.abs(r - m.n) >= 10 ** m.p) return "Rundung falsch";
+      return plain(task.a) === fmt(r) ? true : "Lösung falsch";
+    },
+  });
+
+  // ---------- 5. Zahlenstrahl ----------
+  AG.registerType({
+    id: "m5-zahlenstrahl",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Zahlen am Zahlenstrahl ablesen",
+    instruction: {
+      1: "Lies die Zahlen an den Strichen A, B und C ab.",
+      2: "Lies die Zahlen ab. Die Skala ist nur an den Enden beschriftet.",
+      3: "Lies die Zahlen ab und berechne die Zahl in der Mitte.",
+    },
+    merke: [
+      "Auf einem Zahlenstrahl hat jeder Schritt denselben Wert. Die Zahl an einem Strich ist: Anfangszahl + Anzahl der Schritte · Schrittwert. Beispiel: Anfang 1 000 000, Schritt 10 000, 3 Schritte: 1 000 000 + 3 · 10 000 = 1 030 000.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      const p = level === 1 ? rng.int(1, 4) : level === 2 ? rng.int(2, 5) : rng.int(1, 5);
+      const s = 10 ** p;
+      const S = rng.int(0, 99) * s;
+      // Niveau 1: jeder zweite Strich beschriftet, gesucht sind die Striche dazwischen
+      const N = level === 1 ? 8 : 10;
+      const labeled = level === 1 ? [0, 2, 4, 6, 8] : level === 2 ? [0, N] : [0, N / 2, N];
+      const cand = [...Array(N + 1).keys()].slice(1, N).filter(k => !labeled.includes(k));
+      const ks = rng.shuffle(cand).slice(0, 3).sort((a, b) => a - b);
+      const L = ["A", "B", "C"];
+      const points = ks.map((k, i) => ({ letter: L[i], k, v: S + k * s }));
+      const fig = numberLineFig(S, s, N, labeled, points);
+      const scale = "Der Zahlenstrahl beginnt bei " + fmt(S) + ". Die Skala geht in Schritten von " + fmt(s) + ". ";
+      const steps = points.map(pt => rich(pt.letter, ": ", fmt(S), " + ", t(pt.k), " · ", fmt(s), " = ", fmt(pt.v)));
+      const list = points.map(pt => pt.letter + " = " + fmt(pt.v)).join("; ");
+      if (level < 3) {
+        return {
+          q: rich(scale, "Welche Zahlen gehören zu den Strichen A, B und C?"),
+          a: rich(list), steps, fig, inline: false, meta: { S, s, N, points, mid: null },
+        };
+      }
+      const mid = (points[0].v + points[1].v) / 2;
+      steps.push(rich("Mitte von A und B: (", fmt(points[0].v), " + ", fmt(points[1].v), ") : 2 = ", fmt(mid)));
+      return {
+        q: rich(scale, "Welche Zahlen gehören zu den Strichen A, B und C? Welche Zahl liegt genau in der Mitte zwischen A und B?"),
+        a: rich(list, "; Mitte von A und B = ", fmt(mid)), steps, fig, inline: false, meta: { S, s, N, points, mid },
+      };
+    },
+    verify(task) {
+      const m = task.meta;
+      if (!m) return "meta fehlt";
+      for (const pt of m.points) {
+        if (pt.v !== m.S + pt.k * m.s) return "Wert falsch";
+        if (!plain(task.a).includes(fmt(pt.v))) return "Wert fehlt in der Lösung";
+      }
+      if (m.mid !== null && (!Number.isInteger(m.mid) || m.mid !== (m.points[0].v + m.points[1].v) / 2)) return "Mitte falsch";
+      return true;
+    },
+  });
+
+  // ---------- 6. Diagramm ablesen ----------
+  const SCEN = [
+    { ctx: "Die Grafik zeigt die Einwohnerzahlen einiger Städte (in Tausend).",
+      pool: ["Ahornstadt", "Birkenau", "Eichental", "Fichtenbach", "Lindenfeld", "Rosenau"], unit: "Einwohner" },
+    { ctx: "Die Grafik zeigt die Besucherzahlen einiger Freizeitparks im letzten Jahr (in Tausend).",
+      pool: ["Wasserwelt", "Tierpark", "Abenteuer", "Waldbad", "Sternwarte", "Bergbahn"], unit: "Besucher" },
+  ];
+  AG.registerType({
+    id: "m5-diagramm-ablesen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Säulen- und Balkendiagramm ablesen",
+    instruction: {
+      1: "Lies die Werte aus dem Diagramm ab. Die Werte sind in Tausend angegeben.",
+      2: "Lies die Werte ab und rechne damit. Die Werte sind in Tausend angegeben.",
+      3: "Lies die Werte ab und rechne damit. Gib die Anzahl ganz aus.",
+    },
+    merke: [
+      "Am Diagramm liest man die Werte an den Strichen der Skala ab. Ist die Skala in Tausend, schreibt man die Zahl ohne Tausend: 45 Tausend = 45 · 1 000 = 45 000. Beispiel: 30 Tausend und 15 Tausend ergeben 45 Tausend, also 45 000.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      const sc = rng.pick(SCEN);
+      const n = level === 1 ? 4 : 5;
+      const names = rng.shuffle(sc.pool).slice(0, n);
+      const vals = [];
+      while (vals.length < n) {
+        const v = 5 * rng.int(2, 18);
+        if (!vals.includes(v)) vals.push(v);
+      }
+      const slot = (140 - 22) / n;
+      const kind = names.every(nm => nm.length * 2 <= slot - 1) ? rng.pick(["col", "bar"]) : "bar";
+      const fig = kind === "col" ? columnFig(names, vals) : barFig(names, vals);
+      const ask = rng.pick(level === 1 ? ["read", "max", "min"] : level === 2 ? ["diff", "sum2"] : ["sum3", "maxmin"]);
+      const U = sc.unit;
+      const K = v => fmt(v * 1000);
+      const ctx = sc.ctx + " Dargestellt sind: " + names.join(", ") + ".";
+
+      if (ask === "read") {
+        const i = rng.int(0, n - 1);
+        return {
+          q: rich(ctx, " Wie viele ", U, " sind es bei „", names[i], "“?"), a: rich(K(vals[i]), " ", U),
+          steps: [rich("Am Diagramm ablesen: ", names[i], " = ", t(vals[i]), " Tausend"),
+            rich(t(vals[i]), " · 1 000 = ", K(vals[i]))],
+          fig, inline: false, meta: { vals, ask, expect: vals[i] * 1000 },
+        };
+      }
+      if (ask === "max" || ask === "min") {
+        const best = ask === "max" ? Math.max(...vals) : Math.min(...vals);
+        const i = vals.indexOf(best);
+        return {
+          q: rich(ctx, " Bei welchem Balken ist der Wert ", ask === "max" ? "am größten" : "am kleinsten", "? Gib den Namen und die Anzahl an."),
+          a: rich(names[i], ": ", K(best), " ", U),
+          steps: [rich(ask === "max" ? "Größter" : "Kleinster", " Balken: ", names[i], " mit ", t(best), " Tausend"),
+            rich(t(best), " · 1 000 = ", K(best), " ", U)],
+          fig, inline: false, meta: { vals, ask, expect: best * 1000 },
+        };
+      }
+      if (ask === "diff") {
+        let i = rng.int(0, n - 1);
+        let j = rng.intExcept(0, n - 1, [i]);
+        if (vals[i] < vals[j]) { const x = i; i = j; j = x; }
+        const d = vals[i] - vals[j];
+        return {
+          q: rich(ctx, " Wie viele ", U, " mehr hat „", names[i], "“ als „", names[j], "“?"), a: rich(K(d), " ", U),
+          steps: [rich("Unterschied: ", t(vals[i]), " ", MI, " ", t(vals[j]), " = ", t(d), " Tausend"),
+            rich(t(d), " · 1 000 = ", K(d))],
+          fig, inline: false, meta: { vals, ask, expect: d * 1000 },
+        };
+      }
+      if (ask === "sum2") {
+        const i = rng.int(0, n - 1), j = rng.intExcept(0, n - 1, [i]);
+        const sm = vals[i] + vals[j];
+        return {
+          q: rich(ctx, " Wie viele ", U, " sind es zusammen bei „", names[i], "“ und „", names[j], "“?"), a: rich(K(sm), " ", U),
+          steps: [rich("Zusammen: ", t(vals[i]), " + ", t(vals[j]), " = ", t(sm), " Tausend"),
+            rich(t(sm), " · 1 000 = ", K(sm))],
+          fig, inline: false, meta: { vals, ask, expect: sm * 1000 },
+        };
+      }
+      if (ask === "sum3") {
+        const [i, j, m] = rng.shuffle([...Array(n).keys()]).slice(0, 3);
+        const sm = vals[i] + vals[j] + vals[m];
+        return {
+          q: rich(ctx, " Wie viele ", U, " sind es zusammen bei „", names[i], "“, „", names[j], "“ und „", names[m], "“?"), a: rich(K(sm), " ", U),
+          steps: [rich(t(vals[i]), " + ", t(vals[j]), " + ", t(vals[m]), " = ", t(sm), " Tausend"),
+            rich(t(sm), " · 1 000 = ", K(sm))],
+          fig, inline: false, meta: { vals, ask, expect: sm * 1000 },
+        };
+      }
+      // maxmin: Unterschied zwischen größtem und kleinstem Wert
+      const mx = Math.max(...vals), mn = Math.min(...vals), d = mx - mn;
+      return {
+        q: rich(ctx, " Wie groß ist der Unterschied zwischen dem größten und dem kleinsten Wert? Gib die Anzahl an."),
+        a: rich(K(d), " ", U),
+        steps: [rich("Größter Wert: ", t(mx), " Tausend, kleinster Wert: ", t(mn), " Tausend"),
+          rich("Unterschied: ", t(mx), " ", MI, " ", t(mn), " = ", t(d), " Tausend"),
+          rich(t(d), " · 1 000 = ", K(d))],
+        fig, inline: false, meta: { vals, ask, expect: d * 1000 },
+      };
+    },
+    verify(task) {
+      const m = task.meta;
+      if (!m) return "meta fehlt";
+      if (m.vals.some(v => v % 5 || v <= 0)) return "Werte nicht in Schritten von 5";
+      if (new Set(m.vals).size !== m.vals.length) return "Werte nicht verschieden";
+      return plain(task.a).includes(fmt(m.expect)) ? true : "Ergebnis fehlt in der Lösung";
+    },
+  });
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
 
 </script>

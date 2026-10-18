@@ -650,7 +650,7 @@
         q: rich(sv.intro, " Das Diagramm zeigt das Ergebnis. (a) Wie viele Kinder mehr nennen „", names[ia], "“ als „", names[ib], "“? (b) Wie viele Kinder wurden insgesamt befragt? (c) Wie viele Kinder nennen „", names[ic], "“ oder „", names[id], "“ zusammen?"),
         fig: columnFig(names, vals),
         inline: false,
-        a: rich("(a) ", S(d), " Kinder mehr; (b) ", S(total), " Kinder; (c) ", S(vals[ic] + vals[id]), " Kinder."),
+        a: rich("(a) ", S(d), d === 1 ? " Kind mehr; (b) " : " Kinder mehr; (b) ", S(total), " Kinder; (c) ", S(vals[ic] + vals[id]), " Kinder."),
         steps: [
           rich("(a) ", S(vals[ia]), " ", MINUS, " ", S(vals[ib]), " = ", S(d)),
           rich("(b) ", vals.map(S).join(" + "), " = ", S(total)),
