@@ -39,6 +39,11 @@ Zahlenfolgen, runden, Zahlenstrahl, Diagramme), Kopfrechnen und Überschlag, sch
 Fachbegriffe, Sachaufgaben, ganze Zahlen (Thermometer, Zahlengerade), Koordinaten, Winkelarten, Umfang, Flächeninhalt
 von Rechtecken, Längen-, Flächen- und Größeneinheiten, Brüche bei Größen, Kommaschreibweise, Strichliste,
 Platzhalteraufgaben und Formeln.
+**Klasse 6 vollständig** (32 Aufgabentypen, für alle gleich): Bruchteile an Figuren und am Zahlenstrahl,
+erweitern/kürzen, vergleichen, gemischte Zahlen, Bruchteile von Größen, Bruch–Dezimal–Prozent, Rechnen mit Brüchen
+(Bruch : natürliche Zahl) und Dezimalzahlen, Rechengesetze, Sachaufgaben, rationale Zahlen mit Pfeildarstellung,
+Viereckarten, Koordinaten in vier Quadranten, Körper, Würfelnetze, Oberfläche und Volumen von Quadern, Würfelbauten,
+Volumeneinheiten, Mittelwert, Diagramme mit Zu- und Abnahme.
 **Klasse 7 vollständig** (M-Zug 34 Aufgabentypen, Regelklasse 31) – alle Lernbereiche des LehrplanPLUS:
 Prozentrechnung (auch Diagramme), rationale Zahlen (auch Sachaufgaben, Überschlag), Winkel und Dreiecke,
 Maßstab, Flächeninhalt (Parallelogramm, Dreieck, Trapez, Drachen, Raute, zusammengesetzte Figuren),

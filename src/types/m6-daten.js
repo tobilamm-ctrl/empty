@@ -248,7 +248,7 @@
           steps: [
             rich(names[i], ": ", K(vals[i])),
             rich(names[j], ": ", K(vals[j])),
-            rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d)),
+            rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d), ", also ", ch(d)),
           ],
           fig, inline: false, meta: { ...meta, i, j },
         };
@@ -267,7 +267,7 @@
         const label = sigma > 0 ? "Größte Zunahme" : "Größte Abnahme";
         const steps = diffs.map((d, k) => rich(names[k], " bis ", names[k + 1], ": ", fmtInt(vals[k + 1]), " ", MI, " ", fmtInt(vals[k]), " = ", fmtInt(d)));
         steps.push(rich(label, ": ", names[im], " bis ", names[im + 1], " (", K(Math.abs(ext)), ")"));
-        steps.push(rich("Veränderung von ", names[i], " bis ", names[j], ": ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(tot)));
+        steps.push(rich("Veränderung von ", names[i], " bis ", names[j], ": ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(tot), ", also ", ch(tot)));
         return {
           q: rich(ctx, " a) Zwischen welchen zwei aufeinanderfolgenden Zeitpunkten ist der Wert am stärksten ", word, "? Wie groß ist die Änderung? b) Wie hat sich der Wert von „", names[i], "“ bis „", names[j], "“ insgesamt verändert? Gib an, ob es eine Zunahme oder eine Abnahme ist, und wie groß sie ist."),
           a: rich("a) von „", names[im], "“ bis „", names[im + 1], "“ um ", K(Math.abs(ext)), "; b) ", ch(tot)),
@@ -286,7 +286,7 @@
         q: rich(ctx, " a) Wie hat sich der Wert von „", names[i], "“ bis „", names[j], "“ verändert? Gib an, ob es eine Zunahme oder eine Abnahme ist, und wie groß sie ist. b) Wie groß ist der Durchschnitt (Mittelwert) aller Werte im Diagramm?"),
         a: rich(ch(d), "; b) Durchschnitt ", K(avg)),
         steps: [
-          rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d)),
+          rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d), ", also ", ch(d)),
           rich("Summe aller Werte: ", vals.map(v => fmtInt(v)).join(" + "), " = ", fmtInt(sum)),
           rich("Durchschnitt: ", fmtInt(sum), " : ", String(n), " = ", fmtInt(avg), " ", U),
         ],

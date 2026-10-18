@@ -5671,6 +5671,3632 @@ table.vt td.red { color: var(--red); font-weight: 700; }
 
 </script>
 <script>
+// ---- src/types/m6-bruchrechnen.js ----
+// Klasse 6 LB 1.2: Rechnen mit Bruchzahlen. Fünf Aufgabentypen:
+// Addieren und Subtrahieren, Multiplizieren, Bruch durch natürliche Zahl, Rechengesetze, Sachaufgaben.
+(function (AG) {
+  const { Frac, num, rich, MINUS } = AG;
+
+  const LB = { klasse: "6", zug: "RM", lb: "1.2", lbTitle: "Rechnen mit Bruchzahlen", topic: "brueche" };
+  const OPTXT = { "+": " + ", "-": " " + MINUS + " ", "*": " · ", "/": " : " };
+
+  // ---------- Hilfen ----------
+  // echter Bruch p/d mit d aus dens (1 <= p < d)
+  function properFrac(rng, dens) {
+    const d = rng.pick(dens);
+    return new Frac(rng.int(1, d - 1), d);
+  }
+  // gemischte Zahl w p/d mit w aus 1..wMax und d aus dens
+  function mixedFrac(rng, dens, wMax) {
+    const d = rng.pick(dens);
+    return new Frac(rng.int(1, wMax) * d + rng.int(1, d - 1), d);
+  }
+  // unechter Bruch, der als gemischte Zahl geschrieben wird
+  const isMixed = v => !v.isInt() && v.n > v.d;
+  // doppelte aufeinanderfolgende Zeilen entfernen
+  const uniq = steps => steps.filter((s, i) => i === 0 || AG.plain(s) !== AG.plain(steps[i - 1]));
+  // Dezimalzahl, wenn endlich mit höchstens 2 Stellen, sonst Bruch
+  const decOrFrac = v => (v.isTerminating() && v.decimals() <= 2 ? num(v, { as: "dec" }) : num(v));
+  // Geldbetrag bzw. Dezimalzahl mit genau 2 Stellen
+  const dec2 = v => num(v, { as: "dec", digits: 2 });
+  // bis zu 300 Versuche, dann Fehler (keine Endlosschleife)
+  function gen(cand, rng, level) {
+    for (let i = 0; i < 300; i++) {
+      const c = cand(rng, level);
+      if (c) return c;
+    }
+    throw new Error("Keine passende Aufgabe gefunden (Niveau " + level + ")");
+  }
+
+  // ---------- Typ 1: Addieren und Subtrahieren ----------
+  function addsubSteps(terms, res, D) {
+    const steps = [];
+    const signed = (j, t) => (j === 0 || t.op === "+" ? 1 : -1);
+    if (terms.some(t => isMixed(t.v))) {
+      steps.push(rich("= ", terms.map((t, j) => [j ? OPTXT[t.op] : "", num(t.v, { as: "improper" })])));
+    }
+    if (terms.some(t => t.v.d !== D)) {
+      steps.push(rich("= ", terms.map((t, j) => [j ? OPTXT[t.op] : "", { f: [t.v.n * (D / t.v.d), D] }])));
+    }
+    const sum = terms.reduce((acc, t, j) => acc + signed(j, t) * t.v.n * (D / t.v.d), 0);
+    steps.push(rich("= ", { f: [sum, D] }));
+    if (res.d !== D) steps.push(rich("= ", num(res, { as: "improper" })));
+    if (isMixed(res)) steps.push(rich("= ", num(res)));
+    return uniq(steps);
+  }
+
+  function addsubCand(rng, level) {
+    const DENS = [2, 3, 4, 5, 6, 8, 10, 12];
+    let terms;
+    if (level === 1) {
+      // gleichnamig, zwei oder drei Brüche
+      const d = rng.pick([2, 3, 4, 5, 6, 8, 10]);
+      terms = [{ op: null, v: new Frac(rng.int(1, d - 1), d) }];
+      const k = rng.chance(0.3) ? 3 : 2;
+      for (let j = 1; j < k; j++) terms.push({ op: rng.pick(["+", "-"]), v: new Frac(rng.int(1, d - 1), d) });
+    } else if (level === 2) {
+      // ungleichnamig, zwei Brüche; der Hauptnenner ist größer als beide Nenner
+      const d1 = rng.pick(DENS), d2 = rng.pick(DENS);
+      if (d1 === d2 || AG.lcm(d1, d2) <= Math.max(d1, d2) || AG.lcm(d1, d2) > 60) return null;
+      terms = [
+        { op: null, v: new Frac(rng.int(1, d1 - 1), d1) },
+        { op: rng.pick(["+", "-"]), v: new Frac(rng.int(1, d2 - 1), d2) },
+      ];
+    } else {
+      // gemischte Zahlen und Brüche, zwei oder drei Glieder
+      const dens = [2, 3, 4, 5, 6, 8, 12];
+      const k = rng.chance(0.5) ? 3 : 2;
+      terms = [];
+      for (let j = 0; j < k; j++) {
+        const v = rng.chance(0.5) ? mixedFrac(rng, dens, 3) : properFrac(rng, dens);
+        terms.push({ op: j === 0 ? null : rng.pick(["+", "-"]), v });
+      }
+      if (!terms.some(t => isMixed(t.v))) return null;
+    }
+    // Ergebnis darf nie negativ werden, auch nicht zwischendurch
+    let cur = terms[0].v;
+    for (let j = 1; j < terms.length; j++) {
+      cur = terms[j].op === "+" ? cur.add(terms[j].v) : cur.sub(terms[j].v);
+      if (cur.sign() <= 0) return null;
+    }
+    const denoms = terms.map(t => t.v.d);
+    const D = denoms.reduce((acc, d) => AG.lcm(acc, d), 1);
+    if (D > 60) return null;
+    if (level > 1 && new Set(denoms).size < 2) return null; // ungleichnamig
+    if (new Set(terms.map(t => t.v.toString())).size < terms.length) return null; // keine gleichen Zahlen
+    const res = cur;
+    return {
+      q: rich(terms.map((t, j) => [j ? OPTXT[t.op] : "", num(t.v)])),
+      a: num(res),
+      steps: addsubSteps(terms, res, D),
+    };
+  }
+
+  // ---------- Typ 2: Multiplizieren ----------
+  function mulSteps(x, y) {
+    const steps = [];
+    const P = x.mul(y);
+    if (isMixed(x) || isMixed(y)) steps.push(rich("= ", num(x, { as: "improper" }), " · ", num(y, { as: "improper" })));
+    // Kürzen über Kreuz: Zähler von x mit Nenner von y und Zähler von y mit Nenner von x
+    const g1 = AG.gcd(x.n, y.d), g2 = AG.gcd(y.n, x.d);
+    if (g1 > 1 || g2 > 1) {
+      const X = new Frac(x.n / g1, x.d / g2), Y = new Frac(y.n / g2, y.d / g1);
+      const fs = [X, Y].filter(f => !(f.n === 1 && f.d === 1));
+      steps.push(rich("= ", fs.map((f, j) => [j ? " · " : "", num(f, { as: "improper" })])));
+    }
+    if (isMixed(P)) steps.push(rich("= ", num(P, { as: "improper" })));
+    steps.push(rich("= ", num(P)));
+    return uniq(steps);
+  }
+
+  function mulCand(rng, level) {
+    const D1 = [2, 3, 4, 5, 6, 8, 10];
+    const D2 = [2, 3, 4, 5, 6, 8, 10, 12];
+    const kind = rng.pick(["ff", "nf"]); // ff: Bruch · Bruch, nf: natürliche Zahl · Bruch
+    let x, y;
+    if (level === 1) {
+      if (kind === "ff") {
+        x = properFrac(rng, D1);
+        y = properFrac(rng, D1);
+      } else {
+        const f = properFrac(rng, D1), n = Frac.of(rng.int(2, 12));
+        [x, y] = rng.chance(0.5) ? [n, f] : [f, n];
+      }
+    } else if (level === 2) {
+      if (kind === "ff") {
+        x = properFrac(rng, D2);
+        y = properFrac(rng, D2);
+        if (!(AG.gcd(x.n, y.d) > 1 || AG.gcd(y.n, x.d) > 1)) return null; // es muss gekürzt werden
+      } else {
+        const f = properFrac(rng, D2), n = Frac.of(rng.int(2, 12));
+        if (AG.gcd(n.n, f.d) <= 1) return null; // die Zahl und der Nenner haben einen gemeinsamen Teiler
+        [x, y] = rng.chance(0.5) ? [n, f] : [f, n];
+      }
+    } else {
+      // gemischte Zahlen werden zuerst umgewandelt
+      const dens = [2, 3, 4, 5, 6, 8];
+      if (kind === "ff") {
+        x = mixedFrac(rng, dens, 3);
+        y = rng.chance(0.5) ? mixedFrac(rng, dens, 3) : properFrac(rng, [2, 3, 4, 5, 6, 8, 10]);
+      } else {
+        const f = mixedFrac(rng, dens, 3), n = Frac.of(rng.int(2, 9));
+        [x, y] = rng.chance(0.5) ? [n, f] : [f, n];
+      }
+    }
+    const P = x.mul(y);
+    if (P.isInt() || x.eq(y) || P.valueOf() > 40) return null;
+    return { q: rich(num(x), " · ", num(y)), a: num(P), steps: mulSteps(x, y) };
+  }
+
+  // ---------- Typ 3: Bruch durch natürliche Zahl ----------
+  function divSteps(x, n, prefix) {
+    const steps = [];
+    if (prefix) steps.push(rich("= ", num(x, { as: "improper" }), " : ", num(n)));
+    const res = x.div(n);
+    // Zähler teilbar: Zähler teilen; sonst Nenner mal Zahl
+    steps.push(rich("= ", x.n % n === 0 ? { f: [x.n / n, x.d] } : { f: [x.n, x.d * n] }));
+    steps.push(rich("= ", num(res, { as: "improper" })));
+    if (isMixed(res)) steps.push(rich("= ", num(res)));
+    return uniq(steps);
+  }
+
+  function divCand(rng, level) {
+    let x, n;
+    if (level === 1) {
+      const b = rng.int(2, 10);
+      x = new Frac(rng.int(1, b - 1), b);
+      n = rng.int(2, 6);
+    } else if (level === 2) {
+      // unechter Bruch als Eingabe
+      const b = rng.int(2, 8);
+      x = new Frac(rng.int(b + 1, 3 * b - 1), b);
+      n = rng.int(2, 6);
+      if (x.isInt()) return null;
+    } else {
+      x = mixedFrac(rng, [2, 3, 4, 5, 6, 8], 4);
+      n = rng.int(2, 9);
+    }
+    const res = x.div(n);
+    if (res.isInt()) return null;
+    return {
+      q: rich(level === 3 ? num(x) : num(x, { as: "improper" }), " : ", num(n)),
+      a: num(res),
+      steps: divSteps(x, n, level === 3),
+    };
+  }
+
+  // ---------- Typ 4: Rechengesetze und Punkt vor Strich ----------
+  // Dezimalzahl mit natürlicher Zahl, deren Produkt ganzzahlig ist (höchstens 2 Nachkommastellen)
+  const DEC_PAIRS = [
+    [new Frac(25, 100), 4], [new Frac(5, 10), 2], [new Frac(2, 10), 5], [new Frac(25, 100), 8],
+    [new Frac(5, 10), 6], [new Frac(5, 10), 10], [new Frac(2, 10), 10], [new Frac(75, 100), 4],
+    [new Frac(25, 100), 12], [new Frac(5, 10), 14], [new Frac(25, 100), 20], [new Frac(15, 10), 2],
+  ];
+
+  // a · m · c mit a · c ganzzahlig: zuerst die passenden Zahlen
+  function kDec(rng, level) {
+    const [a, c] = rng.pick(DEC_PAIRS);
+    const N = a.mul(c);
+    let m;
+    if (level === 3) {
+      if (N.n === 1) return null;
+      const dens = [3, 4, 5, 6, 8].filter(q => N.n % q !== 0);
+      if (!dens.length) return null;
+      m = properFrac(rng, dens);
+    } else {
+      m = Frac.of(rng.int(2, 9));
+    }
+    const res = N.mul(m);
+    return {
+      q: rich(num(a, { as: "dec" }), " · ", num(m), " · ", num(c)),
+      a: num(res),
+      steps: uniq([
+        rich("= (", num(a, { as: "dec" }), " · ", num(c), ") · ", num(m)),
+        rich("= ", num(N), " · ", num(m)),
+        rich("= ", num(res)),
+      ]),
+    };
+  }
+
+  // x · m · (1/x) mit Kehrwerten: (x · Kehrwert) zuerst
+  function kRecip(rng) {
+    const q = rng.int(3, 9), p = rng.int(1, q - 1);
+    if (AG.gcd(p, q) !== 1) return null;
+    const x = new Frac(p, q), y = new Frac(q, p);
+    const m = rng.int(2, 25);
+    const res = Frac.of(m);
+    return {
+      q: rich(num(x), " · ", num(m), " · ", num(y, { as: "improper" })),
+      a: num(res),
+      steps: uniq([
+        rich("= (", num(x), " · ", num(y, { as: "improper" }), ") · ", num(m)),
+        rich("= 1 · ", num(m)),
+        rich("= ", num(res)),
+      ]),
+    };
+  }
+
+  // x + y + z mit x und z gleichnamig: (x + z) + y
+  function kSum(rng, level) {
+    const D = rng.pick([4, 5, 6, 8, 10, 12]);
+    const E = rng.pick([2, 3, 4, 5, 6, 8, 10].filter(e => e !== D));
+    const x = level === 3 ? new Frac(rng.int(1, 3) * D + rng.int(1, D - 1), D) : new Frac(rng.int(1, D - 1), D);
+    const z = level === 3 ? new Frac(rng.int(1, 3) * D + rng.int(1, D - 1), D) : new Frac(rng.int(1, D - 1), D);
+    const y = level === 3 ? mixedFrac(rng, [E], 2) : properFrac(rng, [E]);
+    if (x.eq(z)) return null;
+    const s = x.add(z), res = s.add(y);
+    return {
+      q: rich(num(x), " + ", num(y), " + ", num(z)),
+      a: num(res),
+      steps: uniq([
+        rich("= (", num(x), " + ", num(z), ") + ", num(y)),
+        rich("= ", num(s), " + ", num(y)),
+        rich("= ", num(res)),
+      ]),
+    };
+  }
+
+  // n · (x ± y) = n · x ± n · y, n ist Vielfaches beider Nenner
+  function kDist(rng, level) {
+    const dens = level === 1 ? [2, 3, 4, 6] : [2, 3, 4, 5, 6, 8, 10, 12];
+    const d1 = rng.pick(dens), d2 = rng.pick(dens);
+    const x = level === 3 ? mixedFrac(rng, [d1], 3) : properFrac(rng, [d1]);
+    const y = properFrac(rng, [d2]);
+    const op = level === 3 && rng.chance(0.5) ? "-" : "+";
+    if (x.eq(y)) return null;
+    const diff = op === "+" ? x.add(y) : x.sub(y);
+    if (diff.sign() <= 0) return null;
+    const L = AG.lcm(d1, d2);
+    const nMax = { 1: 24, 2: 36, 3: 60 }[level];
+    if (Math.floor(nMax / L) < 1) return null;
+    const n = L * rng.int(1, Math.floor(nMax / L));
+    if (n < 2) return null;
+    const t1 = x.mul(n), t2 = y.mul(n);
+    const res = op === "+" ? t1.add(t2) : t1.sub(t2);
+    return {
+      q: rich(num(n), " · (", num(x), OPTXT[op], num(y), ")"),
+      a: num(res),
+      steps: uniq([
+        rich("= ", num(n), " · ", num(x), OPTXT[op], num(n), " · ", num(y)),
+        rich("= ", num(t1), OPTXT[op], num(t2)),
+        rich("= ", num(res)),
+      ]),
+    };
+  }
+
+  // a ± y · n (Punkt vor Strich), y · n ist ganzzahlig
+  function kPvs(rng, level) {
+    const d = rng.pick([2, 3, 4, 5, 6, 8, 10]);
+    const y = properFrac(rng, [d]);
+    const n = d * rng.int(1, Math.floor(30 / d));
+    const t = y.mul(n);
+    const dA = rng.pick([2, 3, 4, 5, 6, 8]);
+    const a = level === 3 ? mixedFrac(rng, [dA], 3) : properFrac(rng, [dA]);
+    const op = level === 3 && rng.chance(0.5) ? "-" : "+";
+    if (op === "-" && a.sub(t).sign() <= 0) return null;
+    const res = op === "+" ? a.add(t) : a.sub(t);
+    return {
+      q: rich(num(a), OPTXT[op], num(y), " · ", num(n)),
+      a: num(res),
+      steps: uniq([
+        rich("= ", num(a), OPTXT[op], num(t)),
+        rich("= ", num(res)),
+      ]),
+    };
+  }
+
+  function rechCand(rng, level) {
+    const kinds = {
+      1: ["dec", "dist"],
+      2: ["sum", "recip", "dec", "dist", "pvs"],
+      3: ["sum", "dist", "pvs", "dec"],
+    };
+    switch (rng.pick(kinds[level])) {
+      case "dec": return kDec(rng, level);
+      case "recip": return kRecip(rng);
+      case "sum": return kSum(rng, level);
+      case "dist": return kDist(rng, level);
+      default: return kPvs(rng, level);
+    }
+  }
+
+  // ---------- Typ 5: Sachaufgaben ----------
+  const NAMES = ["Lena", "Tim", "Mia", "Ben", "Anna", "Lukas", "Sophie", "Jonas", "Lea", "Paul"];
+  function twoNames(rng) {
+    const a = rng.pick(NAMES);
+    let b = rng.pick(NAMES);
+    if (b === a) b = NAMES[(NAMES.indexOf(a) + 1) % NAMES.length];
+    return [a, b];
+  }
+
+  // Rezept: Milch für n Personen, gesucht für m Personen
+  function rezept(rng, level) {
+    const a = level === 1 ? properFrac(rng, [2, 3, 4, 5]) : mixedFrac(rng, [2, 3, 4], 2);
+    const n = rng.pick([2, 3, 4, 5]);
+    const m = rng.pick([2, 3, 4, 5, 6, 8].filter(v => v !== n));
+    const per = a.div(n), res = per.mul(m);
+    if (res.isInt() || per.cmp(new Frac(1, 2)) > 0 || per.cmp(new Frac(1, 10)) < 0) return null;   // 1/10 bis 1/2 l pro Person
+    return {
+      q: rich("Für ", String(n), " Personen braucht man ", num(a), " l Milch. Wie viel Milch braucht man für ", String(m), " Personen?"),
+      a: rich(num(res), " l"),
+      steps: uniq([
+        rich("Für 1 Person: ", num(a), " l : ", String(n), " = ", num(per), " l"),
+        rich("Für ", String(m), " Personen: ", num(per), " l · ", String(m), " = ", num(res), " l"),
+        rich("Antwort: Man braucht ", num(res), " l Milch."),
+      ]),
+    };
+  }
+
+  // Pizza: zwei Personen essen Anteile, gesucht ist der Rest
+  function pizza(rng, level) {
+    let a, b;
+    if (level === 1) {
+      const D = rng.pick([4, 5, 6, 8, 10, 12]);
+      a = new Frac(rng.int(1, D - 2), D);
+      b = new Frac(rng.int(1, D - 1 - a.n), D);
+    } else {
+      a = properFrac(rng, [3, 4, 5, 6, 8]);
+      b = properFrac(rng, [2, 4, 5, 8, 10]);
+      if (a.d === b.d) return null;
+    }
+    const s = a.add(b);
+    if (s.sign() <= 0 || s.cmp(1) >= 0) return null;
+    const res = Frac.of(1).sub(s);
+    const D = AG.lcm(a.d, b.d);
+    const ex = v => (v.d === D ? num(v) : { f: [v.n * (D / v.d), D] });
+    const [n1, n2] = twoNames(rng);
+    return {
+      q: rich("Eine Pizza ist in gleich große Stücke geteilt. ", n1, " isst ", num(a), " der Pizza, ", n2, " isst ", num(b), " der Pizza. Wie viel der Pizza bleibt übrig?"),
+      a: rich(num(res), " der Pizza"),
+      steps: uniq([
+        rich("Gegessen: ", ex(a), " + ", ex(b), " = ", num(s)),
+        rich("Übrig: 1 − ", num(s), " = ", num(res)),
+        rich("Antwort: ", num(res), " der Pizza bleibt übrig."),
+      ]),
+    };
+  }
+
+  // Einkauf: m kg Äpfel zum Kilopreis, dazu ein Artikel mit Dezimalpreis (Stufe 3: Brötchen und Rückgeld)
+  function einkauf(rng, level) {
+    const q = rng.pick([2, 4, 5]);
+    const p = rng.int(1, 3 * q);
+    if (p % q === 0) return null;
+    const m = new Frac(p, q);                                   // kg
+    const c0 = q * rng.int(Math.ceil(160 / q), Math.floor(490 / q)); // Kilopreis in Cent, durch q teilbar
+    const price = new Frac(c0, 100);
+    const cost = price.mul(m);
+    const [n1] = [rng.pick(NAMES)];
+    const lines = [
+      rich("1 kg kostet ", dec2(price), " €, ", num(new Frac(1, m.d)), " kg kostet ", dec2(price), " € : ", String(m.d), " = ", dec2(price.div(m.d)), " €"),
+      rich("Äpfel: ", num(m), " kg kosten ", String(m.n), " · ", dec2(price.div(m.d)), " € = ", dec2(cost), " €"),
+    ];
+    if (level === 2) {
+      const other = new Frac(rng.int(99, 499), 100);
+      const total = cost.add(other);
+      return {
+        q: rich("Im Laden kostet 1 kg Äpfel ", dec2(price), " €. ", n1, " kauft ", num(m), " kg Äpfel und eine Packung Müsli für ", dec2(other), " €. Wie viel bezahlt ", n1, " insgesamt?"),
+        a: rich(dec2(total), " €"),
+        steps: uniq([
+          ...lines,
+          rich("Insgesamt: ", dec2(cost), " € + ", dec2(other), " € = ", dec2(total), " €"),
+          rich("Antwort: ", n1, " bezahlt insgesamt ", dec2(total), " €."),
+        ]),
+      };
+    }
+    // Stufe 3: Brötchen und Rückgeld
+    const k = rng.int(2, 4), bc = rng.int(20, 60);
+    const bp = new Frac(bc, 100);
+    const brot = bp.mul(k);
+    const total = cost.add(brot);
+    if (total.cmp(20) >= 0) return null;
+    const change = Frac.of(20).sub(total);
+    return {
+      q: rich("Im Laden kostet 1 kg Äpfel ", dec2(price), " €. ", n1, " kauft ", num(m), " kg Äpfel und ", String(k), " Brötchen zu je ", dec2(bp), " €. ", n1, " bezahlt mit einem Schein von 20 €. Wie viel Geld bekommt ", n1, " zurück?"),
+      a: rich(dec2(change), " €"),
+      steps: uniq([
+        ...lines,
+        rich("Brötchen: ", String(k), " · ", dec2(bp), " € = ", dec2(brot), " €"),
+        rich("Insgesamt: ", dec2(cost), " € + ", dec2(brot), " € = ", dec2(total), " €"),
+        rich("Rückgeld: 20 € − ", dec2(total), " € = ", dec2(change), " €"),
+        rich("Antwort: ", n1, " bekommt ", dec2(change), " € zurück."),
+      ]),
+    };
+  }
+
+  // Schulweg: hin und zurück, an k Tagen; Stufe 3 mit zusätzlichem Ausflug
+  function schulweg(rng, level) {
+    const n1 = rng.pick(NAMES);
+    if (level === 1) {
+      const s = properFrac(rng, [2, 3, 4, 5, 8]);
+      const s2 = s.mul(2), k = rng.int(2, 5);
+      const total = s2.mul(k);
+      return {
+        q: rich(n1, " geht jeden Tag den Schulweg von ", num(s), " km zur Schule und wieder zurück. Wie viele km sind es an ", String(k), " Schultagen insgesamt?"),
+        a: rich(num(total), " km"),
+        steps: uniq([
+          rich("Hin und zurück: 2 · ", num(s), " km = ", num(s2), " km"),
+          rich("An ", String(k), " Schultagen: ", num(s2), " km · ", String(k), " = ", num(total), " km"),
+          rich("Antwort: ", n1, " läuft insgesamt ", num(total), " km."),
+        ]),
+      };
+    }
+    const s = rng.pick([new Frac(1, 2), new Frac(3, 4), new Frac(2, 5), new Frac(3, 8), new Frac(5, 8), new Frac(1, 4), new Frac(3, 5)]);
+    const s2 = s.mul(2), k = rng.int(2, 5);
+    const sk = s2.mul(k);
+    const e = new Frac(rng.int(5, 40), 10);
+    if (!sk.isTerminating() || sk.decimals() > 2) return null;
+    const total = sk.add(e);
+    return {
+      q: rich(n1, " geht an ", String(k), " Schultagen jeden Tag den Schulweg von ", num(s), " km zur Schule und wieder zurück. Am Wochenende macht ", n1, " einen Ausflug von ", decOrFrac(e), " km. Wie viele km legt ", n1, " insgesamt zurück?"),
+      a: rich(decOrFrac(total), " km"),
+      steps: uniq([
+        rich("Hin und zurück: 2 · ", num(s), " km = ", decOrFrac(s2), " km"),
+        rich("An ", String(k), " Schultagen: ", decOrFrac(s2), " km · ", String(k), " = ", decOrFrac(sk), " km"),
+        rich("Insgesamt: ", decOrFrac(sk), " km + ", decOrFrac(e), " km = ", decOrFrac(total), " km"),
+        rich("Antwort: ", n1, " legt insgesamt ", decOrFrac(total), " km zurück."),
+      ]),
+    };
+  }
+
+  function sachCand(rng, level) {
+    const kinds = {
+      1: ["rezept", "pizza", "schulweg"],
+      2: ["rezept", "pizza", "einkauf"],
+      3: ["einkauf", "schulweg"],
+    };
+    switch (rng.pick(kinds[level])) {
+      case "rezept": return rezept(rng, level);
+      case "pizza": return pizza(rng, level);
+      case "einkauf": return einkauf(rng, level);
+      default: return schulweg(rng, level);
+    }
+  }
+
+  // ---------- Registrierung ----------
+  AG.registerType({
+    id: "m6-brueche-addsub",
+    ...LB,
+    title: "Brüche addieren und subtrahieren",
+    instruction: {
+      1: "Berechne. Kürze das Ergebnis vollständig.",
+      2: "Berechne. Achte auf den Hauptnenner.",
+      3: "Berechne. Gib das Ergebnis als gemischte Zahl an.",
+    },
+    merke: [
+      { b: "Gleichnamig: " },
+      "Die Zähler addieren oder subtrahieren, der Nenner bleibt. Ungleichnamig: zuerst auf den Hauptnenner erweitern. Beispiel: 3/4 + 1/6 = 9/12 + 2/12 = 11/12.",
+    ],
+    cols: 3,
+    generate: (rng, level) => gen(addsubCand, rng, level),
+  });
+
+  AG.registerType({
+    id: "m6-brueche-mul",
+    ...LB,
+    title: "Brüche multiplizieren",
+    instruction: {
+      1: "Berechne. Kürze das Ergebnis vollständig.",
+      2: "Berechne. Kürze vorher, wenn möglich.",
+      3: "Berechne. Wandle gemischte Zahlen zuerst in unechte Brüche um.",
+    },
+    merke: [
+      { b: "Multiplizieren: " },
+      "Zähler mal Zähler, Nenner mal Nenner. Gemeinsame Teiler kann man vorher kürzen. Beispiel: 2/3 · 3/4 = 1/2 (die 3 wird gekürzt).",
+    ],
+    cols: 3,
+    generate: (rng, level) => gen(mulCand, rng, level),
+  });
+
+  AG.registerType({
+    id: "m6-bruch-durch-zahl",
+    ...LB,
+    title: "Bruch durch natürliche Zahl teilen",
+    instruction: {
+      1: "Berechne. Kürze das Ergebnis vollständig.",
+      2: "Berechne. Kürze das Ergebnis vollständig.",
+      3: "Berechne. Gib das Ergebnis als gemischte Zahl an.",
+    },
+    merke: [
+      { b: "Bruch durch Zahl: " },
+      "Ist der Zähler durch die Zahl teilbar, teilt man den Zähler. Sonst multipliziert man den Nenner mit der Zahl. Beispiel: 3/4 : 3 = 1/4 und 2/5 : 4 = 2/20 = 1/10.",
+    ],
+    cols: 3,
+    generate: (rng, level) => gen(divCand, rng, level),
+  });
+
+  AG.registerType({
+    id: "m6-rechengesetze-brueche",
+    ...LB,
+    title: "Rechengesetze mit Brüchen und Dezimalzahlen",
+    instruction: {
+      1: "Berechne vorteilhaft. Nutze die Rechengesetze.",
+      2: "Berechne vorteilhaft. Fasse passende Zahlen zusammen.",
+      3: "Berechne. Achte auf die Reihenfolge der Rechenarten.",
+    },
+    merke: [
+      { b: "Vorteilhaft rechnen: " },
+      "Passende Zahlen zuerst zusammenfassen. Beispiel: 0,25 · 7 · 4 = (0,25 · 4) · 7 = 1 · 7 = 7. Mit Klammer: 4 · (1/2 + 1/4) = 2 + 1 = 3. Punkt vor Strich: 1/2 + 3/4 · 4 = 1/2 + 3 = 3 1/2.",
+    ],
+    cols: 2,
+    generate: (rng, level) => gen(rechCand, rng, level),
+  });
+
+  AG.registerType({
+    id: "m6-brueche-sachaufgaben",
+    ...LB,
+    title: "Sachaufgaben mit Brüchen und Dezimalzahlen",
+    instruction: {
+      1: "Rechne. Schreibe am Ende einen Antwortsatz.",
+      2: "Rechne Schritt für Schritt. Schreibe am Ende einen Antwortsatz.",
+      3: "Rechne Schritt für Schritt. Schreibe am Ende einen Antwortsatz mit Einheit.",
+    },
+    merke: [
+      { b: "Sachaufgaben: " },
+      "Erst klären, was gefragt ist, dann Schritt für Schritt rechnen und mit einem Antwortsatz mit Einheit schließen. Beispiel: 3/4 l Milch für 4 Personen, für 1 Person: 3/4 : 4 = 3/16 l.",
+    ],
+    cols: 1,
+    generate: (rng, level) => gen(sachCand, rng, level),
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-brueche.js ----
+// M6 LB 1.1 (Erweiterung auf Bruchzahlen): Bruchteile an Figuren und am Zahlenstrahl, Erweitern und
+// Kürzen, Vergleichen und Ordnen, gemischte Zahlen und unechte Brüche, Bruchteile von Größen.
+// Mit Skizzen (AG.sketch) für die Bruchteile an Figuren und am Zahlenstrahl.
+(function (AG) {
+  const { Frac, num, rich, fmtInt, plain, gcd, lcm } = AG;
+  const KL = "6", ZUG = "RM", LB = "1.1", LBT = "Erweiterung auf Bruchzahlen", TOPIC = "brueche";
+  const SH = "#9aa3b8";   // gefärbte Teile (Farbe aus der Diagrammpalette)
+
+  // ---------- Hilfen ----------
+  const R = (...parts) => rich(...parts.map(p => (typeof p === "number" ? String(p) : p)));
+  const fmt = n => fmtInt(n);
+  const bruch = (z, n) => ({ f: [z, n] });                 // Bruch-Segment (waagerechter Bruchstrich)
+  const coprime = (a, b) => gcd(a, b) === 1;
+  const r2 = v => Math.round(v * 100) / 100;
+  const lcmOf = list => list.reduce((acc, d) => lcm(acc, d), 1);
+  // Rich-Teile mit einem Trennzeichen verbinden
+  const joinR = (items, sep) => rich(...items.flatMap((x, i) => (i ? [sep, x] : [x])));
+  // Aufzählung: „a, b und c“
+  const listR = items => rich(...items.flatMap((x, i) => (i === 0 ? [x] : [i === items.length - 1 ? " und " : ", ", x])));
+  // Zähler z mit 1 ≤ z < d, teilerfremd zu d (der Bruch ist dann schon gekürzt)
+  const zsFor = d => [...Array(d).keys()].slice(1).filter(z => coprime(z, d));
+  // Bruch aus Zähler und Nenner, ungekürzt angezeigt
+  const raw = (z, d) => ({ seg: [bruch(z, d)], val: new Frac(z, d), n: z, d, kind: "echt" });
+  // Zufälliger Wert für Niveau 3: echter Bruch, gemischte Zahl oder unechter Bruch
+  const randVal3 = rng => { const d = rng.int(2, 8); return new Frac(rng.int(0, 3) * d + rng.pick(zsFor(d)), d); };
+  function val3(v, rng) {
+    if (v.n < v.d) return { seg: [bruch(v.n, v.d)], val: v, n: v.n, d: v.d, kind: "echt" };
+    const mixed = rng.chance(0.5);
+    return { seg: mixed ? num(v) : num(v, { as: "improper" }), val: v, n: v.n, d: v.d, kind: mixed ? "gemischt" : "unecht" };
+  }
+
+  // ---------- Skizzen ----------
+  // Rechteck mit n gleich breiten Streifen, die ersten k gefärbt
+  function stripFig(n, k) {
+    const s = AG.sketch(70, 30);
+    const x0 = 5, y0 = 4, w = 60, h = 22, cw = w / n;
+    for (let i = 0; i < n; i++) s.rect(x0 + i * cw, y0, cw, h, { fill: i < k ? SH : "none" });
+    return s.done();
+  }
+  // Gitter r × c, die ersten k Felder (zeilenweise) gefärbt
+  function gridFig(r, c, k) {
+    const s = AG.sketch(70, 40);
+    const x0 = 5, y0 = 4, w = 60, h = 32, cw = w / c, ch = h / r;
+    for (let i = 0; i < r * c; i++) {
+      s.rect(x0 + (i % c) * cw, y0 + Math.floor(i / c) * ch, cw, ch, { fill: i < k ? SH : "none" });
+    }
+    return s.done();
+  }
+  // Kreis in n gleich große Sektoren, die ersten k ab oben im Uhrzeigersinn gefärbt
+  function circleFig(n, k) {
+    const s = AG.sketch(70, 40);
+    const cx = 35, cy = 20, R0 = 17, th = 2 * Math.PI / n;
+    const P = a => [cx + R0 * Math.cos(a), cy + R0 * Math.sin(a)];
+    for (let i = 0; i < k; i++) {
+      const a1 = -Math.PI / 2 + i * th, p1 = P(a1), p2 = P(a1 + th);
+      const d = `M${cx},${cy} L${r2(p1[0])},${r2(p1[1])} A${R0},${R0} 0 ${th > Math.PI ? 1 : 0} 1 ${r2(p2[0])},${r2(p2[1])} Z`;
+      s.path(d, { fill: SH });
+    }
+    s.circle([cx, cy], R0);
+    for (let i = 0; i < n; i++) s.line([cx, cy], P(-Math.PI / 2 + i * th));
+    return s.done();
+  }
+  // Zahlenstrahl von 0 bis maxV, jede Einheit in n Teile; Punkt A bei k Teilen. Nur die ganzen Zahlen sind beschriftet.
+  function lineFig(n, maxV, k) {
+    const s = AG.sketch(70, 30);
+    const x0 = 8, x1 = 62, y = 16, N = n * maxV;
+    const X = j => x0 + ((x1 - x0) * j) / N;
+    s.line([x0 - 3, y], [x1 + 3, y]);
+    // ganze Zahlen mit längerem Strich und beschriftet
+    for (let j = 0; j <= N; j++) { const g = j % n === 0; s.line([X(j), y - (g ? 3 : 1.8)], [X(j), y + (g ? 3 : 1.8)], g ? { width: 0.5 } : {}); }
+    for (let v = 1; v < maxV; v++) s.label([X(v * n), y + 6.5], String(v));
+    s.label([X(0), y + 6.5], "0");
+    s.label([X(N), y + 6.5], String(maxV));
+    s.line([X(k), y - 5.5], [X(k), y - 1.6]);
+    s.circle([X(k), y], 0.9, { fill: AG.SKETCH_COLORS.INK });
+    s.label([X(k), y - 8], "A", { bold: true });
+    return s.done();
+  }
+
+  // ==================== Aufgabentypen ====================
+
+  // ---------- 1. Bruchteil an Figur oder Zahlenstrahl ----------
+  AG.registerType({
+    id: "m6-bruchteil-figur",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Bruchteile an Figuren und am Zahlenstrahl",
+    instruction: {
+      1: "Gib den Bruchteil an, der gefärbt ist bzw. zu Punkt A gehört.",
+      2: "Gib den gefärbten Bruchteil als gekürzten Bruch an.",
+      3: "Gib den Bruch an. Der Zahlenstrahl geht bis 2, der Bruch kann also größer als 1 sein.",
+    },
+    merke: [
+      "Der Nenner zählt alle gleich großen Teile, der Zähler die gefärbten Teile. Beispiel: 3 von 4 Teilen sind gefärbt, also ",
+      bruch(3, 4), ". Auf dem Zahlenstrahl ist jeder Teil ein Bruchteil der Einheit.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      const phrase = rng.pick(["Welcher Bruchteil ist gefärbt?", "Welcher Bruchteil der Figur ist gefärbt?", "Wie viel ist gefärbt? Schreibe als Bruch."]);
+      let kind;
+      if (level === 1) kind = rng.pick(["strip", "circle", "line"]);
+      else if (level === 2) kind = "grid";
+      else kind = rng.pick(["grid", "line2"]);
+
+      if (kind === "grid") {
+        let r, c, n, k;
+        for (let i = 0; ; i++) {
+          if (i > 300) throw new Error("m6-bruchteil-figur: kein Gitter gefunden");
+          r = rng.pick([2, 3, 4, 6]); c = rng.pick([2, 3, 4, 6]);
+          n = r * c; k = rng.int(1, n - 1);
+          if (gcd(k, n) > 1) break;          // Niveau 2/3: der Bruch muss gekürzt werden
+        }
+        const g = gcd(k, n), x = new Frac(k, n);
+        const ctx = rng.pick([`Eine Schokoladentafel ist in ${n} gleich große Stücke geteilt.`, `Ein Gitter ist in ${n} gleich große Felder geteilt.`, `Ein Blatt Papier ist in ${n} gleich große Kästchen geteilt.`]);
+        const ask = rng.pick(["Welcher Bruchteil ist gefärbt?", "Welcher Bruchteil der Figur ist gefärbt?", "Wie viel ist gefärbt?"]);
+        return {
+          q: R(ctx, " ", ask, " Gib den Bruch gekürzt an."),
+          a: R(num(x)),
+          steps: [R(k, " von ", n, " Feldern sind gefärbt: ", bruch(k, n)), R("Zähler und Nenner durch ", g, " teilen: ", bruch(k / g, n / g))],
+          fig: gridFig(r, c, k), inline: false, meta: { x },
+        };
+      }
+
+      if (kind === "line" || kind === "line2") {
+        const maxV = kind === "line" ? 1 : 2;
+        let n, k;
+        for (let i = 0; ; i++) {
+          if (i > 300) throw new Error("m6-bruchteil-figur: keine Zahlenstrahl-Lage gefunden");
+          n = maxV === 1 ? rng.pick([2, 3, 4, 5, 6, 8, 10]) : rng.pick([2, 3, 4, 6]);
+          k = maxV === 1 ? rng.int(1, n - 1) : rng.int(n + 1, 2 * n - 1);   // bei 0–2 liegt A über 1
+          if (maxV === 2 || coprime(k, n)) break;
+        }
+        const x = new Frac(k, n), g = gcd(k, n);
+        const steps = [R("Ein Teil ist ", bruch(1, n), "."), R("Punkt A liegt nach ", k, " Teilen: ", k, " · ", bruch(1, n), " = ", bruch(k, n))];
+        if (g > 1) steps.push(R("= ", bruch(k / g, n / g)));
+        if (x.n > x.d) steps.push(R("= ", num(x)));
+        const q = R(`Der Zahlenstrahl geht von 0 bis ${maxV}. Jede Einheit ist in ${n} gleich lange Teile geteilt. Welcher Bruch gehört zum Punkt A?`,
+          maxV === 2 ? " Gib ihn als gemischte Zahl und als unechten Bruch an." : "");
+        const a = x.n > x.d ? R(num(x), " = ", num(x, { as: "improper" })) : R(num(x));
+        return { q, a, steps, fig: lineFig(n, maxV, k), inline: false, meta: { x } };
+      }
+
+      // Streifen oder Kreis (Niveau 1), Bruch schon gekürzt
+      const isCircle = kind === "circle";
+      let n, k;
+      for (let i = 0; ; i++) {
+        if (i > 300) throw new Error("m6-bruchteil-figur: keine Lage gefunden");
+        n = isCircle ? rng.pick([3, 4, 5, 6, 8]) : rng.pick([2, 3, 4, 5, 6, 8, 10]);
+        k = rng.int(1, n - 1);
+        if (coprime(k, n)) break;
+      }
+      const x = new Frac(k, n);
+      const ctx = isCircle ? `Ein Kreis ist in ${n} gleich große Stücke geteilt.` : `Ein Rechteck ist in ${n} gleich große Teile geteilt.`;
+      return {
+        q: R(ctx, " ", phrase),
+        a: R(num(x)),
+        steps: [R(k, " von ", n, " Teilen sind gefärbt."), R("Gefärbt ist ", bruch(k, n), ".")],
+        fig: isCircle ? circleFig(n, k) : stripFig(n, k), inline: false, meta: { x },
+      };
+    },
+    verify(task) {
+      const m = task.meta;
+      if (!m || !m.x) return "meta fehlt";
+      return plain(task.a).startsWith(plain(num(m.x))) ? true : "Lösung falsch";
+    },
+  });
+
+  // ---------- 2. Erweitern und Kürzen ----------
+  AG.registerType({
+    id: "m6-erweitern-kuerzen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Brüche erweitern und kürzen",
+    instruction: {
+      1: "Erweitere bzw. kürze den Bruch mit der angegebenen Zahl.",
+      2: "Kürze vollständig bzw. erweitere auf den angegebenen Nenner.",
+      3: "Mache die Brüche gleichnamig. Bestimme zuerst den Hauptnenner.",
+    },
+    merke: [
+      "Erweitern und Kürzen ändert den Wert eines Bruchs nicht. Zähler und Nenner werden mit derselben Zahl malgenommen bzw. durch dieselbe Zahl geteilt. Beispiel: ",
+      bruch(3, 4), " = ", bruch(6, 8), " (mit 2 erweitert), ", bruch(6, 8), " = ", bruch(3, 4), " (durch 2 gekürzt).",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) {
+        let a, b, m;
+        for (let i = 0; ; i++) {
+          if (i > 200) throw new Error("m6-erweitern-kuerzen: keine Zahlen gefunden");
+          b = rng.int(2, 10); a = rng.int(1, b - 1); m = rng.pick([2, 3, 4, 5]);
+          if (coprime(a, b) && b * m <= 50) break;
+        }
+        if (rng.chance(0.5)) {
+          return {
+            q: R("Erweitere ", bruch(a, b), " mit ", m, "."),
+            a: R(bruch(a * m, b * m)),
+            steps: [R("Zähler: ", a, " · ", m, " = ", a * m), R("Nenner: ", b, " · ", m, " = ", b * m), R("= ", bruch(a * m, b * m))],
+            inline: false,
+          };
+        }
+        return {
+          q: R("Kürze ", bruch(a * m, b * m), " mit ", m, "."),
+          a: R(bruch(a, b)),
+          steps: [R("Zähler: ", a * m, " : ", m, " = ", a), R("Nenner: ", b * m, " : ", m, " = ", b), R("= ", bruch(a, b))],
+          inline: false,
+        };
+      }
+
+      if (level === 2 && rng.chance(0.5)) {          // vollständig kürzen
+        let a, b, g;
+        for (let i = 0; ; i++) {
+          if (i > 200) throw new Error("m6-erweitern-kuerzen: keine Zahlen gefunden");
+          b = rng.int(3, 12); a = rng.int(1, b - 1); g = rng.pick([2, 3, 4, 5, 6]);
+          if (coprime(a, b) && b * g <= 60) break;
+        }
+        return {
+          q: R("Kürze ", bruch(a * g, b * g), " vollständig."),
+          a: R(bruch(a, b)),
+          steps: [R("Größter gemeinsamer Teiler von ", a * g, " und ", b * g, ": ", g),
+            R("Zähler: ", a * g, " : ", g, " = ", a, ",   Nenner: ", b * g, " : ", g, " = ", b),
+            R("= ", bruch(a, b))],
+          inline: false,
+        };
+      }
+
+      if (level === 2) {                             // auf gegebenen Nenner erweitern
+        let a, b, m;
+        for (let i = 0; ; i++) {
+          if (i > 200) throw new Error("m6-erweitern-kuerzen: keine Zahlen gefunden");
+          b = rng.pick([2, 3, 4, 5, 6, 8]); a = rng.int(1, b - 1); m = rng.pick([2, 3, 4, 5, 6]);
+          if (coprime(a, b) && b * m <= 48) break;
+        }
+        const N = b * m;
+        return {
+          q: R("Erweitere auf den Nenner ", N, ".  ", bruch(a, b), " = ", { blank: 2 }, " / ", N),
+          a: R(bruch(a, b), " = ", bruch(a * m, N)),
+          steps: [R("Nenner: ", b, " · ", m, " = ", N, ", also mit ", m, " erweitern."),
+            R("Zähler: ", a, " · ", m, " = ", a * m),
+            R(bruch(a, b), " = ", bruch(a * m, N))],
+          inline: false,
+        };
+      }
+
+      // Niveau 3: Hauptnenner bei zwei oder drei Brüchen
+      const DEN = [2, 3, 4, 5, 6, 8, 9, 10, 12];
+      let ds, L;
+      for (let i = 0; ; i++) {
+        if (i > 300) throw new Error("m6-erweitern-kuerzen: kein Hauptnenner gefunden");
+        ds = rng.shuffle(DEN).slice(0, rng.pick([2, 3]));
+        L = lcmOf(ds);
+        if (L <= 60 && ds.every(d => d < L)) break;
+      }
+      const zs = ds.map(d => rng.pick(zsFor(d)));
+      const nums = zs.map((z, i) => bruch(z, ds[i]));
+      const ext = zs.map((z, i) => bruch(z * (L / ds[i]), L));
+      return {
+        q: R("Mache die Brüche gleichnamig: ", listR(nums), "."),
+        a: R("Hauptnenner ", L, ": ", listR(ext)),
+        steps: [
+          R("Hauptnenner: kleinstes gemeinsames Vielfaches von ", listR(ds.map(String)), " ist ", L, "."),
+          ...ds.map((d, i) => R(bruch(zs[i], d), " = ", bruch(zs[i] * (L / d), L), "   (mit ", L / d, " erweitert)")),
+          R("Gleichnamig: ", listR(ext)),
+        ],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 3. Brüche vergleichen und ordnen ----------
+  function vergleich(rng, level) {
+    let X, Y;
+    for (let i = 0; ; i++) {
+      if (i > 300) throw new Error("m6-brueche-vergleichen: kein Paar gefunden");
+      if (level === 1) {
+        if (rng.chance(0.5)) {                       // gleicher Nenner
+          const d = rng.int(3, 12), zs = zsFor(d);
+          if (zs.length < 2) continue;
+          [X, Y] = rng.shuffle(zs).slice(0, 2).map(z => raw(z, d));
+        } else {                                     // gleicher Zähler
+          const z = rng.int(2, 5), ds = [];
+          for (let d = z + 1; d <= 12; d++) if (coprime(z, d)) ds.push(d);
+          if (ds.length < 2) continue;
+          [X, Y] = rng.shuffle(ds).slice(0, 2).map(d => raw(z, d));
+        }
+      } else if (level === 2) {
+        if (rng.chance(0.2)) {                       // gleicher Wert, andere Schreibweise
+          const d = rng.int(2, 6), z = rng.pick(zsFor(d));
+          X = raw(z, d); Y = raw(z * 2, d * 2);
+        } else {
+          const d1 = rng.int(2, 12), d2 = rng.int(2, 12);
+          if (d1 === d2) continue;
+          X = raw(rng.pick(zsFor(d1)), d1); Y = raw(rng.pick(zsFor(d2)), d2);
+        }
+      } else {
+        X = val3(randVal3(rng), rng);
+        Y = val3(rng.chance(0.2) ? X.val : randVal3(rng), rng);
+      }
+      const c = X.val.cmp(Y.val);
+      if (level === 1 && c === 0) continue;
+      break;
+    }
+    const c = X.val.cmp(Y.val);
+    const sign = c < 0 ? "<" : c > 0 ? ">" : "=";
+    const steps = [];
+    if (level === 1) {
+      steps.push(X.d === Y.d
+        ? R("Gleicher Nenner ", X.d, ": Vergleiche die Zähler ", X.n, " und ", Y.n, ".")
+        : R("Gleicher Zähler ", X.n, ": Je größer der Nenner, desto kleiner der Bruch."));
+    } else {
+      for (const it of [X, Y]) if (it.kind === "gemischt") steps.push(R(it.seg, " = ", num(it.val, { as: "improper" })));
+      const L = lcm(X.d, Y.d);
+      steps.push(R("Gleichnamig machen mit dem Nenner ", L, ": ", bruch(X.n * (L / X.d), L), " und ", bruch(Y.n * (L / Y.d), L)));
+    }
+    steps.push(R(X.seg, " ", sign, " ", Y.seg));
+    return {
+      q: R("Setze das Zeichen <, > oder = ein: ", X.seg, "  ", { blank: 2 }, "  ", Y.seg),
+      a: R(X.seg, " ", sign, " ", Y.seg),
+      steps, inline: false,
+    };
+  }
+
+  function ordnen(rng, level) {
+    const cnt = rng.pick([3, 4]);
+    let items;
+    for (let i = 0; ; i++) {
+      if (i > 300) throw new Error("m6-brueche-vergleichen: keine Zahlenmenge gefunden");
+      if (level === 1) {                              // gleicher Nenner
+        const d = rng.int(4, 12), zs = zsFor(d);
+        if (zs.length < cnt) continue;
+        items = rng.shuffle(zs).slice(0, cnt).map(z => raw(z, d));
+      } else if (level === 2) {                       // ungleichnamige echte Brüche
+        items = Array.from({ length: cnt }, () => { const d = rng.int(2, 12); return raw(rng.pick(zsFor(d)), d); });
+        if (new Set(items.map(it => it.d)).size < 2) continue;
+        if (lcmOf(items.map(it => it.d)) > 60) continue;
+      } else {                                        // echte, gemischte und unechte Brüche gemischt
+        items = Array.from({ length: cnt }, () => val3(randVal3(rng), rng));
+      }
+      if (new Set(items.map(it => it.val.toString())).size !== cnt) continue;
+      break;
+    }
+    const asc = rng.chance(0.5);
+    const sorted = [...items].sort((p, q) => p.val.cmp(q.val));
+    const ordered = asc ? sorted : sorted.slice().reverse();
+    const sign = asc ? " < " : " > ";
+    const steps = [];
+    if (level === 1) {
+      steps.push(R("Gleicher Nenner ", items[0].d, ": Vergleiche die Zähler ", sorted.map(it => String(it.n)).join(" < "), "."));
+    } else {
+      for (const it of items) if (it.kind === "gemischt") steps.push(R(it.seg, " = ", num(it.val, { as: "improper" })));
+      const L = lcmOf(items.map(it => it.d));
+      steps.push(R("Gleichnamig machen mit dem Nenner ", L, ": ", joinR(items.map(it => bruch(it.n * (L / it.d), L)), ", ")));
+    }
+    steps.push(R(joinR(ordered.map(it => it.seg), sign)));
+    return {
+      q: R("Ordne die Zahlen der Größe nach. Beginne mit der ", asc ? "kleinsten" : "größten", " Zahl: ", joinR(items.map(it => it.seg), ", ")),
+      a: R(joinR(ordered.map(it => it.seg), sign)),
+      steps, inline: false,
+    };
+  }
+
+  AG.registerType({
+    id: "m6-brueche-vergleichen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Brüche vergleichen und ordnen",
+    instruction: {
+      1: "Setze das Zeichen <, > oder = ein bzw. ordne die Brüche. Die Brüche haben den gleichen Nenner.",
+      2: "Setze das Zeichen <, > oder = ein bzw. ordne die Brüche. Mache die Brüche zuerst gleichnamig.",
+      3: "Vergleiche und ordne. Wandle gemischte Zahlen und unechte Brüche zuerst um.",
+    },
+    merke: [
+      "Haben Brüche den gleichen Nenner, ist der Bruch mit dem größeren Zähler größer. Sonst macht man die Brüche gleichnamig. Beispiel: 2/3 und 3/4 haben den Hauptnenner 12, also ",
+      bruch(8, 12), " < ", bruch(9, 12), ", somit ", bruch(2, 3), " < ", bruch(3, 4), ".",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      return rng.chance(0.4) ? vergleich(rng, level) : ordnen(rng, level);
+    },
+  });
+
+  // ---------- 4. Gemischte Zahl und unechter Bruch ----------
+  AG.registerType({
+    id: "m6-gemischte-zahl",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Gemischte Zahlen und unechte Brüche",
+    instruction: {
+      1: "Wandle die Zahl um. Ganze Zahl und Bruch zusammen ergeben den unechten Bruch.",
+      2: "Wandle die Zahl um: gemischte Zahl in unechten Bruch oder umgekehrt.",
+      3: "Wandle die Zahl um. Achte auf den Rest bei der Division.",
+    },
+    merke: [
+      "Aus einer gemischten Zahl wird ein unechter Bruch: Ganze mal Nenner plus Zähler ergibt den neuen Zähler, der Nenner bleibt. Beispiel: 2 · 3 + 1 = 7, also ",
+      { f: [1, 3], w: 2 }, " = ", bruch(7, 3), ". Umgekehrt: Der Zähler wird durch den Nenner geteilt, der Rest ist der neue Zähler.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      const cfg = { 1: [1, 3, 2, 6], 2: [2, 5, 2, 8], 3: [3, 12, 3, 12] }[level];
+      const w = rng.int(cfg[0], cfg[1]), d = rng.int(cfg[2], cfg[3]), r = rng.pick(zsFor(d));
+      const x = new Frac(w * d + r, d);
+      if (rng.chance(0.5)) {                          // gemischte Zahl → unechter Bruch
+        return {
+          q: R("Schreibe als unechten Bruch: ", num(x)),
+          a: R(num(x, { as: "improper" })),
+          steps: [R(w, " · ", d, " + ", r, " = ", w * d + r), R("Nenner bleibt ", d, ":  ", num(x, { as: "improper" }))],
+          inline: false,
+        };
+      }
+      return {                                        // unechter Bruch → gemischte Zahl
+        q: R("Schreibe als gemischte Zahl: ", num(x, { as: "improper" })),
+        a: R(num(x)),
+        steps: [R(w * d + r, " : ", d, " = ", w, " Rest ", r), R("Ganze Zahl ", w, ", Rest ", r, ", Nenner ", d, ":  ", num(x))],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 5. Bruchteil von Größen ----------
+  const UNITS = [
+    { big: "kg", small: "g", f: 1000, bigs: [1, 2, 3, 4, 5, 6] },
+    { big: "km", small: "m", f: 1000, bigs: [1, 2, 3, 4, 5, 6] },
+    { big: "m", small: "cm", f: 100, bigs: [1, 2, 3, 4, 5, 6, 8, 10] },
+    { big: "h", small: "min", f: 60, bigs: [1, 2, 3, 4, 5, 6] },
+    { big: "€", small: "€", f: 1, bigs: [10, 12, 15, 20, 24, 30, 36, 40, 50, 60] },
+  ];
+  // Niveau 3: Ganzes = q · k, ein Teil = k; k in glatten Schritten
+  const BACK = [
+    { unit: "€", kMin: 2, kMax: 20, kStep: 1 },
+    { unit: "min", kMin: 5, kMax: 60, kStep: 5 },
+    { unit: "cm", kMin: 10, kMax: 80, kStep: 10 },
+    { unit: "g", kMin: 50, kMax: 200, kStep: 50 },
+  ];
+  AG.registerType({
+    id: "m6-bruchteil-groessen",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Bruchteile von Größen",
+    instruction: {
+      1: "Berechne den Bruchteil. Rechne zuerst in die kleinere Einheit um.",
+      2: "Berechne den Bruchteil. Achte auf die Einheiten.",
+      3: "Berechne das Ganze. Überlege zuerst, wie groß ein Teil ist.",
+    },
+    merke: [
+      "Einen Bruchteil berechnet man in drei Schritten: in die kleinere Einheit umrechnen, durch den Nenner teilen, mit dem Zähler malnehmen. Beispiel: ",
+      bruch(3, 4), " von 2 kg: 2 kg = 2000 g, 2000 g : 4 = 500 g, 3 · 500 g = 1500 g.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level < 3) {
+        const qs = level === 1 ? [2, 4, 5] : [3, 4, 5, 6, 8, 10];
+        let u, q, p, G;
+        for (let i = 0; ; i++) {
+          if (i > 300) throw new Error("m6-bruchteil-groessen: keine Werte gefunden");
+          u = rng.pick(UNITS); q = rng.pick(qs); p = rng.int(1, q - 1); G = rng.pick(u.bigs);
+          if (coprime(p, q) && (G * u.f) % q === 0) break;
+        }
+        const Gs = G * u.f, X = Gs / q, Rs = p * X;
+        const steps = [];
+        if (u.f !== 1) steps.push(R(G, " ", u.big, " = ", fmt(Gs), " ", u.small));
+        steps.push(R("Ein Teil (1/", q, ") von ", fmt(Gs), " ", u.small, ": ", fmt(Gs), " : ", q, " = ", fmt(X), " ", u.small));
+        steps.push(R(bruch(p, q), " von ", fmt(Gs), " ", u.small, ": ", p, " · ", fmt(X), " = ", fmt(Rs), " ", u.small));
+        return {
+          q: R("Wie viel sind ", bruch(p, q), " von ", G, " ", u.big, "?", u.f !== 1 ? " Gib das Ergebnis in " + u.small + " an." : ""),
+          a: R(fmt(Rs), " ", u.small),
+          steps, inline: false,
+        };
+      }
+      // Niveau 3: vom Teil auf das Ganze schließen
+      const bk = rng.pick(BACK);
+      let q, p, k;
+      for (let i = 0; ; i++) {
+        if (i > 300) throw new Error("m6-bruchteil-groessen: keine Werte gefunden");
+        q = rng.pick([2, 3, 4, 5, 6, 8, 10]); p = rng.int(1, q - 1);
+        k = bk.kStep * rng.int(bk.kMin / bk.kStep, bk.kMax / bk.kStep);
+        if (coprime(p, q)) break;
+      }
+      const P = p * k, G = q * k;
+      return {
+        q: R(bruch(p, q), " sind ", fmt(P), " ", bk.unit, ". ", rng.pick(["Wie viel ist das Ganze?", "Wie viel beträgt das Ganze?"])),
+        a: R(fmt(G), " ", bk.unit),
+        steps: [
+          R(fmt(P), " ", bk.unit, " : ", p, " = ", fmt(k), " ", bk.unit, "   (ein Teil ist 1/", q, " des Ganzen)"),
+          R("Das Ganze hat ", q, " Teile: ", q, " · ", fmt(k), " = ", fmt(G), " ", bk.unit),
+        ],
+        inline: false,
+      };
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-daten.js ----
+// M6 LB 6 (Daten): Mittelwert berechnen (Summe : Anzahl, Umkehrung) und Säulen-/Liniendiagramme
+// lesen (Veränderungen, größte Zunahme, Durchschnitt aus dem Diagramm). Mit Skizzen (AG.sketch).
+(function (AG) {
+  const { Frac, rich, plain, fmtDec, fmtInt, MINUS: MI } = AG;
+  const KL = "6", ZUG = "RM", LB = "6", LBT = "Daten", TOPIC = "daten";
+  const BLUE = "#1f3f9e";
+
+  // ==================== 1. Mittelwert ====================
+  // Werte in Einheiten: ganze Zahlen (dig 0) oder Hundertstel (dig 2, z. B. 3,45 m).
+  // Der Mittelwert ist ebenfalls in Einheiten ganzzahlig, daher ist er stets genau (keine Rundung).
+  const MW_INT = [
+    { intro: n => `Die Anzahl der Tore der Mannschaft in ${n} Spielen:`, unit: " Tore", dig: 0, range: [0, 8], mean: [2, 6] },
+    { intro: n => `Die Lesezeit von Lena an ${n} Tagen in Minuten:`, unit: " Minuten", dig: 0, range: [10, 45], mean: [15, 35] },
+    { intro: n => `Die Taschengelder von ${n} Kindern in Euro:`, unit: " €", dig: 0, range: [5, 30], mean: [8, 25] },
+    { intro: n => `Die Anzahl der Seiten von ${n} Büchern:`, unit: " Seiten", dig: 0, range: [80, 300], mean: [120, 250] },
+  ];
+  const MW_DEC = [
+    { intro: n => `Die Sprungweiten von ${n} Kindern im Weitsprung in m:`, unit: " m", dig: 2, range: [320, 420], mean: [340, 400] },
+    { intro: n => `Die Laufzeiten von ${n} Kindern über 50 m in Sekunden:`, unit: " s", dig: 2, range: [700, 950], mean: [750, 900] },
+    { intro: n => `Die Weiten von ${n} Kindern im Kugelstoßen in m:`, unit: " m", dig: 2, range: [450, 900], mean: [550, 800] },
+  ];
+
+  // Wert in Einheiten als Text (dig 2: Hundertstel mit Komma)
+  const fv = (u, dig) => (dig ? fmtDec(new Frac(u, 100), 2) : fmtInt(u));
+
+  // Datenreihe: n−1 Werte zufällig, der letzte so gewählt, dass der Mittelwert genau M ist
+  function mwData(rng, c, n) {
+    const [lo, hi] = c.range, [mlo, mhi] = c.mean;
+    for (let tries = 0; tries < 500; tries++) {
+      const vals = [];
+      for (let i = 0; i < n - 1; i++) vals.push(rng.int(lo, hi));
+      const M = rng.int(mlo, mhi);
+      const last = n * M - vals.reduce((a, b) => a + b, 0);
+      if (last < lo || last > hi) continue;
+      const data = rng.shuffle([...vals, last]);
+      if (new Set(data).size < 2) continue; // keine konstante Reihe
+      return { data, M };
+    }
+    throw new Error("m6-mittelwert: keine Datenreihe gefunden");
+  }
+
+  // Niveau 3a: Umkehrung mit Noten. Summe der 5 Noten = s, Durchschnitt = s : 5 (z. B. 12 : 5 = 2,4)
+  function notenAufgabe(rng) {
+    for (let tries = 0; tries < 500; tries++) {
+      const s = rng.int(10, 24);
+      const x = rng.int(1, 6);                 // gesuchte Note
+      const a3 = [rng.int(1, 6), rng.int(1, 6), rng.int(1, 6)];
+      const four = s - x - a3.reduce((p, q) => p + q, 0);
+      if (four < 1 || four > 6) continue;
+      const others = rng.shuffle([...a3, four]);
+      if (new Set(others).size < 2) continue;
+      const sumO = others.reduce((p, q) => p + q, 0);
+      const mean = fmtDec(new Frac(s, 5), 1);
+      const list = others.slice(0, -1).join(", ") + " und " + others[others.length - 1];
+      return {
+        q: rich("Der Durchschnitt von 5 Tests ist ", mean, ". Vier Noten sind ", list, ". Welche Note hat der fünfte Test?"),
+        a: rich("Note ", String(x)),
+        steps: [
+          rich("Summe aller 5 Noten: ", mean, " · 5 = ", String(s)),
+          rich("Summe der vier Noten: ", others.join(" + "), " = ", String(sumO)),
+          rich("Fünfte Note: ", String(s), " − ", String(sumO), " = ", String(x)),
+        ],
+        inline: false,
+        check: { kind: "noten", s, x, others },
+      };
+    }
+    throw new Error("m6-mittelwert: keine Notenaufgabe gefunden");
+  }
+
+  // Niveau 3b: fehlender Wert. Vier Sprungweiten, drei gegeben, Mittelwert gegeben.
+  function fehlendAufgabe(rng) {
+    const n = 4, f = u => fv(u, 2);
+    for (let tries = 0; tries < 500; tries++) {
+      const M = rng.int(340, 400);             // Mittelwert in Hundertstel
+      const three = [rng.int(320, 420), rng.int(320, 420), rng.int(320, 420)];
+      const sum3 = three.reduce((p, q) => p + q, 0);
+      const x = n * M - sum3;
+      if (x < 320 || x > 420) continue;
+      if (new Set([...three, x]).size < 2) continue;
+      return {
+        q: rich("Vier Kinder springen im Weitsprung. Drei Sprungweiten sind ", f(three[0]), " m, ", f(three[1]),
+          " m und ", f(three[2]), " m. Der Mittelwert aller vier Sprungweiten ist ", f(M), " m. Wie weit ist der vierte Sprung?"),
+        a: rich(f(x), " m"),
+        steps: [
+          rich("Summe aller vier Sprungweiten: ", f(M), " · 4 = ", f(n * M)),
+          rich("Summe der drei Sprungweiten: ", three.map(f).join(" + "), " = ", f(sum3)),
+          rich("Vierter Sprung: ", f(n * M), " − ", f(sum3), " = ", f(x), " m"),
+        ],
+        inline: false,
+        check: { kind: "fehlend", M, three, x },
+      };
+    }
+    throw new Error("m6-mittelwert: keine Aufgabe mit fehlendem Wert gefunden");
+  }
+
+  AG.registerType({
+    id: "m6-mittelwert",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Mittelwert (Durchschnitt) berechnen",
+    instruction: {
+      1: "Berechne den Mittelwert. Rechne zuerst die Summe aus, dann teile durch die Anzahl.",
+      2: "Berechne den Mittelwert. Achte auf das Komma.",
+      3: "Berechne den fehlenden Wert. Denke an die Summe: Summe = Mittelwert · Anzahl.",
+    },
+    merke: [
+      { b: "Mittelwert = Summe : Anzahl." },
+      " Beispiel: Zahlen 4, 6, 2, 8 → Summe 20, also Mittelwert 20 : 4 = 5. Umgekehrt gilt: Summe = Mittelwert · Anzahl.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 3) return rng.chance(0.5) ? notenAufgabe(rng) : fehlendAufgabe(rng);
+      const c = level === 1 ? rng.pick(MW_INT) : rng.pick(MW_DEC);
+      const n = level === 1 ? rng.int(4, 5) : rng.int(4, 6);
+      const { data, M } = mwData(rng, c, n);
+      const sum = data.reduce((a, b) => a + b, 0);
+      const f = u => fv(u, c.dig);
+      return {
+        q: rich(c.intro(n), " ", data.map(f).join("; "), ". Berechne den Mittelwert."),
+        a: rich("Mittelwert ", f(M), c.unit),
+        steps: [
+          rich("Summe: ", data.map(f).join(" + "), " = ", f(sum), c.unit),
+          rich("Mittelwert: ", f(sum), " : ", String(n), " = ", f(M), c.unit),
+        ],
+        inline: false,
+        check: { kind: "mw", data, M, n, dig: c.dig, unit: c.unit },
+      };
+    },
+    verify(t, level) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      const s = plain(t.a);
+      if (k.kind === "noten") {
+        const sumO = k.others.reduce((p, q) => p + q, 0);
+        if (sumO + k.x !== k.s) return "Summe der Noten falsch";
+        if (k.x < 1 || k.x > 6 || k.others.some(x => x < 1 || x > 6)) return "Note außerhalb 1 bis 6";
+        return s === "Note " + k.x ? true : "Lösung falsch";
+      }
+      if (k.kind === "fehlend") {
+        const x = 4 * k.M - k.three.reduce((p, q) => p + q, 0);
+        if (x !== k.x) return "fehlender Wert falsch";
+        return s === fv(x, 2) + " m" ? true : "Lösung falsch";
+      }
+      const sum = k.data.reduce((a, b) => a + b, 0);
+      if (sum !== k.n * k.M) return "Summe passt nicht zum Mittelwert";
+      if (level === 1 && (k.dig !== 0 || !Number.isInteger(k.M))) return "Mittelwert in Stufe 1 nicht ganzzahlig";
+      if (level === 2 && k.dig !== 2) return "Stufe 2 ohne Dezimalzahlen";
+      return s === "Mittelwert " + fv(k.M, k.dig) + k.unit ? true : "Mittelwert falsch: " + s;
+    },
+  });
+
+  // ==================== 2. Diagramme: Veränderungen ====================
+  // Werte stehen nicht im Diagramm. Sie sind Vielfache der Skalenschritte s und auf Gitterlinien ablesbar.
+  const DSC = [
+    { ctx: "Die Säulen zeigen, wie viele Besucher ein Freibad in den Sommermonaten durchschnittlich an einem Tag hatte.", unit: "Besucher",
+      names: ["Mai", "Juni", "Juli", "August", "September"], s: 50, k: [2, 8], kinds: ["col", "line"] },
+    { ctx: "Die Linie zeigt die Höchsttemperatur an den Tagen einer Woche im Mai in °C.", unit: "°C",
+      names: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], s: 5, k: [3, 6], kinds: ["line"] },
+    { ctx: "Die Säulen zeigen, wie viele Eisbecher ein Kiosk in den Sommermonaten verkauft hat.", unit: "Becher",
+      names: ["Mai", "Juni", "Juli", "August", "September"], s: 20, k: [2, 8], kinds: ["col", "line"] },
+    { ctx: "Die Grafik zeigt die Mitgliederzahl eines Sportvereins am Jahresende.", unit: "Mitglieder",
+      names: ["2020", "2021", "2022", "2023", "2024", "2025"], s: 50, k: [5, 8], kinds: ["col", "line"] },
+  ];
+
+  // Skizze: Säulen oder Linie über Kategorien, Skala mit Gitterlinien in Schritten s bis T
+  function diagFig(kind, names, vals, s, T, unit) {
+    const W = 140, H = 60, xA = 18, yB = 50, yT = 8;
+    const sy = v => yB - (v / T) * (yB - yT);
+    const slot = (W - xA - 4) / names.length;
+    const cx = i => xA + slot * (i + 0.5);
+    const sk = AG.sketch(W, H);
+    for (let v = s; v <= T; v += s) sk.line([xA, sy(v)], [W - 3, sy(v)], { dash: true });
+    sk.line([xA, yT - 2], [xA, yB]);
+    sk.line([xA, yB], [W - 3, yB]);
+    for (let v = 0; v <= T; v += s) {
+      sk.line([xA - 1.2, sy(v)], [xA, sy(v)]);
+      sk.label([xA - 2.5, sy(v)], String(v), { anchor: "end" });
+    }
+    sk.label([xA + 1, yT - 4], unit, { anchor: "start" });
+    names.forEach((nm, i) => sk.label([cx(i), yB + 4.5], nm));
+    if (kind === "col") {
+      const bw = slot * 0.6;
+      vals.forEach((v, i) => sk.rect(cx(i) - bw / 2, sy(v), bw, yB - sy(v), { fill: BLUE }));
+    } else {
+      const d = vals.map((v, i) => (i ? "L" : "M") + cx(i).toFixed(2) + " " + sy(v).toFixed(2)).join(" ");
+      sk.path(d, { width: 0.6 });
+      vals.forEach((v, i) => sk.circle([cx(i), sy(v)], 0.9, { fill: AG.SKETCH_COLORS.INK }));
+    }
+    return sk.done();
+  }
+
+  // Werte als Vielfache von s (Anzahl k). Niveau 2: größte Änderung (sigma: +1 Zunahme, −1 Abnahme)
+  // eindeutig und in die gewünschte Richtung. Niveau 3: Summe der Werte ist durch die Anzahl teilbar,
+  // damit der Durchschnitt glatt ist.
+  function makeSeries(rng, sc, level, sigma) {
+    const n = sc.names.length;
+    for (let tries = 0; tries < 500; tries++) {
+      const ks = [];
+      for (let i = 0; i < n; i++) ks.push(rng.int(sc.k[0], sc.k[1]));
+      if (new Set(ks).size < 3) continue;
+      if (level === 3 && ks.reduce((a, b) => a + b, 0) % n) continue;
+      const vals = ks.map(k => k * sc.s);
+      if (level === 2) {
+        const signed = [];
+        for (let i = 0; i + 1 < n; i++) signed.push(sigma * (vals[i + 1] - vals[i]));
+        const ext = Math.max(...signed);
+        if (ext <= 0 || signed.filter(x => x === ext).length !== 1) continue;
+      }
+      return vals;
+    }
+    throw new Error("m6-diagramm-veraenderung: keine Werte gefunden");
+  }
+
+  AG.registerType({
+    id: "m6-diagramm-veraenderung",
+    klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
+    title: "Diagramm: Zunahme, Abnahme und Durchschnitt",
+    instruction: {
+      1: "Lies die Werte aus dem Diagramm ab und berechne die Veränderung.",
+      2: "Lies die Werte ab. Berechne die Veränderungen zwischen den Zeitpunkten.",
+      3: "Lies die Werte ab und berechne die Veränderung und den Durchschnitt.",
+    },
+    merke: [
+      { b: "Veränderung = späterer Wert − früherer Wert." },
+      " Positiv ist es eine Zunahme, negativ eine Abnahme. Beispiel: von 150 auf 200 ist 200 − 150 = 50, also eine Zunahme um 50.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      const sc = rng.pick(DSC);
+      const kind = rng.pick(sc.kinds);
+      const names = sc.names, n = names.length, U = sc.unit;
+      const sigma = rng.chance(0.5) ? 1 : -1;
+      const vals = makeSeries(rng, sc, level, sigma);
+      const T = (Math.floor(Math.max(...vals) / sc.s) + 1) * sc.s;
+      const fig = diagFig(kind, names, vals, sc.s, T, U);
+      const K = v => fmtInt(v) + " " + U;
+      const ch = d => (d > 0 ? "Zunahme um " + K(d) : "Abnahme um " + K(-d));
+      const ctx = sc.ctx + " Die Skala ist in Schritten von " + sc.s + " eingeteilt.";
+      const meta = { vals, s: sc.s, unit: U, names };
+
+      if (level === 1) {
+        const pairs = [];
+        for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (vals[i] !== vals[j]) pairs.push([i, j]);
+        const [i, j] = rng.pick(pairs);
+        const d = vals[j] - vals[i];
+        return {
+          q: rich(ctx, " Wie hat sich der Wert von „", names[i], "“ bis „", names[j], "“ verändert? Gib an, ob es eine Zunahme oder eine Abnahme ist, und wie groß sie ist."),
+          a: rich(ch(d)),
+          steps: [
+            rich(names[i], ": ", K(vals[i])),
+            rich(names[j], ": ", K(vals[j])),
+            rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d), ", also ", ch(d)),
+          ],
+          fig, inline: false, meta: { ...meta, i, j },
+        };
+      }
+
+      if (level === 2) {
+        const diffs = [];
+        for (let i = 0; i + 1 < n; i++) diffs.push(vals[i + 1] - vals[i]);
+        const ext = Math.max(...diffs.map(x => sigma * x));
+        const im = diffs.findIndex(x => sigma * x === ext);
+        const pairs = [];
+        for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (vals[i] !== vals[j]) pairs.push([i, j]);
+        const [i, j] = rng.pick(pairs);
+        const tot = vals[j] - vals[i];
+        const word = sigma > 0 ? "gestiegen" : "gesunken";
+        const label = sigma > 0 ? "Größte Zunahme" : "Größte Abnahme";
+        const steps = diffs.map((d, k) => rich(names[k], " bis ", names[k + 1], ": ", fmtInt(vals[k + 1]), " ", MI, " ", fmtInt(vals[k]), " = ", fmtInt(d)));
+        steps.push(rich(label, ": ", names[im], " bis ", names[im + 1], " (", K(Math.abs(ext)), ")"));
+        steps.push(rich("Veränderung von ", names[i], " bis ", names[j], ": ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(tot), ", also ", ch(tot)));
+        return {
+          q: rich(ctx, " a) Zwischen welchen zwei aufeinanderfolgenden Zeitpunkten ist der Wert am stärksten ", word, "? Wie groß ist die Änderung? b) Wie hat sich der Wert von „", names[i], "“ bis „", names[j], "“ insgesamt verändert? Gib an, ob es eine Zunahme oder eine Abnahme ist, und wie groß sie ist."),
+          a: rich("a) von „", names[im], "“ bis „", names[im + 1], "“ um ", K(Math.abs(ext)), "; b) ", ch(tot)),
+          steps, fig, inline: false, meta: { ...meta, im, i, j, sigma },
+        };
+      }
+
+      // Niveau 3: Veränderung zwischen zwei Zeitpunkten und Durchschnitt aller Werte
+      const pairs = [];
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (vals[i] !== vals[j]) pairs.push([i, j]);
+      const [i, j] = rng.pick(pairs);
+      const d = vals[j] - vals[i];
+      const sum = vals.reduce((a, b) => a + b, 0);
+      const avg = sum / n;
+      return {
+        q: rich(ctx, " a) Wie hat sich der Wert von „", names[i], "“ bis „", names[j], "“ verändert? Gib an, ob es eine Zunahme oder eine Abnahme ist, und wie groß sie ist. b) Wie groß ist der Durchschnitt (Mittelwert) aller Werte im Diagramm?"),
+        a: rich(ch(d), "; b) Durchschnitt ", K(avg)),
+        steps: [
+          rich("Veränderung: ", fmtInt(vals[j]), " ", MI, " ", fmtInt(vals[i]), " = ", fmtInt(d), ", also ", ch(d)),
+          rich("Summe aller Werte: ", vals.map(v => fmtInt(v)).join(" + "), " = ", fmtInt(sum)),
+          rich("Durchschnitt: ", fmtInt(sum), " : ", String(n), " = ", fmtInt(avg), " ", U),
+        ],
+        fig, inline: false, meta: { ...meta, i, j, avg },
+      };
+    },
+    verify(t, level) {
+      const m = t.meta;
+      if (!m) return "meta fehlt";
+      const v = m.vals, n = v.length, s = plain(t.a);
+      if (v.some(x => x <= 0 || x % m.s !== 0)) return "Werte nicht auf Gitterlinien";
+      const K = x => fmtInt(x) + " " + m.unit;
+      const ch = d => (d > 0 ? "Zunahme um " + K(d) : "Abnahme um " + K(-d));
+      if (level === 1) {
+        const d = v[m.j] - v[m.i];
+        return d !== 0 && s === ch(d) ? true : "Veränderung falsch";
+      }
+      if (level === 2) {
+        const diffs = [];
+        for (let i = 0; i + 1 < n; i++) diffs.push(v[i + 1] - v[i]);
+        const ext = Math.max(...diffs.map(x => m.sigma * x));
+        if (diffs.filter(x => m.sigma * x === ext).length !== 1) return "größte Änderung nicht eindeutig";
+        if (m.sigma * diffs[m.im] !== ext) return "größte Änderung falsch";
+        const tot = v[m.j] - v[m.i];
+        if (tot === 0) return "keine Gesamtveränderung";
+        const want = "a) von „" + m.names[m.im] + "“ bis „" + m.names[m.im + 1] + "“ um " + K(Math.abs(ext)) + "; b) " + ch(tot);
+        return s === want ? true : "Lösung falsch";
+      }
+      const sum = v.reduce((a, b) => a + b, 0);
+      if (sum % n) return "Durchschnitt nicht glatt";
+      const d = v[m.j] - v[m.i];
+      if (d === 0) return "keine Veränderung";
+      return s === ch(d) + "; b) Durchschnitt " + K(sum / n) ? true : "Lösung falsch";
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-dezimal.js ----
+// M6 LB 1.1 und 1.2 (Dezimalbrüche): Bruch – Dezimalbruch – Prozent, Vergleichen und Ordnen,
+// Addition und Subtraktion, Multiplikation und Division, Runden.
+(function (AG) {
+  const { Frac, num, rich, fmtDec, fmtInt, MINUS } = AG;
+  const TOPIC = "brueche";
+
+  // ---------- Hilfen ----------
+  const dz = x => num(x, { as: "dec" });                       // Zahl als Dezimalzahl mit Komma („0,5“, „12“)
+  const pc = p => rich(dz(p), " %");                           // Prozentsatz („37,5 %“)
+  const scaled = (x, k) => String(Frac.of(x).mul(10 ** k).n);  // Komma um k Stellen nach rechts: 2,46 → 246 (k = 2)
+  const stellen = k => (k === 1 ? "Stelle" : "Stellen");
+  const mk = val => ({ val, dig: val.decimals() });            // Zahl mit so vielen Stellen, wie sie hat
+  // Begrenzte Wiederholung: nach 300 Versuchen ein Fehler (keine Endlosschleife)
+  function tryGen(fn, ok) {
+    for (let i = 0; i < 300; i++) {
+      const r = fn();
+      if (ok(r)) return r;
+    }
+    throw new Error("m6: keine passende Aufgabe gefunden");
+  }
+  // Dezimalzahl mit genau k Nachkommastellen, 0 < x < max (letzte Stelle ungleich 0)
+  function dv(rng, k, max) {
+    for (let i = 0; i < 500; i++) {
+      const n = rng.int(1, max * 10 ** k - 1);
+      if (n % 10 !== 0) return new Frac(n, 10 ** k);
+    }
+    throw new Error("m6: keine Dezimalzahl mit " + k + " Stellen");
+  }
+
+  // ---------- 1. Bruch, Dezimalbruch, Prozentsatz ----------
+  const PAIRS = dens => {
+    const out = [];
+    for (const d of dens) for (let n = 1; n < d; n++) if (AG.gcd(n, d) === 1) out.push([n, d]);
+    return out;
+  };
+  const PAIRS12 = PAIRS([2, 4, 5, 10, 20, 25, 50, 100]);
+  const PAIRS3 = PAIRS([2, 4, 5, 8, 10, 20, 25, 50, 100, 1000]);
+  const ORDER = ["bruch", "dez", "pct"];
+  const LABEL = { bruch: "gekürzten Bruch", dez: "Dezimalzahl", pct: "Prozentsatz" };
+  const dedupe = list => list.filter((x, i) => i === 0 || AG.plain(x) !== AG.plain(list[i - 1]));
+  const eqs = list => list.flatMap((x, i) => (i ? [" = ", x] : [x]));
+
+  AG.registerType({
+    id: "m6-bruch-dezimal-prozent",
+    klasse: "6",
+    zug: "RM",
+    lb: "1.1",
+    lbTitle: "Erweiterung auf Bruchzahlen",
+    title: "Bruch, Dezimalzahl, Prozent",
+    topic: TOPIC,
+    instruction: {
+      1: "Schreibe in der angegebenen Form.",
+      2: "Schreibe in der angegebenen Form. Kürze den Bruch vollständig.",
+      3: "Schreibe in den angegebenen Formen. Erweitere den Bruch auf 10, 100 oder 1000.",
+    },
+    merke: [
+      "Ein Bruch wird zur Dezimalzahl, wenn man auf den Nenner 10, 100 oder 1000 erweitert. Prozent heißt „von Hundert“: 1 % = 1/100 = 0,01.   Beispiel: ",
+      { f: [3, 8] }, " = ", { f: [375, 1000] }, " = 0,375 = 37,5 %",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      const [n, d] = rng.pick(level === 3 ? PAIRS3 : PAIRS12);
+      const val = new Frac(n, d);
+      const pct = val.mul(100);
+      const rep = { bruch: num(val), dez: dz(val), pct: pc(pct) };
+      const src = rng.pick(ORDER);
+      const others = ORDER.filter(x => x !== src);
+      const targets = level === 1 ? [rng.pick(others)] : others;
+      const want = t => targets.includes(t);
+      // Kette gleicher Werte, z. B. 3/8 = 375/1000 = 0,375 = 37,5 %
+      const K = val.decimals(), J = pct.decimals();
+      const big = { f: [val.n * 10 ** K / val.d, 10 ** K] };           // auf 10, 100 oder 1000 erweitert
+      const pctRaw = { f: [pct.n * 10 ** J / pct.d, 100 * 10 ** J] };  // Prozent als Bruch mit Nenner 100
+      const chain = src === "bruch"
+        ? [num(val), big, dz(val), want("pct") ? pc(pct) : null]
+        : src === "dez"
+          ? [dz(val), big, want("bruch") ? num(val) : null, want("pct") ? pc(pct) : null]
+          : [pc(pct), pctRaw, want("bruch") ? num(val) : null, want("dez") ? dz(val) : null];
+      const steps = [rich(eqs(dedupe(chain.filter(Boolean))))];
+      const tg = ORDER.filter(want);
+      const q = rich("Schreibe ", tg.map(t => "als " + LABEL[t]).join(" und "), ": ", rep[src]);
+      const a = rich(tg.flatMap((t, i) => (i ? [" und ", rep[t]] : [rep[t]])));
+      return { q, a, steps, _val: val, _pct: pct };
+    },
+    verify(t) {
+      return t._val.mul(100).eq(t._pct) ? true : "Prozentsatz ist nicht Bruch · 100";
+    },
+  });
+
+  // ---------- 2. Dezimalbrüche vergleichen und ordnen ----------
+  const naive = x => Number(fmtDec(x.val, x.dig).replace(",", ""));  // Fehlerquelle: Stellen ohne Komma vergleichen
+  const numeric = list => [...list].sort((x, y) => x.val.cmp(y.val));
+  // Gleiche Zahlen sind verboten, mindestens zwei Stellenzahlen, und die falsche Reihenfolge („0,405 > 0,45“) muss möglich sein
+  const okOrder = list => {
+    if (new Set(list.map(x => x.val.toString())).size !== list.length) return false;
+    if (new Set(list.map(x => x.dig)).size < 2) return false;
+    const byNaive = [...list].sort((x, y) => naive(x) - naive(y)).map(x => x.val.toString()).join();
+    return byNaive !== numeric(list).map(x => x.val.toString()).join();
+  };
+  const CTX_GR = [
+    { unit: "m", t: "Diese Weitsprünge wurden gemessen: ", max: 3 },
+    { unit: "kg", t: "Diese Mengen Kartoffeln wurden gewogen: ", max: 3 },
+    { unit: "l", t: "Diese Mengen Saft wurden abgefüllt: ", max: 2 },
+  ];
+
+  AG.registerType({
+    id: "m6-dezimal-ordnen",
+    klasse: "6",
+    zug: "RM",
+    lb: "1.1",
+    lbTitle: "Erweiterung auf Bruchzahlen",
+    title: "Dezimalzahlen vergleichen und ordnen",
+    topic: TOPIC,
+    instruction: {
+      1: "Setze das richtige Zeichen ein: <, > oder =.",
+      2: "Ordne die Zahlen vom kleinsten zum größten.",
+      3: "Ordne die Größen vom kleinsten zum größten.",
+    },
+    merke: [
+      "Zuerst gleich viele Stellen schreiben (hinten Nullen anhängen), dann die Zahlen ohne Komma vergleichen. ",
+      "Beispiel: 0,5 > 0,45, denn 50 > 45 (Hundertstel). Also 0,405 < 0,45 < 0,5.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) {
+        const k1 = rng.int(1, 2);
+        const A = mk(dv(rng, k1, 10));
+        const B = rng.chance(0.25)
+          ? { val: A.val, dig: A.dig + rng.int(1, 2) }                       // gleicher Wert: 0,3 = 0,30
+          : mk(tryGen(() => dv(rng, rng.int(1, 3), 10), x => !x.eq(A.val)));
+        const c = A.val.cmp(B.val);
+        const sign = c < 0 ? "<" : c > 0 ? ">" : "=";
+        const K = Math.max(A.dig, B.dig);
+        return {
+          q: rich("Setze <, > oder = richtig ein: ", fmtDec(A.val, A.dig), " ", { blank: 2 }, " ", fmtDec(B.val, B.dig)),
+          a: rich(fmtDec(A.val, A.dig), " ", sign, " ", fmtDec(B.val, B.dig)),
+          steps: [
+            rich("Gleiche Stellenzahl: ", fmtDec(A.val, K), " und ", fmtDec(B.val, K)),
+            rich(scaled(A.val, K), " ", sign, " ", scaled(B.val, K), ", also ", fmtDec(A.val, A.dig), " ", sign, " ", fmtDec(B.val, B.dig)),
+          ],
+        };
+      }
+      if (level === 2) {
+        const items = tryGen(
+          () => Array.from({ length: rng.int(3, 4) }, () => mk(dv(rng, rng.int(1, 3), 2))),
+          okOrder,
+        );
+        const sorted = numeric(items);
+        const K = Math.max(...items.map(x => x.dig));
+        const a = rich(sorted.map(x => fmtDec(x.val, x.dig)).join(" < "));
+        return {
+          q: rich("Ordne die Zahlen vom kleinsten zum größten: ", items.map(x => fmtDec(x.val, x.dig)).join("; ")),
+          a,
+          steps: [
+            rich("Gleiche Stellenzahl: ", items.map(x => fmtDec(x.val, K)).join("; ")),
+            rich("Ohne Komma vergleichen: ", sorted.map(x => scaled(x.val, K)).join(" < ")),
+            rich("Ergebnis: ", a),
+          ],
+        };
+      }
+      // Niveau 3: Größen mit Einheit
+      const ctx = rng.pick(CTX_GR);
+      const items = tryGen(
+        () => Array.from({ length: rng.int(3, 4) }, () => mk(dv(rng, rng.int(1, 3), ctx.max))),
+        okOrder,
+      );
+      const sorted = numeric(items);
+      const K = Math.max(...items.map(x => x.dig));
+      const a = rich(sorted.map(x => fmtDec(x.val, x.dig) + " " + ctx.unit).join(" < "));
+      return {
+        q: rich(ctx.t, items.map(x => fmtDec(x.val, x.dig) + " " + ctx.unit).join("; "), ". Ordne vom kleinsten zum größten."),
+        a,
+        steps: [
+          rich("Gleiche Stellenzahl: ", items.map(x => fmtDec(x.val, K) + " " + ctx.unit).join("; ")),
+          rich("Ohne Komma vergleichen: ", sorted.map(x => scaled(x.val, K)).join(" < ")),
+          rich("Ergebnis: ", a),
+        ],
+      };
+    },
+  });
+
+  // ---------- 3. Dezimalbrüche addieren und subtrahieren ----------
+  const term = (rng, k, max) => ({ val: dv(rng, k, max), dig: k });
+  const disp = t => fmtDec(t.val, t.dig);
+
+  AG.registerType({
+    id: "m6-dezimal-addsub",
+    klasse: "6",
+    zug: "RM",
+    lb: "1.2",
+    lbTitle: "Rechnen mit Bruchzahlen",
+    title: "Dezimalzahlen addieren und subtrahieren",
+    topic: TOPIC,
+    instruction: {
+      1: "Rechne. Schreibe das Komma unter das Komma.",
+      2: "Rechne. Die Zahlen haben verschieden viele Stellen nach dem Komma.",
+      3: "Rechne. Achte auf die Reihenfolge und auf die Kommas.",
+    },
+    merke: [
+      "Komma unter Komma schreiben, fehlende Stellen mit Nullen auffüllen, dann wie natürliche Zahlen rechnen. ",
+      "Beispiel: 3,4 + 1,25 = 3,40 + 1,25 = 4,65",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level < 3) {
+        const { A, B, op } = tryGen(() => {
+          const ka = rng.int(1, 2);
+          const kb = level === 1 ? ka : ka === 1 ? rng.int(2, 3) : rng.pick([1, 3]);
+          const op = rng.pick(["+", MINUS]);
+          let A = term(rng, ka, 20), B = term(rng, kb, 20);
+          if (op === MINUS && A.val.cmp(B.val) < 0) [A, B] = [B, A];
+          return { A, B, op };
+        }, r => r.op === "+" || !r.A.val.eq(r.B.val));
+        const res = op === "+" ? A.val.add(B.val) : A.val.sub(B.val);
+        const K = Math.max(A.dig, B.dig);
+        return {
+          q: rich(disp(A), " ", op, " ", disp(B)),
+          a: dz(res),
+          steps: [
+            rich("Gleiche Stellenzahl: ", fmtDec(A.val, K), " ", op, " ", fmtDec(B.val, K)),
+            rich(scaled(A.val, K), " ", op, " ", scaled(B.val, K), " = ", scaled(res, K)),
+            rich("= ", dz(res)),
+          ],
+        };
+      }
+      // Niveau 3: drei Zahlen mit unterschiedlich vielen Stellen
+      const r3 = tryGen(() => {
+        const [t1, t2, t3] = [rng.int(1, 2), rng.int(1, 2), rng.int(1, 2)].map(k => term(rng, k, 10));
+        const op1 = rng.pick(["+", MINUS]), op2 = rng.pick(["+", MINUS]);
+        let a = t1, b = t2;
+        if (op1 === MINUS && a.val.cmp(b.val) < 0) [a, b] = [b, a];
+        const r1 = op1 === "+" ? a.val.add(b.val) : a.val.sub(b.val);
+        if (op2 === MINUS && r1.cmp(t3.val) < 0) return null;
+        const res = op2 === "+" ? r1.add(t3.val) : r1.sub(t3.val);
+        return { t1: a, t2: b, t3, op1, op2, r1, res };
+      }, r => r && new Set([r.t1.dig, r.t2.dig, r.t3.dig]).size >= 2 && r.res.n > 0);
+      const K = Math.max(r3.t1.dig, r3.t2.dig, r3.t3.dig);
+      return {
+        q: rich(disp(r3.t1), " ", r3.op1, " ", disp(r3.t2), " ", r3.op2, " ", disp(r3.t3)),
+        a: dz(r3.res),
+        steps: [
+          rich("Gleiche Stellenzahl: ", fmtDec(r3.t1.val, K), " ", r3.op1, " ", fmtDec(r3.t2.val, K), " ", r3.op2, " ", fmtDec(r3.t3.val, K)),
+          rich(scaled(r3.t1.val, K), " ", r3.op1, " ", scaled(r3.t2.val, K), " = ", scaled(r3.r1, K)),
+          rich(scaled(r3.r1, K), " ", r3.op2, " ", scaled(r3.t3.val, K), " = ", scaled(r3.res, K)),
+          rich("= ", dz(r3.res)),
+        ],
+      };
+    },
+  });
+
+  // ---------- 4. Dezimalbrüche multiplizieren und dividieren ----------
+  AG.registerType({
+    id: "m6-dezimal-muldiv",
+    klasse: "6",
+    zug: "RM",
+    lb: "1.2",
+    lbTitle: "Rechnen mit Bruchzahlen",
+    title: "Dezimalzahlen multiplizieren und dividieren",
+    topic: TOPIC,
+    instruction: {
+      1: "Multipliziere. Achte auf das Komma.",
+      2: "Rechne. Zähle die Kommastellen.",
+      3: "Dividiere. Mache den Teiler zu einer ganzen Zahl.",
+    },
+    merke: [
+      "Multiplizieren: Kommas weglassen und rechnen, dann so viele Stellen vom Komma abzählen, wie beide Faktoren zusammen haben. ",
+      "Beispiel: 0,4 · 0,3 = 0,12 (1 + 1 = 2 Stellen).   Dividieren durch eine Dezimalzahl: beide Zahlen so malnehmen, dass der Teiler ganz wird. Beispiel: 4,8 : 0,6 = 48 : 6 = 8",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) {
+        const k = rng.int(1, 2);
+        const a = dv(rng, k, k === 1 ? 100 : 10);
+        if (rng.chance(0.5)) {
+          const b = rng.pick([10, 100, 1000]);
+          const z = Math.log10(b);
+          return {
+            q: rich(dz(a), " · ", fmtInt(b)),
+            a: dz(a.mul(b)),
+            steps: [
+              rich("Das Komma rückt um ", String(z), " ", stellen(z), " nach rechts."),
+              rich(dz(a), " · ", fmtInt(b), " = ", dz(a.mul(b))),
+            ],
+          };
+        }
+        const b = rng.int(2, 9);
+        return {
+          q: rich(dz(a), " · ", String(b)),
+          a: dz(a.mul(b)),
+          steps: [
+            rich(scaled(a, k), " · ", String(b), " = ", scaled(a.mul(b), k)),
+            rich("Das Komma rückt um ", String(k), " ", stellen(k), " nach links: ", dz(a.mul(b))),
+          ],
+        };
+      }
+      if (level === 2 && rng.chance(0.5)) {
+        // Dezimalzahl · Dezimalzahl
+        const k1 = rng.int(1, 2), k2 = k1 === 1 ? rng.int(1, 2) : 1;
+        const a = dv(rng, k1, 10), b = dv(rng, k2, 10);
+        const A = scaled(a, k1), B = scaled(b, k2);
+        return {
+          q: rich(dz(a), " · ", dz(b)),
+          a: dz(a.mul(b)),
+          steps: [
+            rich("Ohne Komma: ", A, " · ", B, " = ", String(Number(A) * Number(B))),
+            rich("Kommastellen: ", String(k1), " + ", String(k2), " = ", String(k1 + k2), ", also ", dz(a.mul(b))),
+          ],
+        };
+      }
+      if (level === 2) {
+        // Dezimalzahl : natürliche Zahl, Ergebnis geht auf
+        const n = rng.int(2, 9);
+        const r = dv(rng, rng.int(1, 2), 10);
+        const a = r.mul(n);
+        const K = Math.max(a.decimals(), r.decimals());
+        return {
+          q: rich(dz(a), " : ", String(n)),
+          a: dz(r),
+          steps: [
+            rich(scaled(a, K), " : ", String(n), " = ", scaled(r, K)),
+            rich("Das Komma rückt um ", String(K), " ", stellen(K), " nach links: ", dz(r)),
+          ],
+        };
+      }
+      // Niveau 3: Division durch eine Dezimalzahl
+      const kb = rng.int(1, 2);
+      const b = dv(rng, kb, 10);
+      const qv = rng.chance(0.7) ? new Frac(rng.int(2, 25), 1) : new Frac(rng.int(11, 99), 10);
+      const a = b.mul(qv);
+      const e = Math.max(a.decimals(), kb);
+      return {
+        q: rich(dz(a), " : ", dz(b)),
+        a: dz(qv),
+        steps: [
+          rich("Beide Zahlen mit ", fmtInt(10 ** e), " malnehmen, also das Komma um ", String(e), " ", stellen(e), " nach rechts: ", scaled(a, e), " : ", scaled(b, e)),
+          rich(scaled(a, e), " : ", scaled(b, e), " = ", dz(qv)),
+        ],
+      };
+    },
+  });
+
+  // ---------- 5. Dezimalbrüche runden ----------
+  const PLACE = { 0: "ganze Zahlen", 1: "Zehntel", 2: "Hundertstel", 3: "Tausendstel" };
+  const RCTX = [
+    { unit: "km", t: "Lea läuft jeden Morgen einen Schulweg von " },
+    { unit: "kg", t: "Ein Sack Kartoffeln wiegt " },
+    { unit: "l", t: "In einer Flasche sind " },
+    { unit: "s", t: "Max braucht für den Sprint " },
+  ];
+  // Zahl mit d Nachkommastellen, auf p Stellen zu runden. Keine genaue Hälfte (sonst ist die Rundung nicht eindeutig).
+  // over: die gerundeten Stellen sind alle 9, es gibt einen Übertrag (2,996 auf Hundertstel = 3,00)
+  function roundCase(rng, p, d, over) {
+    const dd = d - p, unit = 10 ** dd;
+    const X = tryGen(() => {
+      if (over) {
+        const kept = p === 0 ? rng.pick([9, 19, 29, 39, 49, 59, 69, 79, 89, 99]) : rng.int(0, 9) * 10 ** p + 10 ** p - 1;
+        return kept * unit + rng.int(5 * 10 ** (dd - 1) + 1, unit - 1);
+      }
+      return rng.int(10 ** d, 20 * 10 ** d);
+    }, X => X % 10 !== 0 && X % unit !== 0 && (X % unit) * 2 !== unit);
+    const q = Math.floor(X / unit), r = X % unit;
+    const up = r * 2 > unit;
+    return {
+      x: new Frac(X, 10 ** d),
+      up,
+      digit: Math.floor((r * 10) / unit),
+      trunc: new Frac(q, 10 ** p),
+      res: new Frac(q + (up ? 1 : 0), 10 ** p),
+    };
+  }
+
+  AG.registerType({
+    id: "m6-dezimal-runden",
+    klasse: "6",
+    zug: "RM",
+    lb: "1.2",
+    lbTitle: "Rechnen mit Bruchzahlen",
+    title: "Dezimalzahlen runden",
+    topic: TOPIC,
+    instruction: {
+      1: "Runde auf die angegebene Stelle.",
+      2: "Runde auf die angegebene Stelle. Achte auf die Ziffer dahinter.",
+      3: "Runde auf die angegebene Stelle. Achte auf den Übertrag, wenn eine 9 aufgerundet wird.",
+    },
+    merke: [
+      "Ist die erste weggelassene Ziffer 0 bis 4, wird abgerundet, bei 5 bis 9 aufgerundet. ",
+      "Beispiel: 3,46 auf Zehntel = 3,5.   2,996 auf Hundertstel = 3,00 (Übertrag: 2,99 + 0,01)",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      const pairs = level === 1
+        ? [[0, 1], [0, 2], [1, 2]]
+        : level === 2
+          ? [[0, 2], [1, 2], [1, 3], [2, 3]]
+          : [[0, 2], [1, 2], [1, 3], [2, 3], [2, 4], [3, 4], [0, 3], [0, 4]];
+      const [p, d] = rng.pick(pairs);
+      const over = level === 3 ? rng.chance(0.5) : level === 2 ? rng.chance(0.2) : false;
+      const c = roundCase(rng, p, d, over);
+      const ctx = level >= 2 && rng.chance(0.4) ? rng.pick(RCTX) : null;
+      const q = ctx
+        ? rich(ctx.t, dz(c.x), " " + ctx.unit + ". Runde auf ", PLACE[p], ".")
+        : rich("Runde ", dz(c.x), " auf ", PLACE[p], ".");
+      const a = rich(fmtDec(c.res, p), ctx ? " " + ctx.unit : "");
+      const steps = [
+        rich("Die erste weggelassene Ziffer ist ", String(c.digit), c.up ? ", also aufrunden." : ", also abrunden."),
+        c.up
+          ? rich(fmtDec(c.trunc, p), " + ", fmtDec(new Frac(1, 10 ** p), p), " = ", fmtDec(c.res, p))
+          : rich("= ", fmtDec(c.res, p)),
+      ];
+      return { q, a, steps, _x: c.x, _p: p, _res: c.res };
+    },
+    verify(t) {
+      // Gegenrechnung: x · 10^p, abschneiden, Rest ab 1/2 aufrunden
+      const y = t._x.mul(10 ** t._p);
+      const fl = Math.floor(y.n / y.d);
+      const e = y.sub(fl).cmp(new Frac(1, 2)) >= 0 ? fl + 1 : fl;
+      return t._res.eq(new Frac(e, 10 ** t._p)) ? true : "Rundung falsch";
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-geometrie.js ----
+// M6 LB 3: Geometrische Figuren, Körper und Lagebeziehungen – Viereckarten, Koordinaten in allen vier
+// Quadranten, Körper benennen und beschreiben (Schrägbilder), Würfelnetze.
+// Typen: m6-viereckarten, m6-koordinaten-4q, m6-koerper, m6-wuerfelnetz.
+// Skizzen: Koordinatensystem wie m5-geometrie.js, Schrägbilder wie m7-prismen.js.
+(function (AG) {
+  const { rich, plain, fmtInt, MINUS, SKETCH_COLORS } = AG;
+  const { INK, GREY, FILL } = SKETCH_COLORS;
+
+  const sInt = n => fmtInt(n);
+  const listDe = a => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " und " + a[a.length - 1]);
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const NAMES = ["Lea", "Max", "Tim", "Sophie", "Jonas", "Mia"];
+  const NZ = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];
+
+  // ================= 1. Viereckarten =================
+  // Eigenschaften, die für JEDES Viereck der Art gelten (Haus der Vierecke). Nur positive Aussagen.
+  const VK = ["Quadrat", "Rechteck", "Raute", "Parallelogramm", "Trapez", "Drachen"];
+  const ART = { Quadrat: "das", Rechteck: "das", Raute: "die", Parallelogramm: "das", Trapez: "das", Drachen: "den" };
+  const JEDES = { Quadrat: "jedes Quadrat", Rechteck: "jedes Rechteck", Raute: "jede Raute", Parallelogramm: "jedes Parallelogramm", Trapez: "jedes Trapez", Drachen: "jeden Drachen" };
+  const PROPS = [
+    { t: "Alle vier Seiten sind gleich lang.", in: ["Quadrat", "Raute"] },
+    { t: "Gegenüberliegende Seiten sind gleich lang.", in: ["Quadrat", "Rechteck", "Raute", "Parallelogramm"] },
+    { t: "Alle vier Winkel sind rechte Winkel.", in: ["Quadrat", "Rechteck"] },
+    { t: "Gegenüberliegende Seiten sind parallel.", in: ["Quadrat", "Rechteck", "Raute", "Parallelogramm"] },
+    { t: "Mindestens zwei Seiten sind parallel.", in: ["Quadrat", "Rechteck", "Raute", "Parallelogramm", "Trapez"] },
+    { t: "Die Diagonalen stehen senkrecht aufeinander.", in: ["Quadrat", "Raute", "Drachen"] },
+    { t: "Die Diagonalen sind gleich lang.", in: ["Quadrat", "Rechteck"] },
+    { t: "Es gibt zwei Paare benachbarter Seiten, die gleich lang sind.", in: ["Quadrat", "Raute", "Drachen"] },
+    { t: "Die Diagonalen halbieren sich gegenseitig.", in: ["Quadrat", "Rechteck", "Raute", "Parallelogramm"] },
+  ];
+  // eindeutige Beschreibungen (je Art mehrere Fassungen)
+  const DESC = {
+    Quadrat: [["Alle vier Seiten sind gleich lang.", "Alle vier Winkel sind rechte Winkel."],
+      ["Die Diagonalen sind gleich lang.", "Die Diagonalen stehen senkrecht aufeinander."]],
+    Rechteck: [["Alle vier Winkel sind rechte Winkel.", "Benachbarte Seiten sind verschieden lang."],
+      ["Die Diagonalen sind gleich lang und halbieren sich gegenseitig.", "Die Diagonalen stehen nicht senkrecht aufeinander."]],
+    Raute: [["Alle vier Seiten sind gleich lang.", "Es gibt keinen rechten Winkel."],
+      ["Die Diagonalen stehen senkrecht aufeinander und halbieren sich gegenseitig.", "Die Diagonalen sind verschieden lang."]],
+    Parallelogramm: [["Gegenüberliegende Seiten sind parallel.", "Es gibt keinen rechten Winkel.", "Benachbarte Seiten sind verschieden lang."],
+      ["Die Diagonalen halbieren sich gegenseitig.", "Die Diagonalen sind verschieden lang und stehen nicht senkrecht aufeinander."]],
+    Trapez: [["Genau zwei Seiten sind parallel, die beiden anderen nicht."]],
+    Drachen: [["Es gibt zwei Paare benachbarter Seiten, die gleich lang sind.", "Nicht alle vier Seiten sind gleich lang."],
+      ["Die Diagonalen stehen senkrecht aufeinander.", "Nur eine der beiden Diagonalen wird halbiert."]],
+  };
+  // Teilmengen im Haus der Vierecke: SUB[A] = Arten, zu denen jedes A auch gehört (ohne Trapez – Definitionen unterscheiden sich)
+  const SUB = { Quadrat: ["Rechteck", "Raute", "Parallelogramm", "Drachen"], Rechteck: ["Parallelogramm"], Raute: ["Parallelogramm", "Drachen"], Parallelogramm: [], Drachen: [] };
+  const WHY_NOT = {
+    Rechteck: "nicht alle Seiten sind gleich lang", Raute: "es muss keine rechten Winkel geben", Parallelogramm: "die Winkel müssen keine rechten Winkel sein",
+    Drachen: "gegenüberliegende Seiten müssen nicht parallel sein", Quadrat: "Seiten oder Winkel können verschieden sein",
+  };
+  const NOM = { Quadrat: "jedes Quadrat", Rechteck: "jedes Rechteck", Raute: "jede Raute", Parallelogramm: "jedes Parallelogramm", Drachen: "jeder Drachen" };
+  const EIN = { Quadrat: "ein Quadrat", Rechteck: "ein Rechteck", Raute: "eine Raute", Parallelogramm: "ein Parallelogramm", Drachen: "ein Drachen" };
+  const DAT = { Quadrat: "einem Quadrat", Rechteck: "einem Rechteck", Raute: "einer Raute", Parallelogramm: "einem Parallelogramm", Drachen: "einem Drachen" };
+  const INTRO1 = ["Welches Viereck ist gemeint?", ...NAMES.map(n => `${n} beschreibt ein Viereck. Welches ist es?`)];
+  const KEYPROP = { Quadrat: "vier gleich lange Seiten und vier rechte Winkel", Rechteck: "vier rechte Winkel", Raute: "vier gleich lange Seiten", Parallelogramm: "gegenüberliegende Seiten sind parallel", Drachen: "zwei Paare benachbarter gleich langer Seiten" };
+  const lines = arr => rich(arr.map((t, i) => [{ br: true }, (i < 9 ? "" : "") + t]));
+
+  function vkLevel1(rng) {
+    const art = rng.pick(VK), d = rng.shuffle(rng.pick(DESC[art]).slice());
+    return {
+      q: rich(rng.pick(INTRO1), ...d.map(t => [{ br: true }, "• " + t])),
+      a: rich(art),
+      steps: [rich("Passt zu allen Aussagen: ", art, ".")],
+      check: { exp: art },
+    };
+  }
+  function vkLevel2(rng) {
+    const art = rng.pick(VK);
+    for (let i = 0; i < 200; i++) {
+      const sel = rng.shuffle(PROPS.slice()).slice(0, 4);
+      const right = sel.map((p, k) => (p.in.includes(art) ? k + 1 : 0)).filter(Boolean);
+      if (!right.length || (right.length === 4 && art !== "Quadrat")) continue;
+      const exp = right.length === 1 ? `Richtig ist nur Aussage ${right[0]}.` : `Richtig sind die Aussagen ${listDe(right.map(String))}.`;
+      return {
+        q: rich(`Welche Aussagen gelten für ${JEDES[art]}? Nenne die Nummern.`, ...sel.map((p, k) => [{ br: true }, `(${k + 1}) ${p.t}`])),
+        a: rich(exp),
+        steps: sel.map((p, k) => rich(`(${k + 1}) `, p.in.includes(art) ? "gilt" : "gilt nicht", ` für ${JEDES[art]}.`)),
+        check: { exp },
+      };
+    }
+    throw new Error("m6-viereckarten: keine Auswahl gefunden");
+  }
+  function vkLevel3(rng) {
+    const A = rng.pick(Object.keys(SUB));
+    const B = rng.pick(Object.keys(SUB).filter(x => x !== A));
+    const ok = SUB[A].includes(B);
+    const who = rng.pick(NAMES);
+    const exp = ok ? "Die Behauptung stimmt." : "Die Behauptung stimmt nicht.";
+    const why = ok
+      ? `${NOM[A].charAt(0).toUpperCase() + NOM[A].slice(1)} hat ${KEYPROP[B]}. Also ist ${NOM[A]} auch ${EIN[B]}.`
+      : `Nicht ${NOM[A]} hat ${KEYPROP[B]}. Also ist nicht ${NOM[A]} ${EIN[B]}.`;
+    return {
+      q: rich(`${who} behauptet: „${NOM[A].charAt(0).toUpperCase() + NOM[A].slice(1)} ist ${EIN[B]}.“ Stimmt das? Begründe.`),
+      a: rich(exp),
+      steps: [rich(why)],
+      check: { exp },
+    };
+  }
+
+  AG.registerType({
+    id: "m6-viereckarten",
+    klasse: "6",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren, Körper und Lagebeziehungen",
+    title: "Viereckarten bestimmen",
+    topic: "winkel",
+    instruction: {
+      1: "Welches Viereck passt zu allen Aussagen? Schreibe den Namen.",
+      2: "Welche Aussagen gelten immer? Schreibe die Nummern auf.",
+      3: "Stimmt die Behauptung? Begründe mit den Eigenschaften der Vierecke.",
+    },
+    merke: [
+      { b: "Quadrat" }, ": alle Seiten gleich lang, vier rechte Winkel. ", { b: "Rechteck" }, ": vier rechte Winkel. ",
+      { b: "Raute" }, ": alle Seiten gleich lang. ", { b: "Parallelogramm" }, ": gegenüberliegende Seiten parallel. ",
+      { b: "Trapez" }, ": zwei Seiten parallel. ", { b: "Drachen" },
+      ": zwei Paare benachbarter gleich langer Seiten, Diagonalen senkrecht.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      if (level === 1) return vkLevel1(rng);
+      if (level === 2) return vkLevel2(rng);
+      return vkLevel3(rng);
+    },
+    verify(t) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 2. Koordinaten in allen vier Quadranten =================
+  const KSC = 5, KML = 7, KMT = 5, KMB = 5, KMR = 7;      // mm je Einheit und Ränder
+  const KW = KML + 10 * KSC + KMR, KH = KMT + 10 * KSC + KMB;
+  const KP = (x, y) => [KML + (x + 5) * KSC, KMT + (5 - y) * KSC];
+
+  // Koordinatensystem von −5 bis 5. pts: Punkte mit name, x, y. o.edges: Strecken [i, j]; o.guides: Lote zu den Achsen
+  function gridFig(pts, o = {}) {
+    const s = AG.sketch(KW, KH);
+    for (let v = -5; v <= 5; v++) {
+      if (v === 0) continue;
+      s.line(KP(v, -5), KP(v, 5), { stroke: GREY, width: 0.12 });
+      s.line(KP(-5, v), KP(5, v), { stroke: GREY, width: 0.12 });
+    }
+    s.line(KP(-5, 0), KP(5, 0), { width: 0.4 });
+    s.line(KP(0, -5), KP(0, 5), { width: 0.4 });
+    const ax = KP(5, 0), ay = KP(0, 5);
+    s.poly([[ax[0] + 2, ax[1]], [ax[0] - 0.4, ax[1] - 1], [ax[0] - 0.4, ax[1] + 1]], { fill: INK, stroke: INK, width: 0.1 });
+    s.poly([[ay[0], ay[1] - 2], [ay[0] - 1, ay[1] + 0.4], [ay[0] + 1, ay[1] + 0.4]], { fill: INK, stroke: INK, width: 0.1 });
+    for (let v = -5; v <= 5; v++) {
+      if (v === 0) continue;
+      const p = KP(v, 0), q = KP(0, v);
+      s.label([p[0], p[1] + 3.6], sInt(v), { size: 2.9 });
+      s.label([q[0] - 1.4, q[1]], sInt(v), { anchor: "end", size: 2.9 });
+    }
+    const o0 = KP(0, 0);
+    s.label([o0[0] - 1.2, o0[1] + 3.6], "0", { anchor: "end", size: 2.9 });
+    s.label([KW - 1.5, o0[1] - 3], "x", { anchor: "end" });
+    s.label([ay[0] + 2.2, 2.5], "y", { anchor: "start" });
+    for (const [i, j] of o.edges || []) s.line(KP(pts[i].x, pts[i].y), KP(pts[j].x, pts[j].y), { width: 0.5 });
+    for (const p of pts) {
+      const q = KP(p.x, p.y);
+      if (o.guides) { s.line(q, KP(p.x, 0), { dash: true }); s.line(q, KP(0, p.y), { dash: true }); }
+      s.circle(q, 0.9, { fill: INK });
+      s.label([q[0] + 2.6, q[1] - 2.6], p.name, { anchor: "start", bold: true });
+    }
+    return s.done();
+  }
+
+  const QUADRANT = (x, y) => (x > 0 ? (y > 0 ? "I" : "IV") : (y > 0 ? "II" : "III"));
+
+  // Niveau 1: Koordinaten der Punkte ablesen (Punkte nur in der Skizze, Koordinaten nicht im Text)
+  function koLevel1(rng) {
+    const n = rng.pick([2, 3]);
+    const letters = rng.shuffle("ABCDEFGHIJKLMNOPRSTUVWXYZ".split("")).slice(0, n);
+    const pts = [];
+    for (let i = 0; pts.length < n && i < 500; i++) {
+      const x = rng.pick(NZ), y = rng.pick(NZ);
+      if (pts.some(p => p.x === x && p.y === y)) continue;
+      pts.push({ name: letters[pts.length], x, y });
+    }
+    if (pts.length < n) throw new Error("Koordinaten: zu wenige Punkte");
+    const exp = pts.map(p => `${p.name}(${sInt(p.x)} | ${sInt(p.y)})`).join("; ");
+    return {
+      q: rich(`Lies die Koordinaten der Punkte ${listDe(pts.map(p => p.name))} ab. Schreibe sie so: ${pts[0].name}(x | y).`),
+      a: rich(exp),
+      steps: pts.map(p => rich(`${p.name}: x = ${sInt(p.x)} (${p.x < 0 ? "links" : "rechts"} von der y-Achse), `
+        + `y = ${sInt(p.y)} (${p.y < 0 ? "unter" : "über"} der x-Achse). Also ${p.name}(${sInt(p.x)} | ${sInt(p.y)}).`)),
+      fig: gridFig(pts),
+      aFig: gridFig(pts, { guides: true }),
+      inline: false,
+      check: { lvl: 1, exp },
+    };
+  }
+
+  // Niveau 2: Quadrant eines Punktes angeben oder einen Punkt an einer Achse spiegeln
+  function koLevel2(rng) {
+    const x = rng.pick(NZ), y = rng.pick(NZ);
+    if (rng.chance(0.5)) {
+      const Q = QUADRANT(x, y);
+      return {
+        q: rich(`In welchem Quadranten liegt der Punkt P(${sInt(x)} | ${sInt(y)})? Antworte mit der römischen Zahl (I, II, III oder IV).`),
+        a: rich(Q),
+        steps: [
+          rich(`x = ${sInt(x)} ist ${x < 0 ? "negativ (links)" : "positiv (rechts)"}, `
+            + `y = ${sInt(y)} ist ${y < 0 ? "negativ (unten)" : "positiv (oben)"}.`),
+          rich(`Also liegt P im Quadranten ${Q}.`),
+        ],
+        inline: false,
+        check: { lvl: 2, exp: Q },
+      };
+    }
+    const axis = rng.pick(["x", "y"]);
+    const img = axis === "x" ? { x, y: -y } : { x: -x, y };
+    const exp = `P′(${sInt(img.x)} | ${sInt(img.y)})`;
+    const steps = axis === "x"
+      ? [
+        rich(`Spiegelung an der x-Achse: Der x-Wert bleibt gleich, x = ${sInt(x)}.`),
+        rich(`Der y-Wert wechselt das Vorzeichen: ${sInt(y)} wird zu ${sInt(-y)}.`),
+      ]
+      : [
+        rich(`Spiegelung an der y-Achse: Der y-Wert bleibt gleich, y = ${sInt(y)}.`),
+        rich(`Der x-Wert wechselt das Vorzeichen: ${sInt(x)} wird zu ${sInt(-x)}.`),
+      ];
+    return {
+      q: rich(`Spiegle den Punkt P(${sInt(x)} | ${sInt(y)}) an der ${axis}-Achse. Gib die Koordinaten des Bildpunkts P′ an.`),
+      a: rich(exp),
+      steps: [...steps, rich(`Also ${exp}.`)],
+      fig: gridFig([{ name: "P", x, y }]),
+      inline: false,
+      check: { lvl: 2, exp },
+    };
+  }
+
+  // Niveau 3: Rechteck oder Quadrat ABCD mit gegebenen Punkten A, B, C (D ist nicht eingezeichnet)
+  function koLevel3(rng) {
+    for (let tries = 0; tries < 300; tries++) {
+      const square = rng.chance(0.4);
+      const s = rng.int(2, 6), t = square ? s : rng.intExcept(2, 6, [s]);
+      const x0 = rng.int(-5, 5 - s), y0 = rng.int(-5, 5 - t);
+      const A = { name: "A", x: x0, y: y0 }, B = { name: "B", x: x0 + s, y: y0 };
+      const C = { name: "C", x: x0 + s, y: y0 + t }, D = { name: "D", x: x0, y: y0 + t };
+      const exp = `D(${sInt(D.x)} | ${sInt(D.y)})`;
+      return {
+        q: rich(`Die Punkte A(${sInt(A.x)} | ${sInt(A.y)}), B(${sInt(B.x)} | ${sInt(B.y)}) und C(${sInt(C.x)} | ${sInt(C.y)}) `
+          + `sind Eckpunkte eines ${square ? "Quadrats" : "Rechtecks"} ABCD. Gib die Koordinaten des Punktes D an.`),
+        a: rich(exp),
+        steps: [
+          rich(`AB ist waagerecht: Die y-Werte sind gleich (${sInt(A.y)}).`),
+          rich(`Länge AB: ${sInt(B.x)} ${MINUS} (${sInt(A.x)}) = ${s} Einheiten.`),
+          rich(`BC ist senkrecht: Die x-Werte sind gleich (${sInt(C.x)}).`),
+          rich(`Länge BC: ${sInt(C.y)} ${MINUS} (${sInt(B.y)}) = ${t} Einheiten.`),
+          rich(`D hat den x-Wert von A (${sInt(A.x)}) und den y-Wert von C (${sInt(C.y)}).`),
+          rich(`Also ${exp}.`),
+        ],
+        fig: gridFig([A, B, C], { edges: [[0, 1], [1, 2]] }),
+        aFig: gridFig([A, B, C, D], { edges: [[0, 1], [1, 2], [2, 3], [3, 0]], guides: true }),
+        inline: false,
+        check: { lvl: 3, exp },
+      };
+    }
+    throw new Error("Koordinaten: kein Rechteck gefunden");
+  }
+
+  AG.registerType({
+    id: "m6-koordinaten-4q",
+    klasse: "6",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren, Körper und Lagebeziehungen",
+    title: "Koordinaten in allen vier Quadranten",
+    topic: "winkel",
+    instruction: {
+      1: "Lies die Koordinaten der Punkte ab. Negative Werte liegen links der y-Achse bzw. unter der x-Achse.",
+      2: "Bestimme den Quadranten oder spiegle den Punkt. Achte auf die Vorzeichen.",
+      3: "Ergänze den fehlenden Eckpunkt des Rechtecks bzw. Quadrats.",
+    },
+    merke: [
+      "Die Achsen teilen die Ebene in ", { b: "vier Quadranten" }, " (I rechts oben, II links oben, III links unten, IV rechts unten). ",
+      "Spiegelung an der x-Achse: y-Wert wechselt das Vorzeichen. Spiegelung an der y-Achse: x-Wert wechselt das Vorzeichen. "
+      + "Beispiel: P(−2 | 3) an der y-Achse gespiegelt ist P′(2 | 3).",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) return koLevel1(rng);
+      if (level === 2) return koLevel2(rng);
+      return koLevel3(rng);
+    },
+    verify(t) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 3. Körper (Schrägbilder) =================
+  const DEPTH = [9, 6];      // Tiefe im Schrägbild: nach hinten oben rechts (Mathe-Koordinaten, y nach oben)
+  const ellipse = (cx, cy, rx, ry, a0, a1, n) => {
+    const out = [];
+    for (let i = 0; i <= n; i++) { const t = a0 + (a1 - a0) * i / n; out.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    return out;
+  };
+
+  // Gerades Prisma mit Vorderfläche F (CCW, Mathe-Koordinaten) und Tiefe o.
+  // Seitenfläche sichtbar, wenn ihre Außennormale in Tiefenrichtung zeigt; verdeckte Kanten gestrichelt.
+  function prismPrims(F, o) {
+    const n = F.length, B = F.map(p => [p[0] + o[0], p[1] + o[1]]);
+    const vis = F.map((p, i) => {
+      const q = F[(i + 1) % n], d = [q[0] - p[0], q[1] - p[1]], nr = [d[1], -d[0]];
+      return nr[0] * o[0] + nr[1] * o[1] > 1e-9;
+    });
+    const prims = [{ t: "poly", pts: F, fill: true }];
+    for (let i = 0; i < n; i++) prims.push({ t: "line", pts: [B[i], B[(i + 1) % n]], dash: !vis[i] });
+    for (let j = 0; j < n; j++) prims.push({ t: "line", pts: [F[j], B[j]], dash: !(vis[j] || vis[(j - 1 + n) % n]) });
+    return prims;
+  }
+
+  // Quadratische Pyramide: Grundfläche liegt waagerecht, Spitze über der Mitte
+  function pyramidPrims(s, hgt) {
+    const FL = [0, 0], FR = [s, 0], BR = [s + DEPTH[0], DEPTH[1]], BL = [DEPTH[0], DEPTH[1]];
+    const S = [s / 2 + DEPTH[0] / 2, DEPTH[1] / 2 + hgt];
+    return [
+      { t: "poly", pts: [S, FL, FR], fill: true },
+      { t: "poly", pts: [S, FR, BR], fill: true },
+      { t: "line", pts: [FL, FR] }, { t: "line", pts: [FR, BR] },
+      { t: "line", pts: [BR, BL], dash: true }, { t: "line", pts: [BL, FL], dash: true },
+      { t: "line", pts: [S, FL] }, { t: "line", pts: [S, FR] }, { t: "line", pts: [S, BR] },
+      { t: "line", pts: [S, BL], dash: true },
+    ];
+  }
+
+  // Zylinder: Grundkreis unten, Deckfläche oben (Ellipsen); verdeckte Teile gestrichelt
+  function cylPrims(rx, H) {
+    const ry = Math.round(rx * 4) / 10;
+    const top = ellipse(0, H, rx, ry, 0, 2 * Math.PI, 72);
+    return [
+      { t: "poly", pts: top, fill: true },
+      { t: "line", pts: [[-rx, 0], [-rx, H]] }, { t: "line", pts: [[rx, 0], [rx, H]] },
+      { t: "path", pts: ellipse(0, 0, rx, ry, Math.PI, 2 * Math.PI, 36) },
+      { t: "path", pts: ellipse(0, 0, rx, ry, 0, Math.PI, 36), dash: true },
+    ];
+  }
+
+  // Kegel: Grundkreis unten, Spitze über der Mitte
+  function konePrims(rx, H) {
+    const ry = Math.round(rx * 4) / 10;
+    return [
+      { t: "poly", pts: [[0, H], ...ellipse(0, 0, rx, ry, Math.PI, 2 * Math.PI, 36)], fill: true },
+      { t: "line", pts: [[0, H], [-rx, 0]] }, { t: "line", pts: [[0, H], [rx, 0]] },
+      { t: "path", pts: ellipse(0, 0, rx, ry, Math.PI, 2 * Math.PI, 36) },
+      { t: "path", pts: ellipse(0, 0, rx, ry, 0, Math.PI, 36), dash: true },
+    ];
+  }
+
+  // Kugel mit Äquator (vorne durchgezogen, hinten gestrichelt)
+  function kugelPrims(r) {
+    return [
+      { t: "poly", pts: ellipse(0, r, r, r, 0, 2 * Math.PI, 96), fill: true },
+      { t: "path", pts: ellipse(0, r, r, r * 0.25, Math.PI, 2 * Math.PI, 36) },
+      { t: "path", pts: ellipse(0, r, r, r * 0.25, 0, Math.PI, 36), dash: true },
+    ];
+  }
+
+  // Alle Primitive in mm (y nach unten) mittig in 46 × 42 mm
+  function drawBody(prims) {
+    const all = prims.flatMap(p => p.pts);
+    const minX = Math.min(...all.map(p => p[0])), maxX = Math.max(...all.map(p => p[0]));
+    const minY = Math.min(...all.map(p => p[1])), maxY = Math.max(...all.map(p => p[1]));
+    const W = 46, H = 42;
+    const ox = (W - (maxX - minX)) / 2 - minX, oy = (H - (maxY - minY)) / 2 + maxY;
+    const T = p => [ox + p[0], oy - p[1]];
+    const s = AG.sketch(W, H);
+    for (const p of prims) {
+      const q = p.pts.map(T);
+      if (p.t === "poly") s.poly(q, { fill: p.fill ? FILL : false });
+      else if (p.t === "line") s.line(q[0], q[1], { dash: p.dash });
+      else s.path("M" + q.map(v => v[0].toFixed(2) + "," + v[1].toFixed(2)).join(" L"), { dash: p.dash });
+    }
+    return s.done();
+  }
+
+  // Körper mit Eigenschaften (feat: null = nicht sinnvoll zählbar, z. B. Spitze beim Kegel)
+  const FEAT_KEYS = ["ecken", "kreis", "krumm", "dreieck", "quadrat", "rechteck"];
+  const FEAT_TXT = {
+    ecken: v => (v === 0 ? "keine Ecken" : v === 1 ? "eine Ecke" : `${v} Ecken`),
+    kreis: v => (v === 0 ? "keine Kreisfläche" : v === 1 ? "eine Kreisfläche" : "zwei Kreisflächen"),
+    krumm: v => (v === 0 ? "keine gekrümmte Fläche" : "eine gekrümmte Fläche"),
+    dreieck: v => (v === 0 ? "keine dreieckige Fläche" : v === 2 ? "zwei dreieckige Flächen" : "vier dreieckige Flächen"),
+    quadrat: v => (v === 0 ? "keine quadratische Fläche" : v === 1 ? "eine quadratische Fläche" : "sechs quadratische Flächen"),
+    rechteck: v => (v === 0 ? "keine rechteckige Fläche" : v === 1 ? "eine rechteckige Fläche" : v === 3 ? "drei rechteckige Flächen" : "sechs rechteckige Flächen"),
+  };
+  const KOERPER = [
+    {
+      name: "Würfel", poly: true,
+      feat: { ecken: 8, kreis: 0, krumm: 0, dreieck: 0, quadrat: 6, rechteck: 6 },
+      cnt: { Ecken: [8, "4 Ecken oben + 4 Ecken unten = 8"], Kanten: [12, "4 Kanten oben + 4 Kanten unten + 4 senkrechte Kanten = 12"],
+        Flächen: [6, "2 Quadrate (oben und unten) + 4 Seitenflächen = 6"] },
+      step: "Alle sechs Flächen sind gleich große Quadrate.",
+      draw: rng => { const a = rng.int(18, 22); return prismPrims([[0, 0], [a, 0], [a, a], [0, a]], DEPTH); },
+    },
+    {
+      name: "Quader", poly: true,
+      feat: { ecken: 8, kreis: 0, krumm: 0, dreieck: 0, quadrat: 0, rechteck: 6 },
+      cnt: { Ecken: [8, "4 Ecken oben + 4 Ecken unten = 8"], Kanten: [12, "4 Kanten oben + 4 Kanten unten + 4 senkrechte Kanten = 12"],
+        Flächen: [6, "2 Rechtecke (oben und unten) + 4 Seitenflächen = 6"] },
+      step: "Die sechs Flächen sind Rechtecke, gegenüberliegende Flächen sind gleich groß.",
+      draw: rng => { const w = rng.int(24, 30), h = rng.int(13, 17); return prismPrims([[0, 0], [w, 0], [w, h], [0, h]], DEPTH); },
+    },
+    {
+      name: "Dreiseitiges Prisma", poly: true,
+      feat: { ecken: 6, kreis: 0, krumm: 0, dreieck: 2, quadrat: 0, rechteck: 3 },
+      cnt: { Ecken: [6, "3 Ecken oben + 3 Ecken unten = 6"], Kanten: [9, "3 Kanten oben + 3 Kanten unten + 3 senkrechte Kanten = 9"],
+        Flächen: [5, "2 Dreiecke (vorne und hinten) + 3 Rechtecke = 5"] },
+      step: "Zwei gleiche Dreiecke und drei Rechtecke begrenzen den Körper.",
+      draw: rng => {
+        const w = rng.int(24, 30), h = rng.int(16, 20), a = rng.int(Math.round(w * 0.25), Math.round(w * 0.75));
+        return prismPrims([[0, 0], [w, 0], [a, h]], DEPTH);
+      },
+    },
+    {
+      name: "Quadratische Pyramide", poly: true,
+      feat: { ecken: 5, kreis: 0, krumm: 0, dreieck: 4, quadrat: 1, rechteck: 1 },
+      cnt: { Ecken: [5, "4 Ecken der Grundfläche + 1 Spitze = 5"], Kanten: [8, "4 Kanten der Grundfläche + 4 Seitenkanten zur Spitze = 8"],
+        Flächen: [5, "1 Grundfläche + 4 Dreiecke = 5"] },
+      step: "Eine quadratische Grundfläche und vier dreieckige Seitenflächen, die in einer Spitze zusammenlaufen.",
+      draw: rng => pyramidPrims(rng.int(18, 22), rng.int(20, 26)),
+    },
+    {
+      name: "Zylinder", poly: false,
+      feat: { ecken: 0, kreis: 2, krumm: 1, dreieck: 0, quadrat: 0, rechteck: 0 },
+      step: "Zwei Kreisflächen und eine gekrümmte Fläche.",
+      draw: rng => cylPrims(rng.int(9, 12), rng.int(20, 26)),
+    },
+    {
+      name: "Kegel", poly: false,
+      feat: { ecken: null, kreis: 1, krumm: 1, dreieck: 0, quadrat: 0, rechteck: 0 },
+      step: "Eine Kreisfläche, eine gekrümmte Fläche und eine Spitze.",
+      draw: rng => konePrims(rng.int(9, 12), rng.int(22, 26)),
+    },
+    {
+      name: "Kugel", poly: false,
+      feat: { ecken: 0, kreis: 0, krumm: 1, dreieck: 0, quadrat: 0, rechteck: 0 },
+      step: "Nur eine gekrümmte Fläche, keine Ecken und keine Kanten.",
+      draw: rng => kugelPrims(rng.int(10, 13)),
+    },
+  ];
+  const KBY = Object.fromEntries(KOERPER.map(b => [b.name, b]));
+  const KINTRO = ["", ...NAMES.map(n => `${n} hat diesen Körper gezeichnet.`)];
+  const KQ = ["Welcher Körper ist abgebildet?", "Wie heißt der Körper in der Skizze?", "Benenne den abgebildeten Körper."];
+  const KEND = ["Schreibe den Namen auf.", "Antworte mit einem Wort."];
+
+  // Niveau 1: Name des Körpers aus dem Schrägbild
+  function koerperLevel1(rng) {
+    const b = rng.pick(KOERPER);
+    const fig = drawBody(b.draw(rng));
+    const q = [rng.pick(KINTRO), rng.pick(KQ), rng.pick(KEND)].filter(Boolean).join(" ");
+    return {
+      q: rich(q),
+      a: rich(b.name),
+      steps: [rich(b.step), rich(`Also: ${b.name}.`)],
+      fig,
+      inline: false,
+      check: { lvl: 1, exp: b.name },
+    };
+  }
+
+  // Niveau 2: Anzahl der Ecken, Kanten oder Flächen eines abgebildeten Vielflachs
+  function koerperLevel2(rng) {
+    const poly = KOERPER.filter(b => b.poly);
+    const b = rng.pick(poly);
+    const word = rng.pick(["Ecken", "Kanten", "Flächen"]);
+    const [n, how] = b.cnt[word];
+    const fig = drawBody(b.draw(rng));
+    const q = [rng.pick(KINTRO), rng.pick([`Wie viele ${word} hat der abgebildete Körper?`, `Zähle die ${word} des Körpers.`, `Gib die Anzahl der ${word} an.`])].filter(Boolean).join(" ");
+    return {
+      q: rich(q),
+      a: rich(String(n)),
+      steps: [rich(`${word}: ${how}.`), rich(`Der Körper ist ein ${b.name}.`)],
+      fig,
+      inline: false,
+      check: { lvl: 2, exp: String(n) },
+    };
+  }
+
+  // Niveau 3: Körper aus einer Beschreibung erkennen
+  function koerperLevel3(rng) {
+    for (let tries = 0; tries < 300; tries++) {
+      const b = rng.pick(KOERPER);
+      const keys = FEAT_KEYS.filter(k => b.feat[k] !== null && !(k === "quadrat" && b.feat[k] === 0));
+      const chosen = rng.shuffle(keys).slice(0, rng.pick([2, 3]));
+      const match = KOERPER.filter(o => chosen.every(k => o.feat[k] !== null && o.feat[k] === b.feat[k]));
+      if (match.length !== 1) continue;
+      const parts = chosen.map(k => FEAT_TXT[k](b.feat[k]));
+      return {
+        q: rich(`Welcher Körper ist beschrieben? Er hat ${listDe(parts)}.`),
+        a: rich(b.name),
+        steps: [
+          ...chosen.map(k => rich(`„${FEAT_TXT[k](b.feat[k])}“ passt zu: `
+            + `${listDe(KOERPER.filter(o => o.feat[k] !== null && o.feat[k] === b.feat[k]).map(o => o.name))}.`)),
+          rich(`Alle Merkmale passen nur zu: ${b.name}.`),
+        ],
+        inline: false,
+        check: { lvl: 3, exp: b.name },
+      };
+    }
+    throw new Error("Körper: keine eindeutige Beschreibung gefunden");
+  }
+
+  AG.registerType({
+    id: "m6-koerper",
+    klasse: "6",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren, Körper und Lagebeziehungen",
+    title: "Körper erkennen und beschreiben",
+    topic: "koerper",
+    instruction: {
+      1: "Welcher Körper ist im Schrägbild abgebildet? Die gestrichelten Linien sind verdeckte Kanten.",
+      2: "Zähle die Ecken, Kanten oder Flächen des abgebildeten Körpers.",
+      3: "Welcher Körper passt zur Beschreibung? Denke an die Flächen, Ecken und gekrümmten Flächen.",
+    },
+    merke: [
+      "Körper mit ebenen Flächen heißen ", { b: "Vielflache" }, " (Würfel, Quader, Prisma, Pyramide). ",
+      "Runde Körper haben gekrümmte Flächen (Zylinder, Kegel, Kugel). ",
+      "Beispiel: Ein Zylinder hat zwei Kreisflächen und eine gekrümmte Fläche, aber keine Ecken.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 1) return koerperLevel1(rng);
+      if (level === 2) return koerperLevel2(rng);
+      return koerperLevel3(rng);
+    },
+    verify(t) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+
+  // ================= 4. Würfelnetze =================
+  // Die 11 Würfelnetze als Gitter (X = Quadrat, Zeilen von oben nach unten)
+  const NETZE = [
+    ["X...", "XXXX", "X..."], ["X...", "XXXX", ".X.."], ["X...", "XXXX", "..X."], ["X...", "XXXX", "...X"],
+    [".X..", "XXXX", ".X.."], [".X..", "XXXX", "..X."],
+    ["XX..", ".XXX", ".X.."], ["XX..", ".XXX", "..X."], ["XX..", ".XXX", "...X"],
+    ["XX..", ".XX.", "..XX"],
+    ["XXX..", "..XXX"],
+  ];
+  // Nicht-Netze (zum Vergleich: vier in einer Reihe und zwei übereinander auf einer Seite, 2×3-Block)
+  const KEINE_NETZE = [
+    ["XXXX", "X...", "X..."], ["XXX", "XXX"], ["XXXX", ".X..", ".X.."], ["X.X.", "XXXX"],
+    ["X...", "XXXX", "X.X."], ["XX..", "XX..", "..XX"],
+  ];
+  const DIRS = { E: [1, 0], W: [-1, 0], S: [0, 1], N: [0, -1] };
+  // Rollen des Würfels: Seite, auf die der Würfel rollt, wird unten; so ergibt sich, welche Fläche auf welches Quadrat fällt
+  const ROLL = {
+    E: s => ({ T: s.W, E: s.T, B: s.E, W: s.B, N: s.N, S: s.S }),
+    W: s => ({ T: s.E, W: s.T, B: s.W, E: s.B, N: s.N, S: s.S }),
+    S: s => ({ T: s.N, S: s.T, B: s.S, N: s.B, E: s.E, W: s.W }),
+    N: s => ({ T: s.S, N: s.T, B: s.N, S: s.B, E: s.E, W: s.W }),
+  };
+  const FACE = ["T", "B", "N", "S", "E", "W"];
+  const GEGEN = { T: "B", B: "T", N: "S", S: "N", E: "W", W: "E" };
+
+  const gitter = rows => {
+    const cells = [];
+    rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === "X") cells.push([c, r]); }));
+    return cells;
+  };
+  // Falten per Rollen: liefert je Quadrat die Würfelfläche (T, B, N, S, E, W), ok nur wenn alle 6 Flächen verschieden sind
+  function falten(cells) {
+    const key = (c, r) => c + "," + r;
+    const idx = new Map(cells.map((p, i) => [key(p[0], p[1]), i]));
+    const st = new Array(cells.length).fill(null);
+    st[0] = { T: "T", B: "B", N: "N", S: "S", E: "E", W: "W" };
+    const queue = [0];
+    while (queue.length) {
+      const i = queue.shift();
+      for (const d of ["E", "W", "S", "N"]) {
+        const [dc, dr] = DIRS[d];
+        const j = idx.get(key(cells[i][0] + dc, cells[i][1] + dr));
+        if (j === undefined) continue;
+        const want = ROLL[d](st[i]);
+        if (!st[j]) { st[j] = want; queue.push(j); }
+        else if (FACE.some(k => st[j][k] !== want[k])) return { ok: false, labels: null };
+      }
+    }
+    const labels = st.map(s => s.B);
+    return { ok: cells.length === 6 && new Set(labels).size === 6, labels };
+  }
+
+  // Zufälliges Sechs-Quadrat-Gebilde (zusammenhängend), das kein Netz ist
+  function zufallsFigur(rng, maxC, maxR) {
+    for (let t = 0; t < 400; t++) {
+      const cells = [[0, 0]];
+      for (let g = 0; cells.length < 6 && g < 300; g++) {
+        const [c, r] = rng.pick(cells);
+        const [dc, dr] = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+        const p = [c + dc, r + dr];
+        if (cells.some(q => q[0] === p[0] && q[1] === p[1])) continue;
+        cells.push(p);
+      }
+      if (cells.length !== 6) continue;
+      const mc = Math.min(...cells.map(p => p[0])), mr = Math.min(...cells.map(p => p[1]));
+      const norm = cells.map(([c, r]) => [c - mc, r - mr]);
+      const w = Math.max(...norm.map(p => p[0])) + 1, h = Math.max(...norm.map(p => p[1])) + 1;
+      if (w > maxC || h > maxR || falten(norm).ok) continue;
+      return norm;
+    }
+    throw new Error("Würfelnetz: keine Figur gefunden");
+  }
+
+  // Skizze: Quadrate mit Rand; labels optional (Zahlen je Quadrat)
+  function netzFig(cells, labels) {
+    const maxC = Math.max(...cells.map(p => p[0])) + 1, maxR = Math.max(...cells.map(p => p[1])) + 1;
+    const cs = Math.min(10, 64 / maxC, 38 / maxR);
+    const s = AG.sketch(maxC * cs + 6, maxR * cs + 6);
+    cells.forEach(([c, r], i) => {
+      const x = 3 + c * cs, y = 3 + r * cs;
+      s.rect(x, y, cs, cs);
+      if (labels) s.label([x + cs / 2, y + cs / 2], labels[i], { size: 4.6, bold: true });
+    });
+    return s.done();
+  }
+
+  const NETZ_Q = ["Ist das ein Würfelnetz?", "Lässt sich diese Figur zu einem Würfel falten?",
+    "Kann man aus diesem Muster einen Würfel falten?", "Ist die Figur ein Würfelnetz?"];
+  const NETZ_END = ["Antworte mit Ja oder Nein.", "Entscheide: Ja oder Nein?"];
+  const NETZ_INTRO = ["", ...NAMES.map(n => `${n} hat dieses Muster gezeichnet.`)];
+
+  // Niveau 1 und 2: Ja/Nein, ob die Figur ein Würfelnetz ist. Niveau 2 mit schwierigeren Fehlern
+  function netzLevel12(rng, level) {
+    const valid = rng.chance(0.5);
+    let cells;
+    if (valid) cells = gitter(rng.pick(NETZE));
+    else if (level === 1 && rng.chance(0.4)) cells = gitter(rng.pick(KEINE_NETZE));
+    else if (level === 1) cells = zufallsFigur(rng, 6, 6);
+    else cells = zufallsFigur(rng, 4, 3);
+    if (falten(cells).ok !== valid) throw new Error("Würfelnetz: Prüfung stimmt nicht");
+    const q = [rng.pick(NETZ_INTRO), rng.pick(NETZ_Q), "Die Figur besteht aus sechs gleich großen Quadraten.", rng.pick(NETZ_END)]
+      .filter(Boolean).join(" ");
+    return {
+      q: rich(q),
+      a: rich(valid ? "Ja" : "Nein"),
+      steps: valid
+        ? [rich("Die sechs Quadrate lassen sich zu einem Würfel falten, ohne dass sich zwei überlappen."), rich("Also ist es ein Würfelnetz: Ja.")]
+        : [rich("Beim Falten überlappen sich Quadrate, und eine Würfelfläche bleibt leer."), rich("Also ist es kein Würfelnetz: Nein.")],
+      fig: netzFig(cells),
+      inline: false,
+      check: { lvl: level, exp: valid ? "Ja" : "Nein" },
+    };
+  }
+
+  // Niveau 3: Zahlen auf dem Netz, welche Zahl liegt der gesuchten gegenüber?
+  function netzLevel3(rng) {
+    const cells = gitter(rng.pick(NETZE));
+    const f = falten(cells);
+    if (!f.ok) throw new Error("Würfelnetz: Netz ungültig");
+    const nums = rng.shuffle([1, 2, 3, 4, 5, 6]);
+    const numOf = {};
+    FACE.forEach((k, i) => { numOf[k] = nums[i]; });
+    const cellNum = f.labels.map(l => numOf[l]);
+    const X = rng.pick([1, 2, 3, 4, 5, 6]);
+    const iX = cellNum.indexOf(X);
+    const opp = numOf[GEGEN[f.labels[iX]]];
+    const nbrs = [1, 2, 3, 4, 5, 6].filter(v => v !== X && v !== opp);
+    const intro = rng.pick(["", ...NAMES.map(n => `${n} faltet ein Netz aus dem Mathebuch.`)]);
+    const frage = rng.pick([
+      `Welche Zahl liegt der ${X} gegenüber?`,
+      `Welche Zahl steht auf der Fläche, die der ${X} gegenüberliegt?`,
+    ]);
+    const q = [intro, "Auf der Figur stehen die Zahlen 1 bis 6. Die Figur wird zu einem Würfel gefaltet.", frage]
+      .filter(Boolean).join(" ");
+    return {
+      q: rich(q),
+      a: rich(String(opp)),
+      steps: [
+        rich(`Die ${X} grenzt im Würfel an die Zahlen ${listDe(nbrs.map(String))}.`),
+        rich("Jede Fläche grenzt an vier andere Flächen. Nur die fünfte Fläche liegt gegenüber."),
+        rich(`Also liegt der ${X} die ${opp} gegenüber.`),
+      ],
+      fig: netzFig(cells, cellNum.map(String)),
+      inline: false,
+      check: { lvl: 3, exp: String(opp) },
+    };
+  }
+
+  AG.registerType({
+    id: "m6-wuerfelnetz",
+    klasse: "6",
+    zug: "RM",
+    lb: "3",
+    lbTitle: "Geometrische Figuren, Körper und Lagebeziehungen",
+    title: "Würfelnetze erkennen",
+    topic: "koerper",
+    instruction: {
+      1: "Ist die Figur ein Würfelnetz? Denke dir die Figur gefaltet.",
+      2: "Ist die Figur ein Würfelnetz? Achte auf Quadrate, die übereinander oder am gleichen Platz landen würden.",
+      3: "Falte das Netz im Kopf zu einem Würfel. Welche Zahl liegt der gesuchten Zahl gegenüber?",
+    },
+    merke: [
+      "Ein Würfel hat 6 Flächen. Ein ", { b: "Würfelnetz" }, " besteht aus 6 Quadraten, die sich zum Würfel falten lassen, ohne dass sich zwei überlappen. "
+      + "Es gibt genau 11 Würfelnetze. ", "Gegenüberliegende Flächen haben keine gemeinsame Kante.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 3) return netzLevel3(rng);
+      return netzLevel12(rng, level);
+    },
+    verify(t) {
+      const k = t.check;
+      if (!k) return "kein Prüfdatensatz";
+      return plain(t.a) === k.exp || `erwartet „${k.exp}“, steht „${plain(t.a)}“`;
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-quader.js ----
+// M6 (Klasse 6 Mittelschule): Quader und Würfel – Oberfläche, Rauminhalt, Volumeneinheiten, Würfelbauten,
+// Sachaufgaben und Umkehraufgaben. Skizzen als Schrägbild (verdeckte Kanten gestrichelt).
+// Typen: m6-quader-oberflaeche (LB 4), m6-volumeneinheiten (LB 5), m6-quader-volumen (LB 5),
+//        m6-wuerfelbauten (LB 5), m6-volumen-sachaufgaben (LB 5), m6-quader-umkehr (LB 7).
+(function (AG) {
+  const { Frac, rich, fmtInt, fmtDec, fitPoints, sketch } = AG;
+
+  // ---------- Hilfen ----------
+  const I = n => fmtInt(n);
+  const nf = x => { const f = Frac.of(x); return f.isInt() ? fmtInt(f.n) : fmtDec(f); };
+  const cm = x => nf(x) + " cm";
+  const cm2 = x => nf(x) + " cm²";
+  const cm3 = x => nf(x) + " cm³";
+  const dec = k => fmtDec(new Frac(k, 100));   // k/100 als Dezimalzahl mit Komma
+  const FW = 74, FH = 44;                      // Skizzenfeld (cols: 2)
+  const K = 0.5;                               // Tiefenversatz des Schrägbilds (in cm der Zeichnung)
+  // Wiederholen, bis eine gültige Aufgabe entsteht (begrenzt)
+  function retry(fn) {
+    for (let i = 0; i < 300; i++) { const t = fn(); if (t) return t; }
+    throw new Error("m6: keine Aufgabe erzeugt");
+  }
+
+  // ---------- Schrägbild ----------
+  // Abbildung Punkte (x nach rechts, z nach oben) -> mm im Feld, Ränder: links/rechts 18 mm, oben 6 mm, unten 9 mm
+  function layout(pts) {
+    const f = fitPoints(pts, FW - 46, FH - 15, 0);
+    return p => { const q = f(p); return [q[0] + 24, q[1] + 6]; };
+  }
+  // Ein Quader: vordere Fläche [x0,x1] × [z0,z1], hinten rechts oben um K versetzt.
+  // Verdeckte Kanten zuerst zeichnen und dann die Flächen darüber setzen (Flächen verdecken sie).
+  function drawBox(S, P, Q, x0, z0, x1, z1) {
+    S.line(P(x0, z0), Q(x0, z0), { dash: true });
+    S.line(Q(x0, z0), Q(x1, z0), { dash: true });
+    S.line(Q(x0, z0), Q(x0, z1), { dash: true });
+    S.poly([P(x0, z1), P(x1, z1), Q(x1, z1), Q(x0, z1)]);   // oben
+    S.poly([P(x1, z0), P(x1, z1), Q(x1, z1), Q(x1, z0)]);   // rechts
+    S.poly([P(x0, z0), P(x1, z0), P(x1, z1), P(x0, z1)]);   // vorne
+  }
+  // Figur aus einem oder mehreren Quadern (gleiche Tiefe), boxes = [[x0, z0, x1, z1], ...] (Reihenfolge: unten zuerst)
+  function scene(boxes, labels) {
+    const pts = [];
+    boxes.forEach(([x0, z0, x1, z1]) => pts.push([x0, z0], [x1, z0], [x0, z1], [x1, z1],
+      [x0 + K, z0 + K], [x1 + K, z0 + K], [x0 + K, z1 + K], [x1 + K, z1 + K]));
+    const f = layout(pts);
+    const P = (x, z) => f([x, z]), Q = (x, z) => f([x + K, z + K]);
+    const mm = pts.map(p => f(p));
+    const C = [mm.reduce((s, p) => s + p[0], 0) / mm.length, mm.reduce((s, p) => s + p[1], 0) / mm.length];
+    const S = sketch(FW, FH);
+    boxes.forEach(([x0, z0, x1, z1]) => drawBox(S, P, Q, x0, z0, x1, z1));
+    if (labels) labels(S, P, Q, C);
+    return S.done();
+  }
+  // Beschriftung eines Quaders: la = Länge unten, lc = Höhe links, lb = Breite (Tiefe) rechts unten
+  function quaderLabels(a, c, la, lb, lc) {
+    return (S, P, Q, C) => {
+      S.side(P(0, 0), P(a, 0), la, { inside: C });
+      S.side(P(0, 0), P(0, c), lc, { inside: C });
+      S.side(P(a, 0), Q(a, 0), lb, { inside: C });
+    };
+  }
+  function quaderFig(a, c, la, lb, lc) {
+    return scene([[0, 0, a, c]], quaderLabels(a, c, la, lb, lc));
+  }
+
+  // ---------- 1. Oberfläche von Quadern ----------
+  AG.registerType({
+    id: "m6-quader-oberflaeche",
+    klasse: "6",
+    zug: "RM",
+    lb: "4",
+    lbTitle: "Oberflächeninhalt von Quadern",
+    title: "Oberfläche von Quadern",
+    topic: "koerper",
+    instruction: {
+      1: "Berechne den Oberflächeninhalt. Schreibe die Rechnung auf.",
+      2: "Berechne den Oberflächeninhalt. Achte auf die Einheiten.",
+      3: "Löse die Aufgabe. Überlege, welche Flächen zur Oberfläche gehören.",
+    },
+    merke: [
+      "Quader: ", { b: "O = 2 · (a · b + a · c + b · c)" }, ". Würfel: ", { b: "O = 6 · a · a" },
+      ". Die Oberfläche besteht aus sechs Rechtecken, je zwei gegenüberliegende sind gleich groß. "
+      + "Beispiel: a = 5 cm, b = 3 cm, c = 2 cm → O = 2 · (15 + 10 + 6) cm² = 62 cm².",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      return retry(() => {
+        if (level === 1) {
+          if (rng.chance(0.3)) {
+            const s = rng.int(2, 9);
+            return {
+              q: rich("Ein Würfel hat die Kantenlänge a = ", cm(s), ". Berechne den Oberflächeninhalt."),
+              a: rich(cm2(6 * s * s)),
+              steps: [rich("Eine Fläche: a · a = ", cm(s), " · ", cm(s), " = ", cm2(s * s)),
+                rich("O = 6 · ", cm2(s * s), " = ", cm2(6 * s * s))],
+              fig: quaderFig(s, s, "a = " + cm(s), "a = " + cm(s), "a = " + cm(s)),
+              inline: false,
+            };
+          }
+          const a = rng.int(2, 9), b = rng.int(2, 9);
+          let c = rng.int(2, 9);
+          if (a === b && b === c) c = c < 9 ? c + 1 : c - 1;
+          const ab = a * b, ac = a * c, bc = b * c, sum = ab + ac + bc, O = 2 * sum;
+          return {
+            q: rich("Ein Quader ist a = ", cm(a), " lang, b = ", cm(b), " breit und c = ", cm(c), " hoch. "
+              + "Berechne den Oberflächeninhalt."),
+            a: rich(cm2(O)),
+            steps: [
+              rich("O = 2 · (a · b + a · c + b · c)"),
+              rich("a · b = ", cm(a), " · ", cm(b), " = ", cm2(ab)),
+              rich("a · c = ", cm(a), " · ", cm(c), " = ", cm2(ac)),
+              rich("b · c = ", cm(b), " · ", cm(c), " = ", cm2(bc)),
+              rich("O = 2 · (", cm2(ab), " + ", cm2(ac), " + ", cm2(bc), ") = 2 · ", cm2(sum), " = ", cm2(O)),
+            ],
+            fig: quaderFig(a, c, "a = " + cm(a), "b = " + cm(b), "c = " + cm(c)),
+            inline: false,
+          };
+        }
+        if (level === 2) {
+          // Kantenlängen mit einer Nachkommastelle, Ergebnis bleibt mit höchstens zwei Stellen
+          const a = new Frac(rng.int(56, 72), 2), b = new Frac(rng.int(32, 44), 2), c = new Frac(rng.int(20, 28), 2);
+          const ab = a.mul(b), ac = a.mul(c), bc = b.mul(c), sum = ab.add(ac).add(bc), O = sum.mul(2);
+          return {
+            q: rich("Ein Schuhkarton ist a = ", cm(a), " lang, b = ", cm(b), " breit und c = ", cm(c), " hoch. "
+              + "Wie viel Papier braucht man, um ihn ganz zu bekleben?"),
+            a: rich(cm2(O)),
+            steps: [
+              rich("O = 2 · (a · b + a · c + b · c)"),
+              rich("a · b = ", cm(a), " · ", cm(b), " = ", cm2(ab)),
+              rich("a · c = ", cm(a), " · ", cm(c), " = ", cm2(ac)),
+              rich("b · c = ", cm(b), " · ", cm(c), " = ", cm2(bc)),
+              rich("O = 2 · (", cm2(ab), " + ", cm2(ac), " + ", cm2(bc), ") = 2 · ", cm2(sum), " = ", cm2(O)),
+            ],
+            fig: quaderFig(Number(a), Number(c), "a = " + cm(a), "b = " + cm(b), "c = " + cm(c)),
+            inline: false,
+          };
+        }
+        // Niveau 3: Karton ohne Deckel (Sachaufgabe) oder zwei Quader übereinander
+        if (rng.chance(0.5)) {
+          const a = rng.int(4, 12), b = rng.int(3, 9), c = rng.int(3, 8);
+          const ab = a * b, ac = a * c, bc = b * c, O = 2 * (ab + ac + bc), need = O - ab;
+          return {
+            q: rich("Eine Schachtel hat die Form eines Quaders mit a = ", cm(a), " (Länge), b = ", cm(b),
+              " (Breite) und c = ", cm(c), " (Höhe). Sie hat keinen Deckel. Wie viel Karton braucht man mindestens?"),
+            a: rich(cm2(need)),
+            steps: [
+              rich("Boden: a · b = ", cm(a), " · ", cm(b), " = ", cm2(ab)),
+              rich("Vorder- und Rückseite: 2 · a · c = 2 · ", cm(a), " · ", cm(c), " = ", cm2(2 * ac)),
+              rich("Die beiden Seiten: 2 · b · c = 2 · ", cm(b), " · ", cm(c), " = ", cm2(2 * bc)),
+              rich("Karton: ", cm2(ab), " + ", cm2(2 * ac), " + ", cm2(2 * bc), " = ", cm2(need)),
+            ],
+            inline: false,
+          };
+        }
+        // zwei Quader übereinander: unten a × b × c1, oben a2 × b × c2 (a2 < a), gemeinsame Tiefe b
+        const a = rng.int(4, 9), a2 = rng.int(2, a - 1), b = rng.int(2, 6), c1 = rng.int(2, 6), c2 = rng.int(2, 5);
+        const off = rng.pick([0, a - a2]);
+        const O1 = 2 * (a * b + a * c1 + b * c1), O2 = 2 * (a2 * b + a2 * c2 + b * c2), cover = 2 * a2 * b;
+        const O = O1 + O2 - cover;
+        const fig = scene(
+          [[0, 0, a, c1], [off, c1, off + a2, c1 + c2]],
+          (S, P, Q, C) => {
+            S.side(P(0, 0), P(a, 0), "a = " + cm(a), { inside: C });
+            S.side(P(0, 0), P(0, c1), "c = " + cm(c1), { inside: C });
+            S.side(P(a, 0), Q(a, 0), "b = " + cm(b), { inside: C });
+            S.side(Q(off, c1 + c2), Q(off + a2, c1 + c2), "a = " + cm(a2), { inside: C });
+            S.side(P(off, c1), P(off, c1 + c2), "c = " + cm(c2), { inside: C });
+          });
+        return {
+          q: rich("Zwei Quader stehen übereinander (siehe Skizze). Unten: a = ", cm(a), ", b = ", cm(b), ", c = ", cm(c1),
+            ". Oben: a = ", cm(a2), ", b = ", cm(b), ", c = ", cm(c2), ". Berechne die Oberfläche des ganzen Körpers."),
+          a: rich(cm2(O)),
+          steps: [
+            rich("Unterer Quader: O₁ = 2 · (a · b + a · c + b · c) = 2 · (", cm2(a * b), " + ", cm2(a * c1), " + ", cm2(b * c1),
+              ") = ", cm2(O1)),
+            rich("Oberer Quader: O₂ = 2 · (", cm2(a2 * b), " + ", cm2(a2 * c2), " + ", cm2(b * c2), ") = ", cm2(O2)),
+            rich("Die Auflagefläche ", cm2(a2 * b), " fehlt oben und unten: 2 · ", cm2(a2 * b), " = ", cm2(cover)),
+            rich("O = ", cm2(O1), " + ", cm2(O2), " − ", cm2(cover), " = ", cm2(O)),
+          ],
+          fig,
+          inline: false,
+        };
+      });
+    },
+  });
+
+  // ---------- 2. Volumeneinheiten ----------
+  // Rauminhalt-Einheiten: jede Stufe ist 1000-mal so groß wie die nächstkleinere (ml und cm³ gleich, l und dm³ gleich)
+  const LADDER = [["m³", "dm³"], ["dm³", "cm³"], ["cm³", "mm³"], ["l", "ml"]];
+  const MIXED = [["m³", "dm³"], ["dm³", "cm³"], ["l", "ml"]];
+
+  AG.registerType({
+    id: "m6-volumeneinheiten",
+    klasse: "6",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Rauminhalt – Quader",
+    title: "Volumeneinheiten umrechnen",
+    topic: "groessen",
+    instruction: {
+      1: "Rechne in die angegebene Einheit um.",
+      2: "Rechne um. Bei gemischten Angaben rechnest du zuerst jede Einheit um, dann addierst du.",
+      3: "Rechne um. Bei den Vergleichen setze <, > oder = ein.",
+    },
+    merke: [
+      "1 m³ = 1000 dm³, 1 dm³ = 1000 cm³, 1 cm³ = 1000 mm³. Außerdem 1 dm³ = 1 l, 1 l = 1000 ml und 1 cm³ = 1 ml. "
+      + "Beispiel: 2,5 dm³ = 2500 cm³, 3 l 250 ml = 3250 ml.",
+    ],
+    cols: 3,
+    generate(rng, level) {
+      if (level === 1) {
+        const [A, B] = rng.pick(LADDER);
+        const n = rng.int(2, 12);
+        if (rng.chance(0.6)) {
+          return {
+            q: rich(I(n), " ", A, " = ", { blank: 4 }, " ", B),
+            a: rich(I(n * 1000), " ", B),
+            steps: [rich("1 ", A, " = 1000 ", B), rich(I(n), " · 1000 ", B, " = ", I(n * 1000), " ", B)],
+            inline: false,
+          };
+        }
+        return {
+          q: rich(I(n * 1000), " ", B, " = ", { blank: 4 }, " ", A),
+          a: rich(I(n), " ", A),
+          steps: [rich("1 ", A, " = 1000 ", B), rich(I(n * 1000), " ", B, " : 1000 = ", I(n), " ", A)],
+          inline: false,
+        };
+      }
+      if (level === 2) {
+        const [A, B] = rng.pick(MIXED);
+        const x = rng.int(2, 9), y = rng.int(5, 995);
+        return {
+          q: rich(I(x), " ", A, " ", I(y), " ", B, " = ", { blank: 4 }, " ", B),
+          a: rich(I(x * 1000 + y), " ", B),
+          steps: [rich(I(x), " ", A, " = ", I(x * 1000), " ", B),
+            rich(I(x * 1000), " ", B, " + ", I(y), " ", B, " = ", I(x * 1000 + y), " ", B)],
+          inline: false,
+        };
+      }
+      // Niveau 3: Kommaschreibweise und Vergleiche
+      const [A, B] = rng.pick(MIXED);
+      const k = rng.int(10, 999);
+      if (rng.chance(0.6)) {
+        return {
+          q: rich(dec(k), " ", A, " = ", { blank: 4 }, " ", B),
+          a: rich(I(10 * k), " ", B),
+          steps: [rich("1 ", A, " = 1000 ", B), rich(dec(k), " ", A, " = ", dec(k), " · 1000 ", B, " = ", I(10 * k), " ", B)],
+          inline: false,
+        };
+      }
+      // Vergleich: Liter (Kommazahl) mit Milliliter (ganze Zahl)
+      let y = 10 * k + rng.int(-150, 150);
+      if (y < 1 || y === 10 * k) y = 10 * k + 200;
+      const sign = 10 * k > y ? ">" : "<";
+      return {
+        q: rich(dec(k), " l ", { blank: 3 }, " ", I(y), " ml"),
+        a: rich(dec(k), " l ", sign, " ", I(y), " ml"),
+        steps: [rich(dec(k), " l = ", I(10 * k), " ml"), rich(I(10 * k), " ml ", sign, " ", I(y), " ml")],
+        inline: false,
+      };
+    },
+  });
+
+  // ---------- 3. Volumen von Quader und Würfel ----------
+  AG.registerType({
+    id: "m6-quader-volumen",
+    klasse: "6",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Rauminhalt – Quader",
+    title: "Volumen von Quader und Würfel",
+    topic: "koerper",
+    instruction: {
+      1: "Berechne das Volumen. Schreibe die Rechnung auf.",
+      2: "Berechne das Volumen und gib es in Litern an.",
+      3: "Der Körper besteht aus zwei Quadern. Berechne das Gesamtvolumen.",
+    },
+    merke: [
+      "Quader: ", { b: "V = a · b · c" }, " (Länge · Breite · Höhe). Würfel: ", { b: "V = a · a · a" },
+      ". Beispiel: a = 5 cm, b = 4 cm, c = 3 cm → V = 60 cm³. Es gilt 1 l = 1000 cm³.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      return retry(() => {
+        if (level === 1) {
+          if (rng.chance(0.3)) {
+            const s = rng.int(2, 9);
+            return {
+              q: rich("Ein Würfel hat die Kante a = ", cm(s), ". Berechne das Volumen."),
+              a: rich(cm3(s * s * s)),
+              steps: [rich("V = a · a · a"), rich("V = ", cm(s), " · ", cm(s), " · ", cm(s), " = ", cm3(s * s * s))],
+              fig: quaderFig(s, s, "a = " + cm(s), "a = " + cm(s), "a = " + cm(s)),
+              inline: false,
+            };
+          }
+          const a = rng.int(2, 12), b = rng.int(2, 9), c = rng.int(2, 9), V = a * b * c;
+          return {
+            q: rich("Ein Quader ist a = ", cm(a), " lang, b = ", cm(b), " breit und c = ", cm(c), " hoch. Berechne das Volumen."),
+            a: rich(cm3(V)),
+            steps: [rich("V = a · b · c"), rich("V = ", cm(a), " · ", cm(b), " · ", cm(c), " = ", cm3(V))],
+            fig: quaderFig(a, c, "a = " + cm(a), "b = " + cm(b), "c = " + cm(c)),
+            inline: false,
+          };
+        }
+        if (level === 2) {
+          // Volumen durch 10 teilbar, damit das Ergebnis in Litern höchstens zwei Nachkommastellen hat
+          const a = rng.int(6, 16) * 5, b = rng.int(4, 8) * 5, c = rng.int(5, 9) * 5, V = a * b * c;
+          if (V % 10 !== 0 || b >= a) return null;
+          const L = new Frac(V, 1000);
+          return {
+            q: rich("Ein Aquarium ist a = ", cm(a), " lang, b = ", cm(b), " breit und c = ", cm(c), " hoch. "
+              + "Wie viel Liter Wasser passen hinein? (1 l = 1000 cm³)"),
+            a: rich(nf(L), " l"),
+            steps: [rich("V = a · b · c = ", cm(a), " · ", cm(b), " · ", cm(c), " = ", cm3(V)),
+              rich("1 l = 1000 cm³"),
+              rich("V = ", cm3(V), " : 1000 = ", nf(L), " l")],
+            fig: quaderFig(a, c, "a = " + cm(a), "b = " + cm(b), "c = " + cm(c)),
+            inline: false,
+          };
+        }
+        // Niveau 3: zwei Quader übereinander, gemeinsame Tiefe b, oben a2 < a
+        const a = rng.int(4, 9), a2 = rng.int(2, a - 1), b = rng.int(2, 7), c1 = rng.int(2, 6), c2 = rng.int(2, 6);
+        const off = rng.pick([0, a - a2]);
+        const V1 = a * b * c1, V2 = a2 * b * c2, V = V1 + V2;
+        const fig = scene(
+          [[0, 0, a, c1], [off, c1, off + a2, c1 + c2]],
+          (S, P, Q, C) => {
+            S.side(P(0, 0), P(a, 0), "a = " + cm(a), { inside: C });
+            S.side(P(0, 0), P(0, c1), "c = " + cm(c1), { inside: C });
+            S.side(P(a, 0), Q(a, 0), "b = " + cm(b), { inside: C });
+            S.side(Q(off, c1 + c2), Q(off + a2, c1 + c2), "a = " + cm(a2), { inside: C });
+            S.side(P(off, c1), P(off, c1 + c2), "c = " + cm(c2), { inside: C });
+          });
+        return {
+          q: rich("Ein Körper besteht aus zwei Quadern (siehe Skizze). Unten: a = ", cm(a), ", b = ", cm(b), ", c = ", cm(c1),
+            ". Oben: a = ", cm(a2), ", b = ", cm(b), ", c = ", cm(c2), ". Berechne das Gesamtvolumen."),
+          a: rich(cm3(V)),
+          steps: [
+            rich("Unten: V₁ = a · b · c = ", cm(a), " · ", cm(b), " · ", cm(c1), " = ", cm3(V1)),
+            rich("Oben: V₂ = a · b · c = ", cm(a2), " · ", cm(b), " · ", cm(c2), " = ", cm3(V2)),
+            rich("V = ", cm3(V1), " + ", cm3(V2), " = ", cm3(V)),
+          ],
+          fig,
+          inline: false,
+        };
+      });
+    },
+  });
+
+  // ---------- 4. Würfelbauten zählen ----------
+  // Schrägbild eines Würfels an Stelle (x, y, z); y = Tiefe (größer = weiter hinten). Sichtbar: vorne, oben, rechts.
+  const PROJ = (X, Y, Z) => [X + K * Y, Z + K * Y];
+  function cubesFig(cells) {
+    const pts = [];
+    cells.forEach(([x, y, z]) => {
+      for (const dx of [0, 1]) for (const dy of [0, 1]) for (const dz of [0, 1]) pts.push(PROJ(x + dx, y + dy, z + dz));
+    });
+    const f0 = layout(pts);
+    const S = sketch(FW, FH);
+    // hinten zuerst: größere Tiefe zuerst, dann von unten nach oben
+    const order = cells.slice().sort((p, q) => (q[1] - p[1]) || (p[2] - q[2]) || (p[0] - q[0]));
+    for (const [x, y, z] of order) {
+      const g = (X, Y, Z) => f0(PROJ(X, Y, Z));
+      S.poly([g(x, y, z), g(x + 1, y, z), g(x + 1, y, z + 1), g(x, y, z + 1)]);                         // vorne
+      S.poly([g(x, y, z + 1), g(x + 1, y, z + 1), g(x + 1, y + 1, z + 1), g(x, y + 1, z + 1)]);         // oben
+      S.poly([g(x + 1, y, z), g(x + 1, y, z + 1), g(x + 1, y + 1, z + 1), g(x + 1, y + 1, z)]);         // rechts
+    }
+    return S.done();
+  }
+  // Bauten: Treppe (Spalten 1, 2, 3 … Würfel hoch), Mauer (w × h), L-Form, Quader (w × d × h)
+  function treppe(w) { const c = []; for (let x = 0; x < w; x++) for (let z = 0; z <= x; z++) c.push([x, 0, z]); return c; }
+  function mauer(w, h) { const c = []; for (let x = 0; x < w; x++) for (let z = 0; z < h; z++) c.push([x, 0, z]); return c; }
+  function lForm(w, h) { const c = []; for (let x = 0; x < w; x++) c.push([x, 0, 0]); for (let z = 1; z < h; z++) c.push([0, 0, z]); return c; }
+  function quaderW(w, d, h) { const c = []; for (let x = 0; x < w; x++) for (let y = 0; y < d; y++) for (let z = 0; z < h; z++) c.push([x, y, z]); return c; }
+
+  AG.registerType({
+    id: "m6-wuerfelbauten",
+    klasse: "6",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Rauminhalt – Quader",
+    title: "Würfelbauten zählen",
+    topic: "koerper",
+    instruction: {
+      1: "Zähle die Würfel im Bild. Zähle Spalte für Spalte.",
+      2: "Zähle die Würfel im Bild. Denke an die Schichten hinter den Würfeln.",
+      3: "Wie viele Würfel fehlen noch zu einem vollständigen Quader?",
+    },
+    merke: [
+      "Bei Würfelbauten zählt man Schicht für Schicht. Ein Quader aus w · d · h Würfeln hat ",
+      { b: "w · d · h Würfel" }, ". Beispiel: 3 · 2 · 2 = 12 Würfel.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      const name = rng.pick(["Lena", "Ben", "Mia", "Jonas", "Sara", "Tim", "Emma", "Paul"]);
+      return retry(() => {
+        if (level === 1) {
+          const kind = rng.pick(["treppe", "mauer", "l"]);
+          if (kind === "treppe") {
+            const w = rng.int(3, 4), cells = treppe(w), n = w * (w + 1) / 2;
+            const steps = [];
+            const parts = [];
+            for (let x = 0; x < w; x++) parts.push(String(x + 1));
+            steps.push(rich("Spalten von links nach rechts: ", parts.join(", "), " Würfel"));
+            steps.push(rich(parts.map(p => p).join(" + "), " = ", I(n)));
+            return { q: rich(name, " baut aus Würfeln mit der Kante 1 cm eine Treppe mit ", I(w), " Stufen (siehe Bild). Wie viele Würfel sind es?"),
+              a: rich(I(n), " Würfel"), steps, fig: cubesFig(cells), inline: false };
+          }
+          if (kind === "mauer") {
+            const w = rng.int(3, 6), h = rng.int(2, 4), n = w * h;
+            return { q: rich(name, " baut aus Würfeln mit der Kante 1 cm eine Mauer, die ", I(w), " Würfel lang ist (siehe Bild). Wie viele Würfel sind es?"),
+              a: rich(I(n), " Würfel"),
+              steps: [rich("Reihen: ", I(h), " Reihen mit je ", I(w), " Würfeln"), rich(I(h), " · ", I(w), " = ", I(n))],
+              fig: cubesFig(mauer(w, h)), inline: false };
+          }
+          const w = rng.int(3, 5), h = rng.int(2, 4), n = w + h - 1;
+          return { q: rich(name, " baut aus Würfeln mit der Kante 1 cm einen L-förmigen Körper, der ", I(w), " Würfel lang ist (siehe Bild). Wie viele Würfel sind es?"),
+            a: rich(I(n), " Würfel"),
+            steps: [rich("Waagerecht: ", I(w), " Würfel"), rich("Senkrecht ohne den Eckwürfel: ", I(h - 1), " Würfel"),
+              rich(I(w), " + ", I(h - 1), " = ", I(n))],
+            fig: cubesFig(lForm(w, h)), inline: false };
+        }
+        if (level === 2) {
+          const w = rng.int(2, 5), d = rng.int(2, 3), h = rng.int(2, 3), n = w * d * h;
+          return { q: rich(name, " baut einen Quader aus Würfeln mit der Kante 1 cm, der ", I(w), " Würfel lang und ", I(d),
+              " Würfel breit ist (siehe Bild). Wie viele Würfel sind es?"),
+            a: rich(I(n), " Würfel"),
+            steps: [rich("Grundfläche: ", I(w), " · ", I(d), " = ", I(w * d), " Würfel"),
+              rich("Übereinander: ", I(w * d), " · ", I(h), " = ", I(n))],
+            fig: cubesFig(quaderW(w, d, h)), inline: false };
+        }
+        // Niveau 3: vollständiger Quader mit fehlenden Würfeln oben
+        const w = rng.int(3, 4), d = rng.int(2, 3), h = rng.int(2, 3), T = w * d * h;
+        const top = w * d, r = rng.int(1, top - 2);
+        const removed = new Set();
+        for (let i = 0; removed.size < r && i < 500; i++) removed.add(rng.int(0, top - 1));
+        if (removed.size !== r) return null;
+        const cells = quaderW(w, d, h).filter(([x, y, z]) => !(z === h - 1 && removed.has(x * d + y)));
+        const P = cells.length;
+        return { q: rich(name, " hat einen vollständigen Quader aus Würfeln mit der Kante 1 cm gebaut. Er hat die Maße ", I(w), " × ", I(d), " × ", I(h),
+          " Würfel. Im Bild fehlen oben einige Würfel. Wie viele Würfel fehlen noch?"),
+          a: rich(I(r), " Würfel"),
+          steps: [rich("Vollständiger Quader: ", I(w), " · ", I(d), " · ", I(h), " = ", I(T), " Würfel"),
+            rich("Im Bild: ", I(P), " Würfel"), rich("Fehlend: ", I(T), " − ", I(P), " = ", I(r), " Würfel")],
+          fig: cubesFig(cells), inline: false };
+      });
+    },
+  });
+
+  // ---------- 5. Volumen in Sachaufgaben ----------
+  const AW = [20, 25, 30, 40, 50, 60], BH = [20, 30, 40, 50, 60, 80];
+  AG.registerType({
+    id: "m6-volumen-sachaufgaben",
+    klasse: "6",
+    zug: "RM",
+    lb: "5",
+    lbTitle: "Rauminhalt – Quader",
+    title: "Volumen in Sachaufgaben",
+    topic: "koerper",
+    instruction: {
+      1: "Berechne den Rauminhalt. Schreibe die Rechnung auf.",
+      2: "Rechne das Ergebnis in die verlangte Einheit um. Antworte mit einem Satz.",
+      3: "Rechne rückwärts: Aus dem Volumen und der Grundfläche berechnest du die Höhe.",
+    },
+    merke: [
+      "Volumen des Quaders: ", { b: "V = a · b · c" }, ". Liter und Kubikzentimeter: ", { b: "1 l = 1000 cm³" },
+      ". Höhe aus Volumen: ", { b: "h = V : (a · b)" }, ". Beispiel: 60 cm · 30 cm · 30 cm = 54 000 cm³ = 54 l.",
+    ],
+    cols: 1,
+    generate(rng, level) {
+      return retry(() => {
+        if (level === 1) {
+          const a = rng.pick(AW), b = rng.pick(AW.slice(0, 4)), h = rng.pick(BH.slice(0, 4)), V = a * b * h;
+          const what = rng.chance(0.5)
+            ? ["Ein Umzugskarton", "Der Karton", "Er"]
+            : ["Eine Kiste", "Die Kiste", "Sie"];
+          return {
+            q: rich(what[0], " ist a = ", cm(a), " lang, b = ", cm(b), " breit und h = ", cm(h), " hoch. Wie groß ist der Rauminhalt?"),
+            a: rich(cm3(V)),
+            steps: [rich("V = a · b · h = ", cm(a), " · ", cm(b), " · ", cm(h), " = ", cm3(V))],
+            inline: false,
+          };
+        }
+        if (level === 2) {
+          if (rng.chance(0.5)) {
+            // Aquarium in Litern (ganzzahlig)
+            const a = rng.pick(AW), b = rng.pick(AW), h = rng.pick([20, 25, 30, 35, 40]), V = a * b * h;   // Aquarium: Wasser höchstens 40 cm hoch
+            if (V % 1000 !== 0) return null;
+            const L = V / 1000;
+            return {
+              q: rich("Ein Aquarium ist a = ", cm(a), " lang, b = ", cm(b), " breit und h = ", cm(h), " hoch. "
+                + "Wie viele Liter Wasser passen höchstens hinein? (1 l = 1000 cm³)"),
+              a: rich("Es passen höchstens ", I(L), " l Wasser hinein."),
+              steps: [rich("V = ", cm(a), " · ", cm(b), " · ", cm(h), " = ", cm3(V)), rich("1 l = 1000 cm³"),
+                rich("V = ", cm3(V), " : 1000 = ", I(L), " l")],
+              inline: false,
+            };
+          }
+          // Sandkasten in m³ mit Höhe in cm
+          const a = rng.int(2, 5), b = rng.int(2, 4), h = rng.pick([20, 30, 40, 50, 60, 80]);
+          const hm = new Frac(h, 100), V = hm.mul(a * b);
+          return {
+            q: rich("Ein Sandkasten ist a = ", I(a), " m lang und b = ", I(b), " m breit. Er soll bis zu einer Höhe von h = ",
+              cm(h), " mit Sand gefüllt werden. Wie viel Kubikmeter Sand braucht man?"),
+            a: rich("Man braucht ", nf(V), " m³ Sand."),
+            steps: [rich("h = ", cm(h), " = ", nf(hm), " m"),
+              rich("V = ", I(a), " m · ", I(b), " m · ", nf(hm), " m = ", nf(V), " m³")],
+            inline: false,
+          };
+        }
+        // Niveau 3: Höhe aus Volumen und Grundfläche (Aquarium, Angaben in Litern)
+        const a = rng.pick(AW), b = rng.pick(AW), h = rng.pick([20, 25, 30, 35, 40]), V = a * b * h;   // Aquarium: Wasser höchstens 40 cm hoch
+        if (V % 1000 !== 0) return null;
+        const L = V / 1000, G = a * b;
+        return {
+          q: rich("Ein Aquarium ist a = ", cm(a), " lang und b = ", cm(b), " breit. Es enthält ", I(L),
+            " l Wasser. Wie hoch steht das Wasser?"),
+          a: rich("Das Wasser steht ", cm(h), " hoch."),
+          steps: [rich("V = ", I(L), " l = ", cm3(V)),
+            rich("Grundfläche: G = a · b = ", cm(a), " · ", cm(b), " = ", cm2(G)),
+            rich("h = V : G = ", cm3(V), " : ", cm2(G), " = ", cm(h))],
+          inline: false,
+        };
+      });
+    },
+  });
+
+  // ---------- 6. Umkehraufgaben mit der Volumenformel ----------
+  AG.registerType({
+    id: "m6-quader-umkehr",
+    klasse: "6",
+    zug: "RM",
+    lb: "7",
+    lbTitle: "Gleichungen und Formeln",
+    title: "Quader-Volumen rückwärts rechnen",
+    topic: "terme",
+    instruction: {
+      1: "Setze die Werte in die Formel V = a · b · c ein. Berechne die gesuchte Länge.",
+      2: "Stelle die Formel nach der gesuchten Größe um. Rechne Schritt für Schritt.",
+      3: "Finde die gesuchte Zahl. Rechne die Schritte rückwärts.",
+    },
+    merke: [
+      "Volumen: ", { b: "V = a · b · c" }, ". Gesucht c: ", { b: "c = V : (a · b)" },
+      ". Beispiel: V = 120 cm³, a = 5 cm, b = 4 cm → c = 120 cm³ : 20 cm² = 6 cm. "
+      + "Bei Zahlenrätseln rechnet man die Schritte rückwärts.",
+    ],
+    cols: 2,
+    generate(rng, level) {
+      return retry(() => {
+        if (level === 1) {
+          const a = rng.int(2, 9), b = rng.int(2, 9), c = rng.int(2, 9), V = a * b * c;
+          return {
+            q: rich("Ein Quader hat das Volumen V = ", cm3(V), ". Seine Länge ist a = ", cm(a), " und seine Breite b = ", cm(b),
+              ". Berechne die Höhe c."),
+            a: rich("c = ", cm(c)),
+            steps: [rich("V = a · b · c"), rich(cm3(V), " = ", cm(a), " · ", cm(b), " · c = ", cm2(a * b), " · c"),
+              rich("c = ", cm3(V), " : ", cm2(a * b), " = ", cm(c))],
+            inline: false,
+          };
+        }
+        if (level === 2) {
+          const a = rng.int(2, 9), b = rng.int(2, 9), c = rng.int(2, 9), V = a * b * c;
+          return {
+            q: rich("Ein Quader hat das Volumen V = ", cm3(V), ". Seine Breite ist b = ", cm(b), " und seine Höhe c = ", cm(c),
+              ". Berechne die Länge a."),
+            a: rich("a = ", cm(a)),
+            steps: [rich("V = a · b · c"), rich(cm3(V), " = a · ", cm(b), " · ", cm(c), " = a · ", cm2(b * c)),
+              rich("a = ", cm3(V), " : ", cm2(b * c), " = ", cm(a))],
+            inline: false,
+          };
+        }
+        const kind = rng.int(0, 2);
+        if (kind === 0) {
+          // Würfelkante aus dem Volumen: Probieren
+          const s = rng.int(2, 9), V = s * s * s;
+          const trials = [];
+          for (let t = 2; t <= s; t++) trials.push(t + " · " + t + " · " + t + " = " + I(t * t * t));
+          return {
+            q: rich("Ein Würfel hat das Volumen V = ", cm3(V), ". Wie lang ist eine Kante a?"),
+            a: rich("a = ", cm(s)),
+            steps: [rich("V = a · a · a"), rich(cm3(V), " = a · a · a"), rich("Probieren: ", trials.join(", ")),
+              rich("a = ", cm(s))],
+            inline: false,
+          };
+        }
+        // Zahlenrätsel mit Dezimalzahlen oder Brüchen
+        if (kind === 1) {
+          const x = new Frac(rng.int(1, 99), 10), m = rng.int(2, 9), b = new Frac(rng.int(1, 30), 10);
+          const plus = rng.chance(0.5);
+          const c = plus ? x.mul(m).add(b) : x.mul(m).sub(b);
+          if (!plus && c.sign() <= 0) return null;
+          const sgn = plus ? "addiere" : "subtrahiere";
+          const rest = plus ? c.sub(b) : c.add(b);
+          return {
+            q: rich("Ich denke mir eine Zahl. Ich multipliziere sie mit ", I(m), " und ", sgn, " ", nf(b), ". Ich erhalte ",
+              nf(c), ". Welche Zahl habe ich mir gedacht?"),
+            a: rich(nf(x)),
+            steps: [rich(I(m), " · □ ", plus ? "+" : AG.MINUS, " ", nf(b), " = ", nf(c)),
+              rich(I(m), " · □ = ", nf(c), plus ? " − " : " + ", nf(b), " = ", nf(rest)),
+              rich("□ = ", nf(rest), " : ", I(m), " = ", nf(x))],
+            inline: false,
+          };
+        }
+        // Bruch als Faktor: p/d · □ + b = c, Lösung ganzzahlig
+        const d = rng.int(2, 5), p = rng.int(1, d - 1);
+        if (AG.gcd(p, d) !== 1) return null;
+        const t = rng.int(1, 9), x = t * d, b = rng.int(1, 20), c = p * t + b;
+        return {
+          q: rich("Ich denke mir eine Zahl. Ich multipliziere sie mit ", { f: [p, d] }, " und addiere ", I(b),
+            ". Ich erhalte ", I(c), ". Welche Zahl habe ich mir gedacht?"),
+          a: rich(I(x)),
+          steps: [rich({ f: [p, d] }, " · □ + ", I(b), " = ", I(c)),
+            rich({ f: [p, d] }, " · □ = ", I(c), " − ", I(b), " = ", I(p * t)),
+            rich("□ = ", I(p * t), " : ", { f: [p, d] }, " = ", I(x))],
+          inline: false,
+        };
+      });
+    },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/m6-rationale.js ----
+// M6 LB 2: Rationale Zahlen. Fünf Aufgabentypen: Ordnen (auch Brüche und Dezimalzahlen),
+// a + b und a − b mit b positiv, a · n und a : n mit natürlicher Zahl n, Pfeildarstellung an der
+// Zahlengeraden (Skizze), Sachaufgaben (Kontostand, Temperatur, Höhen).
+(function (AG) {
+  const { Frac, num, rich, MINUS } = AG;
+
+  const LB = { klasse: "6", zug: "RM", lb: "2", lbTitle: "Rationale Zahlen", topic: "zahlen" };
+  const OPS = { "+": " + ", "-": " " + MINUS + " ", "*": " · ", "/": " : " };
+  const ab = v => v.abs();
+  const join = (parts, sep = "; ") => rich(parts.map((p, i) => (i ? [sep, p] : [p])));
+  const sf = (n, d) => (n < 0 ? { f: [-n, d], s: -1 } : { f: [n, d] });   // Bruch mit Vorzeichen-Segment
+
+  // ---------- Hilfen ----------
+  const gen = cand => (rng, level) => {
+    for (let i = 0; i < 500; i++) {
+      const t = cand(rng, level);
+      if (t) return t;
+    }
+    throw new Error("Keine passende Aufgabe gefunden (Niveau " + level + ")");
+  };
+
+  // Dezimalzahl mit genau k Nachkommastellen, nie ganzzahlig; Vorzeichen zufällig (signed)
+  function dec(rng, maxInt, k, signed = true) {
+    const ip = rng.int(0, maxInt), fp = rng.int(1, 10 ** k - 1);
+    const v = new Frac(ip * 10 ** k + fp, 10 ** k);
+    return signed && rng.chance(0.5) ? v.neg() : v;
+  }
+
+  // echter Bruch bzw. gemischte Zahl (ganzer Teil 0 bis whole) mit Nenner aus dens; Vorzeichen zufällig
+  function frac(rng, dens, whole, signed = true) {
+    const d = rng.pick(dens), n = rng.int(1, d - 1);
+    const v = new Frac(rng.int(0, whole) * d + n, d);
+    return signed && rng.chance(0.5) ? v.neg() : v;
+  }
+
+  // Darstellung einer Zahl in der Aufgabe: ganze Zahl, Dezimalzahl (nur wenn endlich) oder Bruch
+  function form(rng, v, decOK) {
+    if (v.isInt()) return num(v);
+    if (decOK && v.isTerminating() && v.decimals() <= 2 && rng.chance(0.5)) return num(v, { as: "dec" });
+    return num(v);
+  }
+
+  // Dezimalschreibweise: ganze Zahl ohne Komma, sonst mit Komma (nur für endliche Zahlen)
+  const dz = v => (v.isInt() ? num(v) : num(v, { as: "dec" }));
+
+  // Rechnung a ± b mit b > 0 in Schritten. Geht sie über 0, wird am Nullpunkt zerlegt:
+  // −2,5 + 4 = −2,5 + 2,5 + 1,5 = 0 + 1,5 = 1,5   bzw.   1,2 − 3,5 = 1,2 − 1,2 − 2,3 = 0 − 2,3 = −2,3
+  function calcSteps(a, op, b, f) {
+    const res = op === "+" ? a.add(b) : a.sub(b);
+    const Z = f(new Frac(0));
+    if (op === "+" && a.sign() < 0 && b.cmp(ab(a)) > 0) {
+      const rest = b.add(a);
+      return [
+        rich(f(a), OPS["+"], f(b), " = ", f(a), " + ", f(ab(a)), " + ", f(rest)),
+        rich("= ", Z, " + ", f(rest)),
+        rich("= ", f(res)),
+      ];
+    }
+    if (op === "-" && a.sign() > 0 && b.cmp(a) > 0) {
+      const rest = b.sub(a);
+      return [
+        rich(f(a), OPS["-"], f(b), " = ", f(a), OPS["-"], f(a), OPS["-"], f(rest)),
+        rich("= ", Z, OPS["-"], f(rest)),
+        rich("= ", f(res)),
+      ];
+    }
+    return [rich(f(a), OPS[op], f(b), " = ", f(res))];
+  }
+
+  // ---------- Typ 1: Ordnen ----------
+  function vergleich(rng) {
+    const a = rng.chance(0.5) ? new Frac(rng.int(-5, 5)) : dec(rng, 4, 1);
+    const b = rng.chance(0.5) ? new Frac(rng.int(-5, 5)) : dec(rng, 4, 1);
+    if (a.eq(b)) return null;
+    const sym = a.cmp(b) < 0 ? "<" : ">";
+    let first;
+    if (a.sign() < 0 && b.sign() < 0) {
+      first = rich("Beträge: ", dz(ab(a)), " und ", dz(ab(b)), ". Je größer der Betrag einer negativen Zahl, desto kleiner ist sie.");
+    } else if (a.sign() < 0 || b.sign() < 0) {
+      first = rich("Negative Zahlen liegen links von 0, positive Zahlen rechts von 0.");
+    } else {
+      first = rich("Auf dem Zahlenstrahl liegt die kleinere Zahl weiter links.");
+    }
+    return {
+      q: rich(dz(a), " ", { blank: 3 }, " ", dz(b)),
+      a: rich(dz(a), " ", sym, " ", dz(b)),
+      steps: [first, rich(dz(a), " ", sym, " ", dz(b))],
+    };
+  }
+
+  // Ordnen einer Liste; items: [{ v: Frac, r: Rich }] (r = Darstellung in der Aufgabe)
+  function ordnenTask(rng, items, level) {
+    const asc = rng.chance(0.7);
+    const sorted = items.slice().sort((x, y) => x.v.cmp(y.v));
+    const ordered = asc ? sorted : sorted.slice().reverse();
+    const sym = asc ? "<" : ">";
+    const chain = rich(ordered.map((it, i) => (i ? [" " + sym + " ", it.r] : [it.r])));
+    const steps = [];
+    if (level === 2) steps.push(rich("Als Dezimalzahlen: ", join(items.map(it => dz(it.v)))));
+    if (level === 3) {
+      const D = items.reduce((acc, it) => AG.lcm(acc, it.v.d), 1);
+      steps.push(rich("Gleichnamig mit dem Nenner ", String(D), ": ", join(items.map(it => sf(it.v.n * (D / it.v.d), D)))));
+    }
+    const negs = sorted.filter(it => it.v.sign() < 0);     // aufsteigend: Beträge absteigend
+    if (negs.length >= 2) {
+      const abs = it => (level === 3 ? num(ab(it.v)) : dz(ab(it.v)));
+      steps.push(rich("Beträge der negativen Zahlen: ", join(negs.map(abs), " > "), ". Je größer der Betrag, desto kleiner die Zahl."));
+    }
+    steps.push(rich("= ", chain));
+    return {
+      q: rich(asc ? "Ordne von klein nach groß: " : "Ordne von groß nach klein: ", join(items.map(it => it.r))),
+      a: chain,
+      steps,
+    };
+  }
+
+  function ordnenCand(rng, level) {
+    const vals = [];
+    for (let i = 0; i < 4; i++) {
+      if (level === 2) {
+        const k = rng.int(0, 2);
+        vals.push(k === 0 ? new Frac(rng.signedInt(1, 6)) : k === 1 ? dec(rng, 3, rng.pick([1, 2])) : frac(rng, [2, 4, 5, 10], 1));
+      } else {
+        vals.push(i === 3 && rng.chance(0.5) ? new Frac(rng.signedInt(1, 4)) : frac(rng, [2, 3, 4, 5, 6, 8], 1));
+      }
+    }
+    if (new Set(vals.map(v => v.toString())).size !== vals.length) return null;
+    if (level === 3) {
+      if (new Set(vals.filter(v => !v.isInt()).map(v => v.d)).size < 2) return null;   // ungleichnamig
+      if (vals.reduce((acc, v) => AG.lcm(acc, v.d), 1) > 120) return null;
+    }
+    return ordnenTask(rng, vals.map(v => ({ v, r: form(rng, v, level === 2) })), level);
+  }
+
+  const ordnen = (rng, level) => {
+    if (level === 1) return gen(vergleich)(rng, level);
+    return gen(ordnenCand)(rng, level);
+  };
+
+  // ---------- Typ 2: Addieren und Subtrahieren ----------
+  // Brüche gleichnamig machen; die Zeile mit dem ungekürzten Ergebnis steht vor dem Ergebnis.
+  function fracAddSteps(a, op, b) {
+    const res = op === "+" ? a.add(b) : a.sub(b);
+    const D = AG.lcm(a.d, b.d);
+    const an = a.n * (D / a.d), bn = b.n * (D / b.d);
+    const rn = op === "+" ? an + bn : an - bn;
+    const steps = [];
+    if (a.d !== b.d) steps.push(rich("= ", sf(an, D), OPS[op], { f: [bn, D] }));
+    if (res.d !== D || Math.abs(res.n) > res.d) steps.push(rich("= ", sf(rn, D)));
+    steps.push(rich("= ", num(res)));
+    return steps;
+  }
+
+  function addsubCand(rng, level) {
+    if (level === 3) {
+      const a = frac(rng, [2, 3, 4, 5, 6, 8], 2), b = frac(rng, [2, 3, 4, 5, 6, 8], 1, false);
+      if (a.d === b.d) return null;
+      const op = rng.pick(["+", "-"]);
+      const res = op === "+" ? a.add(b) : a.sub(b);
+      if (res.sign() === 0 || Math.abs(res.valueOf()) > 10) return null;
+      return { q: rich(num(a), OPS[op], num(b)), a: num(res), steps: fracAddSteps(a, op, b) };
+    }
+    const dig = level === 1 ? 9 : 19;
+    const a = rng.chance(0.5) ? new Frac(rng.signedInt(1, dig)) : dec(rng, dig, level === 1 ? 1 : rng.pick([1, 2]));
+    const b = rng.chance(0.5) ? new Frac(rng.int(1, dig)) : dec(rng, dig, level === 1 ? 1 : rng.pick([1, 2]), false);
+    const op = rng.pick(["+", "-"]);
+    const res = op === "+" ? a.add(b) : a.sub(b);
+    if (res.sign() === 0) return null;
+    return { q: rich(dz(a), OPS[op], dz(b)), a: dz(res), steps: calcSteps(a, op, b, dz) };
+  }
+
+  // ---------- Typ 3: Multiplizieren und Dividieren ----------
+  function decMulSteps(a, op, n) {
+    const res = op === "*" ? a.mul(n) : a.div(n);
+    const steps = [];
+    if (a.sign() < 0) steps.push(rich("Das Ergebnis ist negativ, weil a negativ ist. Danach nur die Beträge rechnen."));
+    steps.push(rich(dz(ab(a)), OPS[op], String(n), " = ", dz(ab(res))));
+    if (a.sign() < 0) steps.push(rich("= ", dz(res)));
+    return steps;
+  }
+
+  // Bruch · n: Zähler mal n; Bruch : n: Nenner mal n. Vorzeichen zuerst, dann Beträge, dann kürzen.
+  function fracMulSteps(a, op, n) {
+    const res = op === "*" ? a.mul(n) : a.div(n);
+    const absA = ab(a);
+    const nn = op === "*" ? absA.n * n : absA.n;
+    const dd = op === "*" ? absA.d : absA.d * n;
+    const steps = [];
+    if (a.sign() < 0) steps.push(rich("Das Ergebnis ist negativ, weil a negativ ist. Danach nur die Beträge rechnen."));
+    steps.push(rich(num(absA, { as: "improper" }), OPS[op], String(n), " = ", sf(nn, dd)));
+    // gekürzte Betragszeile nur, wenn sie nicht schon das Endergebnis ist (sonst doppelt)
+    const showRed = AG.gcd(nn, dd) > 1 && (a.sign() < 0 || (!res.isInt() && Math.abs(res.valueOf()) > 1));
+    if (showRed) steps.push(rich("= ", num(ab(res), { as: "improper" })));
+    steps.push(rich("= ", num(res)));
+    return steps;
+  }
+
+  function muldivCand(rng, level) {
+    const op = rng.pick(["*", "/"]);
+    const n = rng.int(2, level === 3 ? 6 : 9);
+    if (level === 3) {
+      const a = frac(rng, [2, 3, 4, 5, 6, 8, 10], 1);
+      const res = op === "*" ? a.mul(n) : a.div(n);
+      if (res.d > 12 || Math.abs(res.valueOf()) > 30) return null;
+      return { q: rich(num(a), OPS[op], String(n)), a: num(res), steps: fracMulSteps(a, op, n) };
+    }
+    let a;
+    if (level === 1) {
+      // Einmaleins und Kopfrechnen; bei der Division ist a = q · n
+      a = op === "*" ? new Frac(rng.signedInt(2, 12)) : new Frac(rng.signedInt(2, 12) * n);
+    } else {
+      const k = rng.pick([1, 2]);
+      a = op === "*" ? dec(rng, 9, k) : dec(rng, 9, k).mul(n);
+    }
+    const res = op === "*" ? a.mul(n) : a.div(n);
+    return { q: rich(dz(a), OPS[op], String(n)), a: dz(res), steps: decMulSteps(a, op, n) };
+  }
+
+  // ---------- Typ 4: Pfeildarstellung ----------
+  // Zahlengerade von lo bis hi, Skala in Schritten step. Start mit Punkt, Pfeile übereinander.
+  // endMark: „?“ am Ende des letzten Pfeils (gesuchtes Ziel)
+  function lineSketch(lo, hi, step, start, arrows, endMark) {
+    const INK = AG.SKETCH_COLORS.INK;
+    const W = 74, H = 28, yA = 21;
+    const X = v => 4 + (v - lo) * (W - 8) / (hi - lo);
+    const s = AG.sketch(W, H);
+    s.line([X(lo) - 1.5, yA], [X(hi) + 1.5, yA], { width: 0.4 });
+    const cnt = Math.round((hi - lo) / step);
+    for (let i = 0; i <= cnt; i++) {
+      const v = lo + i * step;
+      const whole = Number.isInteger(v), z = Math.abs(v) < 1e-9;
+      const len = z ? 2 : whole ? 1.2 : 0.8;
+      s.line([X(v), yA - len], [X(v), yA + len], { width: z ? 0.6 : 0.35 });
+      if (whole && (step < 1 || v % 2 === 0)) s.label([X(v), yA + 4.8], AG.plain(num(v)), { bold: z });
+    }
+    s.circle([X(start), yA], 1.1, { fill: INK });
+    let yFrom = yA - 1.4, last = [X(start), yA];
+    arrows.forEach((ar, i) => {
+      const y = yA - 6 - 6 * i, dir = Math.sign(ar.b - ar.a);
+      s.line([X(ar.a), yFrom], [X(ar.a), y], { dash: true, width: 0.3 });
+      s.line([X(ar.a), y], [X(ar.b) - dir * 1.8, y], { width: 0.5 });
+      s.poly([[X(ar.b), y], [X(ar.b) - dir * 2.8, y - 1.2], [X(ar.b) - dir * 2.8, y + 1.2]], { fill: INK, width: 0.2 });
+      yFrom = y;
+      last = [X(ar.b), y];
+    });
+    if (endMark) s.label([last[0], last[1] - 3], "?", { bold: true });
+    return s.done();
+  }
+
+  const EH = d => (d.valueOf() === 1 ? " Einheit" : " Einheiten");
+
+  function pfeil(rng, level) {
+    const half = level === 3;
+    const u = half ? 2 : 1;                       // Teilstriche je Einheit
+    const lo = half ? -6 : -10, hi = -lo;
+    const S = k => new Frac(k, u);
+    const n = level === 2 ? 2 : level === 3 ? rng.pick([1, 2]) : 1;
+    const s0 = S(rng.int(-6 * u, 6 * u));
+    const arrows = [];
+    let cur = s0;
+    for (let i = 0; i < n; i++) {
+      const op = rng.pick(["+", "-"]);
+      const d = S(rng.int(1, half ? 8 : 6));
+      const e = op === "+" ? cur.add(d) : cur.sub(d);
+      if (e.valueOf() < lo || e.valueOf() > hi) return null;
+      arrows.push({ op, d, from: cur, to: e });
+      cur = e;
+    }
+    const dirOf = op => (op === "+" ? "rechts" : "links");
+    const fig = (endMark) => lineSketch(lo, hi, half ? 0.5 : 1, s0.valueOf(),
+      arrows.map(ar => ({ a: ar.from.valueOf(), b: ar.to.valueOf() })), endMark);
+
+    if (n === 2) {
+      const [A1, A2] = arrows;
+      return {
+        q: rich("Man startet bei ", dz(s0), ". Der erste Pfeil zeigt nach ", dirOf(A1.op), ", der zweite nach ",
+          dirOf(A2.op), ". Welche Rechnung zeigen die Pfeile? Wo landet man?"),
+        a: rich(dz(s0), OPS[A1.op], dz(A1.d), OPS[A2.op], dz(A2.d), " = ", dz(A2.to)),
+        steps: [...calcSteps(s0, A1.op, A1.d, dz), ...calcSteps(A1.to, A2.op, A2.d, dz)],
+        fig: fig(true),
+        inline: false,
+      };
+    }
+    const A = arrows[0];
+    const calc = rich(dz(s0), OPS[A.op], dz(A.d), " = ", dz(A.to));
+    if (rng.chance(0.5)) {
+      return {
+        q: rich("Der Pfeil startet bei ", dz(s0), " und zeigt nach ", dirOf(A.op), ". Welche Rechnung zeigt er? Schreibe sie mit Zahlen auf."),
+        a: calc,
+        steps: calcSteps(s0, A.op, A.d, dz),
+        fig: fig(false),
+        inline: false,
+      };
+    }
+    return {
+      q: rich("Der Pfeil startet bei ", dz(s0), ". Er ist ", dz(A.d), EH(A.d), " lang und zeigt nach ", dirOf(A.op), ". Wo endet er?"),
+      a: dz(A.to),
+      steps: calcSteps(s0, A.op, A.d, dz),
+      fig: fig(true),
+      inline: false,
+    };
+  }
+
+  // ---------- Typ 5: Sachaufgaben ----------
+  const NAMEN = [["Lena", "Sie"], ["Ben", "Er"], ["Mia", "Sie"], ["Ali", "Er"], ["Sophie", "Sie"]];
+  const EUR = v => [num(v, { as: "dec", digits: 2 }), " €"];
+  const GRAD = v => [dz(v), " °C"];
+  const MTR = v => [dz(v), " m"];
+  const done = (q, a, steps, antwort) => ({
+    q: rich(q),
+    a: rich(a),
+    steps: [...steps.map(s => rich(s)), rich(antwort)],
+  });
+
+  function sach(rng, level) {
+    const mU = level === 1 ? 1 : level === 2 ? 2 : 20;   // Geld in Schritten von 1 €, 0,50 € bzw. 0,05 €
+    const tU = level === 1 ? 1 : 2;                      // Temperatur und Höhe in ganzen bzw. halben Einheiten
+    const pos = (u, hi) => new Frac(rng.int(1, hi * u), u);   // positiver Betrag bis hi
+    const [name, pron] = rng.pick(NAMEN);
+    const kind = rng.int(0, 7);
+
+    if (kind === 0) {   // Kontostand, Einzahlung: a + b
+      const a = pos(mU, 40).neg(), b = pos(mU, 40);
+      const res = a.add(b);
+      if (res.sign() === 0) return null;
+      return done([name, " hat einen Kontostand von ", EUR(a), ". ", pron, " zahlt ", EUR(b), " ein. Wie hoch ist der Kontostand danach?"],
+        EUR(res), calcSteps(a, "+", b, EUR), ["Der Kontostand beträgt danach ", EUR(res), "."]);
+    }
+    if (kind === 1) {   // Kontostand, Abhebung: a − b
+      const a = rng.chance(0.6) ? pos(mU, 40).neg() : pos(mU, 60), b = pos(mU, 40);
+      const res = a.sub(b);
+      if (res.sign() === 0) return null;
+      return done([name, " hat einen Kontostand von ", EUR(a), ". ", pron, " hebt ", EUR(b), " ab. Wie hoch ist der Kontostand danach?"],
+        EUR(res), calcSteps(a, "-", b, EUR), ["Der Kontostand beträgt danach ", EUR(res), "."]);
+    }
+    if (kind === 2) {   // Abbuchung jeden Monat: a · n
+      const a = pos(mU, 15).neg(), n = rng.int(2, 6);
+      const res = a.mul(n);
+      return done(["Am Anfang ist der Kontostand ", EUR(new Frac(0)), ". Jeden Monat werden ", EUR(a.neg()),
+        " abgebucht. Wie hoch ist der Kontostand nach ", String(n), " Monaten?"],
+        EUR(res), [rich(EUR(a), " · ", String(n), " = ", EUR(res))], ["Nach ", String(n), " Monaten beträgt der Kontostand ", EUR(res), "."]);
+    }
+    if (kind === 3) {   // Temperatur steigt: a + b
+      const a = pos(tU, 12).neg(), b = pos(tU, 12);
+      const res = a.add(b);
+      if (res.sign() === 0) return null;
+      return done(["Um 6 Uhr zeigt das Thermometer ", GRAD(a), ". Bis 12 Uhr steigt die Temperatur um ", GRAD(b), ". Wie warm ist es um 12 Uhr?"],
+        GRAD(res), calcSteps(a, "+", b, GRAD), ["Um 12 Uhr sind es ", GRAD(res), "."]);
+    }
+    if (kind === 4) {   // Temperatur fällt: a − b
+      const a = pos(tU, 12), b = pos(tU, 12);
+      const res = a.sub(b);
+      if (res.sign() === 0) return null;
+      return done(["Um 14 Uhr zeigt das Thermometer ", GRAD(a), ". Bis 22 Uhr fällt die Temperatur um ", GRAD(b), ". Wie warm ist es um 22 Uhr?"],
+        GRAD(res), calcSteps(a, "-", b, GRAD), ["Um 22 Uhr sind es ", GRAD(res), "."]);
+    }
+    if (kind === 5) {   // Temperaturänderung in einer Stunde: a : n
+      const r = pos(tU, 6), n = rng.int(2, 6);
+      const total = r.mul(n).neg();
+      const res = total.div(n);
+      return done(["Die Temperatur ist in ", String(n), " gleich langen Stunden insgesamt um ", GRAD(r.mul(n)),
+        " gesunken. Um wie viel Grad hat sie sich in einer Stunde geändert? Gib die Änderung mit Vorzeichen an."],
+        GRAD(res), [rich(GRAD(total), " : ", String(n), " = ", GRAD(res))], ["Die Änderung pro Stunde beträgt ", GRAD(res), "."]);
+    }
+    if (kind === 6) {   // Taucher taucht auf: a + b, bleibt unter dem Meeresspiegel
+      const a = pos(tU, 40).neg(), b = pos(tU, 40);
+      const res = a.add(b);
+      if (res.sign() >= 0) return null;
+      return done(["Ein Taucher ist ", MTR(a.neg()), " unter dem Meeresspiegel. Er taucht ", MTR(b), " nach oben. Wie tief ist er jetzt?"],
+        MTR(res), calcSteps(a, "+", b, MTR), ["Der Taucher ist jetzt ", MTR(res.neg()), " unter dem Meeresspiegel."]);
+    }
+    // Vogel sinkt: a − b, landet unter dem Meeresspiegel
+    const a = pos(tU, 20), b = pos(tU, 20);
+    const res = a.sub(b);
+    if (res.sign() >= 0) return null;
+    return done(["Ein Vogel fliegt ", MTR(a), " über dem Meeresspiegel. Er sinkt um ", MTR(b), ". In welcher Höhe ist er jetzt?"],
+      MTR(res), calcSteps(a, "-", b, MTR), ["Der Vogel ist jetzt ", MTR(res.neg()), " unter dem Meeresspiegel."]);
+  }
+
+  // ---------- Registrierung ----------
+  AG.registerType({
+    id: "m6-rational-ordnen",
+    ...LB,
+    title: "Rationale Zahlen ordnen",
+    instruction: {
+      1: "Setze das Zeichen < oder > ein.",
+      2: "Ordne die Zahlen der Größe nach.",
+      3: "Ordne die Zahlen. Mache die Brüche zuerst gleichnamig.",
+    },
+    merke: [
+      { b: "Zahlenstrahl: " },
+      `Die größere Zahl liegt weiter rechts. Negative Zahlen sind kleiner als 0 und kleiner als alle positiven Zahlen. Je größer der Betrag einer negativen Zahl, desto kleiner ist sie. Beispiel: ${MINUS}1,5 < `,
+      { f: [3, 4], s: -1 }, " < 0,2 < 2.",
+    ],
+    cols: 2,
+    generate: ordnen,
+  });
+
+  AG.registerType({
+    id: "m6-rational-addsub",
+    ...LB,
+    title: "Addieren und Subtrahieren",
+    instruction: {
+      1: "Rechne. Achte auf die Vorzeichen.",
+      2: "Rechne. Achte auf das Dezimalkomma.",
+      3: "Rechne. Mache die Brüche zuerst gleichnamig und kürze das Ergebnis.",
+    },
+    merke: [
+      { b: "Am Zahlenstrahl: " },
+      `Bei a + b geht man von a nach rechts, bei a − b nach links. Beispiel: ${MINUS}2,5 + 4 = 1,5. Brüche zuerst gleichnamig machen: `,
+      { f: [1, 2], s: -1 }, " − ", { f: [3, 4] }, " = ", { f: [2, 4], s: -1 }, " − ", { f: [3, 4] }, " = ", { f: [5, 4], s: -1 },
+      " = ", { f: [1, 4], w: 1, s: -1 },
+    ],
+    cols: 3,
+    generate: gen(addsubCand),
+  });
+
+  AG.registerType({
+    id: "m6-rational-muldiv",
+    ...LB,
+    title: "Multiplizieren und Dividieren",
+    instruction: {
+      1: "Rechne im Kopf. Achte auf das Vorzeichen.",
+      2: "Rechne. Achte auf das Dezimalkomma.",
+      3: "Rechne. Kürze das Ergebnis vollständig.",
+    },
+    merke: [
+      { b: "Vorzeichen zuerst: " },
+      `Ist a negativ, ist das Ergebnis negativ. Dann nur die Beträge rechnen. Beispiel: ${MINUS}2,5 · 4 = ${MINUS}10 und ${MINUS}7,2 : 8 = ${MINUS}0,9. Bei einem Bruch wird durch n geteilt, indem man den Nenner mal n nimmt: `,
+      { f: [2, 3], s: -1 }, " : 4 = ", { f: [2, 12], s: -1 }, " = ", { f: [1, 6], s: -1 }, ".",
+    ],
+    cols: 3,
+    generate: gen(muldivCand),
+  });
+
+  AG.registerType({
+    id: "m6-pfeildarstellung",
+    ...LB,
+    title: "Pfeile an der Zahlengeraden",
+    instruction: {
+      1: "Lies die Pfeile an der Zahlengeraden ab.",
+      2: "Schreibe die Rechnung zu den Pfeilen auf bzw. bestimme das Ziel.",
+      3: "Ein kleiner Strich bedeutet 0,5. Schreibe die Rechnung auf bzw. bestimme das Ziel.",
+    },
+    merke: [
+      { b: "Pfeile: " },
+      "Ein Pfeil nach rechts bedeutet plus, ein Pfeil nach links bedeutet minus. Die Länge des Pfeils ist die Zahl hinter dem Rechenzeichen. Beispiel: Start bei −2, Pfeil 5 nach rechts: −2 + 5 = 3.",
+    ],
+    cols: 2,
+    generate: gen(pfeil),
+  });
+
+  AG.registerType({
+    id: "m6-rational-sachaufgaben",
+    ...LB,
+    title: "Sachaufgaben mit rationalen Zahlen",
+    instruction: {
+      1: "Rechne und schreibe einen Antwortsatz.",
+      2: "Rechne mit Dezimalzahlen und schreibe einen Antwortsatz.",
+      3: "Rechne in Schritten und schreibe einen Antwortsatz.",
+    },
+    merke: [
+      { b: "Geld, Temperatur, Höhe: " },
+      `Ein Minus steht für Schulden, Temperaturen unter 0 °C und Orte unter dem Meeresspiegel. Beispiel: Kontostand ${MINUS}35,50 € und Einzahlung 50 €: ${MINUS}35,50 € + 50,00 € = 14,50 €. Ein Monat mit 12,50 € Abbuchung: ${MINUS}12,50 € · 4 = ${MINUS}50,00 €.`,
+    ],
+    cols: 1,
+    generate: gen(sach),
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
 // ---- src/types/m7-bruchdivision.js ----
 // M7 LB 2: Division durch einen Bruch (Bruch : Bruch). Referenz-Aufgabentyp.
 (function (AG) {
