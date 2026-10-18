@@ -177,7 +177,7 @@
   function taskTableXml(tbl, o) {
     const cols = tbl.rows[0].length;
     const first = 1800;
-    const w = Math.max(700, Math.min(1300, Math.floor((o.width - first - 200) / (cols - 1))));
+    const w = Math.max(700, Math.min(2200, Math.floor((o.width - first - 200) / (cols - 1))));
     const widths = [first, ...Array(cols - 1).fill(w)];
     const rows = tbl.rows.map((r, ri) => r.map((c, ci) => ({
       xml: para(richXml(c, { size: 20, color: o.color && ci > 0 && ri > 0 ? o.color : undefined, b: ci === 0 }), { after: 0, align: ci ? "center" : "left" }),

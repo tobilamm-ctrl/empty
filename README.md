@@ -36,6 +36,11 @@ und wahlweise Selbstkontrolle oder Eingabe des Ergebnisses mit automatischer Pr�
 Prozentrechnung (auch Diagramme), rationale Zahlen (auch Sachaufgaben, Überschlag), Winkel und Dreiecke,
 Maßstab, Flächeninhalt (Parallelogramm, Dreieck, Trapez, Drachen, Raute, zusammengesetzte Figuren),
 Prismen (Oberfläche, Volumen), Diagramme und Kennwerte, Terme und Gleichungen, Proportionalität (auch Graphen).
+**Klasse 8** (M-Zug 29 Aufgabentypen, Regelklasse 23): Prozentrechnung (Rabatt, Skonto, Umsatzsteuer, Tara,
+Kalkulation, Promille, M: Wachstumsfaktor), Quadratzahlen und Wurzeln, Kreis (Umfang, Fläche, zusammengesetzte
+Figuren, M: Bogen, Ring, Sektor), Zylinder und Prismen (M: Hohlzylinder), Zufallsexperimente, Gleichungen
+(Klammern, Ausgangsgleichung, Fehler finden, Textgleichungen), funktionale Zusammenhänge (M: y = mx + t).
+Kreisrechnungen mit π ≈ 3,14. Noch offen: Schaubilder zur Prozentrechnung.
 Geometrie- und Diagrammaufgaben haben Skizzen, die auch in Word und OneNote erscheinen.
 Die Themenliste aller Klassen steht in `konzept/lehrplan-abgleich.md`.
 
