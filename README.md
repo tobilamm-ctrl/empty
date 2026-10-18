@@ -66,3 +66,8 @@ Die Themenliste aller Klassen steht in `konzept/lehrplan-abgleich.md`.
 - `node tools/sample-docx.js beispiel.docx typ1,typ2` erzeugt eine Beispiel-Word-Datei
 
 Schrift der Oberfläche: Familjen Grotesk (SIL Open Font License), eingebettet.
+
+## Lizenz
+
+© 2026. Dieses Werk ist lizenziert unter [Creative Commons Namensnennung – Nicht kommerziell 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/deed.de):
+Weitergeben und Anpassen für den Unterricht ist erlaubt, mit Namensnennung und Hinweis auf die Lizenz, aber nicht kommerziell.
