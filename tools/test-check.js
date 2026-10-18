@@ -53,8 +53,8 @@ for (const [id, a] of Object.entries(perType)) console.log(`  ${id}: ${Math.roun
 // ---------- 2. Prüfung aller Aufgaben ----------
 // Zahl (Frac) aus Text wie „1 3/4“, „−3,25“, „48“ (ohne Einheit)
 function coreOf(sol) {
-  const body = sol.replace(/^\S\s*=\s*/, "");
-  const m = body.match(/^[−-]?\d(?:[\d   \/,]*\d)?/);
+  const body = sol.replace(/^\S\s*[=≈]\s*/, "").replace(/^≈\s*/, "");
+  const m = body.replace(/^\+/, "").match(/^[−-]?\d(?:[\d   \/,]*\d)?/);
   return m ? m[0] : null;
 }
 function fracOf(core) {
@@ -106,6 +106,7 @@ for (const type of AG.TYPES) {
       checked++;
       const sol = AG.plain(task.a).trim();
       let correct, wrong;
+      if (kind === "number" && !coreOf(sol)) { fail(where + ": keine Zahl erkennbar"); continue; }
       if (kind === "number") {
         const v = variantsNumber(sol);
         correct = v.out;

@@ -12,8 +12,8 @@
   const solutionText = task => AG.plain(task.a).trim();
   const normMinus = s => s.replace(/[−–]/g, "-");
 
-  // „x = “, „y = “, „α = “ … am Anfang (genau ein Buchstabe)
-  const PREFIX = /^\s*[A-Za-zÄÖÜäöüßα-ωΑ-Ω]\s*=\s*/;
+  // „x = “, „y = “, „α = “, „u ≈ “, „≈ “ … am Anfang (genau ein Buchstabe)
+  const PREFIX = /^\s*(?:[A-Za-zÄÖÜäöüßα-ωΑ-Ω]\s*[=≈]\s*|≈\s*)/;   // auch gerundete Ergebnisse „u ≈ 27,63 cm“
 
   // Zahl am Anfang eines Textes → { value: Frac, rest } oder null.
   // Formen: gemischte Zahl „1 3/4“, Bruch „3/4“, Ganzzahl (auch „15 000“), Dezimalzahl „3,25“ bzw. „3.25“.
