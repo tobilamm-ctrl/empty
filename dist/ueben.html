@@ -5296,7 +5296,7 @@ table.vt td.red { color: var(--red); font-weight: 700; }
     klasse: KL, zug: ZUG, lb: LB, lbTitle: LBT, topic: TOPIC,
     title: "Große Zahlen lesen und schreiben",
     instruction: {
-      1: "Schreibe die Zahl mit Worten oder mit Ziffern. Ergänze die Stellenwerttafel.",
+      1: "Schreibe die Zahl mit Worten oder mit Ziffern bzw. arbeite mit der Stellenwerttafel.",
       2: "Schreibe die Zahl mit Worten oder mit Ziffern. Achte auf Millionen und Milliarden.",
       3: "Schreibe die Zahl um. Achte auf die vielen Nullen und die Billionen.",
     },
@@ -5324,21 +5324,31 @@ table.vt td.red { color: var(--red); font-weight: 700; }
         return { q: rich("Schreibe die Zahl mit Ziffern: „", w, "“"), a: rich(fmt(n)), steps, inline: false, meta: { mode, n, w } };
       }
 
-      // Stellenwerttafel mit Lücken (nur Stellen bis zur höchsten Ziffer)
+      // Stellenwerttafel (nur Stellen bis zur höchsten Ziffer):
+      // „eintragen“ – Zahl ist gegeben (Ziffern, Stellenwerte oder Worte), die Ziffernzeile ist leer;
+      // „ablesen“ – Tafel ist ausgefüllt, gesucht sind Zahl mit Ziffern und in Worten.
       const top = t(n).length - 1;
-      const k = level === 1 ? 2 : level === 2 ? 3 : 4;
-      const blanks = rng.shuffle([...Array(top + 1).keys()]).slice(0, k);
       const head = [[{ b: "Stelle" }], ...ORDER.map(p => [{ b: PL[p] }])];
-      const row = bl => [[{ b: "Ziffer" }], ...ORDER.map(p => (p > top ? [] : bl.includes(p) ? [{ blank: 2 }] : [t(digitAt(n, p))]))];
-      const table = { rows: [head, row(blanks)] };
-      const aTable = { rows: [head, row([])] };
-      const steps = [...blanks].sort((x, y) => y - x).map(p =>
-        rich(PL[p], ": ", t(digitAt(n, p)), " · ", fmt(10 ** p), " = ", fmt(digitAt(n, p) * 10 ** p)));
-      const nonZero = ORDER.filter(p => p <= top && digitAt(n, p) !== 0).map(p => fmt(digitAt(n, p) * 10 ** p));
-      steps.push(rich(nonZero.join(" + "), " = ", fmt(n)));
+      const row = empty => [[{ b: "Ziffer" }], ...ORDER.map(p => (empty ? [{ blank: 2 }] : p > top ? [] : [t(digitAt(n, p))]))];   // leere Tafel: alle Felder offen
+      const used = ORDER.filter(p => p <= top && digitAt(n, p) !== 0);
+      const zerlegung = used.map(p => t(digitAt(n, p)) + " " + PL[p]).join(" + ");
+      const sumSteps = rich(used.map(p => fmt(digitAt(n, p) * 10 ** p)).join(" + "), " = ", fmt(n));
+      if (rng.chance(0.5)) {
+        const given = level === 1 ? rng.pick(["ziffer", "zerlegung"]) : level === 2 ? rng.pick(["zerlegung", "wort"]) : "wort";
+        const q = given === "ziffer" ? rich("Trage die Zahl ", fmt(n), " in die Stellenwerttafel ein.")
+          : given === "zerlegung" ? rich("Trage die Zahl in die Stellenwerttafel ein und schreibe sie mit Ziffern: ", zerlegung)
+          : rich("Trage die Zahl in die Stellenwerttafel ein und schreibe sie mit Ziffern: „", w, "“");
+        const steps = given === "wort" ? [...P.map(p => rich(p.words, " = ", fmt(p.v))), rich("Zahl: ", fmt(n))]
+          : [rich(zerlegung), sumSteps];
+        if (top >= 1 && used.length <= top) steps.push(rich("Leere Stellen bekommen eine 0."));
+        return { q, a: rich(fmt(n)), table: { rows: [head, row(true)] }, aTable: { rows: [head, row(false)] }, steps, inline: false, meta: { mode, sub: "ein", n } };
+      }
       return {
-        q: rich("Ergänze die fehlenden Ziffern in der Stellenwerttafel. Welche Zahl ist das?"),
-        a: rich(fmt(n)), table, aTable, steps, inline: false, meta: { mode, n, blanks },
+        q: rich("Welche Zahl steht in der Stellenwerttafel? Schreibe sie mit Ziffern und in Worten."),
+        a: rich(fmt(n), " – ", w),
+        table: { rows: [head, row(false)] },
+        steps: [rich(zerlegung), sumSteps, rich(fmt(n), " = ", w)],
+        inline: false, meta: { mode, sub: "ab", n },
       };
     },
     verify(task, level) {
@@ -5346,10 +5356,10 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       if (!m) return "meta fehlt";
       if (m.mode === "wort") return parseWords(plain(task.a)) === m.n && plain(task.a) === words(m.n) ? true : "Wortform falsch";
       if (m.mode === "ziffer") return parseWords(m.w) === m.n && plain(task.a) === fmt(m.n) ? true : "Ziffern falsch";
-      const digits = task.aTable.rows[1].slice(1).map(c => plain(c)).join("");
+      const tb = m.sub === "ein" ? task.aTable : task.table;
+      const digits = tb.rows[1].slice(1).map(c => plain(c)).join("");
       if (Number(digits) !== m.n) return "Stellenwerttafel falsch: " + digits;
-      const nb = task.table.rows[1].slice(1).filter(c => c.some(x => typeof x === "object" && "blank" in x)).length;
-      return nb === m.blanks.length ? true : "Anzahl der Lücken falsch";
+      return plain(task.a).startsWith(fmt(m.n)) ? true : "Lösung falsch";
     },
   });
 
