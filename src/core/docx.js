@@ -5,7 +5,7 @@
   const GREY = "5A6275";
   const FILL = "EAF0FC";     // Merke-Kasten
   const FONT = "Arial";
-  const PART_FILL = ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0"]; // Teil A–D
+  const PART_FILL = ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0", "0F6E7A", "A1324A"]; // Teil A–F
 
   // ---------- ZIP (ohne Kompression) ----------
   const CRC_TABLE = (() => {
@@ -164,7 +164,7 @@
   }
 
   function partHeadXml(part, idx, solution) {
-    const color = PART_FILL[idx % 4];
+    const color = PART_FILL[idx % PART_FILL.length];
     const letter = { xml: para(run(part.label, { b: true, color: "FFFFFF", size: 26 }), { align: "center", after: 0, keepNext: true }), fill: color, vAlign: "center" };
     const title = { xml: para(run(part.title, { b: true, size: 24 }) + run("   " + stars(part.level), { color, size: 22 }), { after: 0, keepNext: true }), vAlign: "center", margins: { left: 180 } };
     let x = para("", { before: 140, after: 0, keepNext: true, size: 8 });

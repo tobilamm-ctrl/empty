@@ -8,7 +8,7 @@
   const hex = (v, fb) => "#" + (v || fb);
   const INK = hex(DC.INK, "1F3F9E"), RED = hex(DC.RED, "C8102E"), GREY = hex(DC.GREY, "5A6275");
   const FILL = hex(DC.FILL, "EAF0FC");
-  const PART_FILL = (DC.PART_FILL || ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0"]).map(c => "#" + c);
+  const PART_FILL = (DC.PART_FILL || ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0", "0F6E7A", "A1324A"]).map(c => "#" + c);
   const TEXT = "#1B2130";             // Fließtext wie in der Vorschau
   const LINE = "#9AA3B8", HEAD = "#F1F3F8";
   const SCALE = 3;                     // Auflösung der Bruch-Bilder
@@ -132,7 +132,7 @@
     sheet.parts.forEach((p, pi) => {
       const cols = Math.max(1, Math.min(3, p.cols));
       const colW = Math.floor(W / cols);
-      const pc = PART_FILL[pi % 4];
+      const pc = PART_FILL[pi % PART_FILL.length];
 
       // Kopf: Buchstabe weiß auf Teilfarbe, daneben Titel und Sterne
       h += gap(7);

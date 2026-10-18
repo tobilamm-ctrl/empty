@@ -9,7 +9,8 @@ Bedienung und Aufbau: `README.md`. Aufgabentypen schreiben: `tools/AUFGABENTYPEN
 - **Klasse 10 (M-Zug) kommt zuletzt** – erst, wenn die Klassen 5 bis 9 vollständig fertig sind.
 - Arbeiten an Aufgabentypen auf Haiku-Agenten auslagern; Ergebnisse immer selbst fachlich prüfen
   (Mathematik, realistische Sachkontexte, vollständige Lösungsschritte, Skizzen ansehen).
-- Arbeitsblätter füllen genau 1 oder 2 A4-Seiten; Brüche mit waagerechtem Bruchstrich; Brüche im Ergebnis als gemischte Zahl.
+- Option „Seiten ganz ausfüllen“: jede Seite des Arbeitsblatts wird voll genutzt, egal wie viele Seiten es sind.
+  Die Vorbelegung wird auf höchstens 2 Seiten gekürzt (bei 5–6 Teilen 3 Seiten). Brüche mit waagerechtem Bruchstrich; Brüche im Ergebnis als gemischte Zahl.
 
 ## Prüfen vor jedem Commit
 

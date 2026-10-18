@@ -6,8 +6,10 @@ Alles steckt in **einer** Datei, die ohne Internet im Browser läuft.
 ## Benutzen
 
 1. `dist/aufgaben-generator.html` herunterladen und per Doppelklick öffnen (Chrome, Edge oder Firefox).
-2. Links Klasse, Thema und Niveau wählen. Die Teile A–D lassen sich einzeln anpassen:
-   Aufgabentyp, Sterne (★ bis ★★★) und Anzahl der Aufgaben.
+2. Links Klasse, Thema und Niveau wählen. Unter „Teile“ die Anzahl der Teile festlegen (auto oder 1 bis 6,
+   je nachdem, wie viele Aufgabentypen der Lernbereich hat). Jeder Teil lässt sich einzeln anpassen:
+   Aufgabentyp, Sterne (★ bis ★★★) und Anzahl der Aufgaben. Die Vorbelegung passt auf 2 Seiten
+   (bei 5–6 Teilen auf 3); „Seiten ganz ausfüllen“ verteilt den Restplatz als Rechenplatz.
 3. In der Vorschau mit der Maus über eine Aufgabe fahren und auf den Würfel klicken,
    um nur diese Aufgabe neu zu würfeln.
 4. „Word-Datei herunterladen“ liefert Arbeitsblatt und Lösungsblatt in einer Datei

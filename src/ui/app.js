@@ -3,10 +3,19 @@
   const $ = id => document.getElementById(id);
   const KLASSEN = ["5", "6", "7", "8", "9", "10"];
   const NIVEAU_LEVELS = { 1: [1, 1, 2, 2], 2: [1, 2, 3, 3], 3: [2, 3, 3, 3] };
+  // Niveaus bei mehr als 4 Teilen (Index = Anzahl der Teile)
+  const NIVEAU_LEVELS_N = {
+    5: { 1: [1, 1, 1, 2, 2], 2: [1, 1, 2, 3, 3], 3: [2, 2, 3, 3, 3] },
+    6: { 1: [1, 1, 1, 2, 2, 2], 2: [1, 1, 2, 2, 3, 3], 3: [2, 2, 3, 3, 3, 3] },
+  };
+  const MAX_PARTS = 6;
+  const levelsFor = (niveau, n) => (NIVEAU_LEVELS_N[n] || NIVEAU_LEVELS)[niveau];
+  // Seitenzahl, auf die die Vorbelegung gekürzt wird: 2 Seiten, bei mehr als 4 Teilen 3 Seiten
+  const maxPages = () => (state.parts.length > 4 ? 3 : 2);
   const STORE_KEY = "aufgaben-generator-v1";
 
   const state = {
-    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
+    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, nParts: 0, parts: [],
     title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
@@ -36,13 +45,17 @@
   function groupKey(type) { return state.sortBy === "thema" ? AG.topicOf(type) : type.lb; }
   function defaultCount(type) { return type.cols === 1 ? 3 : type.cols === 2 ? 6 : 9; }
 
-  // Thema gewählt -> Teile A–C (bzw. so viele Typen wie vorhanden, höchstens 4) vorbelegen
+  // Höchste wählbare Anzahl Teile für ein Thema: so viele Typen, wie es gibt (mindestens 4, höchstens 6)
+  function partsMax(types) { return Math.min(MAX_PARTS, Math.max(4, types.length)); }
+  function autoParts(types) { return Math.min(4, Math.max(3, types.length)); }
+
+  // Thema gewählt -> Teile vorbelegen: gewählte Anzahl (state.nParts) oder automatisch 3–4
   function applyTheme() {
     const g = groups().find(([k]) => k === state.thema);
     const types = g ? g[2] : [];
     if (!types.length) { state.parts = []; return; }
-    const levels = NIVEAU_LEVELS[state.niveau];
-    const n = Math.min(4, Math.max(3, types.length));
+    const n = state.nParts ? Math.min(state.nParts, partsMax(types)) : autoParts(types);
+    const levels = levelsFor(state.niveau, n);
     state.parts = [];
     for (let i = 0; i < n; i++) {
       const type = types.length >= n ? types[i] : types[i % types.length];
@@ -58,8 +71,8 @@
     return type.levels.reduce((best, l) => Math.abs(l - lv) < Math.abs(best - lv) ? l : best, type.levels[0]);
   }
   function applyNiveau() {
-    const levels = NIVEAU_LEVELS[state.niveau];
-    state.parts.forEach((p, i) => { p.level = clampLevel(AG.typeById(p.type), levels[i]); });
+    const levels = levelsFor(state.niveau, state.parts.length);
+    state.parts.forEach((p, i) => { p.level = clampLevel(AG.typeById(p.type), levels[i] || 3); });
     state.rerolls = {};
   }
 
@@ -131,6 +144,16 @@
     sel.value = state.thema || "mix";
 
     markSeg($("niveau"), "n", state.niveau);
+    // Anzahl der Teile (nur bei gewähltem Thema)
+    const g = state.thema ? groups().find(([k]) => k === state.thema) : null;
+    $("nPartsRow").hidden = !g;
+    if (g) {
+      const max = partsMax(g[2]);
+      segButtons($("nParts"), [["0", "auto"], ...Array.from({ length: max }, (_, i) => [String(i + 1), String(i + 1)])],
+        String(state.nParts && state.parts.length === state.nParts ? state.nParts : 0), v => {
+          state.nParts = Number(v); applyTheme(); fitPages(); update();
+        });
+    }
     markSeg($("work"), "w", state.work);
     markSeg($("solmode"), "s", state.solmode);
     if (document.activeElement !== $("title")) $("title").value = state.title;
@@ -182,7 +205,7 @@
       if (rm) rm.onclick = () => { state.parts.splice(i, 1); state.rerolls = {}; state.thema = derivedTheme(); update(); };
       box.appendChild(el);
     });
-    $("addPart").hidden = state.parts.length >= 4;
+    $("addPart").hidden = state.parts.length >= MAX_PARTS;
   }
   function derivedTheme() {
     const lbs = new Set(state.parts.map(p => groupKey(AG.typeById(p.type))));
@@ -243,7 +266,7 @@
       box.innerHTML = AG.sheetHtml(sheet, meta(cfg), "worksheet", { merke: state.merke, workLines: state.work, measure: true });
       const pages = AG.computeLayout(box.firstElementChild, false).pages;
       box.innerHTML = "";
-      if (pages <= 2) return;
+      if (pages <= maxPages()) return;
       // Teil mit den meisten Aufgabenzeilen um eine Zeile kürzen (mindestens eine Zeile bleibt)
       let best = -1, bestRows = 1;
       state.parts.forEach((p, k) => {
@@ -255,8 +278,7 @@
         // jeder Teil hat nur noch eine Zeile: Aufgaben einzeln reduzieren oder letzten Teil entfernen
         const k = state.parts.findIndex(p => p.count > 1);
         if (k >= 0 && state.parts.some(p => p.count > 1)) state.parts[state.parts.reduce((m, p, j) => p.count > state.parts[m].count ? j : m, 0)].count--;
-        else if (state.parts.length > 1) state.parts.pop();
-        else return;
+        else return;   // Teile, die die Lehrkraft gewählt hat, bleiben alle erhalten
         continue;
       }
       const p = state.parts[best];

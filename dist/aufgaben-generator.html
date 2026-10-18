@@ -23,6 +23,8 @@
   --part-1: #2e7d5b;
   --part-2: #b5541b;
   --part-3: #6b3fa0;
+  --part-4: #0f6e7a;
+  --part-5: #a1324a;
   --ui: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
   --sheet-font: Arial, "Liberation Sans", Helvetica, sans-serif;
   --radius: 10px;
@@ -135,7 +137,7 @@ input[type=number] { font-variant-numeric: tabular-nums; }
   box-shadow: 0 1px 2px rgba(20, 30, 60, .1), 0 12px 32px rgba(20, 30, 60, .14);
   display: flex; flex-direction: column;
   --ink: #1f3f9e; --red: #c8102e; --grey: #5a6275;
-  --part-0: #1f3f9e; --part-1: #2e7d5b; --part-2: #b5541b; --part-3: #6b3fa0;
+  --part-0: #1f3f9e; --part-1: #2e7d5b; --part-2: #b5541b; --part-3: #6b3fa0; --part-4: #0f6e7a; --part-5: #a1324a;
 }
 .sheet .red { color: var(--red); }
 /* Lösungsansicht: roter Korrekturrand wie im Schulheft */
@@ -228,6 +230,10 @@ table.vt th { background: #f1f3f8; text-align: left; }
             <button type="button" data-n="3">schwer</button>
           </div>
         </div>
+        <div class="row" id="nPartsRow">
+          <span class="mini">Teile</span>
+          <div class="seg" id="nParts" role="group" aria-label="Anzahl der Teile"></div>
+        </div>
       </section>
 
       <section class="group">
@@ -247,7 +253,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
             <button type="button" data-t="onenote">OneNote (eine lange Seite)</button>
           </div>
         </div>
-        <label class="check" id="fillRow"><input type="checkbox" id="fill"> Seiten ganz ausfüllen (genau 1 oder 2 Seiten)</label>
+        <label class="check" id="fillRow"><input type="checkbox" id="fill"> Seiten ganz ausfüllen</label>
         <div class="row">
           <span class="mini">Platz zum Rechnen</span>
           <div class="seg" id="work" role="group" aria-label="Platz zum Rechnen">
@@ -883,7 +889,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   const GREY = "5A6275";
   const FILL = "EAF0FC";     // Merke-Kasten
   const FONT = "Arial";
-  const PART_FILL = ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0"]; // Teil A–D
+  const PART_FILL = ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0", "0F6E7A", "A1324A"]; // Teil A–F
 
   // ---------- ZIP (ohne Kompression) ----------
   const CRC_TABLE = (() => {
@@ -1042,7 +1048,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   }
 
   function partHeadXml(part, idx, solution) {
-    const color = PART_FILL[idx % 4];
+    const color = PART_FILL[idx % PART_FILL.length];
     const letter = { xml: para(run(part.label, { b: true, color: "FFFFFF", size: 26 }), { align: "center", after: 0, keepNext: true }), fill: color, vAlign: "center" };
     const title = { xml: para(run(part.title, { b: true, size: 24 }) + run("   " + stars(part.level), { color, size: 22 }), { after: 0, keepNext: true }), vAlign: "center", margins: { left: 180 } };
     let x = para("", { before: 140, after: 0, keepNext: true, size: 8 });
@@ -1390,7 +1396,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   const hex = (v, fb) => "#" + (v || fb);
   const INK = hex(DC.INK, "1F3F9E"), RED = hex(DC.RED, "C8102E"), GREY = hex(DC.GREY, "5A6275");
   const FILL = hex(DC.FILL, "EAF0FC");
-  const PART_FILL = (DC.PART_FILL || ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0"]).map(c => "#" + c);
+  const PART_FILL = (DC.PART_FILL || ["1F3F9E", "2E7D5B", "B5541B", "6B3FA0", "0F6E7A", "A1324A"]).map(c => "#" + c);
   const TEXT = "#1B2130";             // Fließtext wie in der Vorschau
   const LINE = "#9AA3B8", HEAD = "#F1F3F8";
   const SCALE = 3;                     // Auflösung der Bruch-Bilder
@@ -1514,7 +1520,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
     sheet.parts.forEach((p, pi) => {
       const cols = Math.max(1, Math.min(3, p.cols));
       const colW = Math.floor(W / cols);
-      const pc = PART_FILL[pi % 4];
+      const pc = PART_FILL[pi % PART_FILL.length];
 
       // Kopf: Buchstabe weiß auf Teilfarbe, daneben Titel und Sterne
       h += gap(7);
@@ -1631,7 +1637,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
   const BG = "#d9dee8"; // Hintergrund zwischen mehreren Seiten
   // Custom Properties, die nur auf :root definiert sind. In der SVG-Grafik ist :root nicht das HTML-Root,
   // deshalb werden ihre berechneten Werte in eine eigene Regel kopiert.
-  const ROOT_VARS = ["--sheet-font", "--ui", "--ink", "--red", "--grey", "--part-0", "--part-1", "--part-2", "--part-3"];
+  const ROOT_VARS = ["--sheet-font", "--ui", "--ink", "--red", "--grey", "--part-0", "--part-1", "--part-2", "--part-3", "--part-4", "--part-5"];
 
   const escXml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
@@ -11704,10 +11710,19 @@ table.vt th { background: #f1f3f8; text-align: left; }
   const $ = id => document.getElementById(id);
   const KLASSEN = ["5", "6", "7", "8", "9", "10"];
   const NIVEAU_LEVELS = { 1: [1, 1, 2, 2], 2: [1, 2, 3, 3], 3: [2, 3, 3, 3] };
+  // Niveaus bei mehr als 4 Teilen (Index = Anzahl der Teile)
+  const NIVEAU_LEVELS_N = {
+    5: { 1: [1, 1, 1, 2, 2], 2: [1, 1, 2, 3, 3], 3: [2, 2, 3, 3, 3] },
+    6: { 1: [1, 1, 1, 2, 2, 2], 2: [1, 1, 2, 2, 3, 3], 3: [2, 2, 3, 3, 3, 3] },
+  };
+  const MAX_PARTS = 6;
+  const levelsFor = (niveau, n) => (NIVEAU_LEVELS_N[n] || NIVEAU_LEVELS)[niveau];
+  // Seitenzahl, auf die die Vorbelegung gekürzt wird: 2 Seiten, bei mehr als 4 Teilen 3 Seiten
+  const maxPages = () => (state.parts.length > 4 ? 3 : 2);
   const STORE_KEY = "aufgaben-generator-v1";
 
   const state = {
-    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, parts: [],
+    sortBy: "klasse", klasse: "7", zug: "M", thema: null, niveau: 2, nParts: 0, parts: [],
     title: "", titleCustom: false, merke: true, fill: true, target: "word", work: 1, solmode: "steps",
     groupB: false, seed: randomSeed(), rerolls: {}, view: "A",
   };
@@ -11737,13 +11752,17 @@ table.vt th { background: #f1f3f8; text-align: left; }
   function groupKey(type) { return state.sortBy === "thema" ? AG.topicOf(type) : type.lb; }
   function defaultCount(type) { return type.cols === 1 ? 3 : type.cols === 2 ? 6 : 9; }
 
-  // Thema gewählt -> Teile A–C (bzw. so viele Typen wie vorhanden, höchstens 4) vorbelegen
+  // Höchste wählbare Anzahl Teile für ein Thema: so viele Typen, wie es gibt (mindestens 4, höchstens 6)
+  function partsMax(types) { return Math.min(MAX_PARTS, Math.max(4, types.length)); }
+  function autoParts(types) { return Math.min(4, Math.max(3, types.length)); }
+
+  // Thema gewählt -> Teile vorbelegen: gewählte Anzahl (state.nParts) oder automatisch 3–4
   function applyTheme() {
     const g = groups().find(([k]) => k === state.thema);
     const types = g ? g[2] : [];
     if (!types.length) { state.parts = []; return; }
-    const levels = NIVEAU_LEVELS[state.niveau];
-    const n = Math.min(4, Math.max(3, types.length));
+    const n = state.nParts ? Math.min(state.nParts, partsMax(types)) : autoParts(types);
+    const levels = levelsFor(state.niveau, n);
     state.parts = [];
     for (let i = 0; i < n; i++) {
       const type = types.length >= n ? types[i] : types[i % types.length];
@@ -11759,8 +11778,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
     return type.levels.reduce((best, l) => Math.abs(l - lv) < Math.abs(best - lv) ? l : best, type.levels[0]);
   }
   function applyNiveau() {
-    const levels = NIVEAU_LEVELS[state.niveau];
-    state.parts.forEach((p, i) => { p.level = clampLevel(AG.typeById(p.type), levels[i]); });
+    const levels = levelsFor(state.niveau, state.parts.length);
+    state.parts.forEach((p, i) => { p.level = clampLevel(AG.typeById(p.type), levels[i] || 3); });
     state.rerolls = {};
   }
 
@@ -11832,6 +11851,16 @@ table.vt th { background: #f1f3f8; text-align: left; }
     sel.value = state.thema || "mix";
 
     markSeg($("niveau"), "n", state.niveau);
+    // Anzahl der Teile (nur bei gewähltem Thema)
+    const g = state.thema ? groups().find(([k]) => k === state.thema) : null;
+    $("nPartsRow").hidden = !g;
+    if (g) {
+      const max = partsMax(g[2]);
+      segButtons($("nParts"), [["0", "auto"], ...Array.from({ length: max }, (_, i) => [String(i + 1), String(i + 1)])],
+        String(state.nParts && state.parts.length === state.nParts ? state.nParts : 0), v => {
+          state.nParts = Number(v); applyTheme(); fitPages(); update();
+        });
+    }
     markSeg($("work"), "w", state.work);
     markSeg($("solmode"), "s", state.solmode);
     if (document.activeElement !== $("title")) $("title").value = state.title;
@@ -11883,7 +11912,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       if (rm) rm.onclick = () => { state.parts.splice(i, 1); state.rerolls = {}; state.thema = derivedTheme(); update(); };
       box.appendChild(el);
     });
-    $("addPart").hidden = state.parts.length >= 4;
+    $("addPart").hidden = state.parts.length >= MAX_PARTS;
   }
   function derivedTheme() {
     const lbs = new Set(state.parts.map(p => groupKey(AG.typeById(p.type))));
@@ -11944,7 +11973,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
       box.innerHTML = AG.sheetHtml(sheet, meta(cfg), "worksheet", { merke: state.merke, workLines: state.work, measure: true });
       const pages = AG.computeLayout(box.firstElementChild, false).pages;
       box.innerHTML = "";
-      if (pages <= 2) return;
+      if (pages <= maxPages()) return;
       // Teil mit den meisten Aufgabenzeilen um eine Zeile kürzen (mindestens eine Zeile bleibt)
       let best = -1, bestRows = 1;
       state.parts.forEach((p, k) => {
@@ -11956,8 +11985,7 @@ table.vt th { background: #f1f3f8; text-align: left; }
         // jeder Teil hat nur noch eine Zeile: Aufgaben einzeln reduzieren oder letzten Teil entfernen
         const k = state.parts.findIndex(p => p.count > 1);
         if (k >= 0 && state.parts.some(p => p.count > 1)) state.parts[state.parts.reduce((m, p, j) => p.count > state.parts[m].count ? j : m, 0)].count--;
-        else if (state.parts.length > 1) state.parts.pop();
-        else return;
+        else return;   // Teile, die die Lehrkraft gewählt hat, bleiben alle erhalten
         continue;
       }
       const p = state.parts[best];

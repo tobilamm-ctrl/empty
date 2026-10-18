@@ -5,7 +5,7 @@
   const BG = "#d9dee8"; // Hintergrund zwischen mehreren Seiten
   // Custom Properties, die nur auf :root definiert sind. In der SVG-Grafik ist :root nicht das HTML-Root,
   // deshalb werden ihre berechneten Werte in eine eigene Regel kopiert.
-  const ROOT_VARS = ["--sheet-font", "--ui", "--ink", "--red", "--grey", "--part-0", "--part-1", "--part-2", "--part-3"];
+  const ROOT_VARS = ["--sheet-font", "--ui", "--ink", "--red", "--grey", "--part-0", "--part-1", "--part-2", "--part-3", "--part-4", "--part-5"];
 
   const escXml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
