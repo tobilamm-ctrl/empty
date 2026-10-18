@@ -344,8 +344,14 @@
       const sec = $("sheet").querySelector(`[data-part="${b.dataset.jump}"]`);
       if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
       const part = $("part-" + b.dataset.jump);
-      if (part) { part.scrollIntoView({ block: "nearest" }); part.classList.remove("flash"); void part.offsetWidth; part.classList.add("flash"); }
+      // schmaler Bildschirm: Bauplan und Blatt scrollen gemeinsam – dann nur zum Blatt springen
+      const narrow = window.matchMedia("(max-width: 980px)").matches;
+      if (part) { if (!narrow) part.scrollIntoView({ block: "nearest" }); part.classList.remove("flash"); void part.offsetWidth; part.classList.add("flash"); }
     };
+    // Reiter nur zeigen, solange das Blatt im Bild ist (wichtig auf dem Tablet, wo der Bauplan darüber liegt)
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(es => $("tabs").classList.toggle("off", !es[0].isIntersecting)).observe($("sheet"));
+    }
     $("download").onclick = download;
     // Teil im Blatt <-> Karte im Bauplan
     $("sheet").addEventListener("mouseover", e => {
