@@ -13,12 +13,12 @@
       ["m6-dezimal-addsub", 2], ["m6-dezimal-muldiv", 2], ["m6-brueche-addsub", 2], ["m6-brueche-vergleichen", 2],
       ["m7-q-addsub", 2], ["m5-punkt-vor-strich", 3], ["m8-quadrat-wurzel", 2], ["m5-zahlenfolgen", 2],
       ["m7-gleichung", 2], ["m8-fehler-finden", 2], ["m5-platzhalter", 3], ["m9-zehnerpotenz-schreibweise", 2],
-      ["m9-zehnerpotenz-ordnen", 2], ["m5-ueberschlag", 2],
+      ["m9-zehnerpotenz-ordnen", 2], ["m5-ueberschlag", 2], ["q9-raetsel", 3], ["q9-klammern-setzen", 2],
     ],
     aGroessen: [
       ["m5-groessen-umrechnen", 3], ["m5-flaecheneinheiten", 2], ["m6-volumeneinheiten", 2], ["m7-dreisatz", 2],
       ["m7-prozentwert", 1], ["m7-prozentsatz", 1], ["m7-winkelsumme", 2], ["m6-viereckarten", 2],
-      ["m5-rechteck-flaeche", 2], ["m9-laplace", 1], ["m8-relative-haeufigkeit", 1], ["m9-vorsilben", 2],
+      ["m5-rechteck-flaeche", 2], ["m9-laplace", 1], ["m8-relative-haeufigkeit", 1], ["m9-vorsilben", 2], ["q9-groessen-schaetzen", 3], ["q9-groessen-schaetzen", 3],   // doppelt: häufigste Aufgabe in Teil A
     ],
     bProzent: [
       ["m8-rabatt-skonto", 3], ["m8-umsatzsteuer", 3], ["m8-kalkulation", 3], ["m9-jahreszinsen", 3],
