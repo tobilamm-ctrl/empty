@@ -64,10 +64,11 @@
     seg($("sortBy"), [["klasse", "Jahrgangsstufe"], ["thema", "Thema (alle Klassen)"]], setup.sortBy, s => { setup.sortBy = s; renderSetup(); });
     $("klasse").hidden = setup.sortBy === "thema";
     $("klasseH").textContent = setup.sortBy === "thema" ? "Zug" : "Klasse";
-    seg($("klasse"), KLASSEN.map(k => [k, k]), setup.klasse, k => { setup.klasse = k; if (k === "5" || k === "6") setup.zug = "R"; setup.topics = []; renderSetup(); },
+    seg($("klasse"), KLASSEN.map(k => [k, k]), setup.klasse, k => { setup.klasse = k; if (k === "5" || k === "6") setup.zug = "R"; if (k === "10") setup.zug = "M"; setup.topics = []; renderSetup(); },
       k => !AG.TYPES.some(t => t.klasse === k));
     // Klassen 5 und 6: kein M-Zug
-    const zugItems = setup.sortBy === "thema" || Number(setup.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
+    const zugItems = setup.sortBy !== "thema" && setup.klasse === "10" ? [["M", "M-Zug"]]   // Klasse 10 gibt es nur im M-Zug
+      : setup.sortBy === "thema" || Number(setup.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
     seg($("zug"), zugItems, setup.zug, z => {
       setup.zug = z;
       const ok = new Set((setup.sortBy === "thema" ? typesAllGrades(z) : typesFor(setup.klasse, z)).map(t => t.id));

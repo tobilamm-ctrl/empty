@@ -24173,10 +24173,11 @@ table.vt th { background: #f1f3f8; text-align: left; }
     $("klasseRow").hidden = state.sortBy === "thema";
     $("klasseH").textContent = state.sortBy === "thema" ? "Zug" : "Klasse";
     segButtons($("klasse"), KLASSEN.map(k => [k, k]), state.klasse, k => {
-      state.klasse = k; if (k === "5" || k === "6") state.zug = "R";
+      state.klasse = k; if (k === "5" || k === "6") state.zug = "R"; if (k === "10") state.zug = "M";
       state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, k => !AG.TYPES.some(t => t.klasse === k));
-    const zugItems = state.sortBy === "thema" || Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
+    const zugItems = state.sortBy !== "thema" && state.klasse === "10" ? [["M", "M-Zug"]]   // Klasse 10 gibt es nur im M-Zug
+      : state.sortBy === "thema" || Number(state.klasse) >= 7 ? [["R", "Regelklasse"], ["M", "M-Zug"]] : [["R", "alle"]];
     segButtons($("zug"), zugItems, state.zug, z => {
       state.zug = z; state.thema = (themesFor()[0] || [])[0]; state.titleCustom = false; applyTheme(); fitPages(); update();
     }, z => (state.sortBy === "thema" ? typesAllGrades(z) : typesFor(state.klasse, z)).length === 0);
