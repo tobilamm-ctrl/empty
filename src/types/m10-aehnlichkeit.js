@@ -23,7 +23,7 @@
   const FS = [new Frac(3, 2), F(2), new Frac(5, 2), F(3)];                   // Faktoren für Strahlen (vergrößert)
   const XF = [new Frac(1, 2), new Frac(3, 2), F(2), new Frac(5, 2), F(3)];   // Faktoren für die X-Figur
   const GAMS = [Math.PI / 3, (5 * Math.PI) / 12, Math.PI / 2];               // Winkel zwischen zwei Strahlen
-  const PHIS = [Math.PI / 3, (5 * Math.PI) / 12, (2 * Math.PI) / 3, (3 * Math.PI) / 4];
+  const PHIS = [Math.PI / 4, Math.PI / 3, (5 * Math.PI) / 12, Math.PI / 2];   // Winkel von h (spitz, B oben rechts)
 
   // Quadratwurzel eines Bruchs, falls rational
   function fracSqrt(f) {
@@ -76,7 +76,7 @@
   function retry(make) {
     for (let i = 0; i < 200; i++) {
       const t = make();
-      if ([t.fig, t.aFig].every(f => !f || labelsClean(f))) return t;
+      if ([t.fig, t.aFig].every(f => !f || (labelsClean(f) && !f.cross))) return t;
     }
     throw new Error("Skizze: keine saubere Beschriftung gefunden");
   }
@@ -94,10 +94,112 @@
     return true;
   }
 
+  // Längenlabel in der Skizze: nur der Wert („3 cm“), gesucht „?“; die Strecke ist über ihre Punktnamen benannt
+  const short = t => (t === undefined ? t : /\?$/.test(t) ? "?" : t.replace(/^[^=]*= /, ""));
+
+  // Textbox einer Beschriftung (Schätzung wie in labelsClean)
+  function boxOf(p, t, anchor) {
+    const fs = 3.4, w = t.length * fs * 0.55, by = p[1] + fs * 0.35;
+    const x0 = anchor === "start" ? p[0] : anchor === "end" ? p[0] - w : p[0] - w / 2;
+    return [x0 - 0.4, by - fs * 0.8 - 0.4, x0 + w + 0.4, by + fs * 0.25 + 0.4];
+  }
+  const overlap = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+
+  // Punktname am Punkt V: bevorzugt vom Schwerpunkt center weg, sonst eine Richtung ohne Kontakt zu Linien und Texten
+  function placeName(c, V, center, text) {
+    const base = Math.atan2(V[1] - center[1], V[0] - center[0]);
+    for (const o of [0, 0.7, -0.7, 1.4, -1.4, 2.1, -2.1, Math.PI]) {
+      const a = base + o, u = [Math.cos(a), Math.sin(a)];
+      const anchor = u[0] > 0.35 ? "start" : u[0] < -0.35 ? "end" : "middle";
+      const p = [V[0] + u[0] * 4.6, V[1] + u[1] * 4.6];
+      if (c.free(boxOf(p, text, anchor))) { c.text(p, text, { anchor }); return; }
+    }
+    c.text([V[0] + Math.cos(base) * 4.6, V[1] + Math.sin(base) * 4.6], text, { anchor: "middle" });
+  }
+
+  // Flächenlabel: Schwerpunkt bzw. freier Punkt im Dreieck, sonst außen an einer Kante
+  function areaLabel(c, T, text) {
+    const G = centroid(T), cands = [];
+    for (let i = 1; i <= 6; i++) for (let j = 1; j <= 6; j++) {
+      if (i + j >= 7) continue;
+      const u = i / 7, v = j / 7, w = 1 - u - v;
+      cands.push([u * T[0][0] + v * T[1][0] + w * T[2][0], u * T[0][1] + v * T[1][1] + w * T[2][1]]);
+    }
+    cands.sort((p1, p2) => Math.hypot(p1[0] - G[0], p1[1] - G[1]) - Math.hypot(p2[0] - G[0], p2[1] - G[1]));
+    for (const p of cands) {
+      const bx = boxOf(p, text, "middle");
+      const corners = [[bx[0], bx[1]], [bx[2], bx[1]], [bx[2], bx[3]], [bx[0], bx[3]]];
+      if (corners.every(q => inTri(q, T)) && c.free(bx)) { c.text(p, text, { anchor: "middle" }); return; }
+    }
+    for (let e = 0; e < 3; e++) {
+      const A = T[e], B = T[(e + 1) % 3], M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], C = T[(e + 2) % 3];
+      const n0 = nrm([-(B[1] - A[1]), B[0] - A[0]]);
+      const n = (n0[0] * (C[0] - M[0]) + n0[1] * (C[1] - M[1])) > 0 ? [-n0[0], -n0[1]] : n0;
+      for (const d of [5, 8, 11]) {
+        const p = [M[0] + n[0] * d, M[1] + n[1] * d];
+        if (c.free(boxOf(p, text, "middle"))) { c.text(p, text, { anchor: "middle" }); return; }
+      }
+    }
+    c.text(G, text, { anchor: "middle" });
+  }
+  function inTri(p, T) {
+    const sg = (a, b, q) => (a[0] - q[0]) * (b[1] - q[1]) - (b[0] - q[0]) * (a[1] - q[1]);
+    const d1 = sg(T[0], T[1], p), d2 = sg(T[1], T[2], p), d3 = sg(T[2], T[0], p);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  }
+
+  // Längenlabel an einer Strecke P–Q: Mitte oder leicht verschoben, Seite bevorzugt weg von pref; nie auf einer Linie
+  function segLabel(c, P, Q, text, pref) {
+    const d = [Q[0] - P[0], Q[1] - P[1]], L = Math.hypot(d[0], d[1]) || 1;
+    const n = [-d[1] / L, d[0] / L];
+    const away = (n[0] * (pref[0] - P[0]) + n[1] * (pref[1] - P[1])) > 0 ? -1 : 1;
+    for (const t of [0.5, 0.4, 0.6]) for (const sg of [away, -away]) for (const dist of [4.4, 5.6]) {
+      const p = [P[0] + d[0] * t + n[0] * sg * dist, P[1] + d[1] * t + n[1] * sg * dist];
+      if (c.free(boxOf(p, text, "middle"))) { c.text(p, text, { anchor: "middle" }); return; }
+    }
+    c.text([P[0] + d[0] / 2 + n[0] * away * 4.4, P[1] + d[1] / 2 + n[1] * away * 4.4], text, { anchor: "middle" });
+  }
+
+  // Zeichenfläche: merkt Linien und Beschriftungen; fig.cross ist true, wenn eine Beschriftung eine Linie schneidet
+  function segCross(p, q, r, t) {
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    return cr(r, t, p) * cr(r, t, q) < 0 && cr(p, q, r) * cr(p, q, t) < 0;
+  }
+  function segHitsBox(a, b, bx) {
+    const inB = p => p[0] >= bx[0] && p[0] <= bx[2] && p[1] >= bx[1] && p[1] <= bx[3];
+    if (inB(a) || inB(b)) return true;
+    const c = [[bx[0], bx[1]], [bx[2], bx[1]], [bx[2], bx[3]], [bx[0], bx[3]]];
+    for (let i = 0; i < 4; i++) if (segCross(a, b, c[i], c[(i + 1) % 4])) return true;
+    return false;
+  }
+  function crosses(fig, segs) {
+    const re = /<text x="([-\d.]+)" y="([-\d.]+)" font-family="[^"]*" font-size="([\d.]+)" text-anchor="(\w+)"[^>]*>([^<]*)<\/text>/g;
+    let m;
+    while ((m = re.exec(fig.svg))) {
+      const x = +m[1], y = +m[2], fs = +m[3], an = m[4];
+      const w = m[5].length * fs * 0.55;
+      const x0 = an === "start" ? x : an === "end" ? x - w : x - w / 2;
+      const bx = [x0 - 0.4, y - fs * 0.8 - 0.4, x0 + w + 0.4, y + fs * 0.25 + 0.4];
+      if (segs.some(([a, b]) => segHitsBox(a, b, bx))) return true;
+    }
+    return false;
+  }
+  function canvas(W, H) {
+    const s = AG.sketch(W, H), segs = [], boxes = [];
+    return {
+      s, segs,
+      line(a, b, o) { if (!(o && o.dash)) segs.push([a, b]); s.line(a, b, o); },   // gestrichelte Hilfslinien zählen nicht
+      poly(P, o) { P.forEach((p, i) => segs.push([p, P[(i + 1) % P.length]])); s.poly(P, o); },
+      free(bx) { return !segs.some(([q1, q2]) => segHitsBox(q1, q2, bx)) && !boxes.some(q => overlap(q, bx)); },
+      text(p, t, o) { const anchor = (o && o.anchor) || "middle"; boxes.push(boxOf(p, t, anchor)); s.label(p, t, { ...o, anchor }); },
+      done() { const fig = s.done(); fig.cross = crosses(fig, segs); return fig; },
+    };
+  }
+
   // ---------- Typ 1: Zentrische Streckung ----------
   // Originaldreieck ABC (AB waagerecht, C darüber), Zentrum Z im Ursprung, Bilddreieck A′B′C′ = k · (Originalpunkte)
   function triGeo(rng, s, ch) {
-    const ax = rng.int(2, 4), ay = rng.int(1, 2), cx = rng.int(0, s);
+    const ax = rng.int(2, 3), ay = rng.int(2, 3), cx = rng.int(0, s);
     return { A: [ax, ay], B: [ax + s, ay], C: [ax + cx, ay + ch] };
   }
 
@@ -109,20 +211,20 @@
     const O = [geo.A, geo.B, geo.C], I = O.map(p => [p[0] * kk, p[1] * kk]);
     const f = AG.fitPoints([[0, 0], ...O, ...I], W1, H1, PAD);
     const P = O.map(p => f(p)), Q = I.map(p => f(p)), z = f([0, 0]);
-    const s = AG.sketch(W1, H1);
-    s.poly(Q);
-    Q.forEach(q => s.line(z, q, { dash: true }));   // Strahlen vom Zentrum Z
-    s.poly(P, { fill: false });
-    vertexNames(s, P, centroid(P), ["A", "B", "C"]);
-    vertexNames(s, Q, centroid(Q), ["A′", "B′", "C′"]);
-    s.label([z[0] - 3, z[1] + 1], "Z", { anchor: "end" });
+    const c = canvas(W1, H1), s = c.s;
+    c.poly(P);                                  // Originaldreieck, leicht gefüllt
+    c.poly(Q, { fill: false });                 // Bilddreieck nur Umriss
+    Q.forEach(q => c.line(z, q, { dash: true })); // Strahlen von Z durch die Ecken
+    P.forEach((v, i) => placeName(c, v, centroid(P), ["A", "B", "C"][i]));
+    Q.forEach((v, i) => placeName(c, v, centroid(Q), ["A′", "B′", "C′"][i]));
+    c.text([z[0] - 3, z[1]], "Z", { anchor: "end" });
     const [i1, i2, i3] = PAIRS[j];
-    if (lo.seg) s.side(P[i1], P[i2], lo.seg, { inside: P[i3] });
-    if (li.seg) s.side(Q[i1], Q[i2], li.seg, { inside: Q[i3] });
-    if (lo.A) s.label(centroid(P), lo.A, { anchor: "middle" });
-    if (li.A) s.label(centroid(Q), li.A, { anchor: "middle" });
-    if (zl) { const cQ = centroid(Q), m = [z[0] + 0.5 * (cQ[0] - z[0]), z[1] + 0.5 * (cQ[1] - z[1])]; s.label([m[0], m[1] + 4], zl, { anchor: "middle" }); }
-    return s.done();
+    if (lo.seg) segLabel(c, P[i1], P[i2], short(lo.seg), P[i3]);
+    if (li.seg) segLabel(c, Q[i1], Q[i2], short(li.seg), Q[i3]);
+    if (lo.A) areaLabel(c, P, lo.A);
+    if (li.A) areaLabel(c, Q, li.A);
+    if (zl) c.text([z[0] + 4, z[1] + 7], zl, { anchor: "start" });
+    return c.done();
   }
 
   // Stufe 1: Bildstrecke bei gegebenem k; Stufe 2: Streckfaktor aus Original- und Bildstrecke
@@ -136,8 +238,8 @@
         q: rich("Das Dreieck A′B′C′ ist das Bild des Dreiecks ABC bei einer zentrischen Streckung mit dem Zentrum Z und dem Streckfaktor k = ", dn(k), ". Die Strecke ", on, " ist ", cm(s), " lang. Berechne die Bildstrecke ", inn, "."),
         a: rich(inn, " = ", cm(res)),
         steps: [rich(inn, " = k · ", on), rich(inn, " = ", dn(k), " · ", cm(s), " = ", cm(res))],
-        fig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = ?" }, "k = " + D(k), j),
-        aFig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = " + cm(res) }, "k = " + D(k), j),
+        fig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = ?" }, null, j),
+        aFig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = " + cm(res) }, null, j),
         inline: false,
         check: [{ want: D(res), v: res.valueOf(), tol: 1e-9 }],
       };
@@ -148,7 +250,7 @@
       a: rich("k = ", dn(k), " (", big, ")"),
       steps: [rich("k = ", inn, " : ", on), rich("k = ", cm(res), " : ", cm(s), " = ", dn(k))],
       fig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = " + cm(res) }, "k = ?", j),
-      aFig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = " + cm(res) }, "k = " + D(k), j),
+      aFig: streckFig(geo, k, { seg: on + " = " + cm(s) }, { seg: inn + " = " + cm(res) }, null, j),
       inline: false,
       check: [{ want: D(k), v: k.valueOf(), tol: 1e-9 }],
     };
@@ -169,8 +271,8 @@
         q: rich("Das Dreieck ABC hat den Flächeninhalt A = ", cm2(A), ". Es wird mit dem Zentrum Z und dem Streckfaktor k = ", dn(k), " zentrisch gestreckt. Berechne den Flächeninhalt des Bilddreiecks A′B′C′."),
         a: rich("A′ = ", cm2(A2)),
         steps: [rich("A′ = k² · A"), rich("k² = ", dn(k), " · ", dn(k), " = ", dn(k2)), rich("A′ = ", dn(k2), " · ", cm2(A), " = ", cm2(A2))],
-        fig: streckFig(geo, k, { A: "A = " + cm2(A) }, { A: "A′ = ?" }, "k = " + D(k), 0),
-        aFig: streckFig(geo, k, { A: "A = " + cm2(A) }, { A: "A′ = " + cm2(A2) }, "k = " + D(k), 0),
+        fig: streckFig(geo, k, { A: cm2(A) }, { A: "? cm²" }, null, 0),
+        aFig: streckFig(geo, k, { A: cm2(A) }, { A: cm2(A2) }, null, 0),
         inline: false,
         check: [{ want: D(A2), v: A2.valueOf(), tol: 1e-9 }],
       };
@@ -180,8 +282,8 @@
       q: rich("Das Dreieck ABC hat den Flächeninhalt ", cm2(A), ". Das Bilddreieck A′B′C′ hat den Flächeninhalt ", cm2(A2), ". Berechne den Streckfaktor k."),
       a: rs.ans,
       steps: [rich("A′ = k² · A, also k² = A′ : A"), rich("k² = ", cm2(A2), " : ", cm2(A), " = ", dn(k2)), rs.step],
-      fig: streckFig(geo, k, { A: "A = " + cm2(A) }, { A: "A′ = " + cm2(A2) }, "k = ?", 0),
-      aFig: streckFig(geo, k, { A: "A = " + cm2(A) }, { A: "A′ = " + cm2(A2) }, "k = " + D(k), 0),
+      fig: streckFig(geo, k, { A: cm2(A) }, { A: cm2(A2) }, "k = ?", 0),
+      aFig: streckFig(geo, k, { A: cm2(A) }, { A: cm2(A2) }, null, 0),
       inline: false,
       check: [{ want: rs.want, v: rs.tv, tol: 1e-9 }],
     };
@@ -221,41 +323,52 @@
     return { S: [0, 0], A: [a1, 0], A2: [a2, 0], B: [b1 * c, b1 * s], B2: [b1 * r * c, b1 * r * s] };
   }
 
-  // V-Figur: Scheitel S, zwei Strahlen, zwei parallele Strecken
+  // V-Figur: Scheitel S, unterer Strahl (A, A′), oberer Strahl (B, B′); Parallelen AB und A′B′ durchgezogen
   function vFig(g, ls) {
     const P = [g.S, g.A, g.A2, g.B, g.B2];
-    const f = AG.fitPoints(P, W1, H1, PAD);
+    const f = AG.fitPoints(P, W1, H1 - 12, PAD);   // unten 12 mm frei für Maßlinie und Beschriftung
     const [S, A, A2, B, B2] = P.map(p => f(p));
-    const s = AG.sketch(W1, H1);
-    s.poly([A, B, B2, A2]);
-    s.line(S, A2);
-    s.line(S, B2);
-    if (ls.SA) s.side(S, A, ls.SA, { inside: [A[0], A[1] + 12] });        // oberhalb des Strahls 1
-    if (ls.SA2) s.side(S, A2, ls.SA2, { inside: [A2[0], A2[1] - 12] });    // unterhalb des Strahls 1
-    if (ls.SB) s.side(S, B, ls.SB, { inside: A , size: 2.9 });
-    if (ls.SB2) s.side(S, B2, ls.SB2, { inside: A , size: 2.9 });
-    if (ls.AB) s.side(A, B, ls.AB, { inside: A2 , size: 2.9 });
-    if (ls.A2B2) s.side(A2, B2, ls.A2B2, { inside: S , size: 2.9 });
-    s.label([S[0] - 3, S[1] + 6], "S", { anchor: "end" });   // Punktnamen entfallen: die Strecken sind über ihre Labels benannt
-    return s.done();
+    const c = canvas(W1, H1), s = c.s;
+    c.poly([A, B, B2, A2]);                     // Trapez mit den Parallelen AB und A′B′
+    c.line(S, A2); c.line(S, B2);               // Strahlen
+    const y = S[1] + 9;                         // Maßlinie für SA′ unter dem unteren Strahl
+    c.line([S[0], y], [A2[0], y]);
+    c.line([S[0], y - 2], [S[0], y + 2]);
+    c.line([A2[0], y - 2], [A2[0], y + 2]);
+    if (ls.SA) c.text([(S[0] + A[0]) / 2, S[1] + 4.5], short(ls.SA), { anchor: "middle" });
+    if (ls.SA2) c.text([(S[0] + A2[0]) / 2, y + 5.5], short(ls.SA2), { anchor: "middle" });
+    c.text([S[0] - 3, S[1] + 5], "S", { anchor: "end" });
+    c.text([A[0] + 2, S[1] + 5], "A", { anchor: "start" });
+    c.text([A2[0] + 2, S[1] + 5], "A′", { anchor: "start" });
+    placeName(c, B, centroid([A, B, B2, A2]), "B");
+    placeName(c, B2, centroid([A, B, B2, A2]), "B′");
+    if (ls.SB) segLabel(c, S, B, short(ls.SB), A);
+    if (ls.SB2) segLabel(c, S, B2, short(ls.SB2), A);
+    if (ls.AB) segLabel(c, A, B, short(ls.AB), S);
+    if (ls.A2B2) segLabel(c, A2, B2, short(ls.A2B2), S);
+    return c.done();
   }
 
-  // X-Figur: Geraden g und h schneiden sich in S; A und A′ auf g, B und B′ auf h, jeweils auf verschiedenen Seiten
+  // X-Figur: Geraden g und h schneiden sich in S; A und A′ auf g, B und B′ auf h, AB ∥ A′B′ durchgezogen
   function xFig(g, ls) {
     const P = [g.S, g.A, g.A2, g.B, g.B2];
     const f = AG.fitPoints(P, W1, H1, PAD);
     const [S, A, A2, B, B2] = P.map(p => f(p));
-    const s = AG.sketch(W1, H1);
-    s.line(A2, A);
-    s.line(B2, B);
-    s.line(A, B);
-    s.line(A2, B2);
-    if (ls.SA) s.side(S, A, ls.SA, { inside: [A[0], A[1] + 12] });        // oberhalb von g
-    if (ls.SA2) s.side(S, A2, ls.SA2, { inside: [A2[0], A2[1] - 12] });    // unterhalb von g
-    if (ls.SB) s.side(S, B, ls.SB, { inside: A , size: 2.9 });
-    if (ls.SB2) s.side(S, B2, ls.SB2, { inside: A , size: 2.9 });
-    s.label([S[0] - 3, S[1] + 6], "S", { anchor: "end" });
-    return s.done();
+    const c = canvas(W1, H1), s = c.s;
+    c.line(A2, A); c.line(B2, B);               // Geraden g und h durch S
+    c.line(A, B); c.line(A2, B2);               // parallele Strecken
+    if (ls.SA) segLabel(c, S, A, short(ls.SA), B);
+    if (ls.SA2) segLabel(c, S, A2, short(ls.SA2), [A2[0], A2[1] + 12]);
+    if (ls.SB) segLabel(c, S, B, short(ls.SB), A);
+    if (ls.SB2) segLabel(c, S, B2, short(ls.SB2), A);
+    if (ls.AB) segLabel(c, A, B, short(ls.AB), S);
+    if (ls.A2B2) segLabel(c, A2, B2, short(ls.A2B2), S);
+    placeName(c, B, S, "B");
+    placeName(c, B2, S, "B′");
+    placeName(c, A, S, "A");
+    placeName(c, A2, S, "A′");
+    c.text([S[0] - 3, S[1] + 5], "S", { anchor: "end" });
+    return c.done();
   }
 
   // Peilstab: Auge S (Augenhöhe 1,60 m), Peilstab 2,00 m hoch im Abstand a, Baum im Abstand T; Visierlinie über die Stabspitze
@@ -272,8 +385,8 @@
     s.line(E, P2, { dash: true });           // Augenhöhe
     s.line(E, T2, { dash: true });           // Visierlinie
     s.label([E[0] - 3, E[1] - 3], "S", { anchor: "end" });
-    s.label([T1[0] + 3, T1[1] - 1], "2,00 m", { anchor: "start" });
-    s.label([E[0] + 2, E[1] - 3], "1,60 m", { anchor: "start" });   // Augenhöhe
+    s.label([T1[0] - 2, T1[1] - 3], "2,00 m", { anchor: "end" });
+    s.label([E[0] + 2, E[1] - 5], "1,60 m", { anchor: "start" });   // Augenhöhe
     s.label([T2[0] - 3, T2[1] - 2], tLab, { anchor: "end" });
     s.label([(E[0] + P1[0]) / 2, (E[1] + P1[1]) / 2 + 4], D(a) + " m", { anchor: "middle" });
     s.label([(E[0] + P2[0]) / 2, (E[1] + P2[1]) / 2 + 4], D(T) + " m", { anchor: "middle" });

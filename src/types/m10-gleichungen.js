@@ -41,15 +41,16 @@
 
   // Lösungsformel für a x² + b x + c = 0 mit exakter Quadratwurzel (D ≥ 0 quadratisch) oder D < 0.
   // Gibt {steps, roots, D} zurück; die Lösungszeile („L = …“) setzt der Aufrufer ans Ende.
-  function solveExact(a, b, c) {
+  // dn: Name der Diskriminante; bei Bruchgleichungen ausgeschrieben, weil D dort die Definitionsmenge ist
+  function solveExact(a, b, c, dn = "D") {
     const D = b * b - 4 * a * c;
     const steps = [
       rich("a = " + sgnTxt(a) + ", b = " + sgnTxt(b) + ", c = " + sgnTxt(c)),
-      rich("D = b² − 4ac = " + par(b) + "² − 4 · " + par(a) + " · " + par(c)),
-      rich("D = " + S(b * b) + " − " + par(4 * a * c) + " = " + sgnTxt(D)),
+      rich(dn + " = b² − 4ac = " + par(b) + "² − 4 · " + par(a) + " · " + par(c)),
+      rich(dn + " = " + S(b * b) + " − " + par(4 * a * c) + " = " + sgnTxt(D)),
     ];
     if (D < 0) {
-      steps.push(rich("D < 0, also gibt es keine reelle Lösung."));
+      steps.push(rich(dn + " < 0, also gibt es keine reelle Lösung."));
       return { steps, roots: [], D };
     }
     const r = Math.round(Math.sqrt(D));
@@ -577,7 +578,7 @@
   // ======================================================================
   const denTxt = p => (p > 0 ? "x + " + S(p) : "x " + MINUS + " " + S(-p));   // p ≠ 0
   const fr = (z, n) => ({ f: [z, n] });                                       // Bruch mit Termen
-  const dTxt = vals => "𝔻 = ℚ \\ {" + vals.slice().sort((x, y) => x - y).map(sgnTxt).join("; ") + "}";
+  const dTxt = vals => "D = ℚ \\ {" + vals.slice().sort((x, y) => x - y).map(sgnTxt).join("; ") + "}";
   const linEq = (L, R) => polyTxt([[L.a, 1], [L.c, 0]]) + " = " + polyTxt([[R.a, 1], [R.c, 0]]);
 
   // a x + c = a' x + c' ganzzahlig Schritt für Schritt; gibt {lines, x} oder null
@@ -629,10 +630,10 @@
       ];
       for (const l of ch.lines) steps.push(rich(linEq(l.st.L, l.st.R) + "   " + l.op));
       steps.push(rich("x = " + sgnTxt(x0)));
-      steps.push(rich("Probe: links ", num(new Frac(al, x0 + p)), ", rechts ", num(new Frac(be, x0 + q)), ". Die Gleichung stimmt, x liegt in 𝔻."));
+      steps.push(rich("Probe: links ", num(new Frac(al, x0 + p)), ", rechts ", num(new Frac(be, x0 + q)), ". Die Gleichung stimmt, x liegt in D."));
       steps.push(rich(lset([x0])));
       return {
-        q: rich("Gegeben ist die Gleichung ", fr(S(al), denTxt(p)), " = ", fr(S(be), denTxt(q)), ". Bestimme 𝔻 und L."),
+        q: rich("Gegeben ist die Gleichung ", fr(S(al), denTxt(p)), " = ", fr(S(be), denTxt(q)), ". Bestimme D und L."),
         a: rich(lset([x0])),
         steps,
         _eq: { kind: "lin", al, be, p, q }, _excl: excl, _roots: [x0],
@@ -653,7 +654,7 @@
       if ([r1, r2].some(r => r === -p || r === -q)) continue;
       const roots = [r1, r2].sort((x, y) => x - y);
       const excl = [-p, -q];
-      const sol = solveExact(1, B, C);
+      const sol = solveExact(1, B, C, "Diskriminante");
       const steps = [
         rich(dTxt(excl)),
         rich(fr("x", denTxt(p)), " = ", fr(S(g), denTxt(q)), "   | · (" + denTxt(p) + ")(" + denTxt(q) + ")"),
@@ -661,11 +662,11 @@
         rich(polyTxt([[1, 2], [q, 1]]) + " = " + polyTxt([[g, 1], [g * p, 0]])),
         rich(polyTxt([[1, 2], [B, 1], [C, 0]]) + " = 0"),
         ...sol.steps,
-        rich("Beide Lösungen liegen in 𝔻."),
+        rich("Beide Lösungen liegen in D."),
         rich(lset(roots)),
       ];
       return {
-        q: rich("Gegeben ist die Gleichung ", fr("x", denTxt(p)), " = ", fr(S(g), denTxt(q)), ". Bestimme 𝔻 und L."),
+        q: rich("Gegeben ist die Gleichung ", fr("x", denTxt(p)), " = ", fr(S(g), denTxt(q)), ". Bestimme D und L."),
         a: rich(lset(roots)),
         steps,
         _eq: { kind: "quad", g, p, q }, _excl: excl, _roots: roots,
@@ -682,7 +683,7 @@
       if (r1 === -p || r1 === 0) continue;
       const b1 = r1 - p, b0 = p * r1;                    // (x + p)(x − r1) = x² − b1 x − b0
       const numR = polyTxt([[b1, 1], [b0, 0]]);
-      const sol = solveExact(1, -b1, -b0);
+      const sol = solveExact(1, -b1, -b0, "Diskriminante");
       const d = { kind: "sch2", p, b1, b0 };
       if (!holds(d, r1)) continue;
       const steps = [
@@ -691,12 +692,12 @@
         rich("x² = " + numR),
         rich(polyTxt([[1, 2], [-b1, 1], [-b0, 0]]) + " = 0"),
         ...sol.steps,
-        rich("x = " + sgnTxt(r1) + " liegt in 𝔻."),
-        rich("x = " + sgnTxt(-p) + " liegt nicht in 𝔻 (Scheinlösung), entfällt."),
+        rich("x = " + sgnTxt(r1) + " liegt in D."),
+        rich("x = " + sgnTxt(-p) + " liegt nicht in D (Scheinlösung), entfällt."),
         rich(lset([r1])),
       ];
       return {
-        q: rich("Gegeben ist die Gleichung ", fr("x²", denTxt(p)), " = ", fr(numR, denTxt(p)), ". Bestimme 𝔻 und L."),
+        q: rich("Gegeben ist die Gleichung ", fr("x²", denTxt(p)), " = ", fr(numR, denTxt(p)), ". Bestimme D und L."),
         a: rich(lset([r1])),
         steps,
         _eq: d, _excl: [-p], _roots: [r1],
@@ -715,12 +716,12 @@
     title: "Bruchgleichungen mit Variable im Nenner",
     instruction: {
       1: "Bestimme zuerst D. Multipliziere mit dem Hauptnenner, löse die Gleichung und prüfe die Lösung.",
-      2: "Bestimme 𝔻 und L. Multipliziere mit dem Hauptnenner und löse die entstehende quadratische Gleichung.",
-      3: "Bestimme 𝔻 und L. Prüfe, ob jede Lösung in 𝔻 liegt. Eine Lösung außerhalb von 𝔻 entfällt.",
+      2: "Bestimme D und L. Multipliziere mit dem Hauptnenner und löse die entstehende quadratische Gleichung.",
+      3: "Bestimme D und L. Prüfe, ob jede Lösung in D liegt. Eine Lösung außerhalb von D entfällt.",
     },
     merke: rich(
-      "Steht x im Nenner, darf der Nenner nicht 0 werden: 𝔻 = ℚ \\ {Nullstellen der Nenner}. Beide Seiten werden mit dem Hauptnenner multipliziert. Beispiel: ",
-      { b: "3/(x − 1) = 6/(x + 2)" }, " ergibt ", { b: "3(x + 2) = 6(x − 1)" }, ", also ", { b: "x = 4" }, " mit ", { b: "𝔻 = ℚ \\ {1; −2}" }, "."
+      "Steht x im Nenner, darf der Nenner nicht 0 werden: D = ℚ \\ {Nullstellen der Nenner}. Beide Seiten werden mit dem Hauptnenner multipliziert. Beispiel: ",
+      { b: "3/(x − 1) = 6/(x + 2)" }, " ergibt ", { b: "3(x + 2) = 6(x − 1)" }, ", also ", { b: "x = 4" }, " mit ", { b: "D = ℚ \\ {1; −2}" }, "."
     ),
     cols: 2,
     generate: (rng, level) => (level === 1 ? genBrL1(rng) : level === 2 ? genBrL2(rng) : genBrL3(rng)),

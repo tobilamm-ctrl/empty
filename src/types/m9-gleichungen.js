@@ -231,17 +231,17 @@
       const px = Frac.of(p).div(x0), rx = Frac.of(q).div(x0.sub(e));
       if (!px.eq(rx)) continue;
       const steps = [
-        rich("𝔻 = ℚ \\ {0; ", sgnTxt(e), "}"),
+        rich("D = ℚ \\ {0; ", sgnTxt(e), "}"),
         rich(eq0, "   | · x · ", denTxt(e)),
         rich(sgnTxt(p), " · ", denTxt(e), " = ", sgnTxt(q), " · x"),
       ];
       for (const l of ch.lines) steps.push(rich(eqAC(l.st.L, l.st.R), "   | ", l.op));
       steps.push(rich("x = ", sgnTxt(x0.n)));
-      steps.push(rich("Probe: links ", num(px), ", rechts ", num(rx), ". Die Gleichung stimmt, x liegt in 𝔻."));
-      const ans = rich("𝔻 = ℚ \\ {0; ", sgnTxt(e), "}; L = {", sgnTxt(x0.n), "}");
+      steps.push(rich("Probe: links ", num(px), ", rechts ", num(rx), ". Die Gleichung stimmt, x liegt in D."));
+      const ans = rich("D = ℚ \\ {0; ", sgnTxt(e), "}; L = {", sgnTxt(x0.n), "}");
       steps.push(ans);
       return {
-        q: rich("Gegeben ist die Gleichung ", eq0, ". Bestimme 𝔻 und L."),
+        q: rich("Gegeben ist die Gleichung ", eq0, ". Bestimme D und L."),
         a: ans, steps, _p: p, _q: q, _e: e, _x: x0, _zug: "M",
       };
     }
@@ -291,13 +291,13 @@
     topic: "terme",
     title: "Bruchgleichungen",
     instruction: {
-      1: "Bestimme die Lösungsmenge L. Steht x im Nenner, gib zuerst 𝔻 an. Prüfe die Lösung durch Einsetzen.",
-      2: "Bestimme die Lösungsmenge L. Steht x im Nenner, gib zuerst 𝔻 an, multipliziere mit dem Hauptnenner und prüfe die Lösung.",
-      3: "Bestimme 𝔻 und L. Multipliziere mit dem Hauptnenner, löse die Gleichung und prüfe die Lösung.",
+      1: "Bestimme die Lösungsmenge L. Steht x im Nenner, gib zuerst D an. Prüfe die Lösung durch Einsetzen.",
+      2: "Bestimme die Lösungsmenge L. Steht x im Nenner, gib zuerst D an, multipliziere mit dem Hauptnenner und prüfe die Lösung.",
+      3: "Bestimme D und L. Multipliziere mit dem Hauptnenner, löse die Gleichung und prüfe die Lösung.",
     },
     merke: rich(
-      "Steht x im Nenner, darf der Nenner nicht 0 werden: ", { b: "𝔻 = ℚ \\ {0}" },
-      ". Beide Seiten werden mit dem Hauptnenner multipliziert. Die Lösung muss in 𝔻 liegen."
+      "Steht x im Nenner, darf der Nenner nicht 0 werden: ", { b: "D = ℚ \\ {0}" },
+      ". Beide Seiten werden mit dem Hauptnenner multipliziert. Die Lösung muss in D liegen."
     ),
     cols: 2,
     generate: (rng, level, ctx) => (zugOf(ctx) === "R" ? genBruchR(rng, level) : genBruchM(rng, level)),
