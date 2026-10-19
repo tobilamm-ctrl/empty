@@ -53,6 +53,13 @@ Kalkulation, Promille, Schaubilder mit Halbkreis- und Plus-Minus-Diagramm, M: Wa
 Figuren, M: Bogen, Ring, Sektor), Zylinder und Prismen (M: Hohlzylinder), Zufallsexperimente, Gleichungen
 (Klammern, Ausgangsgleichung, Fehler finden, Textgleichungen), funktionale Zusammenhänge (M: y = mx + t).
 Kreisrechnungen mit π ≈ 3,14.
+**Klasse 9** (M-Zug 29 Aufgabentypen, Regelklasse 24; Abgleich mit der Lehrplan-Checkliste steht noch aus): Zehnerpotenzen
+und Vorsilben, Zinsrechnung (Jahres-, Monats-, Tageszinsen, Zinseszins, Ratenkauf), Wahrscheinlichkeit, Satz des Pythagoras,
+regelmäßige Vielecke, zusammengesetzte Flächen, Prismen, Pyramide und Kegel, Gleichungen (Brüche, Bruchgleichungen,
+Formeln umstellen, Mischungsaufgaben, M: Gleichungssysteme, reinquadratische Gleichungen), Zuordnungen und Graphen
+(M: Funktionsgleichung, Schnittpunkt).
+**Quali-Training** (Klasse 9, Thema „Quali-Training“): Teil A ohne Taschenrechner und Teil B mit Taschenrechner.
+Die Aufgaben stammen aus den Typen der Klassen 5 bis 9.
 Geometrie- und Diagrammaufgaben haben Skizzen, die auch in Word und OneNote erscheinen.
 Die Themenliste aller Klassen steht in `konzept/lehrplan-abgleich.md`.
 

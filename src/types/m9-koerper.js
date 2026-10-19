@@ -223,7 +223,7 @@
       const lead = rng.pick(["Berechne den Flächeninhalt A.", "Wie groß ist die Fläche A?"]);
       return {
         q: rich(`Ein regelmäßiges Sechseck hat die Seitenlänge s = ${tx(s, "cm")}. ${lead} Runde auf 2 Nachkommastellen.`),
-        a: rich("A ≈ ", rnd(A, "cm²")),
+        a: rich("A ≈ ", tx(A, "cm²")),
         steps: rules([
           "Bestimmungsdreieck: h_s² = s² − (s : 2)²",
           `h_s² = ${tx(s)}² cm² − ${tx(half)}² cm² = ${tx(D2, "cm²")}`,
@@ -524,7 +524,7 @@
       const V = G.mul(h);
       return {
         q: rich(`Eine Geschenkschachtel hat die Form eines Prismas mit einem regelmäßigen Sechseck als Grundfläche (Seitenlänge s = ${tx(s, "cm")}). Es ist h = ${tx(h, "cm")} hoch. Berechne das Volumen V. Runde auf 2 Nachkommastellen.`),
-        a: rich("V ≈ ", rnd(V, "cm³")),
+        a: rich("V ≈ ", tx(V, "cm³")),
         steps: rules([
           "Bestimmungsdreieck: h_s² = s² − (s : 2)²",
           `h_s² = ${tx(s)}² cm² − ${tx(half)}² cm² = ${tx(s.mul(s).sub(half.mul(half)), "cm²")}`,

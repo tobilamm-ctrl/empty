@@ -25,7 +25,8 @@ function checkRich(r, where) {
     if (Array.isArray(seg)) throw new Error(where + ": verschachteltes Array – AG.rich() benutzen");
     if (seg.f) {
       const [n, d] = seg.f;
-      if (!Number.isInteger(n) || !Number.isInteger(d) || n < 0 || d < 1) throw new Error(where + ": ungültiger Bruch " + JSON.stringify(seg));
+      const term = t => typeof t === "string" && t.trim() !== "" && /x/.test(t);   // Bruch mit Term (z. B. x + 6)
+      if (!(term(n) || term(d)) && (!Number.isInteger(n) || !Number.isInteger(d) || n < 0 || d < 1)) throw new Error(where + ": ungültiger Bruch " + JSON.stringify(seg));
       if (seg.w !== undefined && (!Number.isInteger(seg.w) || seg.w < 0)) throw new Error(where + ": ungültige ganze Zahl " + JSON.stringify(seg));
       continue;
     }
