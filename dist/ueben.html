@@ -28036,12 +28036,12 @@ table.vt td.red { color: var(--red); font-weight: 700; }
       ["m6-dezimal-addsub", 2], ["m6-dezimal-muldiv", 2], ["m6-brueche-addsub", 2], ["m6-brueche-vergleichen", 2],
       ["m7-q-addsub", 2], ["m5-punkt-vor-strich", 3], ["m8-quadrat-wurzel", 2], ["m5-zahlenfolgen", 2],
       ["m7-gleichung", 2], ["m8-fehler-finden", 2], ["m5-platzhalter", 3], ["m9-zehnerpotenz-schreibweise", 2],
-      ["m9-zehnerpotenz-ordnen", 2], ["m5-ueberschlag", 2],
+      ["m9-zehnerpotenz-ordnen", 2], ["m5-ueberschlag", 2], ["q9-raetsel", 3], ["q9-klammern-setzen", 2], ["q9-umformung-ergaenzen", 3],
     ],
     aGroessen: [
       ["m5-groessen-umrechnen", 3], ["m5-flaecheneinheiten", 2], ["m6-volumeneinheiten", 2], ["m7-dreisatz", 2],
       ["m7-prozentwert", 1], ["m7-prozentsatz", 1], ["m7-winkelsumme", 2], ["m6-viereckarten", 2],
-      ["m5-rechteck-flaeche", 2], ["m9-laplace", 1], ["m8-relative-haeufigkeit", 1], ["m9-vorsilben", 2],
+      ["m5-rechteck-flaeche", 2], ["m9-laplace", 1], ["m8-relative-haeufigkeit", 1], ["m9-vorsilben", 2], ["q9-groessen-schaetzen", 3], ["q9-groessen-schaetzen", 3], ["q9-graph-zuordnen", 2],   // doppelt: häufigste Aufgabe in Teil A
     ],
     bProzent: [
       ["m8-rabatt-skonto", 3], ["m8-umsatzsteuer", 3], ["m8-kalkulation", 3], ["m9-jahreszinsen", 3],
@@ -28102,6 +28102,797 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   make("q9-teil-b-prozent", "Teil B – Prozente und Zinsen (mit Taschenrechner)", "bProzent", false, 1);
   make("q9-teil-b-geometrie", "Teil B – Geometrie (mit Taschenrechner)", "bGeometrie", false, 1);
   make("q9-teil-b-gleichungen", "Teil B – Gleichungen, Funktionen, Wahrscheinlichkeit (mit Taschenrechner)", "bGleichungen", false, 1);
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/q9-teil-a.js ----
+// Quali-Training Klasse 9, Teil A (ohne Taschenrechner): Größen realistisch einschätzen,
+// Zahlenrätsel (Symbole, magisches Quadrat), Klammern setzen.
+(function (AG) {
+  const { Frac, num, rich, MINUS, plain } = AG;
+
+  const LET = ["a", "b", "c"];
+  // a · 10^E als Bruch (E darf negativ sein)
+  const pw = (a, E) => (E >= 0 ? new Frac(a * 10 ** E) : new Frac(a, 10 ** -E));
+
+  // ---------- 1. Größen realistisch schätzen ----------
+
+  // Einheiten je Größenart. p = Zehnerpotenz zur Grundeinheit (g, mm, cm², ml)
+  const UNITS = {
+    Masse: [{ sym: "mg", p: -3 }, { sym: "g", p: 0 }, { sym: "kg", p: 3 }, { sym: "t", p: 6 }],
+    Länge: [{ sym: "mm", p: 0 }, { sym: "cm", p: 1 }, { sym: "m", p: 3 }, { sym: "km", p: 6 }],
+    Flächeninhalt: [{ sym: "cm", sup: "2", p: 0 }, { sym: "m", sup: "2", p: 4 }, { sym: "ha", p: 8 }, { sym: "km", sup: "2", p: 10 }],
+    Rauminhalt: [{ sym: "ml", p: 0 }, { sym: "l", p: 3 }, { sym: "m", sup: "3", p: 6 }],
+  };
+
+  // Gegenstände mit realistischem Bereich [lo, hi] als [Zahl, Zehnerpotenz] in der Grundeinheit
+  const OBJ = [
+    { name: "Elefant", frage: "Wie schwer ist ein ausgewachsener Elefant?", art: "Masse", lo: [3, 6], hi: [6, 6] },
+    { name: "Meerschweinchen", frage: "Wie schwer ist ein Meerschweinchen?", art: "Masse", lo: [5, 2], hi: [15, 2] },
+    { name: "Apfel", frage: "Wie schwer ist ein Apfel?", art: "Masse", lo: [12, 2], hi: [25, 2] },
+    { name: "Ameise", frage: "Wie schwer ist eine Ameise?", art: "Masse", lo: [2, -3], hi: [5, -3] },
+    { name: "Smartphone", frage: "Wie schwer ist ein Smartphone?", art: "Masse", lo: [15, 1], hi: [25, 1] },
+    { name: "Schulbus", frage: "Wie schwer ist ein leerer Schulbus?", art: "Masse", lo: [8, 6], hi: [12, 6] },
+    { name: "Schultasche (gefüllt)", frage: "Wie schwer ist eine gefüllte Schultasche?", art: "Masse", lo: [3, 3], hi: [6, 3] },
+    { name: "Elefant (Schulterhöhe)", frage: "Wie hoch ist ein ausgewachsener Elefant an der Schulter?", art: "Länge", lo: [25, 2], hi: [4, 3] },
+    { name: "Meerschweinchen (Körperlänge)", frage: "Wie lang ist ein Meerschweinchen?", art: "Länge", lo: [20, 1], hi: [35, 1] },
+    { name: "Schuh (Länge)", frage: "Wie lang ist ein Schuh in Größe 40?", art: "Länge", lo: [24, 1], hi: [30, 1] },
+    { name: "Smartphone-Display (Diagonale)", frage: "Wie lang ist die Diagonale eines Smartphone-Displays?", art: "Länge", lo: [13, 1], hi: [17, 1] },
+    { name: "Ameise (Körperlänge)", frage: "Wie lang ist eine Ameise?", art: "Länge", lo: [3, 0], hi: [10, 0] },
+    { name: "Schulbus (Länge)", frage: "Wie lang ist ein Schulbus?", art: "Länge", lo: [10, 3], hi: [12, 3] },
+    { name: "Klassenzimmer (Länge)", frage: "Wie lang ist ein Klassenzimmer?", art: "Länge", lo: [8, 3], hi: [10, 3] },
+    { name: "Fußballfeld (Länge)", frage: "Wie lang ist ein Fußballfeld?", art: "Länge", lo: [100, 3], hi: [110, 3] },
+    { name: "Tischplatte (Länge)", frage: "Wie lang ist ein Esstisch?", art: "Länge", lo: [10, 2], hi: [16, 2] },
+    { name: "Tischplatte (Fläche)", frage: "Wie groß ist die Fläche einer Esstisch-Platte?", art: "Flächeninhalt", lo: [6, 3], hi: [15, 3] },
+    { name: "DIN-A4-Blatt", frage: "Wie groß ist die Fläche eines DIN-A4-Blatts?", art: "Flächeninhalt", lo: [6, 2], hi: [65, 1] },
+    { name: "Smartphone-Display (Fläche)", frage: "Wie groß ist die Fläche eines Smartphone-Displays?", art: "Flächeninhalt", lo: [8, 1], hi: [12, 1] },
+    { name: "Klassenzimmer (Grundfläche)", frage: "Wie groß ist die Grundfläche eines Klassenzimmers?", art: "Flächeninhalt", lo: [4, 5], hi: [7, 5] },
+    { name: "Fußballfeld (Fläche)", frage: "Wie groß ist die Fläche eines Fußballfelds?", art: "Flächeninhalt", lo: [6, 7], hi: [8, 7] },
+    { name: "Trinkflasche", frage: "Wie viel passt in eine Trinkflasche?", art: "Rauminhalt", lo: [4, 2], hi: [10, 2] },
+    { name: "Kaffeetasse", frage: "Wie viel passt in eine Kaffeetasse?", art: "Rauminhalt", lo: [15, 1], hi: [25, 1] },
+    { name: "Eimer", frage: "Wie viel Wasser passt in einen Eimer?", art: "Rauminhalt", lo: [8, 3], hi: [12, 3] },
+    { name: "Badewanne (Füllmenge)", frage: "Wie viel Wasser passt in eine volle Badewanne?", art: "Rauminhalt", lo: [15, 4], hi: [30, 4] },
+    { name: "Klassenzimmer (Rauminhalt)", frage: "Wie groß ist der Rauminhalt eines Klassenzimmers?", art: "Rauminhalt", lo: [15, 7], hi: [25, 7] },
+  ].map(o => Object.assign(o, { lo: pw(o.lo[0], o.lo[1]), hi: pw(o.hi[0], o.hi[1]) }));
+
+  const unitRich = u => (u.sup ? rich(u.sym, { sup: u.sup }) : rich(u.sym));
+
+  // "in": im realistischen Bereich; "far": mindestens Faktor 10 außerhalb; sonst "near" (ungültig)
+  function cls(v, o) {
+    if (v.cmp(o.lo) >= 0 && v.cmp(o.hi) <= 0) return "in";
+    if (v.cmp(o.hi.mul(10)) >= 0 || v.cmp(o.lo.div(10)) <= 0) return "far";
+    return "near";
+  }
+
+  // Niveau 1: gleiche Zahl, verschiedene Einheiten ohne Zehnerpotenz (3 t / 3 kg / 3 g)
+  function optsN1(rng, o) {
+    const a = rng.int(2, 9);
+    return rng.shuffle(UNITS[o.art]).slice(0, 3).map(u => ({
+      v: pw(a, u.p), u, text: rich(String(a), " ", unitRich(u)),
+    }));
+  }
+
+  // Niveau 2: Dezimalzahlen in verschiedenen Einheiten, Umrechnung nötig (0,9 kg / 90 kg / 9000 g)
+  function optsN2(rng, o) {
+    const U = UNITS[o.art];
+    const uT = rng.pick(U);
+    let trueD = null;
+    for (let i = 0; i < 200 && !trueD; i++) {
+      const d = new Frac(rng.int(1, 999), 10 ** rng.pick([0, 1, 1, 2]));
+      if (cls(d.mul(pw(1, uT.p)), o) === "in") trueD = d;
+    }
+    if (!trueD) return null;
+    const list = [{ d: trueD, u: uT }];
+    for (let t = 0; t < 2; t++) {
+      let found = null;
+      for (let i = 0; i < 200 && !found; i++) {
+        const u = rng.pick(U);
+        const d = new Frac(rng.int(1, 999), 10 ** rng.pick([0, 0, 1]));
+        const v = d.mul(pw(1, u.p));
+        if (cls(v, o) === "far" && !list.some(x => x.d.mul(pw(1, x.u.p)).eq(v))) found = { d, u };
+      }
+      if (!found) return null;
+      list.push(found);
+    }
+    return list.map(x => ({ v: x.d.mul(pw(1, x.u.p)), u: x.u, text: rich(num(x.d, { as: "dec" }), " ", unitRich(x.u)) }));
+  }
+
+  // Niveau 3: gleiche Ziffer a, Zehnerpotenz-Schreibweise (3 · 10⁶ g / 3 · 10⁻² t / 3 · 10⁵ kg)
+  function optsN3(rng, o) {
+    const a = rng.int(1, 9);
+    const units = rng.shuffle(UNITS[o.art]).slice(0, 3);
+    const info = units.map(u => {
+      const ins = [], far = [];
+      for (let e = -9; e <= 9; e++) {
+        if (e === 0) continue;
+        const E = e + u.p;
+        if (E < -12 || E > 12) continue;
+        const c = cls(pw(a, E), o);
+        if (c === "in") ins.push(e); else if (c === "far") far.push(e);
+      }
+      return { u, ins, far };
+    });
+    const cands = [0, 1, 2].filter(i => info[i].ins.length && info.every((x, k) => k === i || x.far.length));
+    if (!cands.length) return null;
+    const ci = rng.pick(cands);
+    return info.map((x, i) => {
+      const e = rng.pick(i === ci ? x.ins : x.far);
+      const expo = e < 0 ? MINUS + String(-e) : String(e);
+      return { v: pw(a, e + x.u.p), u: x.u, text: rich(String(a), " · 10", { sup: expo }, " ", unitRich(x.u)) };
+    });
+  }
+
+  function genSize(rng, level) {
+    for (let att = 0; att < 400; att++) {
+      const o = rng.pick(OBJ);
+      const opts0 = level === 1 ? optsN1(rng, o) : level === 2 ? optsN2(rng, o) : optsN3(rng, o);
+      if (!opts0) continue;
+      const opts = rng.shuffle(opts0);
+      const cl = opts.map(x => cls(x.v, o));
+      if (cl.filter(c => c === "in").length !== 1 || cl.filter(c => c === "far").length !== 2) continue;
+      if (new Set(opts.map(x => x.u.sym + (x.u.sup || ""))).size < 2) continue;
+
+      const ci = cl.indexOf("in");
+      const uT = opts[ci].u;
+      const inT = v => v.div(pw(1, uT.p));
+      const head = [[], ...LET.map(l => [{ b: l + ")" }])];
+      const markRow = mark => [[], ...opts.map((x, i) => rich(mark(i), " ", x.text))];
+      const table = { rows: [head, markRow(() => "☐")] };
+      const aTable = { rows: [head, markRow(i => (i === ci ? "☒" : "☐"))] };
+
+      const steps = [rich("Alle Angaben in ", unitRich(uT), " umrechnen:")];
+      opts.forEach((x, i) => steps.push(x.u === uT
+        ? rich(LET[i], ") ", x.text, " (schon in ", unitRich(uT), ")")
+        : rich(LET[i], ") ", x.text, " = ", num(inT(x.v), { as: "dec" }), " ", unitRich(uT))));
+      steps.push(rich("Üblich sind etwa ", num(inT(o.lo), { as: "dec" }), " bis ", num(inT(o.hi), { as: "dec" }), " ", unitRich(uT), " (", o.name, ")."));
+      steps.push(rich(LET[ci], ") ", opts[ci].text, " ist realistisch. Die beiden anderen sind mindestens zehnmal zu groß oder zu klein."));
+
+      return {
+        q: rich(o.frage),
+        a: rich(LET[ci], ") ", opts[ci].text),
+        steps,
+        table,
+        aTable,
+        inline: false,
+      };
+    }
+    throw new Error("q9-groessen-schaetzen: keine Aufgabe gefunden (Niveau " + level + ")");
+  }
+
+  // ---------- 2. Zahlenrätsel ----------
+
+  const SYMBOLS = [["★", "●", "■"], ["♣", "♦", "♠"]];
+  const nd = v => num(v, { as: "dec" });
+
+  // Kette: X·k bzw. X+X = s1 (X), Y+X = s2 (Y), Y·Z = p (Z). Niveau 2: Dezimalzahlen (halbe Einheiten)
+  function riddleChain(rng, dec) {
+    const [X, Y, Z] = rng.shuffle(rng.pick(SYMBOLS));
+    const val = () => (dec ? new Frac(rng.int(1, 12), 2) : new Frac(rng.int(2, 12)));
+    let x, y, z;
+    do { x = val(); y = val(); z = val(); } while (x.eq(y) || y.eq(z) || x.eq(z));
+    const sumForm = rng.chance(0.5);
+    const k = sumForm ? 2 : rng.pick([3, 4]);
+    const s1 = x.mul(k), s2 = x.add(y), p = y.mul(z);
+    const q = rich(
+      sumForm ? rich(X, " + ", X) : rich(String(k), " · ", X), " = ", nd(s1), { br: true },
+      Y, " + ", X, " = ", nd(s2), { br: true },
+      Y, " · ", Z, " = ", nd(p),
+    );
+    const steps = [
+      rich(String(k), " · ", X, " = ", nd(s1)),
+      rich(X, " = ", nd(s1), " : ", String(k), " = ", nd(x)),
+      rich(Y, " = ", nd(s2), " " + MINUS + " ", nd(x), " = ", nd(y)),
+      rich(Z, " = ", nd(p), " : ", nd(y), " = ", nd(z)),
+    ];
+    return {
+      q, steps, inline: false,
+      a: rich(X, " = ", nd(x), ";  ", Y, " = ", nd(y), ";  ", Z, " = ", nd(z)),
+    };
+  }
+
+  // Zwei Gleichungen mit zwei Symbolen gleichzeitig: A + B = s1, A − B = d1, B · C = p
+  function riddleSystem(rng) {
+    const [A, B, C] = rng.shuffle(rng.pick(SYMBOLS));
+    const vb = rng.int(2, 11);
+    const va = rng.int(vb + 1, 12);
+    let vc;
+    do { vc = rng.int(2, 12); } while (vc === va || vc === vb);
+    const s1 = va + vb, d1 = va - vb, p = vb * vc;
+    const q = rich(
+      A, " + ", B, " = ", String(s1), { br: true },
+      A, " " + MINUS + " ", B, " = ", String(d1), { br: true },
+      B, " · ", C, " = ", String(p),
+    );
+    const steps = [
+      rich("Beide Gleichungen addieren: 2 · ", A, " = ", String(s1), " + ", String(d1), " = ", String(s1 + d1)),
+      rich(A, " = ", String(s1 + d1), " : 2 = ", String(va)),
+      rich(B, " = ", String(s1), " " + MINUS + " ", String(va), " = ", String(vb)),
+      rich(C, " = ", String(p), " : ", String(vb), " = ", String(vc)),
+    ];
+    return {
+      q, steps, inline: false,
+      a: rich(A, " = ", String(va), ";  ", B, " = ", String(vb), ";  ", C, " = ", String(vc)),
+    };
+  }
+
+  // Magisches Quadrat: Lo-Shu-Quadrat, zentriert (−5), mit Schrittweite s und Mitte c skaliert
+  const LO_SHU = [[8, 1, 6], [3, 5, 7], [4, 9, 2]];
+  const rotate = M => [0, 1, 2].map(i => [0, 1, 2].map(j => M[2 - j][i]));
+  const reflect = M => M.map(r => r.slice().reverse());
+  function magicGrid(rng) {
+    let M = LO_SHU.map(r => r.map(v => v - 5));
+    const c = rng.int(21, 45), s = rng.int(1, 5);
+    for (let r = rng.int(0, 3); r > 0; r--) M = rotate(M);
+    if (rng.chance(0.5)) M = reflect(M);
+    return M.map(row => row.map(v => c + s * v));
+  }
+
+  const LINES = [
+    [[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]],
+    [[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]],
+    [[0, 0], [1, 1], [2, 2]], [[0, 2], [1, 1], [2, 0]],
+  ];
+  const lineName = i => (i < 3 ? "Zeile " + (i + 1) : i < 6 ? "Spalte " + (i - 2) : i === 6 ? "Diagonale von links oben" : "Diagonale von rechts oben");
+
+  // Lückenfüllung durch Zeilen-/Spalten-/Diagonalsumme mit einer Lücke. S: Summe oder null (dann aus einer vollen Linie).
+  function solveMagic(g, S0) {
+    const h = g.map(r => r.slice());
+    const steps = [];
+    let S = S0;
+    if (S === null) {
+      const full = LINES.findIndex(L => L.every(([r, c]) => h[r][c] !== null));
+      if (full < 0) return null;
+      S = LINES[full].reduce((s, [r, c]) => s + h[r][c], 0);
+      steps.push(rich(lineName(full), ": ", LINES[full].map(([r, c]) => String(h[r][c])).join(" + "), " = ", String(S), ". Die Summe ist also ", String(S), "."));
+    }
+    let progress = true;
+    while (progress) {
+      progress = false;
+      for (let i = 0; i < LINES.length; i++) {
+        const L = LINES[i];
+        const blanks = L.filter(([r, c]) => h[r][c] === null);
+        if (blanks.length !== 1) continue;
+        const known = L.filter(([r, c]) => h[r][c] !== null).map(([r, c]) => h[r][c]);
+        const sumKnown = known.reduce((s, v) => s + v, 0);
+        const v = S - sumKnown;
+        if (v <= 0) return null;
+        const cells = L.map(([r, c]) => (h[r][c] === null ? "?" : String(h[r][c]))).join(" + ");
+        steps.push(rich(lineName(i), ": ", cells, " = ", String(S), ";  ? = ", String(S), " " + MINUS + " ", String(sumKnown), " = ", String(v)));
+        h[blanks[0][0]][blanks[0][1]] = v;
+        progress = true;
+      }
+    }
+    if (h.some(row => row.some(x => x === null))) return null;
+    if (!LINES.every(L => L.reduce((s, [r, c]) => s + h[r][c], 0) === S)) return null;
+    return { h, S, steps };
+  }
+
+  function riddleMagic(rng) {
+    for (let att = 0; att < 300; att++) {
+      const M = magicGrid(rng);
+      const S0 = M[0][0] + M[0][1] + M[0][2];
+      const idx = rng.shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, rng.int(4, 6));
+      const g = M.map(r => r.slice());
+      for (const k of idx) g[Math.floor(k / 3)][k % 3] = null;
+      const sumGiven = rng.chance(0.5);
+      const res = solveMagic(g, sumGiven ? S0 : null);
+      if (!res || res.S !== S0) continue;
+      const rowLabel = r => [{ b: "Zeile " + (r + 1) }];
+      const table = { rows: [0, 1, 2].map(r => [rowLabel(r), ...[0, 1, 2].map(c => (g[r][c] === null ? [{ blank: 3 }] : [String(g[r][c])]))]) };
+      const aTable = { rows: [0, 1, 2].map(r => [rowLabel(r), ...[0, 1, 2].map(c => [String(M[r][c])])]) };
+      return {
+        q: sumGiven
+          ? rich("Jede Zeile, jede Spalte und jede Diagonale hat die Summe ", String(S0), ". Ergänze die fehlenden Zahlen.")
+          : rich("Alle Zeilen, Spalten und Diagonalen haben dieselbe Summe. Ergänze die fehlenden Zahlen und bestimme diese Summe."),
+        a: rich("Summe = ", String(S0)),
+        steps: res.steps,
+        table,
+        aTable,
+        inline: false,
+      };
+    }
+    throw new Error("q9-raetsel: kein magisches Quadrat gefunden");
+  }
+
+  // ---------- 3. Klammern setzen ----------
+
+  const OP_ADD = "+", OP_SUB = MINUS, OP_MUL = "·";
+  const OPS = [OP_ADD, OP_SUB, OP_MUL];
+  const PREC = { [OP_ADD]: 1, [OP_SUB]: 1, [OP_MUL]: 2 };
+  const leaf = v => ({ leaf: true, v });
+  const node = (op, l, r) => ({ op, l, r });
+
+  // alle vollständig geklammerten Binärbäume über xs[i..j] (Operator ops[k] zwischen xs[k] und xs[k+1])
+  function trees(xs, ops, i, j) {
+    if (i === j) return [leaf(xs[i])];
+    const out = [];
+    for (let k = i; k < j; k++) {
+      for (const L of trees(xs, ops, i, k)) for (const R of trees(xs, ops, k + 1, j)) out.push(node(ops[k], L, R));
+    }
+    return out;
+  }
+  function evalT(t) {
+    if (t.leaf) return t.v;
+    const a = evalT(t.l), b = evalT(t.r);
+    return t.op === OP_ADD ? a.add(b) : t.op === OP_SUB ? a.sub(b) : a.mul(b);
+  }
+  // Klammer nur, wo sie die Rechnung ändert (Punkt vor Strich, Minus vor einer Summe/Differenz)
+  function needParen(t, parent, side) {
+    if (!parent) return false;
+    const pc = PREC[t.op], pp = PREC[parent.op];
+    return pc < pp || (pc === pp && side === "r" && parent.op === OP_SUB);
+  }
+  function pr(t, parent, side) {
+    if (t.leaf) return t.v.sign() < 0 && parent ? rich("(", nd(t.v), ")") : nd(t.v);
+    const inner = rich(pr(t.l, t, "l"), " ", t.op, " ", pr(t.r, t, "r"));
+    return needParen(t, parent, side) ? rich("(", inner, ")") : inner;
+  }
+  // einen Schritt: die linkeste innerste Verknüpfung ausrechnen
+  function red(t) {
+    if (t.leaf) return t;
+    if (!t.l.leaf) return node(t.op, red(t.l), t.r);
+    if (!t.r.leaf) return node(t.op, t.l, red(t.r));
+    return leaf(evalT(t));
+  }
+
+  // Alle verschiedenen Klammerfassungen (gleiche Schreibweise = gleicher Baum) mit ihrem Wert
+  function analyse(xs, ops) {
+    const map = new Map();
+    for (const t of trees(xs, ops, 0, xs.length - 1)) {
+      const key = plain(pr(t, null, null));
+      if (!map.has(key)) map.set(key, { key, t, v: evalT(t), pairs: (key.match(/\(/g) || []).length });
+    }
+    return [...map.values()];
+  }
+
+  function genBrackets(rng, level) {
+    for (let att = 0; att < 400; att++) {
+      const n = level === 2 ? 4 : level === 1 ? 3 : rng.pick([3, 4]);
+      const xs = Array.from({ length: n }, () => (level === 3 ? new Frac(rng.int(11, 95), 10) : new Frac(rng.int(2, level === 1 ? 9 : 12))));
+      const ops = Array.from({ length: n - 1 }, () => rng.pick(OPS));
+      const all = analyse(xs, ops);
+      const def = all.find(e => e.pairs === 0);
+      const cands = all.filter(e => e.pairs > 0);
+      if (!def || !cands.length) continue;
+      const ans = rng.pick(cands);
+      const R = ans.v;
+      if (R.eq(def.v)) continue;                                   // ohne Klammern darf das Ergebnis nicht stimmen
+      if (cands.filter(e => e.v.eq(R)).length !== 1) continue;     // genau eine Klammersetzung
+      if (level === 1 && ans.pairs !== 1) continue;
+      if (level === 2 && ans.pairs > 2) continue;
+      if (R.decimals() > 2 || Math.abs(R.valueOf()) > 500) continue;
+
+      const steps = [pr(ans.t, null, null)];
+      let t = ans.t;
+      while (!t.leaf) { t = red(t); steps.push(rich("= ", pr(t, null, null))); }
+      return {
+        q: rich(pr(def.t, null, null), " = ", nd(R)),
+        a: rich(pr(ans.t, null, null), " = ", nd(R)),
+        steps,
+        inline: false,
+      };
+    }
+    throw new Error("q9-klammern-setzen: keine Aufgabe gefunden (Niveau " + level + ")");
+  }
+
+  // ---------- Typen ----------
+
+  AG.registerType({
+    id: "q9-groessen-schaetzen",
+    klasse: "9",
+    zug: "RM",
+    lb: "Q",
+    lbTitle: "Quali-Training",
+    topic: "groessen",
+    title: "Realistische Größenangaben",
+    instruction: "Welche Angabe ist realistisch? Kreuze an.",
+    merke: [{ b: "Merke:" }, " Erst alle Angaben in dieselbe Einheit umrechnen, dann vergleichen. Beispiel: 3 t = 3000 kg = 3 · 10",
+      { sup: "3" }, " kg."],
+    cols: 2,
+    generate(rng, level) { return genSize(rng, level); },
+  });
+
+  AG.registerType({
+    id: "q9-raetsel",
+    klasse: "9",
+    zug: "RM",
+    lb: "Q",
+    lbTitle: "Quali-Training",
+    topic: "zahlen",
+    title: "Zahlenrätsel und magisches Quadrat",
+    instruction: {
+      1: "Bestimme den Wert jedes Symbols.",
+      2: "Bestimme den Wert jedes Symbols.",
+      3: "Ergänze das magische Quadrat.",
+    },
+    merke: [{ b: "Merke:" }, " Gleichungen mit nur einem Symbol zuerst lösen, dann die übrigen Werte einsetzen. "
+      + "Beim magischen Quadrat hilft eine Zeile, Spalte oder Diagonale mit nur einer Lücke."],
+    cols: 2,
+    generate(rng, level) {
+      if (level === 3) return riddleMagic(rng);
+      if (level === 2 && rng.chance(0.5)) return riddleSystem(rng);
+      return riddleChain(rng, level === 2);
+    },
+  });
+
+  AG.registerType({
+    id: "q9-klammern-setzen",
+    klasse: "9",
+    zug: "RM",
+    lb: "Q",
+    lbTitle: "Quali-Training",
+    topic: "zahlen",
+    title: "Klammern setzen",
+    instruction: "Setze Klammern, damit die Rechnung stimmt.",
+    merke: [{ b: "Merke:" }, " Was in einer Klammer steht, wird zuerst berechnet. Punktrechnung geht vor Strichrechnung, "
+      + "außer eine Klammer steht davor."],
+    cols: 2,
+    generate(rng, level) { return genBrackets(rng, level); },
+  });
+})(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
+
+</script>
+<script>
+// ---- src/types/q9-teil-a2.js ----
+// Quali-Training Teil A (Klasse 9, ohne Taschenrechner), zwei Typen:
+// q9-graph-zuordnen (topic "zuordnung"): Sachverhalte den passenden Graphen zuordnen, alle Graphen in einer Skizze.
+// q9-umformung-ergaenzen (topic "terme"): Lücken in einer Gleichungsumformung ergänzen oder die fehlerhafte Zeile finden.
+(function (AG) {
+  const { rich, MINUS, SKETCH_COLORS } = AG;
+  const INK = SKETCH_COLORS.INK;
+  const abs = Math.abs;
+  const LETTERS = ["A", "B", "C", "D"];
+  const META = { klasse: "9", zug: "RM", lb: "Q", lbTitle: "Quali-Training" };
+
+  const range = (a, b) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
+  const sg = rng => (rng.chance(0.5) ? -1 : 1);
+
+  // ======================================================================
+  // 1. Sachverhalte und Graphen zuordnen
+  // ======================================================================
+  // pts: Verlauf im Einheitsquadrat (u = x, v = y, jeweils 0 … 1); direct / indirect: Sachverhalt mit Achsenbeschriftung
+  const SHAPES = [
+    {
+      pts: () => [[0, 0], [1, 0.8]],
+      erk: "Der Graph ist eine Gerade durch den Ursprung: Er beginnt bei 0 und steigt gleichmäßig.",
+      direct: { xl: "Menge", yl: "Preis", t: "Äpfel kosten auf dem Markt pro Kilogramm immer gleich viel." },
+      indirect: { xl: "Anzahl", yl: "Preis", t: "Ein Heft kostet 0,80 €." },
+    },
+    {
+      pts: () => [[0, 0.3], [1, 0.85]],
+      erk: "Der Graph ist eine steigende Gerade, die nicht im Ursprung beginnt: Am Anfang steht schon ein fester Betrag (Grundgebühr).",
+      direct: { xl: "Zeit", yl: "Kosten", t: "Ein Handytarif hat eine monatliche Grundgebühr und zusätzlich einen festen Preis pro Minute." },
+      indirect: { xl: "Strecke", yl: "Preis", t: "Ein Taxi verlangt 3 € Grundpreis und 2 € für jeden Kilometer." },
+    },
+    {
+      pts: () => [[0, 0.5], [1, 0.5]],
+      erk: "Der Graph verläuft waagerecht: Der Wert bleibt immer gleich.",
+      direct: { xl: "Besuche", yl: "Kosten", t: "Eine Jahreskarte fürs Freibad kostet immer gleich viel, egal wie oft man hingeht." },
+      indirect: { xl: "Zeit", yl: "Höhe", t: "Ein Ballon schwebt eine Stunde lang auf gleicher Höhe." },
+    },
+    {
+      pts: () => [[0, 0.9], [1, 0.15]],
+      erk: "Der Graph ist eine fallende Gerade: Der Wert nimmt gleichmäßig ab.",
+      direct: { xl: "Zeit", yl: "Länge", t: "Eine Kerze brennt gleichmäßig ab und wird dabei immer kürzer." },
+      indirect: { xl: "Zeit", yl: "Menge", t: "Aus einem vollen Tank fließt gleichmäßig Benzin ab." },
+    },
+    {
+      pts: () => [[0, 0.25], [0.34, 0.25], [0.34, 0.5], [0.67, 0.5], [0.67, 0.75], [1, 0.75]],
+      erk: "Der Graph besteht aus Stufen: Der Wert springt jedes Mal, wenn eine neue Stunde beginnt.",
+      direct: { xl: "Zeit", yl: "Preis", t: "Ein Parkhaus verlangt 2 € für jede angefangene Stunde." },
+      indirect: { xl: "Zeit", yl: "Gebühr", t: "Ein Schließfach am Bahnhof kostet 1 € für jede angefangene Stunde." },
+    },
+    {
+      pts: () => [[0, 0], [0.25, 0.7], [0.75, 0.7], [1, 0]],
+      erk: "Der Graph steigt zuerst, verläuft dann eine Zeit lang waagerecht und fällt am Ende wieder bis zur Achse.",
+      direct: { xl: "Zeit", yl: "Tempo", t: "Ein Laufband-Programm: Zuerst wird langsam angewärmt, dann gleichmäßig gelaufen, zum Schluss ausgelaufen." },
+      indirect: { xl: "Zeit", yl: "Tempo", t: "Beim Joggen steigert man am Anfang das Tempo, läuft eine Zeit lang gleich schnell und wird am Ende langsamer." },
+    },
+    {
+      pts: () => range(0, 40).map(i => { const u = 0.2 + (0.8 * i) / 40; return [u, 0.2 / u]; }),
+      erk: "Der Graph ist eine fallende Kurve, die sich den Achsen nähert: Je größer x, desto kleiner y.",
+      direct: { xl: "Arbeiter", yl: "Tage", t: "Ein Auftrag braucht immer gleich viel Arbeit. Je mehr Arbeiter ihn erledigen, desto weniger Tage dauert er." },
+      indirect: { xl: "Tempo", yl: "Fahrzeit", t: "Eine Strecke von 120 km wird mit unterschiedlichem Tempo zurückgelegt." },
+    },
+    {
+      pts: () => range(0, 40).map(i => { const u = i / 40; return [u, (0.9 * (1 - Math.exp(-3 * u))) / (1 - Math.exp(-3))]; }),
+      erk: "Der Graph ist eine steigende Kurve, die immer flacher wird: Der Zuwachs wird mit der Zeit kleiner.",
+      direct: { xl: "Alter", yl: "Größe", t: "Die Körpergröße eines Kindes nimmt mit dem Alter zu, in den späteren Jahren aber immer langsamer." },
+      indirect: { xl: "Alter", yl: "Größe", t: "Ein Baby wächst im ersten Jahr stark, danach nimmt das Wachstum immer weiter ab." },
+    },
+  ];
+
+  // Ein Feld im Bild (Breite cellW, Buchstabe links oben), Achsen ohne Zahlen, nur Beschriftung
+  function drawSlot(s, x0, cellW, shape, letter, ctx) {
+    const ox = x0 + 9, oy = 44, axW = cellW - 14, axH = 28;
+    const P = (u, v) => [ox + u * axW, oy - v * axH];
+    s.line([ox, oy], [ox + axW + 1, oy], { width: 0.35 });
+    s.poly([[ox + axW + 3, oy], [ox + axW, oy - 0.9], [ox + axW, oy + 0.9]], { fill: INK, stroke: INK, width: 0.1 });
+    s.line([ox, oy], [ox, oy - axH - 1], { width: 0.35 });
+    s.poly([[ox, oy - axH - 3], [ox - 0.9, oy - axH], [ox + 0.9, oy - axH]], { fill: INK, stroke: INK, width: 0.1 });
+    const pts = shape.pts().map(([u, v]) => P(u, v));
+    s.path("M" + pts.map(p => p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" L"), { width: 0.5 });
+    s.label([ox + axW + 2, oy + 4.5], ctx.xl, { anchor: "end", size: 3 });
+    s.label([ox + 1.5, oy - axH - 4], ctx.yl, { anchor: "start", size: 3 });
+    s.label([x0 + 2, 6], letter, { anchor: "start", bold: true, size: 4.2 });
+  }
+
+  AG.registerType({
+    id: "q9-graph-zuordnen",
+    ...META,
+    topic: "zuordnung",
+    title: "Sachverhalten Graphen zuordnen",
+    cols: 1,
+    instruction: "Ordne jedem Sachverhalt den passenden Graphen zu. Jeder Graph gehört zu genau einem Sachverhalt.",
+    merke: [
+      "Ursprungsgerade = proportional. Gerade oberhalb des Ursprungs = Grundgebühr. Waagerecht = konstant. Stufen = angefangene Einheiten. ",
+      "Fallende Kurve, die sich den Achsen nähert = umgekehrt proportional. Steigende Kurve, die immer flacher wird = Wachstum, das langsamer wird.",
+    ],
+    generate(rng, level) {
+      const N = level === 1 ? 3 : 4;
+      const which = level === 3 ? "indirect" : "direct";
+      const shapes = rng.shuffle(SHAPES).slice(0, N);      // Reihenfolge der Sachverhalte (zufällig)
+      const slots = rng.shuffle(shapes);                    // Lage der Graphen im Bild (zufällig)
+      const letters = LETTERS.slice(0, N);
+      const letterOf = S => letters[slots.indexOf(S)];
+      const cellW = 150 / N;
+      const s = AG.sketch(150, 56);
+      slots.forEach((S, i) => drawSlot(s, i * cellW, cellW, S, letters[i], S[which]));
+      const fig = s.done();
+      const q = rich(
+        `Ordne jedem Sachverhalt den passenden Graphen zu (Graphen ${letters.join(", ")}). Schreibe z. B. „1 – C“.`,
+        shapes.flatMap((S, j) => [{ br: true }, `${j + 1}) `, S[which].t])
+      );
+      const answers = shapes.map((S, j) => `${j + 1} – ${letterOf(S)}`);
+      const steps = shapes.map((S, j) => rich(`${j + 1} – ${letterOf(S)}: `, S.erk));
+      return { q, a: rich(answers.join(", ")), steps, fig, inline: false, check: { answers } };
+    },
+    verify(t) {
+      const exp = t.check && t.check.answers;
+      if (!exp) return "kein Prüfdatensatz";
+      return AG.plain(t.a) === exp.join(", ") ? true : "Lösung falsch: " + AG.plain(t.a);
+    },
+  });
+
+  // ======================================================================
+  // 2. Gleichungsumformung ergänzen
+  // ======================================================================
+  // Zustand: L = [a, b] (a·x + b), R = [c, d] (c·x + d), alle ganzzahlig.
+  // Befehle: {k:"br"} Klammer auflösen (ohne Änderung der Werte), {k:"x", d} | + d·x, {k:"c", d} | + d,
+  //          {k:"div", d} | : d, {k:"mul", d} | · d (nur für die Rückwärtsrechnung)
+
+  // Seite als Rich: a·x + b
+  function side(v) {
+    const [a, b] = v;
+    const out = [];
+    if (a !== 0) out.push(a < 0 ? MINUS : "", abs(a) === 1 ? "" : String(abs(a)), "x");
+    if (b !== 0) {
+      if (a !== 0) out.push(b > 0 ? " + " + b : " " + MINUS + " " + abs(b));
+      else out.push(b < 0 ? MINUS + abs(b) : String(b));
+    }
+    if (!out.length) out.push("0");
+    return out;
+  }
+  // Klammerform p · (x + m) + t
+  function bracketSide(p, m, t) {
+    const out = [p < 0 ? MINUS : "", abs(p) === 1 ? "" : abs(p) + " · ", "(x", m > 0 ? " + " + m : " " + MINUS + " " + abs(m), ")"];
+    if (t > 0) out.push(" + " + t);
+    else if (t < 0) out.push(" " + MINUS + " " + abs(t));
+    return out;
+  }
+  const eqCells = st => [...side(st.L), " = ", ...side(st.R)];
+
+  function opText(op) {
+    if (op.k === "br") return "Klammer auflösen";
+    if (op.k === "x") return (op.d < 0 ? MINUS : "+") + " " + (abs(op.d) === 1 ? "" : abs(op.d)) + "x";
+    if (op.k === "c") return (op.d < 0 ? MINUS : "+") + " " + abs(op.d);
+    const f = op.k === "mul" ? "· " : ": ";
+    return f + (op.d < 0 ? "(" + MINUS + abs(op.d) + ")" : String(op.d));
+  }
+  const inv = op => (op.k === "x" ? { k: "x", d: -op.d } : op.k === "c" ? { k: "c", d: -op.d } : { k: "mul", d: op.d });
+
+  // Befehl auf beide Seiten anwenden; null, wenn nicht ganzzahlig teilbar
+  function apply(op, st) {
+    if (op.k === "br") return st;
+    const L = st.L.slice(), R = st.R.slice();
+    if (op.k === "x") { L[0] += op.d; R[0] += op.d; }
+    else if (op.k === "c") { L[1] += op.d; R[1] += op.d; }
+    else {
+      if ([...L, ...R].some(v => v % op.d !== 0)) return null;
+      for (const arr of [L, R]) for (let i = 0; i < arr.length; i++) arr[i] /= op.d;
+    }
+    return { L, R };
+  }
+  const same = (a, b) => a.L.every((v, i) => v === b.L[i]) && a.R.every((v, i) => v === b.R[i]);
+
+  // Gleichung mit Lösung x0 (ganzzahlig, ≠ 0); Start p·x + q = r·x + s, Schritte: x-Glieder, Konstante, Teilen
+  function genChain(rng, withBr) {
+    for (let tries = 0; tries < 500; tries++) {
+      const x0 = sg(rng) * rng.int(1, 9);
+      const p = sg(rng) * rng.int(1, 6), r = sg(rng) * rng.int(1, 6);
+      if (p === r || abs(p - r) < 2) continue;
+      const q = sg(rng) * rng.int(1, 12);
+      const s = (p - r) * x0 + q;
+      if (s === 0 || abs(s) > 40) continue;
+      const m = sg(rng) * rng.int(1, 5);
+      const ops = [...(withBr ? [{ k: "br" }] : []), { k: "x", d: -r }, { k: "c", d: -q }, { k: "div", d: p - r }];
+      const states = [{ L: [p, q], R: [r, s] }];
+      let ok = true;
+      for (const op of ops) {
+        const nx = apply(op, states[states.length - 1]);
+        if (!nx) { ok = false; break; }
+        states.push(nx);
+      }
+      if (!ok) continue;
+      const fin = states[states.length - 1];
+      if (fin.L[0] !== 1 || fin.L[1] !== 0 || fin.R[0] !== 0 || fin.R[1] !== x0) continue;
+      return { ops, states, bracket: withBr ? { p, m, t: q - p * m } : null };
+    }
+    throw new Error("Umformung: keine Gleichung gefunden");
+  }
+
+  // Zeile i als Rich (Zeile 0 in Klammerform, wenn die Gleichung eine Klammer hat)
+  function rowCells(ch, states, i) {
+    if (i === 0 && ch.bracket) return [...bracketSide(ch.bracket.p, ch.bracket.m, ch.bracket.t), " = ", ...side(states[0].R)];
+    return eqCells(states[i]);
+  }
+
+  // Gesamte Umformung: Zeilen (rowFn) mit Befehlen (opFn) rechts daneben
+  function chainCells(n, rowFn, opFn) {
+    const out = [];
+    for (let i = 0; i <= n; i++) {
+      out.push({ br: true }, ...rowFn(i));
+      if (i < n) out.push("   | ", opFn(i));
+    }
+    return out;
+  }
+
+  // Lösung: je Übergang ein Satz mit dem Befehl
+  function transitionSteps(ch, states) {
+    return ch.ops.map((op, i) => rich(`Zeile ${i + 1} mit „${opText(op)}“ ergibt: `, ...eqCells(states[i + 1])));
+  }
+
+  // Rechenfehler: eine Zeile k (Index ≥ 1) falsch; ab da wird mit der falschen Zeile weitergerechnet
+  function corrupt(rng, ch) {
+    const n = ch.ops.length;
+    for (let tries = 0; tries < 300; tries++) {
+      const k = rng.int(1, n);
+      const op = ch.ops[k - 1];
+      const prev = ch.states[k - 1], good = ch.states[k];
+      let bad;
+      if (op.k === "br" || rng.chance(0.5)) {
+        // Vorzeichenfehler bei einer Konstanten
+        const L = good.L.slice(), R = good.R.slice();
+        const cands = [L, R].filter(v => v[1] !== 0);
+        if (!cands.length) continue;
+        rng.pick(cands)[1] *= -1;
+        bad = { L, R };
+      } else {
+        // nur eine Seite umgeformt
+        const ap = apply(op, prev);
+        if (!ap) continue;
+        bad = rng.chance(0.5) ? { L: ap.L, R: prev.R.slice() } : { L: prev.L.slice(), R: ap.R };
+      }
+      if (same(bad, good)) continue;
+      const disp = ch.states.slice(0, k).concat([bad]);
+      let ok = true;
+      for (let i = k; i < n; i++) {
+        const nx = apply(ch.ops[i], disp[i]);
+        if (!nx) { ok = false; break; }
+        disp.push(nx);
+      }
+      if (ok) return { k, disp };
+    }
+    throw new Error("Umformung: kein Fehler erzeugt");
+  }
+
+  // Niveau 1: Rechenbefehle fehlen
+  function task1(rng) {
+    const ch = genChain(rng, rng.chance(0.5));
+    const n = ch.ops.length;
+    const blanks = rng.shuffle(range(0, n - 1)).slice(0, rng.pick([1, 2]));
+    const q = rich(
+      "Die Gleichung wird Schritt für Schritt umgeformt. Ergänze die fehlenden Rechenbefehle (Lücken „___“).",
+      chainCells(n, i => rowCells(ch, ch.states, i), i => (blanks.includes(i) ? { blank: 8 } : opText(ch.ops[i])))
+    );
+    // Antwort: nur die Lücken, in der Reihenfolge von oben; die Schritte enden mit derselben Zeile
+    const a = rich("Fehlende Rechenbefehle: ", ...blanks.slice().sort((x, y) => x - y).flatMap((i, j) => (j ? ["; ", opText(ch.ops[i])] : [opText(ch.ops[i])])));
+    return { q, a,
+      steps: [...transitionSteps(ch, ch.states), a], check: { ch, disp: ch.states, errRow: null } };
+  }
+
+  // Niveau 2: Zeilen fehlen
+  function task2(rng) {
+    const ch = genChain(rng, rng.chance(0.5));
+    const n = ch.ops.length;
+    const blankRows = rng.shuffle(range(1, n - 1)).slice(0, rng.pick([1, 2]));
+    const q = rich(
+      "Die Gleichung wird Schritt für Schritt umgeformt. Ergänze die fehlenden Gleichungen (Lücken „___“). Die Rechenbefehle rechts stehen fest.",
+      chainCells(n, i => (blankRows.includes(i) ? [{ blank: 16 }] : rowCells(ch, ch.states, i)), i => opText(ch.ops[i]))
+    );
+    const a = rich("Fehlende Gleichungen: ", ...blankRows.slice().sort((x, y) => x - y).flatMap((i, j) => (j ? ["; ", ...rowCells(ch, ch.states, i)] : rowCells(ch, ch.states, i))));
+    return { q, a, steps: [...transitionSteps(ch, ch.states), a], check: { ch, disp: ch.states, errRow: null } };
+  }
+
+  // Niveau 3a: rückwärts – Ergebnis und Befehle stehen, die Ausgangsgleichung fehlt (ohne Klammer)
+  function task3a(rng) {
+    const ch = genChain(rng, false);
+    const n = ch.ops.length;
+    const q = rich(
+      "Eine Gleichung wird Schritt für Schritt umgeformt. Das Ergebnis und die Rechenbefehle stehen fest; die Ausgangsgleichung fehlt. Bestimme sie.",
+      { br: true }, "Ausgangsgleichung: ", { blank: 16 },
+      ...ch.ops.flatMap(op => [{ br: true }, "   | ", opText(op)]),
+      { br: true }, "Ergebnis: ", ...eqCells(ch.states[n])
+    );
+    const steps = range(0, n - 1).map(j => {
+      const i = n - 1 - j;   // rückwärts: letzter Befehl zuerst
+      return rich("Rückwärts: ", ...eqCells(ch.states[i + 1]), ` mit „${opText(inv(ch.ops[i]))}“ ergibt: `, ...eqCells(ch.states[i]));
+    });
+    return {
+      q,
+      a: rich("Ausgangsgleichung: ", ...eqCells(ch.states[0])),
+      steps,
+      check: { ch, disp: ch.states, errRow: null },
+    };
+  }
+
+  // Niveau 3b: Fehler finden und berichtigen
+  function task3b(rng) {
+    const ch = genChain(rng, rng.chance(0.5));
+    const n = ch.ops.length;
+    const { k, disp } = corrupt(rng, ch);
+    const q = rich(
+      "Bei dieser Umformung ist eine Zeile falsch. Finde die falsche Zeile und schreibe sie richtig auf.",
+      chainCells(n, i => [`Zeile ${i + 1}: `, ...rowCells(ch, disp, i)], i => opText(ch.ops[i]))
+    );
+    return {
+      q,
+      a: rich(`Zeile ${k + 1} ist falsch. Richtig: `, ...eqCells(ch.states[k])),
+      steps: [
+        rich(`Zeile ${k} mit „${opText(ch.ops[k - 1])}“ ergibt: `, ...eqCells(ch.states[k])),
+        rich(`In Zeile ${k + 1} steht aber: `, ...eqCells(disp[k]), ". Diese Zeile ist falsch."),
+      ],
+      check: { ch, disp, errRow: k },
+    };
+  }
+
+  AG.registerType({
+    id: "q9-umformung-ergaenzen",
+    ...META,
+    topic: "terme",
+    title: "Gleichungsumformung ergänzen",
+    cols: 2,
+    instruction: {
+      1: "Ergänze die fehlenden Rechenbefehle.",
+      2: "Ergänze die fehlenden Gleichungen.",
+      3: "Bestimme die Ausgangsgleichung oder finde die falsche Zeile.",
+    },
+    merke: [
+      "Eine Umformung gilt für beide Seiten: ", { b: "| − 5" }, " heißt, auf beiden Seiten 5 subtrahieren. ",
+      "Rückwärts werden die Befehle umgekehrt: Plus und Minus, Mal und Geteilt tauschen.",
+    ],
+    generate(rng, level) {
+      if (level === 1) return task1(rng);
+      if (level === 2) return task2(rng);
+      return rng.chance(0.5) ? task3a(rng) : task3b(rng);
+    },
+    verify(t) {
+      const c = t.check;
+      if (!c) return "kein Prüfdatensatz";
+      const { ch, disp, errRow } = c;
+      const n = ch.ops.length;
+      for (let i = 0; i < n; i++) {
+        const nx = apply(ch.ops[i], disp[i]);
+        const ok = !!nx && same(nx, disp[i + 1]);
+        if (errRow === null && !ok) return "Umformung stimmt nicht in Zeile " + (i + 2);
+        if (errRow !== null && i === errRow - 1 && ok) return "Fehler liegt nicht im Übergang";
+        if (errRow !== null && i !== errRow - 1 && !ok) return "weiterer Fehler in Zeile " + (i + 2);
+      }
+      if (errRow !== null && !AG.plain(t.a).includes(AG.plain(eqCells(ch.states[errRow])))) return "Lösung nennt nicht die richtige Zeile";
+      return true;
+    },
+  });
 })(typeof AG !== "undefined" ? AG : (globalThis.AG = {}));
 
 </script>

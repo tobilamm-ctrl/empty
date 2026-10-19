@@ -63,7 +63,9 @@ Wachstum und Zerfall, zentrische Streckung, Strahlensätze, Katheten- und Höhen
 Baumdiagramme und Pfadregeln, Permutationen, Geraden und Parabeln, binomische Formeln, quadratische Gleichungen
 und Bruchgleichungen.
 **Quali-Training** (Klasse 9, Thema „Quali-Training“): Teil A ohne Taschenrechner und Teil B mit Taschenrechner.
-Die Aufgaben stammen aus den Typen der Klassen 5 bis 9.
+Die Aufgaben stammen aus den Typen der Klassen 5 bis 9, abgestimmt auf die Quali-Prüfungen 2021–2025.
+Dazu kommen eigene Prüfungsformate für Teil A: realistische Größen ankreuzen, Symbolrätsel und magisches Quadrat,
+Klammern setzen, Sachverhalte Graphen zuordnen, Gleichungsumformungen ergänzen oder berichtigen.
 Geometrie- und Diagrammaufgaben haben Skizzen, die auch in Word und OneNote erscheinen.
 Die Themenliste aller Klassen steht in `konzept/lehrplan-abgleich.md`.
 
