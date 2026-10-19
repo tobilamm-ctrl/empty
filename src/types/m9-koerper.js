@@ -67,7 +67,8 @@
     }
     if (o.labS) {
       s.line(S, mF, { dash: true });
-      s.label([(S[0] + mF[0]) / 2 - 2.6, (S[1] + mF[1]) / 2], o.labS, { anchor: "end" });
+      // Beschriftung im unteren Teil der vorderen Fläche, rechts neben der gestrichelten Seitenhöhe
+      s.label([S[0] + 0.72 * (mF[0] - S[0]) + 1.6, S[1] + 0.72 * (mF[1] - S[1])], o.labS, { anchor: "start" });
     }
     if (o.labA) s.side(FL, FR, o.labA);
     if (o.labDep) s.side(FR, BR, o.labDep);

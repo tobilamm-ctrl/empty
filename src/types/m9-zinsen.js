@@ -347,9 +347,9 @@
     const hdr = [rich("Jahr"), rich("Kapital am Jahresanfang"), rich("Zinsen"), rich("Kapital am Jahresende")];
     const qRows = [hdr].concat(rows.map(r => [
       rich(fmtInt(r.k), ". Jahr"),
-      r.k === 1 ? rich(money(r.start)) : rich({ blank: 9 }),
+      r.k === 1 ? rich(money(r.start)) : rich({ blank: 6 }),
       rich({ blank: 6 }),
-      rich({ blank: 9 }),
+      rich({ blank: 6 }),
     ]));
     const aRows = [hdr].concat(rows.map(r => [
       rich(fmtInt(r.k), ". Jahr"), rich(money(r.start)), rich(money(r.z)), rich(money(r.end)),

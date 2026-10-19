@@ -21139,7 +21139,8 @@ table.vt th { background: #f1f3f8; text-align: left; }
     }
     if (o.labS) {
       s.line(S, mF, { dash: true });
-      s.label([(S[0] + mF[0]) / 2 - 2.6, (S[1] + mF[1]) / 2], o.labS, { anchor: "end" });
+      // Beschriftung im unteren Teil der vorderen Fläche, rechts neben der gestrichelten Seitenhöhe
+      s.label([S[0] + 0.72 * (mF[0] - S[0]) + 1.6, S[1] + 0.72 * (mF[1] - S[1])], o.labS, { anchor: "start" });
     }
     if (o.labA) s.side(FL, FR, o.labA);
     if (o.labDep) s.side(FR, BR, o.labDep);
@@ -23696,9 +23697,9 @@ table.vt th { background: #f1f3f8; text-align: left; }
     const hdr = [rich("Jahr"), rich("Kapital am Jahresanfang"), rich("Zinsen"), rich("Kapital am Jahresende")];
     const qRows = [hdr].concat(rows.map(r => [
       rich(fmtInt(r.k), ". Jahr"),
-      r.k === 1 ? rich(money(r.start)) : rich({ blank: 9 }),
+      r.k === 1 ? rich(money(r.start)) : rich({ blank: 6 }),
       rich({ blank: 6 }),
-      rich({ blank: 9 }),
+      rich({ blank: 6 }),
     ]));
     const aRows = [hdr].concat(rows.map(r => [
       rich(fmtInt(r.k), ". Jahr"), rich(money(r.start)), rich(money(r.z)), rich(money(r.end)),
