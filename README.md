@@ -58,6 +58,10 @@ und Vorsilben, Zinsrechnung (Jahres-, Monats-, Tageszinsen, Zinseszins, Ratenkau
 regelmäßige Vielecke, zusammengesetzte Flächen, Prismen, Pyramide und Kegel, Gleichungen (Brüche, Bruchgleichungen,
 Formeln umstellen, Mischungsaufgaben, M: Gleichungssysteme, reinquadratische Gleichungen), Zuordnungen und Graphen
 (M: Funktionsgleichung, Schnittpunkt).
+**Klasse 10 (M-Zug)** (27 Aufgabentypen): Potenzgesetze, negative Hochzahlen, Wurzeln und Logarithmus, exponentielles
+Wachstum und Zerfall, zentrische Streckung, Strahlensätze, Katheten- und Höhensatz, Trigonometrie, Kugel,
+Baumdiagramme und Pfadregeln, Permutationen, Geraden und Parabeln, binomische Formeln, quadratische Gleichungen
+und Bruchgleichungen.
 **Quali-Training** (Klasse 9, Thema „Quali-Training“): Teil A ohne Taschenrechner und Teil B mit Taschenrechner.
 Die Aufgaben stammen aus den Typen der Klassen 5 bis 9.
 Geometrie- und Diagrammaufgaben haben Skizzen, die auch in Word und OneNote erscheinen.
