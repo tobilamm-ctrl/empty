@@ -43,7 +43,7 @@
   };
   const RS_ASK1 = {
     rabatt: "Wie viel € muss man bezahlen?", senkung: "Wie viel € kostet es jetzt?",
-    skonto: "Wie viel € muss man zahlen?", erhoehung: "Wie viel € kostet es dann?",
+    skonto: "Wie viel € muss man zahlen?", erhoehung: "Wie viel € kostet der Artikel dann?",
   };
   // Satz über den Vorgang (Grundwert G, Prozentsatz p)
   const SV = {

@@ -13,6 +13,7 @@
     { id: "koerper", title: "Körper: Oberfläche und Volumen" },
     { id: "daten", title: "Daten, Diagramme und Wahrscheinlichkeit" },
     { id: "potenzen", title: "Potenzen und Wurzeln" },
+    { id: "quali", title: "Quali-Training (Prüfungsvorbereitung)" },
   ];
 
   // Einzelne Typen, deren Lernbereich nicht zum Inhalt passt
