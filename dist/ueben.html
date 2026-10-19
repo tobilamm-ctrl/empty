@@ -28028,28 +28028,35 @@ table.vt td.red { color: var(--red); font-weight: 700; }
   const { rich } = AG;
 
   // Pools: [Typ-ID, höchstes Niveau, das für diesen Teil passt]
+  // Abgleich mit den Quali-Prüfungen 2021–2025 (Teil A: schriftliches Rechnen mit Dezimalzahlen, Umformungen ergänzen
+  // und Fehler finden, Vergleichen, Dreisatz, Winkel, Wahrscheinlichkeit; Teil B: Gleichungen und Textaufgaben, Körper,
+  // Prozent und Zinsen, Graphen, Vielecke und Pythagoras)
   const POOLS = {
     aZahlen: [
-      ["m6-brueche-addsub", 2], ["m6-brueche-mul", 2], ["m6-bruch-durch-zahl", 2], ["m6-dezimal-muldiv", 2],
-      ["m7-q-addsub", 2], ["m7-q-muldiv", 2], ["m5-punkt-vor-strich", 3], ["m8-quadrat-wurzel", 2],
-      ["m7-terme-vereinfachen", 2], ["m7-gleichung", 2], ["m9-zehnerpotenz-schreibweise", 2], ["m5-ueberschlag", 2],
+      ["m6-dezimal-addsub", 2], ["m6-dezimal-muldiv", 2], ["m6-brueche-addsub", 2], ["m6-brueche-vergleichen", 2],
+      ["m7-q-addsub", 2], ["m5-punkt-vor-strich", 3], ["m8-quadrat-wurzel", 2], ["m5-zahlenfolgen", 2],
+      ["m7-gleichung", 2], ["m8-fehler-finden", 2], ["m5-platzhalter", 3], ["m9-zehnerpotenz-schreibweise", 2],
+      ["m9-zehnerpotenz-ordnen", 2], ["m5-ueberschlag", 2],
     ],
     aGroessen: [
-      ["m5-groessen-umrechnen", 3], ["m5-flaecheneinheiten", 2], ["m6-volumeneinheiten", 2], ["m7-prozentwert", 1],
-      ["m7-prozent-umwandeln", 2], ["m7-winkelsumme", 2], ["m5-rechteck-flaeche", 2], ["m9-laplace", 1],
-      ["m6-mittelwert", 1], ["m8-promille", 1], ["m9-vorsilben", 2],
+      ["m5-groessen-umrechnen", 3], ["m5-flaecheneinheiten", 2], ["m6-volumeneinheiten", 2], ["m7-dreisatz", 2],
+      ["m7-prozentwert", 1], ["m7-prozentsatz", 1], ["m7-winkelsumme", 2], ["m6-viereckarten", 2],
+      ["m5-rechteck-flaeche", 2], ["m9-laplace", 1], ["m8-relative-haeufigkeit", 1], ["m9-vorsilben", 2],
     ],
     bProzent: [
       ["m8-rabatt-skonto", 3], ["m8-umsatzsteuer", 3], ["m8-kalkulation", 3], ["m9-jahreszinsen", 3],
       ["m9-monats-tageszinsen", 3], ["m9-zinseszins", 3], ["m8-schaubilder", 3], ["m8-wachstumsfaktor", 3],
+      ["m7-prozent-umwandeln", 3],
     ],
     bGeometrie: [
       ["m8-kreis-zusammengesetzt", 3], ["m8-zylinder-volumen", 3], ["m8-zylinder-oberflaeche", 3], ["m9-pythagoras-anwendung", 3],
       ["m9-pyramide-kegel-volumen", 3], ["m9-flaeche-zusammengesetzt", 3], ["m9-prisma-vieleck-volumen", 3], ["m9-vieleck-flaeche", 3],
+      ["m9-vielecke", 3], ["m7-prisma-volumen", 3],
     ],
     bGleichungen: [
-      ["m8-textgleichungen", 3], ["m9-text-mischung", 3], ["m9-formeln-umstellen", 3], ["m9-gleichung-brueche", 3],
-      ["m8-graph-ablesen", 3], ["m9-zuordnung-art", 3], ["m9-zweistufig", 3], ["m9-schnittpunkt", 3],
+      ["m8-gleichung-klammern", 3], ["m9-gleichung-brueche", 3], ["m8-textgleichungen", 3], ["m9-text-mischung", 3],
+      ["m9-formeln-umstellen", 3], ["m9-gleichungssystem", 2], ["m8-graph-ablesen", 3], ["m9-graph-ablesen", 3],
+      ["m9-zuordnung-art", 3], ["m9-zweistufig", 3], ["m8-relative-haeufigkeit", 3], ["m9-schnittpunkt", 3],
     ],
   };
 
