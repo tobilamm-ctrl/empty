@@ -187,7 +187,7 @@
     cols: 2,
     generate(rng, level) {
       if (level === 1) {
-        const n = rng.pick([5, 6, 8]), s = new Frac(rng.int(3, 12)), h = hsOf(n, s);
+        const n = rng.pick([5, 6, 8]), s = new Frac(rng.int(3, 24)), h = hsOf(n, s);
         const P = new Frac(n).mul(s).mul(h), A = P.div(2);
         return {
           q: rich(`Ein regelmäßiges ${VIELECK[n]} hat die Seitenlänge s = ${tx(s, "cm")} und die Höhe des Bestimmungsdreiecks h_s = ${tx(h, "cm")}. Berechne den Flächeninhalt A.`),
