@@ -27,3 +27,25 @@
 - **Favoriten:** Zusammenstellungen unter einem Namen speichern (z. B. „7b Prozent Einstieg“) und wieder laden.
 - **QR-Code auf dem Arbeitsblatt:** führt zur Übungsdatei mit genau diesem Thema (Lehrkraft-Code), zum Weiterüben am Tablet.
 - **Größere Schrift für die Beamer-Ansicht** der Vorschau.
+
+## Weitere vorgemerkte Ideen (21.10.2026)
+
+**Unterricht und Differenzierung**
+- **MSA-Training (Klasse 10):** Gegenstück zum Quali-Training; die MSA-Prüfungen der letzten Jahre auswerten
+  (ISB-Seite „Mittlerer Schulabschluss Mathematik“, Serlo) und Prüfungsformate nachbilden.
+- **Tandembogen und Domino:** aus denselben Aufgaben ein Partnerbogen (A sieht die Lösungen von B und umgekehrt)
+  oder ein Domino zum Ausschneiden (Ergebnis passt zur nächsten Aufgabe).
+- **Tippkarten:** pro Teil eine kleine Karte zum Ausschneiden mit Merksatz und erstem Lösungsschritt.
+- **Gleiches Blatt in drei Niveaus:** gleiche Teile und Kontexte für eine Lerngruppe in ★, ★★ und ★★★ (inklusive Klassen).
+
+**Wiederholung und Diagnose**
+- **Tägliches Warm-up:** 5 gemischte Aufgaben aus früheren Lernbereichen und Klassen (halbe Seite oder Beamer).
+- **Eingangstest mit Auswertung:** kurzer Test über alle Lernbereiche einer Klasse; das Lösungsblatt zeigt, welche
+  Aufgabe zu welchem Lernbereich gehört, damit die Lehrkraft gezielt Übungscodes ausgeben kann.
+
+**Technik**
+- **Export als Moodle-Quiz für mebis:** Aufgaben mit Zahlenergebnis als Importdatei (Moodle-XML), online lösbar
+  mit automatischer Auswertung.
+- **Rückmeldung zu typischen Fehlern im Übungsmodus:** häufige Fehler erkennen (Prozentwert und Grundwert vertauscht,
+  Vorzeichen vergessen, Einheit nicht umgerechnet) und einen gezielten Hinweis geben statt nur „falsch“.
+- **Leichte Sprache bzw. DaZ-Modus:** kürzere Sätze, schwierige Wörter erklärt, optional Vorlesen (offline über den Browser).
