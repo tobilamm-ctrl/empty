@@ -48,4 +48,8 @@ D. **Laptop + gute USB-Webcam**: Mittelweg zwischen A und C.
 
 Zubehör: Licht (Ringlicht/Softbox) bringt mehr als eine teure Kamera. Auslöser per
 Bluetooth-Buzzer möglich. Drucker z. B. Thermosublimationsdrucker (Canon Selphy) per WLAN.
+Günstige Kameras für Variante B (CCAPI, Liste nicht offiziell bestätigt): EOS 250D, EOS M200,
+PowerShot SX70 HS. CCAPI muss erst kostenlos bei Canon freigeschaltet werden (Entwicklerprogramm).
+Für Variante C (USB, gPhoto2) passen auch billigere Modelle wie EOS 2000D/4000D.
+Für einen ganzen Abend Netzteil bzw. Akku-Attrappe einplanen.
 Fertige Lösungen gibt es auch (z. B. iPad-Apps, Open-Source-Projekte für Raspberry Pi).
