@@ -49,6 +49,8 @@ h1 { font-family: var(--font-display); font-size: clamp(22px, 3vw, 32px); margin
 .toggle .dot::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
 .toggle[aria-pressed="true"] .dot { background: var(--navy); }
 .toggle[aria-pressed="true"] .dot::after { transform: translateX(12px); background: var(--surface); }
+.toggle:disabled { opacity: .45; cursor: default; }
+.toggle.speaking { border-color: var(--red); }
 .toggle:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
 
 .stage { position: relative; width: 100%; aspect-ratio: 2000 / 1125; max-width: 100%; border-radius: 10px; overflow: hidden; container-type: inline-size; background: #E9DFCB; box-shadow: 0 1px 0 var(--line); }
@@ -67,7 +69,7 @@ h1 { font-family: var(--font-display); font-size: clamp(22px, 3vw, 32px); margin
 .bubble.long { font-weight: 400; font-size: 1.32cqw; }
 .bubble.old { opacity: .92; }
 .regie {
-  position: absolute; left: 50%; bottom: 2.2%; transform: translateX(-50%); max-width: 70%;
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); max-width: 70%;
   background: rgba(27,42,65,.88); color: #FFFFFF; font-style: italic; font-size: 1.5cqw;
   padding: .7cqw 1.4cqw; border-radius: 99px; text-align: center; animation: pop .28s ease-out both;
 }
@@ -90,9 +92,12 @@ h1 { font-family: var(--font-display); font-size: clamp(22px, 3vw, 32px); margin
 #player:fullscreen .stage, #player.fs-fallback .stage { width: min(100vw, calc(100vh * 2000 / 1125)); border-radius: 0; box-shadow: none; }
 #player:fullscreen .controls, #player.fs-fallback .controls {
   position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  width: min(900px, calc(100vw - 32px)); background: rgba(14,20,29,.82); padding: 10px 12px; border-radius: 14px;
+  width: min(1180px, calc(100vw - 32px)); flex-wrap: nowrap; gap: 8px; background: rgba(14,20,29,.82); padding: 8px 10px; border-radius: 14px;
   transition: opacity .3s ease; --navy: #8FB3E0; --surface: #1C2533; --bg: #0E141D; --chip: #2E3A4D; --muted: #A3AEBE;
 }
+#player:fullscreen .controls .btn, #player.fs-fallback .controls .btn { padding: 7px 12px; font-size: 14px; white-space: nowrap; }
+#player:fullscreen .controls .toggle, #player.fs-fallback .controls .toggle { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+#player:fullscreen .progress, #player.fs-fallback .progress { flex: 1 1 60px; }
 #player.idle .controls { opacity: 0; pointer-events: none; }
 #player.idle { cursor: none; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -164,13 +169,15 @@ kbd { font-family: var(--font-ui); border: 1px solid var(--line); border-bottom-
     <button class="btn" id="prev" type="button">← Zurück</button>
     <button class="btn primary" id="next" type="button">Weiter →</button>
     <div class="progress"><div class="bar"><i id="bar"></i></div><div class="count" id="count"></div></div>
+    <button class="toggle" id="tts" type="button" aria-pressed="false" title="Liest die Redebeiträge laut vor"><span class="dot" aria-hidden="true"></span>Vorlesen</button>
+    <button class="toggle" id="auto" type="button" aria-pressed="false" title="Nach dem Vorlesen automatisch zum nächsten Beitrag" disabled><span class="dot" aria-hidden="true"></span>Automatisch weiter</button>
     <button class="btn" id="reset" type="button">Von vorn</button>
     <button class="btn" id="fs" type="button">Vollbild</button>
   </div>
   </div>
 
   <div class="readout" id="readout"><div class="who" id="r-who"></div><div class="txt" id="r-txt"></div></div>
-  <div class="keys">Steuerung: <kbd>→</kbd> oder <kbd>Leertaste</kbd> weiter · <kbd>←</kbd> zurück · <kbd>F</kbd> Vollbild · Klick auf das Bild zeigt den nächsten Satz.</div>
+  <div class="keys">Steuerung: <kbd>→</kbd> oder <kbd>Leertaste</kbd> weiter · <kbd>←</kbd> zurück · <kbd>F</kbd> Vollbild · <kbd>V</kbd> Vorlesen · Klick auf das Bild zeigt den nächsten Satz.</div>
 </div>
 
 <script>
@@ -183,11 +190,11 @@ const SP = {
   'Schöffe':             { a: [722, 360],  core: { l: 385,  t: 92,  w: 290 }, full: { l: 300,  t: 40,  w: 420 } },
   'Richter':             { a: [1038, 338], core: { l: 1105, t: 14,  w: 360 }, full: { l: 1100, t: 20,  w: 640 } },
   'Schöffin':            { a: [1284, 350], core: { l: 1390, t: 165, w: 300 }, full: { l: 1380, t: 120, w: 520 } },
-  'Jugendgerichtshilfe': { a: [1500, 565], core: { l: 1120, t: 535, w: 330 }, full: { l: 760,  b: 600, w: 700 } },
-  'Staatsanwältin':      { a: [1765, 705], core: { l: 1440, t: 880, w: 340 }, full: { l: 1250, b: 30,  w: 720 } },
-  'Verteidiger':         { a: [150, 705],  core: { l: 20,   t: 860, w: 340 }, full: { l: 20,   b: 30,  w: 720 } },
-  'Angeklagter':         { a: [440, 695],  core: { l: 592,  t: 790, w: 245 }, full: { l: 560,  b: 60,  w: 600 } },
-  'Zeugin':              { a: [1055, 770], core: { l: 1165, t: 850, w: 250 }, full: { l: 1120, b: 60,  w: 640 } },
+  'Jugendgerichtshilfe': { a: [1500, 565], core: { l: 1120, t: 535, w: 330 }, full: { l: 630,  b: 600, w: 700 } },
+  'Staatsanwältin':      { a: [1765, 705], core: { l: 1440, t: 800, w: 340 }, full: { l: 1250, b: 130, w: 720 } },
+  'Verteidiger':         { a: [150, 705],  core: { l: 20,   t: 790, w: 340 }, full: { l: 20,   b: 130, w: 720 } },
+  'Angeklagter':         { a: [440, 695],  core: { l: 592,  t: 760, w: 245 }, full: { l: 560,  b: 130, w: 600 } },
+  'Zeugin':              { a: [1055, 770], core: { l: 1165, t: 790, w: 250 }, full: { l: 1120, b: 130, w: 640 } },
 };
 const SPOT = {
   'Protokollführerin':   { e: [522, 405, 100, 125], r: [320, 265, 322, 60] },
@@ -226,6 +233,57 @@ const CORE = [
 ];
 
 const $ = id => document.getElementById(id);
+
+// ---------- Vorlesen (Sprachausgabe des Browsers) ----------
+const synth = window.speechSynthesis;
+const FEMALE = ['Protokollführerin', 'Schöffin', 'Staatsanwältin', 'Jugendgerichtshilfe', 'Zeugin'];
+// Tonhöhe und Tempo je Person, damit man die Stimmen auseinanderhält
+const VOICE = {
+  'Richter': [0.8, 0.95], 'Schöffe': [1.0, 1.0], 'Verteidiger': [0.9, 1.02], 'Angeklagter': [1.3, 1.0],
+  'Protokollführerin': [1.05, 1.0], 'Schöffin': [1.1, 1.0], 'Staatsanwältin': [0.95, 1.0],
+  'Jugendgerichtshilfe': [1.0, 0.95], 'Zeugin': [1.15, 1.0], '': [1.0, 0.9],
+};
+const MALE_RX = /(conrad|stefan|markus|yannick|martin|viktor|florian|killian|hans|jonas|bernd|ralf|christoph|kasper|male|mann)/i;
+const FEMALE_RX = /(katja|hedda|anna|petra|helena|marlene|vicki|amala|seraphina|louisa|elke|klara|gisela|ingrid|maja|tanja|female|frau)/i;
+let deVoices = [], ttsOn = false, autoOn = false, speakToken = 0;
+function loadVoices() {
+  if (!synth) return;
+  deVoices = synth.getVoices().filter(v => /^de(-|_|$)/i.test(v.lang));
+}
+function pickVoice(who) {
+  if (!deVoices.length) return null;
+  const female = FEMALE.includes(who);
+  const pool = deVoices.filter(v => female ? FEMALE_RX.test(v.name) : MALE_RX.test(v.name));
+  const list = pool.length ? pool : deVoices;
+  // gleiche Person, gleiche Stimme
+  const idx = Object.keys(VOICE).indexOf(who);
+  return list[Math.max(0, idx) % list.length];
+}
+function stopSpeech() { speakToken++; if (synth) synth.cancel(); $('tts').classList.remove('speaking'); }
+function speakStep(step, sceneIntro) {
+  if (!synth || !ttsOn) return;
+  stopSpeech();
+  const token = speakToken;
+  const parts = [];
+  if (sceneIntro) parts.push({ who: '', text: `Szene ${step.scene}: ${step.title}.` });
+  // in Sätze teilen: manche Browser brechen lange Äußerungen sonst ab
+  step.text.replace(/[„“]/g, '').match(/[^.!?…]+[.!?…]*/g).forEach(s => s.trim() && parts.push({ who: step.who, text: s.trim() }));
+  $('tts').classList.add('speaking');
+  parts.forEach((pt, k) => {
+    const u = new SpeechSynthesisUtterance(pt.text);
+    u.lang = 'de-DE';
+    const v = pickVoice(pt.who); if (v) u.voice = v;
+    const [pitch, rate] = VOICE[pt.who] || [1, 1];
+    u.pitch = pitch; u.rate = rate * 0.95;
+    if (k === parts.length - 1) u.onend = () => {
+      if (token !== speakToken) return;
+      $('tts').classList.remove('speaking');
+      if (autoOn && i < list().length) setTimeout(() => { if (token === speakToken) go(1, true); }, 700);
+    };
+    synth.speak(u);
+  });
+}
+
 const layer = $('layer'), tails = $('tails'), stage = $('stage');
 let mode = 'core', i = 0;
 const list = () => mode === 'core' ? CORE : STEPS;
@@ -265,14 +323,14 @@ function render() {
   if (i === 0) {
     layer.innerHTML = '<div class="start-hint"><span>Klick auf „Weiter“, um die Verhandlung zu starten</span></div>';
     $('r-who').textContent = ''; $('r-txt').textContent = mode === 'core'
-      ? 'Neun Personen, neun Sätze: Sie erscheinen in der Reihenfolge, in der sie in der Verhandlung fallen.'
+      ? 'Neun Personen, neun Sätze: Sie erscheinen nacheinander in der Reihenfolge, in der sie in der Verhandlung fallen.'
       : 'Die ganze Verhandlung in acht Szenen, Redebeitrag für Redebeitrag.';
     $('r-txt').className = 'txt';
   } else {
     const cur = L[i - 1];
     layer.insertAdjacentHTML('beforeend', `<div class="scene-chip">Szene ${cur.scene} · ${esc(cur.title)}</div>`);
     if (mode === 'core') {
-      L.slice(0, i).forEach((s, k) => layer.appendChild(bubbleEl(s, SP[s.who].core, k < i - 1 ? 'old' : '')));
+      layer.appendChild(bubbleEl(cur, SP[cur.who].core, ''));
     } else if (cur.who) {
       layer.appendChild(bubbleEl(cur, SP[cur.who].full, cur.text.length > 120 ? 'long' : ''));
     } else {
@@ -291,8 +349,17 @@ function render() {
   $('count').textContent = `${i} von ${L.length}`;
 }
 
-function go(d) { const L = list(); i = Math.max(0, Math.min(L.length, i + d)); render(); }
+function go(d, fromAuto) {
+  const L = list(), before = i;
+  i = Math.max(0, Math.min(L.length, i + d)); render();
+  if (!fromAuto) stopSpeech();
+  if (ttsOn && i > 0 && i !== before) {
+    const cur = L[i - 1], prev = L[i - 2];
+    speakStep(cur, !prev || prev.scene !== cur.scene);
+  }
+}
 function setMode(m) {
+  stopSpeech();
   mode = m; i = 0;
   $('mode-core').setAttribute('aria-pressed', m === 'core');
   $('mode-full').setAttribute('aria-pressed', m === 'full');
@@ -302,7 +369,7 @@ function setMode(m) {
 
 $('next').addEventListener('click', () => go(1));
 $('prev').addEventListener('click', () => go(-1));
-$('reset').addEventListener('click', () => { i = 0; render(); });
+$('reset').addEventListener('click', () => { stopSpeech(); i = 0; render(); });
 $('mode-core').addEventListener('click', () => setMode('core'));
 $('mode-full').addEventListener('click', () => setMode('full'));
 stage.addEventListener('click', () => go(1));
@@ -327,6 +394,21 @@ function wake() {
 }
 ['mousemove', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, wake, { passive: true }));
 document.addEventListener('fullscreenchange', wake);
+if (!synth) {
+  $('tts').disabled = true; $('tts').title = 'Dieser Browser kann nicht vorlesen.';
+} else {
+  loadVoices(); synth.addEventListener && synth.addEventListener('voiceschanged', loadVoices);
+}
+$('tts').addEventListener('click', () => {
+  ttsOn = !ttsOn; $('tts').setAttribute('aria-pressed', ttsOn);
+  $('auto').disabled = !ttsOn;
+  if (!ttsOn) { stopSpeech(); autoOn = false; $('auto').setAttribute('aria-pressed', 'false'); }
+  else if (i > 0) speakStep(list()[i - 1], false);
+});
+$('auto').addEventListener('click', () => {
+  autoOn = !autoOn; $('auto').setAttribute('aria-pressed', autoOn);
+  if (autoOn && ttsOn && synth && !synth.speaking) go(1, true);
+});
 $('spot').addEventListener('click', () => {
   spotOn = !spotOn; $('spot').setAttribute('aria-pressed', spotOn);
   try { localStorage.setItem('leon-spot', spotOn ? '1' : '0'); } catch (e) {}
@@ -338,6 +420,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
   if (e.key === 'Escape' && player.classList.contains('fs-fallback')) { player.classList.remove('fs-fallback'); fsLabel(); }
   if (e.key === 'f' || e.key === 'F') $('fs').click();
+  if ((e.key === 'v' || e.key === 'V') && !$('tts').disabled) $('tts').click();
 });
 new ResizeObserver(drawTails).observe(stage);
 
