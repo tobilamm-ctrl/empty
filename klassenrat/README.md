@@ -75,6 +75,16 @@ Eine einzige HTML-Datei. Sie braucht weder Installation noch Internet und läuft
   Ist das Tool der Lehrkraft nicht geöffnet, sehen die Kinder „Briefkasten geschlossen“; beim nächsten Start öffnet es sich
   automatisch wieder. Begrenzung pro Gerät und Tag einstellbar; die Klassenliste wird nie an die Geräte der Kinder geschickt.
   Läuft über dieselbe Direktverbindung (WebRTC/PeerJS) wie die Tafel; das Tool muss dafür über seine Web-Adresse geöffnet sein.
+  - **Nichts geht verloren:** Ist der Briefkasten nicht erreichbar, können die Kinder trotzdem schreiben. Das Anliegen bleibt auf ihrem iPad
+    gespeichert und wird automatisch geschickt, sobald der Briefkasten offen ist (Seite offen lassen oder Link später erneut öffnen).
+  - **Verbindung prüfen:** Die Kinder sehen, woran es hakt (kein Internet, Filter blockiert den Verbindungsbaustein, Vermittlungsdienst gestört,
+    Tool der Lehrkraft geschlossen, Schulnetz verhindert direkte Verbindungen). Die Lehrkraft sieht, wie viele iPads verbunden sind, wann zuletzt
+    etwas ankam, auf welchem Gerät gespeichert wird, und kann die Verbindung testen.
+  - **Zwei Geräte:** Läuft der Briefkasten schon auf einem anderen Gerät, zeigt das Tool welches (z. B. „iPad · Safari“) und kann ihn mit
+    „Hier übernehmen“ holen (dafür muss auf beiden Geräten dasselbe Lehrer-Passwort festgelegt sein).
+  - **Optional: Abgabe als Datei über OneDrive.** Für Netze ohne Direktverbindung: In OneDrive für einen Ordner „Dateien anfordern“ wählen und den
+    Link im Tool eintragen (er steht dann auch im QR-Code). Die Kinder speichern ihr wartendes Anliegen als Datei und laden es dort hoch. Das Tool
+    liest den Eingangsordner am PC (Edge/Chrome) alle 30 Sekunden ein oder die Dateien werden von Hand gewählt; doppelte Anliegen werden erkannt.
 - **Nur für die Lehrkraft:** Am Klassen-Tablet und online können Kinder wählen, dass ihre Nachricht vertraulich ist. Sie kommt dann nie in
   eine Sitzung, sondern liegt getrennt im Briefkasten und ist nur mit dem Passwort zu lesen (Notiz, „in den Klassenrat übernehmen“, löschen).
   Abschaltbar unter Briefkasten → Einstellungen.
