@@ -49,3 +49,8 @@
 - **Rückmeldung zu typischen Fehlern im Übungsmodus:** häufige Fehler erkennen (Prozentwert und Grundwert vertauscht,
   Vorzeichen vergessen, Einheit nicht umgerechnet) und einen gezielten Hinweis geben statt nur „falsch“.
 - **Leichte Sprache bzw. DaZ-Modus:** kürzere Sätze, schwierige Wörter erklärt, optional Vorlesen (offline über den Browser).
+
+## Andere Sprache auswählen (zurückgestellt am 22.10.2026)
+
+- Offen: Umfang (Fachwörter-Liste zum Blatt, Oberfläche, Arbeitsanweisungen und Merke oder komplette Aufgaben)
+  und Sprachen (z. B. Englisch, Ukrainisch, Arabisch mit Schrift von rechts nach links, Türkisch).
