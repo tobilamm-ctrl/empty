@@ -2,6 +2,8 @@
 
 Bedienung und Aufbau: `README.md`. Aufgabentypen schreiben: `tools/AUFGABENTYPEN.md`. Lehrplan-Checkliste: `konzept/lehrplan-abgleich.md`.
 
+Nebenprojekt Spieleplattform: `spiele/plattform/` (Anleitung in `spiele/plattform/README.md`), Merkliste weiterer Spiele: `spiele/SPIELEIDEEN.md`.
+
 ## Vorgaben der Lehrkraft (verbindlich)
 
 - **Reihenfolge der Jahrgangsstufen:** Eine Klasse wird vollständig fertiggestellt (alle Punkte der Checkliste,
