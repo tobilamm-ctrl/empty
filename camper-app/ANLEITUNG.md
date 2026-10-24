@@ -127,3 +127,16 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Darstellung:** hell, dunkel oder wie das Handy (Einstellungen → Darstellung).
 
 Tankbuch und Kasse sehen nur Personen mit Kassen-Freigabe.
+
+## Ausprobieren ohne loszufahren
+
+Einstellungen → **Testen**:
+
+- **Testdaten anlegen** erzeugt die Beispielreise „Test: Gardasee“ (Route von Innsbruck bis
+  Verona mit Stellplätzen, Sehenswertem, Tankstopps, Fotos, Kasse, Strecke), Beispiel-Listen,
+  -Boxen, -Orte, eine Frist und die geplante Reise „Test: Ostsee planen“. Alles ist mit „Test“
+  gekennzeichnet und für die ganze Crew sichtbar. **Testdaten entfernen** löscht genau diese
+  Einträge wieder, eure eigenen bleiben unberührt.
+- **Standort simulieren**: Statt GPS gilt der orange Punkt auf der Karte als euer Standort.
+  Punkt dorthin ziehen, dann „Ich bin hier …“, „Auto geparkt“ oder die Entfernung zum Auto
+  ausprobieren. Häkchen wieder entfernen, um das echte GPS zu nutzen.

@@ -72,8 +72,8 @@ button { cursor: pointer; }
 }
 .brandbar { display: flex; align-items: center; gap: 8px; height: 54px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--wood); text-decoration: none; min-width: 0; }
-.brand-sheep { width: 52px; height: 41px; flex: none; --sw: 14; }
-.brand-word { width: 168px; height: 28px; --sw: 2.6; }
+.brand-sheep { width: 52px; height: 41px; flex: none; --sw: 3; }
+.brand-word { width: 168px; height: 28px; --sw: .5; }
 .trip-chip {
   display: flex; align-items: center; gap: 10px; min-width: 0; height: 40px;
   text-decoration: none; color: var(--ink);
@@ -472,7 +472,7 @@ form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
   display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 12px 8px 12px 14px;
   border: 1.5px dashed var(--wood); border-radius: 16px; background: var(--surface);
 }
-.install-hint .hint-sheep { width: 46px; aspect-ratio: 516 / 406; flex: none; color: var(--wood); --sw: 12; }
+.install-hint .hint-sheep { width: 46px; aspect-ratio: 516 / 406; flex: none; color: var(--wood); --sw: 3; }
 .install-hint p { margin: 0; flex: 1; font-size: 15px; }
 .install-hint .primary { min-height: 38px; padding: 0 14px; font-size: 15px; }
 .ios-share { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -482,7 +482,7 @@ form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
 .page-head.with-art { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .page-head.with-art .ph-text { min-width: 0; padding-bottom: 4px; }
 /* Alle Grafiken gleich hoch, damit beim Wechseln nichts springt */
-.art { height: 65px; width: calc(65px * var(--r, 1.85)); flex: none; color: var(--wood); --sw: 10; }
+.art { height: 65px; width: calc(65px * var(--r, 1.85)); flex: none; color: var(--wood); --sw: 4; }
 .trip-head .page-head { margin-bottom: 0; }
 
 .backdrop {
@@ -580,13 +580,14 @@ body.locked .backdrop { display: none; }
    und verschwindet kurz hinter dem Reisenamen. */
 .brandbar { justify-content: space-between; }
 .scenery { position: absolute; left: 0; right: 0; bottom: 3px; height: 44px; overflow: hidden; color: var(--wood); pointer-events: none; }
-.landscape { position: absolute; right: 8px; bottom: 0; width: 264px; max-width: 70%; height: 44px; opacity: .8; }
-.trip-chip { position: relative; z-index: 1; align-self: flex-start; background: var(--paper); border-radius: 0 999px 999px 0; padding-right: 14px; max-width: calc(100% - 40px); }
-.vklasse { position: absolute; bottom: 0; left: 0; width: 60px; height: 23px; color: #6B4226; animation: drive 24s linear infinite; }
+.landscape { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 44px; opacity: .7; }
+.trip-chip { position: relative; z-index: 1; align-self: flex-start; padding-right: 10px; max-width: calc(100% - 40px); }
+.vklasse { position: absolute; bottom: 0; left: 0; width: 56px; height: 23px; color: #6B4226; animation: drive var(--drive-s, 16s) linear infinite; }
 .vklasse .wheel { animation: roll .6s linear infinite; }
+/* Gemächlich durchfahren, dann nach kurzer Pause wieder von links auftauchen */
 @keyframes drive {
   0% { transform: translateX(-70px); }
-  45% { transform: translateX(calc(var(--scene-w, 300px) + 10px)); }
+  88% { transform: translateX(calc(var(--scene-w, 300px) + 10px)); }
   100% { transform: translateX(calc(var(--scene-w, 300px) + 10px)); }
 }
 @keyframes roll { to { transform: rotate(360deg); } }
@@ -622,3 +623,11 @@ body.locked .backdrop { display: none; }
 .vertex.first { background: #fff; border-color: var(--trip); }
 .vertex.last { width: 18px; height: 18px; outline: 3px solid var(--trip); outline-offset: 1px; }
 .midpoint { width: 14px; height: 14px; border-radius: 50%; background: rgba(255, 255, 255, .9); border: 2px solid var(--trip); }
+
+/* ---------- Testmodus ---------- */
+
+.sim-pos { width: 26px; height: 26px; border-radius: 50%; background: #E8891C; border: 4px solid #fff; box-shadow: 0 0 0 6px rgba(232, 137, 28, .3), 0 1px 4px rgba(0, 0, 0, .4); }
+.sim-chip {
+  position: absolute; z-index: 500; left: 14px; bottom: 84px; padding: 6px 12px; border-radius: 999px;
+  background: #E8891C; color: #fff; font: 700 13px var(--body); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}

@@ -1,6 +1,7 @@
 import { SyncStore, api, newId } from './store.js';
 import installMore from './mehr.js';
 import installMapEdit from './kartenedit.js';
+import installTestdaten from './testdaten.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -197,7 +198,12 @@ function nextColor() {
 
 /* ---------- Ortung ---------- */
 
+// Testmodus (testdaten.js) kann einen simulierten Standort liefern
+let simulatedPos = () => null;
+
 function getPos() {
+  const sim = simulatedPos();
+  if (sim) return Promise.resolve(sim);
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Dieses Gerät liefert keinen Standort.'));
     navigator.geolocation.getCurrentPosition(
@@ -1217,6 +1223,7 @@ VIEWS.einstellungen = () => {
       <div class="seg">${[['auto', 'Wie das Handy'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
         `<button class="${LS.get('theme', 'auto') === v ? 'on' : ''}" data-action="set-theme" data-theme="${v}">${l}</button>`).join('')}</div>
     </section>
+    ${settingsPanels.map(f => f()).join('')}
     <section class="panel">
       <h2>App installieren</h2>
       ${installText()}
@@ -1386,7 +1393,15 @@ VIEWS.offline = () => `<section class="login">
 // Die V-Klasse fährt genau einmal durch die Landschaft, egal wie breit sie gerade ist
 const scenery = $('.scenery');
 if (scenery && 'ResizeObserver' in window) {
-  new ResizeObserver(([e]) => scenery.style.setProperty('--scene-w', Math.round(e.contentRect.width) + 'px')).observe(scenery);
+  new ResizeObserver(([e]) => {
+    const w = Math.round(e.contentRect.width);
+    scenery.style.setProperty('--scene-w', w + 'px');
+    // Gleichmäßiges Tempo von etwa 32 px pro Sekunde, egal wie breit der Bildschirm ist
+    scenery.style.setProperty('--drive-s', ((w + 80) / 32 / 0.88).toFixed(1) + 's');
+  }).observe(scenery);
+  // Die Landschaft beginnt rechts neben dem Reisenamen
+  const chip = $('#tripChip');
+  new ResizeObserver(() => { scenery.style.left = Math.round(chip.offsetLeft + chip.offsetWidth) + 'px'; }).observe(chip);
 }
 
 /* ---------- Installieren ---------- */
@@ -1484,6 +1499,7 @@ $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeS
 /* ---------- Aktionen ---------- */
 
 const CHANGES = {};   // Erweiterungen für Datei-Eingaben (z. B. GPX)
+const settingsPanels = [];   // zusätzliche Abschnitte in den Einstellungen (z. B. Testmodus)
 
 const ACTIONS = {
   close: closeSheet,
@@ -1918,10 +1934,13 @@ const APP = {
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
-  mapClickHooks, MINOR, applyType,
+  mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers,
+  crewId: () => crew.id,
+  setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
 };
 installMore(APP);
 installMapEdit(APP);
+installTestdaten(APP);
 
 start();

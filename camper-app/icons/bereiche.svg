@@ -65,14 +65,4 @@
 <symbol id="b-mehr" viewBox="-6 120 639 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
 <path d="M470 260 Q 470 200 545 200 Q 625 200 625 260 Q 625 320 545 320 L505 320 L480 350 L485 315 Q 470 300 470 260 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="510" cy="262" r="10" fill="currentColor"/><circle cx="548" cy="262" r="10" fill="currentColor"/><circle cx="586" cy="262" r="10" fill="currentColor"/></symbol>
-<symbol id="landschaft" viewBox="0 0 360 60"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="2.2">
-  <circle cx="232" cy="14" r="7"/>
-  <path d="M262 12 q4 -4 8 0 q4 -4 8 0 M282 20 q3 -3 6 0 q3 -3 6 0" stroke-width="1.8"/>
-  <path d="M60 58 L120 18 L146 34 L176 10 L238 58"/>
-  <path d="M162 22 L176 10 L190 22" opacity=".6"/>
-  <path d="M200 58 L262 26 L300 46 L318 38 L360 58"/>
-  <path d="M0 58 L40 38 L70 50"/>
-  <path d="M30 28 L24.33 39.4 M30 28 L35.67 39.4 M30 34.599999999999994 L21.18 47.2 M30 34.599999999999994 L38.82 47.2 M30 42.4 L17.4 55.0 M30 42.4 L42.6 55.0 M30 28 L30 58"/><path d="M300 32 L295.086 41.879999999999995 M300 32 L304.914 41.879999999999995 M300 37.72 L292.356 48.64 M300 37.72 L307.644 48.64 M300 44.480000000000004 L289.08 55.4 M300 44.480000000000004 L310.92 55.4 M300 32 L300 58"/><path d="M338 24 L331.574 36.92 M338 24 L344.426 36.92 M338 31.48 L328.004 45.76 M338 31.48 L347.996 45.76 M338 40.32 L323.72 54.6 M338 40.32 L352.28 54.6 M338 24 L338 58"/>
-  <path d="M0 58 L360 58" stroke-width="2"/>
-</g></symbol>
 </svg>
