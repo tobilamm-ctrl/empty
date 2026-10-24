@@ -1,4 +1,4 @@
-import { createStore, newId } from './store.js';
+import { SyncStore, api, newId } from './store.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -33,8 +33,11 @@ const SETTLE = 'Ausgleich';
 
 const S = { trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], listItems: [], meta: [] };
 const WATCHED = Object.keys(S);
-let store;
-let user = null;
+let store = null;
+let session = null;   // { user, crews } vom Server bzw. zuletzt bekannt
+let crew = null;      // geöffnete Crew mit Mitgliedern
+let gate = 'loading'; // setup | login | nocrew | offline | null (App läuft)
+let syncState = { pending: 0, lastSync: 0, error: null, busy: false };
 
 const LS = {
   get(k, d) { try { const v = localStorage.getItem('bb.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -128,17 +131,18 @@ function remove(coll, id) {
 
 /* ---------- Personen & Reisen ---------- */
 
-const settings = () => S.meta.find(m => m.id === 'settings') || { people: ['Person 1', 'Person 2'] };
-const people = () => settings().people || ['Person 1', 'Person 2'];
-const me = () => LS.get('me', 0);
-const personName = i => people()[i] || `Person ${+i + 1}`;
-const initial = i => (personName(i)[0] || '?').toUpperCase();
+const members = () => (crew && crew.members) || [];
+const payers = () => members().filter(m => m.shares);
+const me = () => session.user.id;
+const personName = id => (members().find(m => m.id === id) || {}).name || 'Ehemaliges Mitglied';
+const initial = id => (personName(id)[0] || '?').toUpperCase();
+const setTrip = id => LS.set('trip.' + crew.id, id);
 
 const sortTrips = list => list.slice().sort((a, b) => (b.start || '9').localeCompare(a.start || '9'));
 const activeTrips = () => sortTrips(S.trips.filter(t => !t.archived));
 
 function currentTrip() {
-  const id = LS.get('trip', null);
+  const id = LS.get('trip.' + crew.id, null);
   return S.trips.find(t => t.id === id) || activeTrips()[0] || null;
 }
 const tripColor = t => (t && t.color) || '#0F6670';
@@ -210,10 +214,17 @@ function render() {
 const VIEWS = {};
 
 function draw() {
+  const loggedOut = !!gate;
+  document.body.classList.toggle('locked', loggedOut);
+  if (loggedOut) {
+    $('#mapview').hidden = true;
+    $('#view').hidden = false;
+    $('#view').innerHTML = VIEWS[gate]();
+    return;
+  }
   const t = currentTrip();
   document.documentElement.style.setProperty('--trip', tripColor(t));
-  const loggedOut = store.mode === 'firebase' && !user;
-  document.body.classList.toggle('locked', loggedOut);
+  $('#syncDot').className = 'sync-dot ' + syncClass();
 
   $('#tripChip').innerHTML = t
     ? `<span class="dot"></span><span class="name">${esc(t.name)}</span>${t.archived ? '<span class="tag">Archiv</span>' : ''}`
@@ -221,7 +232,7 @@ function draw() {
   $('#routeBand').innerHTML = routeBand(t);
   document.querySelectorAll('.tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === ui.route));
 
-  const onMap = ui.route === 'karte' && !loggedOut;
+  const onMap = ui.route === 'karte';
   $('#mapview').hidden = !onMap;
   $('#view').hidden = onMap;
   if (onMap) return drawMap();
@@ -234,7 +245,7 @@ function draw() {
   const focusKey = act && view.contains(act) && act.dataset.keep;
   const sel = focusKey ? [act.selectionStart, act.selectionEnd] : null;
 
-  view.innerHTML = loggedOut ? VIEWS.login() : (VIEWS[ui.route] || VIEWS.tagebuch)();
+  view.innerHTML = (VIEWS[ui.route] || VIEWS.tagebuch)();
 
   view.querySelectorAll('[data-keep]').forEach(i => {
     if (kept[i.dataset.keep] != null && i.dataset.keep !== 'packQuery') i.value = kept[i.dataset.keep];
@@ -569,7 +580,7 @@ function submitEntry(form) {
   const linked = S.expenses.find(x => x.entryId === e.id);
   if (fd.get('toKasse') && e.cost > 0) {
     save('expenses', {
-      ...(linked || { id: newId(), tripId: e.tripId, paidBy: me(), split: 'both', entryId: e.id }),
+      ...(linked || { id: newId(), tripId: e.tripId, paidBy: me(), split: defaultSplit(), entryId: e.id }),
       amount: e.cost,
       date: e.date.slice(0, 10),
       cat: e.type === 'stellplatz' ? 'Stellplatz' : 'Eintritt',
@@ -776,15 +787,38 @@ function itemForm(id, boxId) {
 
 /* ---------- Ansicht: Kassenbuch ---------- */
 
+// Wer die Kosten mitträgt, legen die Eltern pro Crew fest (Kinder meist nicht)
+const defaultSplit = () => (payers().length ? payers() : members()).map(m => m.id);
+const forWhom = x => (Array.isArray(x.split) && x.split.length ? x.split : [x.paidBy]);
+
 function balance(list) {
-  const net = [0, 0];
+  const net = {};
   list.forEach(x => {
-    const a = x.amount || 0;
-    net[x.paidBy] += a;
-    if (x.split === 'both') { net[0] -= a / 2; net[1] -= a / 2; }
-    else net[x.split === 'p1' ? 1 : 0] -= a;
+    const a = x.amount || 0, who = forWhom(x);
+    net[x.paidBy] = (net[x.paidBy] || 0) + a;
+    who.forEach(id => { net[id] = (net[id] || 0) - a / who.length; });
   });
   return net;
+}
+
+// Möglichst wenige Überweisungen: größte Schuld an größtes Guthaben
+function transfers(net) {
+  const plus = [], minus = [];
+  Object.entries(net).forEach(([id, v]) => {
+    if (v > 0.005) plus.push({ id, v });
+    if (v < -0.005) minus.push({ id, v: -v });
+  });
+  const out = [];
+  plus.sort((a, b) => b.v - a.v);
+  minus.sort((a, b) => b.v - a.v);
+  while (plus.length && minus.length) {
+    const p = plus[0], m = minus[0], amount = Math.min(p.v, m.v);
+    out.push({ from: m.id, to: p.id, amount: Math.round(amount * 100) / 100 });
+    p.v -= amount; m.v -= amount;
+    if (p.v < 0.005) plus.shift();
+    if (m.v < 0.005) minus.shift();
+  }
+  return out;
 }
 
 VIEWS.kasse = () => {
@@ -794,9 +828,7 @@ VIEWS.kasse = () => {
   const real = list.filter(x => x.cat !== SETTLE);
   const total = real.reduce((s, x) => s + (x.amount || 0), 0);
   const st = tripStats(t);
-  const net = balance(list);
-  const debtor = net[0] < -0.005 ? 0 : net[1] < -0.005 ? 1 : null;
-  const owed = debtor == null ? 0 : -net[debtor];
+  const moves = transfers(balance(list));
 
   const byCat = {};
   real.forEach(x => { byCat[x.cat] = (byCat[x.cat] || 0) + x.amount; });
@@ -805,17 +837,22 @@ VIEWS.kasse = () => {
 
   const groups = {};
   list.forEach(x => (groups[x.date] ||= []).push(x));
-  const splitLabel = x => x.split === 'both' ? 'geteilt' : `nur für ${esc(personName(x.split === 'p1' ? 1 : 0))}`;
+  const splitLabel = x => {
+    const who = forWhom(x);
+    const all = defaultSplit();
+    if (who.length === all.length && all.every(id => who.includes(id))) return who.length > 1 ? 'geteilt' : 'eigene Ausgabe';
+    return 'für ' + who.map(id => esc(personName(id))).join(' und ');
+  };
 
   return `<header class="page-head"><h1>Kasse</h1><p class="sub">${esc(t.name)}</p></header>
     <section class="ledger-sum">
       <p class="total">${money(total)}</p>
       <p class="sub">${st.days ? `${money(total / st.days)} pro Tag, ` : ''}${st.nights ? `${money((byCat.Stellplatz || 0) / st.nights)} pro Nacht auf Stellplätzen` : 'ausgegeben'}</p>
-      <div class="settle ${debtor == null ? 'even' : ''}">
-        ${debtor == null
-          ? '<p>Ihr seid quitt.</p>'
-          : `<p><b>${esc(personName(debtor))}</b> schuldet <b>${esc(personName(1 - debtor))}</b> ${money(owed)}</p>
-             <button class="ghost" data-action="settle" data-from="${debtor}" data-amount="${owed.toFixed(2)}">Ausgleich eintragen</button>`}
+      <div class="settle ${moves.length ? '' : 'even'}">
+        ${moves.length
+          ? moves.map(m => `<div class="move"><p><b>${esc(personName(m.from))}</b> gibt <b>${esc(personName(m.to))}</b> ${money(m.amount)}</p>
+              <button class="ghost" data-action="settle" data-from="${m.from}" data-to="${m.to}" data-amount="${m.amount.toFixed(2)}">Ausgleich eintragen</button></div>`).join('')
+          : '<p>Alle sind quitt.</p>'}
       </div>
     </section>
     ${cats.length ? `<section class="cats">${cats.map(([c, v]) =>
@@ -830,21 +867,21 @@ VIEWS.kasse = () => {
 };
 
 function expenseForm(id) {
-  const x = S.expenses.find(e => e.id === id) || { date: today(), paidBy: me(), split: 'both', cat: 'Lebensmittel' };
+  const x = S.expenses.find(e => e.id === id) || { date: today(), paidBy: me(), split: defaultSplit(), cat: 'Lebensmittel' };
   const catOpts = [...CATS, SETTLE].map(c => `<option${c === x.cat ? ' selected' : ''}>${c}</option>`).join('');
-  const who = [0, 1].map(i => `<label><input type="radio" name="paidBy" value="${i}"${+x.paidBy === i ? ' checked' : ''}><span>${esc(personName(i))}</span></label>`).join('');
-  const split = [['both', 'Beide'], ['p0', 'Nur ' + personName(0)], ['p1', 'Nur ' + personName(1)]]
-    .map(([v, l]) => `<label><input type="radio" name="split" value="${v}"${x.split === v ? ' checked' : ''}><span>${esc(l)}</span></label>`).join('');
+  const split = forWhom(x);
+  const who = members().map(m => `<label class="chip"><input type="radio" name="paidBy" value="${m.id}"${x.paidBy === m.id ? ' checked' : ''}><span>${esc(m.name)}</span></label>`).join('');
+  const forList = members().map(m => `<label class="chip"><input type="checkbox" name="split" value="${m.id}"${split.includes(m.id) ? ' checked' : ''}><span>${esc(m.name)}</span></label>`).join('');
   openSheet(`<form data-form="expense" data-id="${x.id || ''}">
     <div class="sheet-head"><h2>${x.id ? 'Ausgabe bearbeiten' : 'Neue Ausgabe'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <div class="row2">
-      <label class="field"><span>Betrag in €</span><input name="amount" inputmode="decimal" required value="${x.amount ? String(x.amount).replace('.', ',') : ''}" placeholder="0,00" autofocus></label>
+      <label class="field"><span>Betrag in €</span><input name="amount" inputmode="decimal" required value="${x.amount ? String(x.amount).replace('.', ',') : ''}" placeholder="0,00"></label>
       <label class="field"><span>Datum</span><input type="date" name="date" value="${x.date}" required></label>
     </div>
     <label class="field"><span>Kategorie</span><select name="cat">${catOpts}</select></label>
     <label class="field"><span>Wofür?</span><input name="note" value="${esc(x.note)}" placeholder="z. B. Wochenmarkt Annecy"></label>
-    <div class="field"><span>Bezahlt von</span><div class="seg">${who}</div></div>
-    <div class="field"><span>Für wen?</span><div class="seg">${split}</div></div>
+    <div class="field"><span>Bezahlt von</span><div class="chips wrap">${who}</div></div>
+    <div class="field"><span>Für wen? (wird gleichmäßig geteilt)</span><div class="chips wrap">${forList}</div></div>
     <div class="sheet-foot">
       ${x.id ? `<button type="button" class="ghost danger" data-action="del-expense" data-id="${x.id}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
@@ -915,86 +952,215 @@ function tripForm(id) {
   </form>`);
 }
 
-/* ---------- Ansicht: Einstellungen & Anmeldung ---------- */
+/* ---------- Ansicht: Einstellungen ---------- */
+
+function syncClass() {
+  if (syncState.error) return 'err';
+  if (syncState.pending) return 'wait';
+  return 'ok';
+}
+
+function syncText() {
+  if (syncState.error === 'auth') return 'Die Anmeldung ist abgelaufen. Bitte neu anmelden, damit wieder abgeglichen wird.';
+  if (syncState.busy) return 'Wird gerade abgeglichen …';
+  if (syncState.error && !navigator.onLine) return 'Kein Netz. Änderungen werden gesammelt und später übertragen.';
+  if (syncState.error) return `Der Abgleich hat nicht geklappt: ${esc(syncState.error)}`;
+  const last = syncState.lastSync ? `zuletzt ${ago(syncState.lastSync)}` : 'noch nie';
+  return syncState.pending
+    ? `${syncState.pending} ${syncState.pending === 1 ? 'Änderung wartet' : 'Änderungen warten'} auf Netz (Abgleich ${last}).`
+    : `Alles abgeglichen, ${last}.`;
+}
 
 VIEWS.einstellungen = () => {
-  const p = people();
-  const who = [0, 1].map(i => `<label><input type="radio" name="me" value="${i}"${me() === i ? ' checked' : ''}><span>${esc(personName(i))}</span></label>`).join('');
-  return `<header class="page-head"><h1>Einstellungen</h1></header>
-    <form class="panel" data-form="settings">
-      <h2>Wir zwei</h2>
-      <div class="row2">
-        <label class="field"><span>Name 1</span><input name="p0" value="${esc(p[0])}" required></label>
-        <label class="field"><span>Name 2</span><input name="p1" value="${esc(p[1])}" required></label>
-      </div>
-      <div class="field"><span>Auf diesem Handy bin ich</span><div class="seg">${who}</div></div>
-      <button class="primary">Speichern</button>
-    </form>
+  const u = session.user;
+  const crews = session.crews;
+  return `<header class="page-head"><h1>Einstellungen</h1><p class="sub">Angemeldet als ${esc(u.name)}</p></header>
     <section class="panel">
-      <h2>Synchronisation</h2>
-      ${store.mode === 'firebase'
-        ? `<p>Verbunden mit Firebase, angemeldet als <b>${esc(user && user.email)}</b>. Änderungen erscheinen sofort auf beiden Handys, ohne Netz werden sie nachgeholt.</p>
-           <button class="ghost" data-action="logout">Abmelden</button>`
-        : `<p><b>Testmodus:</b> Alles bleibt auf diesem Gerät. Für den gemeinsamen Zugriff Firebase einrichten (siehe ANLEITUNG.md). Mit der Sicherung unten kannst du deine Testdaten danach übernehmen.</p>`}
+      <h2>Crew</h2>
+      ${crews.length > 1
+        ? `<p>Jede Crew hat ihre eigenen Reisen, Listen und Boxen.</p><div class="chips wrap">${crews.map(c =>
+            `<button class="chip${c.id === crew.id ? ' on' : ''}" data-action="switch-crew" data-id="${c.id}">${esc(c.name)}</button>`).join('')}</div>`
+        : `<p>${esc(crew.name)}</p>`}
+      <p class="sub">Mitglieder: ${members().map(m => esc(m.name) + (m.shares ? '' : ' (zahlt nicht mit)')).join(', ')}</p>
     </section>
     <section class="panel">
+      <h2>Abgleich</h2>
+      <p><span class="sync-dot ${syncClass()}"></span> ${syncText()}</p>
+      <div class="btnrow">
+        ${syncState.error === 'auth' ? '<button class="primary" data-action="relogin">Neu anmelden</button>' : '<button class="ghost" data-action="sync-now">Jetzt abgleichen</button>'}
+      </div>
+    </section>
+    ${u.isAdmin ? `<section class="panel">
+      <h2>Verwaltung</h2>
+      <p>Konten für die Familie anlegen, Passwörter zurücksetzen und festlegen, wer zu welcher Crew gehört.</p>
+      <a class="ghost btn" href="#/verwaltung">Personen und Crews verwalten</a>
+    </section>` : ''}
+    <form class="panel" data-form="password">
+      <h2>Passwort ändern</h2>
+      <div class="row2">
+        <label class="field"><span>Bisheriges Passwort</span><input type="password" name="old" autocomplete="current-password" required></label>
+        <label class="field"><span>Neues Passwort</span><input type="password" name="new" autocomplete="new-password" minlength="6" required></label>
+      </div>
+      <button class="ghost">Passwort ändern</button>
+    </form>
+    <section class="panel">
       <h2>Sicherung</h2>
-      <p>Speichert alle Reisen, Listen, Boxen und Fotos in einer Datei.</p>
+      <p>Speichert alle Reisen, Listen, Boxen und Fotos dieser Crew in einer Datei.</p>
       <div class="btnrow">
         <button class="ghost" data-action="export">Sicherung herunterladen</button>
         <label class="ghost file">Sicherung einspielen<input type="file" accept="application/json,.json" data-action="import"></label>
       </div>
+    </section>
+    <section class="panel">
+      <button class="ghost danger" data-action="logout">Abmelden</button>
     </section>`;
 };
 
+/* ---------- Ansicht: Verwaltung (nur Eltern) ---------- */
+
+let admin = null;
+
+async function loadAdmin() {
+  try {
+    admin = await api('admin');
+  } catch (e) {
+    admin = { error: e.message };
+  }
+  render();
+}
+
+// Nach Änderungen an Konten oder Crews die eigene Sitzung (Mitgliederlisten) auffrischen
+async function refreshSession() {
+  try {
+    const s = await api('me');
+    if (s.user) {
+      session = s;
+      LS.set('session', s);
+      crew = s.crews.find(c => c.id === crew.id) || crew;
+    }
+  } catch { /* offline: bleibt wie es ist */ }
+  loadAdmin();
+}
+
+VIEWS.verwaltung = () => {
+  if (!session.user.isAdmin) return '<p class="hint">Nur für Verwalter.</p>';
+  if (!admin) { loadAdmin(); return '<header class="page-head"><h1>Verwaltung</h1></header><p class="hint">Wird geladen …</p>'; }
+  if (admin.error) return `<header class="page-head"><h1>Verwaltung</h1></header><p class="hint">${esc(admin.error)} Die Verwaltung braucht eine Internetverbindung.</p>
+    <button class="ghost" data-action="admin-reload">Noch einmal versuchen</button>`;
+  const name = id => (admin.users.find(u => u.id === id) || {}).name || '?';
+  return `<header class="page-head"><h1>Verwaltung</h1><p class="sub">Nur Verwalter sehen diese Seite.</p></header>
+    <div class="toolbar"><h2>Personen</h2><button class="primary" data-action="user-form">${icon('plus')}Person</button></div>
+    <ul class="people">${admin.users.map(u => `<li><button data-action="user-form" data-id="${u.id}">
+      <span class="avatar">${esc(u.name[0] || '?')}</span>
+      <span class="txt"><b>${esc(u.name)}</b><small>Anmeldename: ${esc(u.login)}${u.isAdmin ? ', Verwalter' : ''}</small></span>
+      ${icon('edit')}</button></li>`).join('')}</ul>
+    <div class="toolbar"><h2>Crews</h2><button class="primary" data-action="crew-form">${icon('plus')}Crew</button></div>
+    <ul class="people">${admin.crews.map(c => `<li><button data-action="crew-form" data-id="${c.id}">
+      <span class="txt"><b>${esc(c.name)}</b><small>${c.members.map(m => esc(name(m.id))).join(', ') || 'Noch ohne Mitglieder'}</small></span>
+      ${icon('edit')}</button></li>`).join('')}</ul>`;
+};
+
+function userForm(id) {
+  const u = (admin.users.find(x => x.id === id)) || {};
+  const self = u.id === session.user.id;
+  openSheet(`<form data-form="user" data-id="${u.id || ''}">
+    <div class="sheet-head"><h2>${u.id ? 'Person bearbeiten' : 'Neue Person'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <label class="field"><span>Name</span><input name="name" value="${esc(u.name)}" required placeholder="z. B. Lena"></label>
+    <label class="field"><span>Anmeldename</span><input name="login" value="${esc(u.login)}" required autocapitalize="none" autocomplete="off" placeholder="z. B. lena"></label>
+    <label class="field"><span>${u.id ? 'Neues Passwort (leer lassen = unverändert)' : 'Passwort (mindestens 6 Zeichen)'}</span><input name="password" type="text" autocomplete="off" ${u.id ? '' : 'required minlength="6"'}></label>
+    <label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Verwalter (darf Konten und Crews verwalten)</span></label>
+    ${u.id ? '' : `<label class="check"><input type="checkbox" name="joinCrew" checked><span>Gleich in die Crew „${esc(crew.name)}“ aufnehmen</span></label>`}
+    <div class="sheet-foot">
+      ${u.id && !self ? `<button type="button" class="ghost danger" data-action="del-user" data-id="${u.id}">Löschen</button>` : ''}
+      <button class="primary">Speichern</button>
+    </div>
+  </form>`);
+}
+
+function crewForm(id) {
+  const c = admin.crews.find(x => x.id === id) || { members: [{ id: session.user.id, shares: true }] };
+  const rows = admin.users.map(u => {
+    const m = c.members.find(x => x.id === u.id);
+    return `<li>
+      <label class="check"><input type="checkbox" name="member" value="${u.id}"${m ? ' checked' : ''}><span>${esc(u.name)}</span></label>
+      <label class="check small"><input type="checkbox" name="shares" value="${u.id}"${!m || m.shares ? ' checked' : ''}><span>zahlt mit</span></label>
+    </li>`;
+  }).join('');
+  openSheet(`<form data-form="crew" data-id="${c.id || ''}">
+    <div class="sheet-head"><h2>${c.id ? 'Crew bearbeiten' : 'Neue Crew'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <label class="field"><span>Name</span><input name="name" value="${esc(c.name)}" required placeholder="z. B. Familie oder Lenas Touren"></label>
+    <div class="field"><span>Wer gehört dazu?</span>
+      <p class="sub">„Zahlt mit“ heißt: Die Person wird in der Kasse bei geteilten Ausgaben berücksichtigt.</p>
+      <ul class="member-list">${rows}</ul>
+    </div>
+    <div class="sheet-foot">
+      ${c.id ? `<button type="button" class="ghost danger" data-action="del-crew" data-id="${c.id}">Löschen</button>` : ''}
+      <button class="primary">Speichern</button>
+    </div>
+  </form>`);
+}
+
+/* ---------- Ansicht: Anmeldung & Einrichtung ---------- */
+
+VIEWS.loading = () => '<section class="login"><h1>Bordbuch</h1><p>Wird geladen …</p></section>';
+
 VIEWS.login = () => `<section class="login">
   <h1>Bordbuch</h1>
-  <p>Meldet euch mit dem Konto an, das ihr in Firebase angelegt habt.</p>
+  <p>Meldet euch mit eurem Anmeldenamen an. Neue Konten legen die Verwalter in den Einstellungen an.</p>
   <form data-form="login" class="panel">
-    <label class="field"><span>E-Mail</span><input type="email" name="email" autocomplete="username" required></label>
-    <label class="field"><span>Passwort</span><input type="password" name="pw" autocomplete="current-password" required></label>
+    <label class="field"><span>Anmeldename</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
+    <label class="field"><span>Passwort</span><input type="password" name="password" autocomplete="current-password" required></label>
     <button class="primary">Anmelden</button>
   </form>
 </section>`;
 
-function welcome() {
-  const p = people();
-  openSheet(`<form data-form="welcome">
-    <div class="sheet-head"><h2>Willkommen an Bord</h2></div>
-    <p>Wie heißt ihr? Die Namen tauchen bei Einträgen und in der Kasse auf.</p>
+VIEWS.setup = () => `<section class="login">
+  <h1>Willkommen an Bord</h1>
+  <p>Einmalige Einrichtung: Du legst dein Verwalter-Konto und eure erste Crew an. Konten für die anderen folgen danach in den Einstellungen.</p>
+  <form data-form="setup" class="panel">
+    <label class="field"><span>Einrichtungscode (steht in api/config.php)</span><input name="code" required autocapitalize="none" autocomplete="off"></label>
+    <label class="field"><span>Name der Crew</span><input name="crew" required placeholder="z. B. Familie"></label>
+    <label class="field"><span>Dein Name</span><input name="name" required></label>
     <div class="row2">
-      <label class="field"><span>Name 1</span><input name="p0" value="${esc(p[0] === 'Person 1' ? '' : p[0])}" required></label>
-      <label class="field"><span>Name 2</span><input name="p1" value="${esc(p[1] === 'Person 2' ? '' : p[1])}" required></label>
+      <label class="field"><span>Anmeldename</span><input name="login" required autocapitalize="none" autocomplete="username"></label>
+      <label class="field"><span>Passwort</span><input type="password" name="password" minlength="6" required autocomplete="new-password"></label>
     </div>
-    <div class="field"><span>Auf diesem Handy bin ich</span><div class="seg">
-      <label><input type="radio" name="me" value="0" checked><span>Name 1</span></label>
-      <label><input type="radio" name="me" value="1"><span>Name 2</span></label>
-    </div></div>
-    <div class="sheet-foot"><button class="primary">Los geht's</button></div>
-  </form>`);
-}
+    <button class="primary">Einrichten</button>
+  </form>
+</section>`;
+
+VIEWS.nocrew = () => `<section class="login">
+  <h1>Hallo ${esc(session.user.name)}</h1>
+  <p>Du gehörst noch zu keiner Crew. Bitte einen Verwalter, dich in eine Crew aufzunehmen, und öffne die App dann neu.</p>
+  <button class="ghost danger" data-action="logout">Abmelden</button>
+</section>`;
+
+VIEWS.offline = () => `<section class="login">
+  <h1>Keine Verbindung</h1>
+  <p>Beim ersten Öffnen braucht das Bordbuch einmal Internet, damit ihr euch anmelden könnt. Danach geht es auch offline.</p>
+  <button class="primary" data-action="reload">Noch einmal versuchen</button>
+</section>`;
 
 /* ---------- Sicherung ---------- */
 
-function allPhotos() {
-  return new Promise(resolve => {
-    let off = null, done = false;
-    off = store.watch('photos', list => {
-      if (done) return;
-      done = true;
-      resolve(list);
-      setTimeout(() => off && off(), 0);
-    });
-  });
-}
-
 async function exportAll() {
   toast('Sicherung wird erstellt …');
-  const data = { app: 'bordbuch', version: 1, created: new Date().toISOString(), photos: await allPhotos() };
+  const photos = [];
+  for (const e of S.entries) {
+    for (const p of e.photos || []) {
+      try {
+        const { data } = await store.get('photos', p.id);
+        if (data.startsWith('data:')) { photos.push({ id: p.id, data }); continue; }
+        const blob = await (await fetch(data, { credentials: 'same-origin' })).blob();
+        photos.push({ id: p.id, data: await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); }) });
+      } catch { /* Foto nicht erreichbar: nur Vorschaubild bleibt erhalten */ }
+    }
+  }
+  const data = { app: 'bordbuch', version: 2, crew: crew.name, created: new Date().toISOString(), photos };
   WATCHED.forEach(c => { data[c] = S[c]; });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
-  a.download = `bordbuch-${today()}.json`;
+  a.download = `bordbuch-${crew.name.replace(/[^\wäöüÄÖÜß-]+/g, '-')}-${today()}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
@@ -1003,9 +1169,10 @@ async function importAll(file) {
   let data;
   try { data = JSON.parse(await file.text()); } catch { return toast('Die Datei ist keine Bordbuch-Sicherung.'); }
   if (data.app !== 'bordbuch') return toast('Die Datei ist keine Bordbuch-Sicherung.');
-  const n = [...WATCHED, 'photos'].reduce((s, c) => s + (data[c] || []).length, 0);
-  if (!confirm(`${n} Einträge einspielen? Gleiche Einträge werden überschrieben, alles andere bleibt.`)) return;
-  [...WATCHED, 'photos'].forEach(c => (data[c] || []).forEach(d => d && d.id && store.put(c, d).catch(() => {})));
+  const n = WATCHED.reduce((s, c) => s + (data[c] || []).length, 0);
+  if (!confirm(`${n} Einträge und ${(data.photos || []).length} Fotos in die Crew „${crew.name}“ einspielen? Gleiche Einträge werden überschrieben, alles andere bleibt.`)) return;
+  for (const p of data.photos || []) await store.put('photos', p);
+  for (const c of WATCHED) for (const d of data[c] || []) if (d && d.id) await store.put(c, d);
   toast('Sicherung eingespielt');
 }
 
@@ -1079,7 +1246,7 @@ const ACTIONS = {
   'show-on-map': el => {
     const e = S.entries.find(x => x.id === el.dataset.id);
     closeSheet();
-    if (e.tripId !== (currentTrip() || {}).id) LS.set('trip', e.tripId);
+    if (e.tripId !== (currentTrip() || {}).id) setTrip(e.tripId);
     ui.mapScope = 'trip';
     pendingFocus = { lat: e.lat, lng: e.lng, id: e.id };
     go('karte');
@@ -1138,16 +1305,16 @@ const ACTIONS = {
   'expense-form': el => expenseForm(el.dataset.id),
   'del-expense': el => { if (confirm('Diese Buchung löschen?')) { remove('expenses', el.dataset.id); closeSheet(); } },
   settle: el => {
-    const from = +el.dataset.from, amount = +el.dataset.amount;
-    if (!confirm(`${personName(from)} gibt ${personName(1 - from)} ${money(amount)}. Als Ausgleich eintragen?`)) return;
+    const { from, to } = el.dataset, amount = +el.dataset.amount;
+    if (!confirm(`${personName(from)} gibt ${personName(to)} ${money(amount)}. Als Ausgleich eintragen?`)) return;
     save('expenses', {
       id: newId(), tripId: currentTrip().id, date: today(), cat: SETTLE,
-      note: `${personName(from)} an ${personName(1 - from)}`, amount, paidBy: from, split: 'p' + (1 - from),
+      note: `${personName(from)} an ${personName(to)}`, amount, paidBy: from, split: [to],
     });
   },
 
   'trip-form': el => tripForm(el.dataset.id),
-  'pick-trip': el => { LS.set('trip', el.dataset.id); lastFit = ''; go('tagebuch'); },
+  'pick-trip': el => { setTrip(el.dataset.id); lastFit = ''; go('tagebuch'); },
   'all-on-map': () => { ui.mapScope = 'all'; lastFit = ''; go('karte'); },
   'del-trip': el => {
     const t = S.trips.find(x => x.id === el.dataset.id);
@@ -1161,7 +1328,32 @@ const ACTIONS = {
   },
 
   export: exportAll,
-  logout: () => store.signOut(),
+  logout: async () => {
+    if (syncState.pending && !confirm('Es sind noch Änderungen nicht übertragen. Trotzdem abmelden?')) return;
+    try { await api('logout', {}); } catch { /* offline: Cookie läuft trotzdem ab */ }
+    LS.set('session', null);
+    location.hash = '';
+    location.reload();
+  },
+  reload: () => location.reload(),
+  relogin: () => { gate = 'login'; render(); },
+  'sync-now': () => store.sync(),
+  'switch-crew': el => { LS.set('crew', el.dataset.id); location.hash = '#/karte'; location.reload(); },
+
+  'admin-reload': () => { admin = null; render(); },
+  'user-form': el => userForm(el.dataset.id),
+  'crew-form': el => crewForm(el.dataset.id),
+  'del-user': async el => {
+    const u = admin.users.find(x => x.id === el.dataset.id);
+    if (!confirm(`Das Konto von ${u.name} löschen? Einträge bleiben erhalten.`)) return;
+    try { await api('user-delete', { id: u.id }); closeSheet(); refreshSession(); } catch (e) { toast(e.message); }
+  },
+  'del-crew': async el => {
+    const c = admin.crews.find(x => x.id === el.dataset.id);
+    if (!confirm(`Die Crew „${c.name}“ mit allen Reisen, Listen, Boxen und Fotos endgültig löschen?`)) return;
+    if (c.id === crew.id) return toast('Die gerade geöffnete Crew kann nicht gelöscht werden. Wechsle vorher die Crew.');
+    try { await api('crew-delete', { id: c.id }); closeSheet(); refreshSession(); } catch (e) { toast(e.message); }
+  },
 };
 
 const FORMS = {
@@ -1188,10 +1380,11 @@ const FORMS = {
     const old = S.expenses.find(x => x.id === form.dataset.id);
     const amount = num(form.amount.value);
     if (amount <= 0) return toast('Bitte einen Betrag eintragen.');
+    if (!form.querySelector('[name=split]:checked')) return toast('Bitte auswählen, für wen die Ausgabe war.');
     save('expenses', {
       ...(old || { id: newId(), tripId: currentTrip().id }),
       amount, date: form.date.value, cat: form.cat.value, note: form.note.value.trim(),
-      paidBy: +form.paidBy.value, split: form.split.value,
+      paidBy: form.paidBy.value, split: [...form.querySelectorAll('[name=split]:checked')].map(i => i.value),
     });
     closeSheet();
   },
@@ -1203,27 +1396,51 @@ const FORMS = {
       color: form.color.value || nextColor(),
       archived: old ? form.archived.checked : false,
     });
-    if (!old) { LS.set('trip', t.id); lastFit = ''; }
+    if (!old) { setTrip(t.id); lastFit = ''; }
     closeSheet();
     if (!old) go('tagebuch');
   },
-  settings: form => {
-    save('meta', { id: 'settings', people: [form.p0.value.trim(), form.p1.value.trim()] });
-    LS.set('me', +form.me.value);
-    toast('Gespeichert');
-    render();
+  password: async form => {
+    try {
+      await api('password', { old: form.old.value, new: form.new.value });
+      form.reset();
+      toast('Passwort geändert');
+    } catch (e) { toast(e.message); }
   },
-  welcome: form => {
-    save('meta', { id: 'settings', people: [form.p0.value.trim(), form.p1.value.trim()] });
-    LS.set('me', +form.me.value);
-    closeSheet();
+  login: form => sendAuth(form, 'login', { login: form.login.value.trim(), password: form.password.value }),
+  setup: form => sendAuth(form, 'setup', {
+    code: form.code.value.trim(), crew: form.crew.value.trim(), name: form.name.value.trim(),
+    login: form.login.value.trim(), password: form.password.value,
+  }),
+  user: async form => {
+    const id = form.dataset.id || null;
+    try {
+      const res = await api('user-save', {
+        id, name: form.name.value.trim(), login: form.login.value.trim(),
+        password: form.password.value, isAdmin: form.isAdmin.checked || (id === session.user.id),
+      });
+      if (!id && form.joinCrew && form.joinCrew.checked) {
+        const c = admin.crews.find(x => x.id === crew.id);
+        // Neue Personen zahlen standardmäßig nicht mit (meist Kinder); änderbar in der Crew
+        await api('crew-save', { id: c.id, name: c.name, members: [...c.members, { id: res.id, shares: form.isAdmin.checked }] });
+      }
+      closeSheet();
+      toast(id ? 'Gespeichert' : 'Konto angelegt');
+      refreshSession();
+    } catch (e) { toast(e.message); }
   },
-  login: async form => {
-    const btn = form.querySelector('button');
-    btn.disabled = true;
-    try { await store.signIn(form.email.value.trim(), form.pw.value); }
-    catch { toast('Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.'); }
-    finally { btn.disabled = false; }
+  crew: async form => {
+    const shares = new Set([...form.querySelectorAll('[name=shares]:checked')].map(i => i.value));
+    const chosen = [...form.querySelectorAll('[name=member]:checked')].map(i => ({ id: i.value, shares: shares.has(i.value) }));
+    if (form.dataset.id === crew.id && !chosen.some(m => m.id === session.user.id)) {
+      return toast('Du kannst dich nicht aus der geöffneten Crew entfernen.');
+    }
+    try {
+      await api('crew-save', { id: form.dataset.id || null, name: form.name.value.trim(), members: chosen });
+      closeSheet();
+      toast('Gespeichert');
+      refreshSession();
+    } catch (e) { toast(e.message); }
   },
 };
 
@@ -1262,7 +1479,6 @@ document.addEventListener('change', async ev => {
     }
   }
   if (el.dataset.action === 'import' && el.files[0]) { importAll(el.files[0]); el.value = ''; }
-  if (el.name === 'me' && el.form && el.form.dataset.form === 'settings') { LS.set('me', +el.value); render(); }
 });
 
 /* ---------- Navigation ---------- */
@@ -1283,32 +1499,58 @@ window.addEventListener('hashchange', onHash);
 
 /* ---------- Start ---------- */
 
-async function start() {
+async function sendAuth(form, action, body) {
+  const btn = form.querySelector('button');
+  btn.disabled = true;
   try {
-    store = await createStore();
-  } catch (err) {
-    $('#view').innerHTML = `<section class="empty"><h1>Keine Verbindung</h1><p>Die App konnte nicht starten: ${esc(err.message)}. Prüfe die Internetverbindung beim ersten Öffnen und die Angaben in config.js.</p></section>`;
-    return;
-  }
-  let unsubs = [];
-  store.onAuth(u => {
-    user = u;
-    unsubs.forEach(f => f());
-    unsubs = [];
-    if (u) {
-      const firstLoad = new Set();
-      let welcomed = false;
-      unsubs = WATCHED.map(c => store.watch(c, list => {
-        S[c] = list;
-        // Beim ersten Start auf diesem Handy: Namen und „Wer bin ich?“ abfragen
-        if (c === 'meta' && !welcomed && LS.get('me', null) == null) { welcomed = true; welcome(); }
-        render();
-      }));
+    const s = await api(action, body);
+    LS.set('session', s);
+    if (store && s.crews.some(c => c.id === crew.id)) {
+      // Nur die Anmeldung war abgelaufen: weiterarbeiten, ausstehende Änderungen übertragen
+      session = s;
+      gate = null;
+      store.sync();
+      onHash();
     } else {
-      WATCHED.forEach(c => { S[c] = []; });
+      location.reload();
     }
-    onHash();
+  } catch (e) {
+    toast(e.message);
+    btn.disabled = false;
+  }
+}
+
+async function start() {
+  render();
+  let s;
+  try {
+    s = await api('me');
+    if (s.user) LS.set('session', s);
+  } catch {
+    // Offline: mit der zuletzt bekannten Anmeldung weiterarbeiten
+    s = LS.get('session', null);
+    if (!s) { gate = 'offline'; return render(); }
+  }
+  if (s.setup) { gate = 'setup'; return render(); }
+  if (!s.user) { gate = 'login'; return render(); }
+  session = s;
+  crew = s.crews.find(c => c.id === LS.get('crew', null)) || s.crews[0];
+  if (!crew) { gate = 'nocrew'; return render(); }
+  LS.set('crew', crew.id);
+
+  store = new SyncStore(crew.id);
+  store.onStatus(st => {
+    syncState = { ...st };
+    if (st.error === 'auth' && !gate) toast('Anmeldung abgelaufen. In den Einstellungen neu anmelden.');
+    const dot = $('#syncDot');
+    if (dot) dot.className = 'sync-dot ' + syncClass();
+    if (ui.route === 'einstellungen' && !gate) render();
   });
+  await store.init();
+  gate = null;
+  WATCHED.forEach(c => store.watch(c, list => { S[c] = list; render(); }));
+  onHash();
+
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }

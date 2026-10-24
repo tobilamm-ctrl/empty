@@ -2,81 +2,97 @@
 
 Das Bordbuch ist eine Web-App für euren Minicamper: Karte mit Reiseroute, Tagebuch mit
 Stellplätzen und Sehenswertem, Auto-Standort, Einkaufs- und Merkliste, Boxen-Inventar mit
-Packliste, Kassenbuch und ein Archiv aller Reisen.
+Packliste, Kassenbuch und ein Archiv aller Reisen. Alles läuft auf eurem eigenen Webspace,
+eure Daten und Fotos bleiben dort.
 
-Ohne weitere Einrichtung läuft die App im **Testmodus**: Alles bleibt auf dem jeweiligen Gerät.
-Für den gemeinsamen Zugriff braucht es einmalig Firebase (Schritt 2).
+## Voraussetzungen
 
-## 1. Auf den Hetzner-Webspace hochladen
+- Webspace mit **PHP 8** und der PHP-Erweiterung **pdo_sqlite** (bei Hetzner-Webhosting
+  Standard). Alternativ geht eine MySQL-Datenbank.
+- **HTTPS** für die Domain. Ohne HTTPS funktionieren GPS und die Offline-Funktion nicht.
+  In der konsoleH: Domain → SSL-Manager → Let's-Encrypt-Zertifikat aktivieren.
 
-1. In der konsoleH für die Domain **SSL aktivieren** (kostenloses Let's-Encrypt-Zertifikat).
-   Ohne HTTPS funktionieren GPS und die Offline-Funktion nicht.
-2. Den **Inhalt** des Ordners `camper-app` per SFTP (z. B. mit FileZilla) in einen Ordner auf
-   dem Webspace kopieren, z. B. `public_html/bordbuch`. Die Datei `.htaccess` mitkopieren
-   (in FileZilla ggf. „Versteckte Dateien anzeigen“ einschalten).
-3. `https://eure-domain.de/bordbuch/` im Handy-Browser öffnen.
-4. Auf den Startbildschirm legen:
-   - **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“
-   - **Android (Chrome):** Menü ⋮ → „App installieren“
+## 1. Einrichtungscode festlegen
 
-Die Dateien `ANLEITUNG.md` und `firestore.rules` müssen nicht mit hoch.
+In `api/config.php` die Zeile
 
-## 2. Firebase für den gemeinsamen Zugriff (ca. 10 Minuten, kostenlos)
+```php
+'setup_code' => 'bitte-aendern',
+```
 
-1. Auf <https://console.firebase.google.com> mit einem Google-Konto anmelden →
-   **Projekt hinzufügen**, Name z. B. `bordbuch`. Google Analytics wird nicht gebraucht.
-2. **Datenbank anlegen:** Links „Erstellen“ → **Firestore Database** → „Datenbank erstellen“.
-   Standort `europe-west3 (Frankfurt)`, Modus „Produktionsmodus“.
-3. **Regeln eintragen:** In Firestore auf den Reiter **Regeln**, den Inhalt der Datei
-   `firestore.rules` einfügen, eure beiden E-Mail-Adressen eintragen → **Veröffentlichen**.
-4. **Anmeldung einschalten:** Links „Erstellen“ → **Authentication** → „Los gehts“ →
-   Anmeldemethode **E-Mail/Passwort** aktivieren.
-5. **Eure zwei Konten anlegen:** In Authentication auf den Reiter **Nutzer** → „Nutzer
-   hinzufügen“, einmal für jede/n von euch (dieselben Adressen wie in den Regeln).
-6. **Domain freigeben:** Authentication → **Einstellungen** → „Autorisierte Domains“ →
-   eure Domain hinzufügen (z. B. `eure-domain.de`).
-7. **Web-App registrieren:** Zahnrad oben links → **Projekteinstellungen** → unten bei
-   „Meine Apps“ auf das Symbol `</>` → Name `Bordbuch` → registrieren. Firebase zeigt jetzt
-   einen Block `const firebaseConfig = { apiKey: …, … }`.
-8. Diese Werte in `config.js` eintragen (statt `firebase: null`):
+auf einen eigenen Code ändern, z. B. `'setup_code' => 'Gardasee-2027',`. Der Code wird nur
+einmal bei der Ersteinrichtung gebraucht und verhindert, dass jemand anderes sich vor euch
+zum Verwalter macht.
 
-   ```js
-   window.CAMPER_CONFIG = {
-     firebase: {
-       apiKey: "…",
-       authDomain: "bordbuch-xxxx.firebaseapp.com",
-       projectId: "bordbuch-xxxx",
-       storageBucket: "bordbuch-xxxx.appspot.com",
-       messagingSenderId: "…",
-       appId: "…"
-     },
-   };
-   ```
+## 2. Hochladen
 
-9. `config.js` neu hochladen, App neu öffnen und anmelden. Fertig.
+1. Den **Inhalt** des Ordners per SFTP (z. B. mit FileZilla) in einen Ordner auf dem
+   Webspace kopieren, z. B. `public_html/bordbuch`. Die versteckten Dateien `.htaccess`
+   (auch die in `api/data/`) müssen mit (in FileZilla: Server → Versteckte Dateien anzeigen).
+2. Der Ordner `api/data` muss für PHP **beschreibbar** sein. Dort landen die Datenbank
+   (`bordbuch.sqlite`) und die Fotos. Bei Hetzner passt das meist von selbst; sonst in
+   FileZilla Rechtsklick → Dateiberechtigungen → 755 (oder 775).
+3. Prüfen, dass die Daten geschützt sind: `https://eure-domain.de/bordbuch/api/data/`
+   muss „Forbidden“ zeigen.
 
-Der `apiKey` ist kein Geheimnis, er darf in der Datei stehen. Geschützt sind eure Daten durch
-die Regeln aus Schritt 3: Nur eure zwei Konten können lesen und schreiben.
+## 3. Ersteinrichtung
 
-**Testdaten übernehmen:** Vorher im Testmodus unter Einstellungen → „Sicherung herunterladen“,
-nach der Anmeldung → „Sicherung einspielen“.
+1. `https://eure-domain.de/bordbuch/` öffnen.
+2. Einrichtungscode, Name der Crew (z. B. „Familie“), deinen Namen, Anmeldenamen und
+   Passwort eingeben → **Einrichten**. Du bist jetzt Verwalter.
+3. Einstellungen (Zahnrad) → **Personen und Crews verwalten** → für jede Person
+   **+ Person**. Wer Konten verwalten soll (z. B. der andere Elternteil), bekommt
+   „Verwalter“. Neue Personen werden gleich in die geöffnete Crew aufgenommen.
+4. In der Crew festlegen, wer **mitzahlt**: Nur diese Personen werden in der Kasse bei
+   geteilten Ausgaben berücksichtigt. Kinder stehen standardmäßig auf „zahlt nicht mit“.
 
-**Kosten:** Firebase bleibt für zwei Personen im kostenlosen Spark-Tarif. Fotos werden
-verkleinert (ca. 200–300 KB) in der Datenbank gespeichert; 1 GB reicht für einige tausend Fotos.
+## 4. Auf den Startbildschirm legen
 
-## 3. Updates einspielen
+- **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“
+- **Android (Chrome):** Menü ⋮ → „App installieren“
 
-Nach Änderungen an der App die geänderten Dateien hochladen und in `sw.js` die Zeile
-`const VERSION = 'bordbuch-1'` hochzählen (`bordbuch-2` …). Beim nächsten Öffnen mit Netz
-holen sich die Handys die neue Version.
+## Crews
+
+Eine Crew ist eine gemeinsame Datensammlung mit eigenen Reisen, Listen, Boxen und eigener
+Kasse. Beispiele:
+
+- **Familie:** alle zusammen, die Kinder sehen und schreiben mit.
+- **Lenas Touren:** eine eigene Crew für ein Kind, z. B. für Ausflüge mit Freunden.
+
+Wer in mehreren Crews ist, wechselt in den Einstellungen.
+
+## Offline und Abgleich
+
+Jedes Handy hat eine vollständige Kopie der Crew-Daten. Ohne Netz könnt ihr ganz normal
+weiterschreiben; die Änderungen werden gesammelt und übertragen, sobald wieder Netz da ist.
+Ein gelber Punkt am Zahnrad zeigt wartende Änderungen, ein roter ein Problem (Details in den
+Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 15 Sekunden ab.
+
+Ändern zwei Personen gleichzeitig **denselben** Eintrag, gilt die zuletzt übertragene Fassung.
+
+## Updates einspielen
+
+Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'bordbuch-2'` hochzählen, damit die
+Handys die neue Version laden.
+
+## Sicherung
+
+- **In der App:** Einstellungen → „Sicherung herunterladen“ speichert die Daten der
+  geöffneten Crew samt Fotos in einer Datei.
+- **Auf dem Server:** Den Ordner `api/data` per SFTP herunterladen. Darin steckt alles.
+
+## MySQL statt SQLite (optional)
+
+In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen eintragen
+(die SQLite-Zeilen dafür auskommentieren). Die Tabellen legt die App selbst an.
 
 ## Gut zu wissen
 
-- **Offline:** Die App, eure Daten und bereits angesehene Kartenausschnitte sind ohne Netz
-  verfügbar. Einträge ohne Netz werden gespeichert und später synchronisiert.
 - **Route:** Die Linie auf der Karte verbindet eure Einträge mit Position in zeitlicher
-  Reihenfolge. Eine lückenlose Aufzeichnung während der Fahrt kann eine Web-App nicht leisten
-  (das Handy stoppt die Ortung im Hintergrund). Geplant für Stufe 2: GPX-Import aus einer
-  Tracking-App wie OsmAnd oder Komoot.
+  Reihenfolge. Eine lückenlose Aufzeichnung während der Fahrt kann eine Web-App nicht leisten.
+  Geplant für Stufe 2: GPX-Import aus einer Tracking-App wie OsmAnd oder Komoot.
 - **Ortsnamen** werden über OpenStreetMap (Nominatim) ermittelt, wenn ihr die aktuelle
-  Position übernehmt.
+  Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
+- **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
+  ist die Anmeldung 15 Minuten gesperrt.

@@ -382,6 +382,28 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .login > p { color: var(--muted); }
 .login .panel { border: 0; }
 
+/* ---------- Abgleich, Verwaltung ---------- */
+
+.settings-btn { position: relative; }
+.sync-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #3E9B5C; vertical-align: 1px; }
+.sync-dot.wait { background: #E0A21B; }
+.sync-dot.err { background: var(--danger); }
+.settings-btn .sync-dot { position: absolute; top: 9px; right: 8px; border: 2px solid var(--paper); width: 12px; height: 12px; }
+.settings-btn .sync-dot.ok { display: none; }
+.people { list-style: none; margin: 0; padding: 0; }
+.people button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; }
+.people .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.people small { color: var(--muted); font-size: 14px; }
+.people .ic { color: var(--muted); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--mist); color: var(--petrol); font: 700 18px var(--head); flex: none; }
+.member-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.member-list li { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); }
+.member-list .check { margin: 0; }
+.check.small { font-size: 14px; color: var(--muted); }
+.check.small input { width: 18px; height: 18px; }
+.settle .move { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; width: 100%; }
+.settle .move + .move { padding-top: 12px; border-top: 1px solid var(--line); }
+
 /* ---------- Hinweis ---------- */
 
 .toast {

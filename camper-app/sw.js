@@ -1,12 +1,13 @@
-// Offline-Speicher: App-Dateien, Schriften, Firebase-Bibliothek und angesehene Kartenkacheln.
+// Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'bordbuch-1';
+const VERSION = 'bordbuch-2';
 const SHELL = [
-  './', 'index.html', 'config.js', 'css/app.css', 'js/app.js', 'js/store.js',
+  './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png',
 ];
 const TILES = 'bordbuch-tiles';
+const PHOTOS = 'bordbuch-photos';
 const MAX_TILES = 3000;
 
 self.addEventListener('install', e => {
@@ -15,7 +16,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== TILES).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== TILES && k !== PHOTOS).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -43,8 +44,22 @@ self.addEventListener('fetch', e => {
   }
 
   const own = url.origin === location.origin;
-  const lib = url.hostname === 'www.gstatic.com' || url.hostname.endsWith('fonts.googleapis.com') || url.hostname === 'fonts.gstatic.com';
-  if (!own && !lib) return; // Firestore, Anmeldung, Ortsnamen: immer direkt ins Netz
+
+  // Fotos ändern sich nie: einmal geladen, gibt es sie auch offline
+  if (own && url.pathname.endsWith('/api/') && url.searchParams.get('a') === 'photo') {
+    e.respondWith(caches.open(PHOTOS).then(async c => {
+      const hit = await c.match(req);
+      if (hit) return hit;
+      const res = await fetch(req);
+      if (res.ok) c.put(req, res.clone());
+      return res;
+    }));
+    return;
+  }
+  if (own && url.pathname.includes('/api/')) return; // Abgleich und Anmeldung: immer direkt zum Server
+
+  const lib = url.hostname.endsWith('fonts.googleapis.com') || url.hostname === 'fonts.gstatic.com';
+  if (!own && !lib) return; // Ortsnamen und Navigation: immer direkt ins Netz
 
   // App-Dateien: Netz zuerst, damit Updates sofort ankommen; offline aus dem Speicher
   e.respondWith(fetch(req).then(res => {
