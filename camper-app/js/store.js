@@ -6,7 +6,7 @@
 // Fotos: put('photos', {id, data}) lädt die volle Größe hoch, get('photos', id).data ist eine Bild-URL.
 
 export const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta',
-  'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks'];
+  'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games'];
 const SYNC_EVERY = 15000;
 
 export function newId() {
@@ -38,7 +38,7 @@ export async function api(action, body, query = '') {
 function openDb(name) {
   return new Promise((resolve, reject) => {
     // Version erhöhen, sobald neue Sammlungen dazukommen; fehlende Speicher werden ergänzt
-    const req = indexedDB.open(name, 2);
+    const req = indexedDB.open(name, 3);
     req.onupgradeneeded = () => {
       const have = req.result.objectStoreNames;
       COLLS.forEach(c => { if (!have.contains(c)) req.result.createObjectStore(c, { keyPath: 'id' }); });

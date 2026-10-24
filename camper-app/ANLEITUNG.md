@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-4'` hochzählen, damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-10'` hochzählen (z. B. auf `lammping-11`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -112,9 +112,28 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Listen:** beliebig viele Einkaufs- und Merklisten, auf Wunsch einer Reise zugeordnet.
   Einträge antippen, um sie zu bearbeiten oder in eine andere Liste zu verschieben.
 - **Boxen & Fächer:** Inventar mit Suche „Wo ist …?“, Packliste pro Reise mit Extras.
+- **Eintragsarten im Tagebuch:** Stellplatz (Campingplatz, Stellplatz, frei stehen), Sehenswertes,
+  Museum, Wanderung (Strecke, Höhenmeter, Dauer, GPX-Datei), Baden (See, Meer, Freibad …),
+  Café / Restaurant, Spielplatz & Kinder, Tankstelle, Ver- und Entsorgung, Einkauf, Pause,
+  Fähre & Maut, Werkstatt, Wäsche, Notiz. Bei Stellplatz, Baden, Café / Restaurant, Museum,
+  Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
+  passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen.
 - **Mehr:** Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
-  (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen.
+  (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen, außerdem:
+  - *Wetter* am aktuellen Standort bzw. letzten Stellplatz (Open-Meteo, braucht Internet).
+  - *Länderinfos:* Tempolimits, Promillegrenze, Maut, Pflichtausstattung, Notruf und Tipps für die
+    Länder der Reise. Ohne Gewähr – vor der Fahrt beim ADAC bzw. Auswärtigen Amt prüfen (Links in der App).
+  - *Dokumente & Notfall:* Ausweise, Versicherung usw. mit Foto und Ablaufdatum (nur Verwalter
+    sehen die Dokumente). Notfallkontakte und medizinische Infos sehen alle.
+  - *Fotoalbum* je Reise oder als Jahresrückblick.
+  - *Kochen:* Rezepte für die Campingküche, Zutaten mit einem Tipp auf die Einkaufsliste.
+  - *Autarkie:* Füllstand Wasser, Gas und Strom mit Schätzung der Resttage. Ein Eintrag
+    „Ver- und Entsorgung“ mit Häkchen „Wasser getankt“ füllt den Wassertank wieder auf.
+  - *Spiele & Co:* Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
+    mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
+    Länder-Sticker und ein Link zu eurem Brettspieleportal. Kennzeichen-Daten: Senatsverwaltung
+    Berlin, CC BY 3.0.
 - **Karte bearbeiten** (Stift-Knopf auf der Karte):
   - *Orte:* auf die Karte tippen fügt nachträglich einen Stellplatz, Sehenswertes, eine Tankstelle,
     Ver- und Entsorgung, einen Einkauf, eine Pause oder eine Notiz ein. Datum und Uhrzeit werden so

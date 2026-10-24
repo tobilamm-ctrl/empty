@@ -91,7 +91,7 @@ export default function installMapEdit(app) {
 
   /* ---------- Strecke zeichnen und korrigieren ---------- */
 
-  const tripTracks = () => S.tracks.filter(x => x.tripId === currentTrip().id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const tripTracks = () => S.tracks.filter(x => x.tripId === currentTrip().id && x.kind !== 'hike').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   const trackOfTrip = () => (tripTracks().find(x => x.id === ed.lastId) || tripTracks()[0] || null);
 
   function startTrack(tr) {

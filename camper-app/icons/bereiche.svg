@@ -62,6 +62,42 @@
 <path d="M500 175 v35 M590 175 v35" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M510 300 l18 18 l36 -40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/>
 <path d="M490 370 h110 M490 405 h70" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/></symbol>
+<symbol id="b-wetter" viewBox="-6 120 666 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<circle cx="560" cy="230" r="44" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M560 160 v-22 M610 180 l15 -15 M630 230 h22 M510 180 l-15 -15" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M470 400 Q 465 345 515 340 Q 525 300 570 305 Q 615 305 622 350 Q 650 355 648 385 Q 645 410 615 410 L 490 410 Q 470 410 470 400 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="b-laender" viewBox="-6 120 654 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<path d="M545 460 V 170" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/>
+<path d="M475 190 H 615 L 640 215 L 615 240 H 475 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M615 270 H 475 L 450 295 L 475 320 H 615 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M500 215 h70 M495 295 h80" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<path d="M505 460 h80" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="b-dokumente" viewBox="-6 120 654 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<rect x="465" y="190" width="150" height="210" rx="14" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="540" cy="270" r="38" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+<path d="M502 270 h76 M540 232 c-22 22 -22 54 0 76 M540 232 c22 22 22 54 0 76" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/>
+<path d="M495 345 h90 M510 370 h60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<circle cx="610" cy="420" r="30" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M610 404 v32 M594 420 h32" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/></symbol>
+<symbol id="b-album" viewBox="-6 120 660 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<g transform="rotate(-10 520 330)"><rect x="455" y="230" width="120" height="140" rx="6" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><rect x="472" y="247" width="86" height="80" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/></g>
+<g transform="rotate(8 580 330)"><rect x="515" y="250" width="120" height="140" rx="6" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><rect x="532" y="267" width="86" height="80" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<path d="M540 340 L560 312 L578 330 L592 316 L612 340" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/><circle cx="600" cy="285" r="7" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/></g></symbol>
+<symbol id="b-kochen" viewBox="-6 120 651 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<path d="M520 230 q -15 -20 0 -40 q 15 -20 0 -40 M560 230 q -15 -20 0 -40 q 15 -20 0 -40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<path d="M470 270 H 615 V 360 Q 615 390 585 390 H 500 Q 470 390 470 360 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M455 270 H 630 M470 295 H 448 M615 295 H 637" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M490 420 H 595 M505 420 L495 455 M580 420 L590 455 M520 405 L515 420 M565 405 L570 420" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="b-autarkie" viewBox="-6 120 649 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<path d="M510 180 C 510 180 460 250 460 290 a50 50 0 0 0 100 0 C 560 250 510 180 510 180 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M485 295 a25 25 0 0 0 25 25" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<rect x="545" y="300" width="90" height="155" rx="10" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="570" y="285" width="40" height="18" rx="4" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+<path d="M565 410 h50 M565 375 h50 M565 340 h50" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/></symbol>
+<symbol id="b-spiele" viewBox="-6 120 665 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<g transform="rotate(-12 510 380)"><rect x="455" y="325" width="110" height="110" rx="18" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="485" cy="355" r="10" fill="currentColor"/><circle cx="510" cy="380" r="10" fill="currentColor"/><circle cx="535" cy="405" r="10" fill="currentColor"/></g>
+<g transform="rotate(14 590 260)"><rect x="540" y="210" width="100" height="100" rx="16" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="565" cy="235" r="9" fill="currentColor"/><circle cx="615" cy="235" r="9" fill="currentColor"/><circle cx="565" cy="285" r="9" fill="currentColor"/><circle cx="615" cy="285" r="9" fill="currentColor"/></g></symbol>
 <symbol id="b-mehr" viewBox="-6 120 639 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
 <path d="M470 260 Q 470 200 545 200 Q 625 200 625 260 Q 625 320 545 320 L505 320 L480 350 L485 315 Q 470 300 470 260 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="510" cy="262" r="10" fill="currentColor"/><circle cx="548" cy="262" r="10" fill="currentColor"/><circle cx="586" cy="262" r="10" fill="currentColor"/></symbol>

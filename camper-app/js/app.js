@@ -2,6 +2,8 @@ import { SyncStore, api, newId } from './store.js';
 import installMore from './mehr.js';
 import installMapEdit from './kartenedit.js';
 import installTestdaten from './testdaten.js';
+import installExtras from './extras.js';
+import installSpiele from './spiele.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -27,23 +29,56 @@ const ICONS = {
   route: '<path d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  museum: '<path d="M3 9 12 4l9 5M4 9h16M5 19h14M3 21h18M6 9v10M10 9v10M14 9v10M18 9v10"/>',
+  wanderung: '<circle cx="13" cy="4.5" r="1.8"/><path d="M11 21l2-6-2.5-2.5L12 8l3 3 3 1M10.5 12.5 8 21M12 8l-3.5 2L7 14M17 9v12"/>',
+  baden: '<path d="M2 17c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M2 21c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/><circle cx="16" cy="6" r="2"/><path d="m6 13 4-5 3 2 3-1"/>',
+  restaurant: '<path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 21V3c-2 1.5-3 4-3 7h3"/>',
+  kinder: '<path d="M12 3a5 6 0 0 1 5 6c0 3-2.5 5.5-5 5.5S7 12 7 9a5 6 0 0 1 5-6zM12 14.5l-1 1.5h2zM12 16c0 2.5-2 3-2 5"/>',
+  faehre: '<path d="M3 15h18l-2.5 4.5h-13zM6 15v-4h12v4M9 11V7h5v4M11 7V4"/><path d="M2 21.5c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1"/>',
+  werkstatt: '<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 0-2-2zM4 20l3-3"/>',
+  waesche: '<path d="M8 3 4 6l2 3 2-1v13h8V8l2 1 2-3-4-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3z"/>',
 };
 const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
-// Eintragsarten: was das Formular zeigt (Kosten, Bewertung, Ausstattung, Tankdaten) und wohin Kosten gebucht werden
+// Eintragsarten: was das Formular zeigt (Kosten, Bewertung, Ausstattung, Tankdaten, Zusatzfelder),
+// wohin Kosten gebucht werden (cost = Kategorie der Kasse) und in welcher Tagebuch-Gruppe sie stehen.
+// Zusatzfelder (extras): options = Auswahl, num = Zahl, check = Häkchen; gespeichert in entry.extra
 const TYPES = {
-  stellplatz: { label: 'Stellplatz', many: 'Stellplätze', hint: 'Hier übernachten wir', cost: 'Stellplatz', rating: true, features: true },
-  sight: { label: 'Sehenswert', many: 'Sehenswertes', hint: 'Ausflug, Aussicht, Lokal', cost: 'Eintritt', rating: true },
-  tank: { label: 'Tankstelle', many: 'Tankstopps', hint: 'Liter und Betrag ins Tankbuch', fuel: true, minor: true },
-  service: { label: 'Ver- & Entsorgung', many: 'Ver- & Entsorgung', hint: 'Wasser, Toilette, Grauwasser', cost: 'Stellplatz', rating: true, minor: true },
-  einkauf: { label: 'Einkauf', many: 'Einkäufe', hint: 'Supermarkt, Markt, Bäcker', cost: 'Lebensmittel', minor: true },
-  pause: { label: 'Pause', many: 'Pausen', hint: 'Rast, Café, Mittag', cost: 'Essen gehen', rating: true, minor: true },
+  stellplatz: { label: 'Stellplatz', many: 'Stellplätze', hint: 'Hier übernachten wir', cost: 'Stellplatz', rating: true, features: true,
+    extras: [{ key: 'stay', label: 'Übernachtung', options: ['Campingplatz', 'Stellplatz', 'Frei stehen'] }] },
+  sight: { label: 'Sehenswert', many: 'Sehenswertes', hint: 'Ausflug, Aussicht, Altstadt', cost: 'Eintritt', rating: true, group: 'erleben' },
+  museum: { label: 'Museum', many: 'Museen', hint: 'Ausstellung, Schloss, Kirche', cost: 'Eintritt', rating: true, group: 'erleben' },
+  wanderung: { label: 'Wanderung / Radtour', many: 'Touren', hint: 'Länge, Höhenmeter, Strecke', rating: true, group: 'erleben', gpx: true,
+    extras: [{ key: 'mode', label: 'Unterwegs', options: ['zu Fuß', 'mit dem Rad'] }, { key: 'km', label: 'Länge in km', num: true },
+      { key: 'up', label: 'Höhenmeter', num: true }, { key: 'hours', label: 'Dauer in Stunden', num: true }] },
+  baden: { label: 'Baden', many: 'Baden', hint: 'See, Meer, Freibad', cost: 'Eintritt', rating: true, group: 'erleben',
+    extras: [{ key: 'where', label: 'Wo?', options: ['See', 'Meer', 'Fluss', 'Freibad'] }, { key: 'water', label: 'Wasser in °C', num: true }] },
+  restaurant: { label: 'Café / Restaurant', many: 'Cafés & Restaurants', hint: 'Essen gehen, Kaffee, Eis', cost: 'Essen gehen', rating: true, group: 'erleben', minor: true },
+  kinder: { label: 'Kinder-Highlight', many: 'Kinder-Highlights', hint: 'Spielplatz, Tierpark, Freizeitpark', cost: 'Eintritt', rating: true, group: 'erleben' },
+  tank: { label: 'Tankstelle', many: 'Tankstopps', hint: 'Liter und Betrag ins Tankbuch', fuel: true, minor: true, group: 'unterwegs' },
+  service: { label: 'Ver- & Entsorgung', many: 'Ver- & Entsorgung', hint: 'Wasser, Toilette, Grauwasser', cost: 'Stellplatz', rating: true, minor: true, group: 'unterwegs',
+    extras: [{ key: 'water', label: 'Frischwasser aufgefüllt', check: true }] },
+  einkauf: { label: 'Einkauf', many: 'Einkäufe', hint: 'Supermarkt, Markt, Bäcker', cost: 'Lebensmittel', minor: true, group: 'unterwegs' },
+  pause: { label: 'Pause', many: 'Pausen', hint: 'Rast, Picknick, Aussicht', cost: 'Essen gehen', rating: true, minor: true, group: 'unterwegs' },
+  faehre: { label: 'Fähre, Maut & Grenze', many: 'Fähre, Maut & Grenze', hint: 'Überfahrt, Mautstelle, Vignette', cost: 'Fähre', minor: true, group: 'unterwegs',
+    extras: [{ key: 'kind', label: 'Was?', options: ['Fähre', 'Maut', 'Vignette', 'Grenze'] }],
+    catOf: x => (x.kind === 'Fähre' || !x.kind ? 'Fähre' : 'Maut & Vignette') },
+  werkstatt: { label: 'Werkstatt / Panne', many: 'Werkstatt', hint: 'Reparatur, Pannenhilfe', cost: 'Werkstatt', minor: true, group: 'unterwegs' },
+  waesche: { label: 'Wäsche', many: 'Wäsche', hint: 'Waschsalon, Waschmaschine', cost: 'Wäsche', minor: true, group: 'unterwegs' },
   notiz: { label: 'Notiz', many: 'Notizen', hint: 'Gedanken zum Tag' },
 };
-// Unterwegs-Stopps werden im Tagebuch-Filter zusammengefasst
 const MINOR = Object.keys(TYPES).filter(k => TYPES[k].minor);
+const typesIn = group => Object.keys(TYPES).filter(k => TYPES[k].group === group);
+const costCat = (type, extra = {}) => (TYPES[type].catOf ? TYPES[type].catOf(extra) : TYPES[type].cost);
+// Zusatzfelder eines Eintrags lesbar, z. B. „12 km, 650 Höhenmeter“
+function extraText(e) {
+  const x = e.extra || {};
+  return (TYPES[e.type].extras || []).filter(f => x[f.key] !== undefined && x[f.key] !== '' && x[f.key] !== false && x[f.key] !== 0)
+    .map(f => (f.check ? f.label : f.options ? x[f.key] : `${f.label.replace(/ in .*$/, '')}: ${String(x[f.key]).replace('.', ',')}${f.label.includes('°C') ? ' °C' : f.label.includes(' km') ? ' km' : ''}`))
+    .join(', ');
+}
 const FEATURES = ['Strom', 'Wasser', 'Entsorgung', 'WC', 'Dusche', 'Ruhig', 'Eben', 'Aussicht', 'Kostenlos'];
-const CATS = ['Stellplatz', 'Sprit', 'Lebensmittel', 'Essen gehen', 'Eintritt', 'Maut & Vignette', 'Fähre', 'Ausrüstung', 'Sonstiges'];
+const CATS = ['Stellplatz', 'Sprit', 'Lebensmittel', 'Essen gehen', 'Eintritt', 'Maut & Vignette', 'Fähre', 'Werkstatt', 'Wäsche', 'Ausrüstung', 'Sonstiges'];
 const SETTLE = 'Ausgleich';
 
 /* ---------- Zustand ---------- */
@@ -51,6 +86,7 @@ const SETTLE = 'Ausgleich';
 const S = {
   trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], lists: [], listItems: [], meta: [],
   fuel: [], places: [], checklists: [], checkstate: [], deadlines: [], tracks: [],
+  documents: [], recipes: [], plates: [], games: [],
 };
 const WATCHED = Object.keys(S);
 let store = null;
@@ -177,7 +213,7 @@ function tripStats(t) {
   let dist = 0;
   for (let i = 1; i < stops.length; i++) dist += km(stops[i - 1], stops[i]);
   // Mit importierter GPX-Strecke zählt die tatsächlich gefahrene Strecke
-  const tracks = S.tracks.filter(x => x.tripId === t.id);
+  const tracks = S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
   const driven = tracks.length > 0;
   if (driven) dist = tracks.reduce((sum, x) => sum + (x.km || 0), 0);
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
@@ -187,7 +223,7 @@ function tripStats(t) {
   return {
     es, stops, dist, driven, cost, days, firstDay,
     nights: es.filter(e => e.type === 'stellplatz').length,
-    sights: es.filter(e => e.type === 'sight').length,
+    sights: es.filter(e => e.type === 'sight' || e.type === 'museum').length,
   };
 }
 
@@ -240,14 +276,15 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
   <div class="ph-text"><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${art(key)}
 </header>`;
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
-const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung'];
+const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -364,6 +401,7 @@ function entryPopup(e, t) {
     ${photos.length ? `<span class="popup-photos">${photos.map(p => `<img src="${p.thumb}" alt="">`).join('')}${e.photos.length > 3 ? `<b>+${e.photos.length - 3}</b>` : ''}</span>` : ''}
     ${e.text ? `<span class="popup-text">${esc(e.text)}</span>` : ''}
     ${(e.features || []).length ? `<span class="popup-feats">${e.features.map(esc).join(', ')}</span>` : ''}
+    ${extraText(e) ? `<span class="popup-feats">${esc(extraText(e))}</span>` : ''}
     <button class="link" data-action="open-entry" data-id="${e.id}">Eintrag öffnen</button>
   </div>`;
 }
@@ -373,7 +411,7 @@ function drawRoute(t, emphasis) {
   const stops = tripEntries(t).filter(hasPos).sort(byDate);
   const pts = stops.map(e => [e.lat, e.lng]);
   // Mit GPX-Strecke zeigt die Linie zwischen den Stopps nur noch die Reihenfolge (gestrichelt)
-  const tracked = S.tracks.some(x => x.tripId === t.id);
+  const tracked = S.tracks.some(x => x.tripId === t.id && x.kind !== 'hike');
   if (pts.length > 1 && !tracked) {
     L.polyline(pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
     L.polyline(pts, { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);
@@ -492,10 +530,10 @@ VIEWS.tagebuch = () => {
   </div>`;
   if (mode === 'planung') return `${installHint()}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
   const filter = ui.diaryFilter;
-  const list = st.es.filter(e => filter === 'alle' || e.type === filter || (filter === 'unterwegs' && MINOR.includes(e.type))).sort(byDate).reverse();
+  const list = st.es.filter(e => filter === 'alle' || e.type === filter || TYPES[e.type].group === filter).sort(byDate).reverse();
 
-  const label = f => ({ alle: 'Alles', unterwegs: 'Unterwegs' })[f] || TYPES[f].many;
-  const chips = ['alle', 'stellplatz', 'sight', 'unterwegs', 'notiz'].map(f =>
+  const label = f => ({ alle: 'Alles', erleben: 'Erleben', unterwegs: 'Unterwegs' })[f] || TYPES[f].many;
+  const chips = ['alle', 'stellplatz', 'erleben', 'unterwegs', 'notiz'].map(f =>
     `<button class="chip${filter === f ? ' on' : ''}" data-action="diary-filter" data-f="${f}">${label(f)}</button>`).join('');
 
   const days = {};
@@ -524,6 +562,7 @@ function stopItem(e) {
     e.place ? esc(e.place) : '',
     e.rating ? '★'.repeat(e.rating) : '',
     e.cost ? money(e.cost) : '',
+    extraText(e) ? esc(extraText(e)) : '',
   ].filter(Boolean);
   return `<li class="stop stop-${e.type}">
     <button data-action="open-entry" data-id="${e.id}">
@@ -580,6 +619,17 @@ function entryForm(e = {}) {
     </div>
     <label class="field"><span>Was war los?</span><textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
     <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
+    ${Object.entries(TYPES).filter(([, v]) => v.extras).map(([k, v]) => `<div class="extras" data-extras="${k}">
+      ${v.extras.map(f => {
+        const val = ((e.type === k && e.extra) || {})[f.key];
+        const name = `x_${k}_${f.key}`;
+        if (f.check) return `<label class="check"><input type="checkbox" name="${name}"${val ? ' checked' : ''}><span>${f.label}</span></label>`;
+        if (f.options) return `<div class="field"><span>${f.label}</span><div class="chips wrap">${f.options.map(o =>
+          `<label class="chip"><input type="radio" name="${name}" value="${o}"${val === o ? ' checked' : ''}><span>${o}</span></label>`).join('')}</div></div>`;
+        return `<label class="field half"><span>${f.label}</span><input name="${name}" inputmode="decimal" value="${val != null ? String(val).replace('.', ',') : ''}"></label>`;
+      }).join('')}
+      ${v.gpx ? `<label class="ghost file">GPX-Strecke der Tour${e.id && S.tracks.some(t => t.entryId === e.id) ? ' ersetzen' : ''}<input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" data-action="hike-gpx"></label><p class="sub" id="hikeInfo"></p>` : ''}
+    </div>`).join('')}
     <div class="field" data-show="features"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
     ${canCash() ? `<div data-show="fuel">
       <div class="row2">
@@ -659,6 +709,7 @@ function applyType(form) {
   const type = form.querySelector('[name=type]:checked').value;
   form.dataset.type = type;
   form.querySelectorAll('[data-show]').forEach(el => { el.hidden = !TYPES[type][el.dataset.show]; });
+  form.querySelectorAll('[data-extras]').forEach(el => { el.hidden = el.dataset.extras !== type; });
 }
 
 function openEntryForm(e, opts = {}) {
@@ -691,6 +742,10 @@ function submitEntry(form) {
     rating: TYPES[type].rating ? +fd.get('rating') || 0 : 0,
     features: TYPES[type].features ? fd.getAll('feat') : [],
     cost: TYPES[type].cost ? num(fd.get('cost')) : 0,
+    extra: Object.fromEntries((TYPES[type].extras || []).map(f => {
+      const v = fd.get(`x_${type}_${f.key}`);
+      return [f.key, f.check ? !!v : f.num ? (v ? num(v) : '') : v || ''];
+    })),
   };
 
   // Fotos: neue als eigene Dokumente speichern, im Eintrag nur Vorschaubilder
@@ -706,7 +761,7 @@ function submitEntry(form) {
       ...(linked || { id: newId(), tripId: e.tripId, paidBy: me(), split: defaultSplit(), entryId: e.id }),
       amount: e.cost,
       date: e.date.slice(0, 10),
-      cat: TYPES[e.type].cost,
+      cat: costCat(e.type, e.extra),
       note: e.title || e.place,
     });
   } else if (linked && (!fd.get('toKasse') || !e.cost)) {
@@ -731,6 +786,7 @@ function entryView(e) {
     ${e.text ? `<p class="prose">${esc(e.text).replace(/\n/g, '<br>')}</p>` : ''}
     ${e.rating ? `<p class="rating" aria-label="${e.rating} von 5">${'★'.repeat(e.rating)}<span>${'★'.repeat(5 - e.rating)}</span></p>` : ''}
     ${feats ? `<div class="chips wrap">${feats}</div>` : ''}
+    ${extraText(e) ? `<p class="extra-line">${esc(extraText(e))}</p>` : ''}
     <dl class="facts-list">
       ${e.cost ? `<div><dt>Kosten</dt><dd>${money(e.cost)}</dd></div>` : ''}
       ${hasPos(e) ? `<div><dt>Position</dt><dd>${posLabel(e)}</dd></div>` : ''}
@@ -1946,13 +2002,16 @@ const APP = {
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
-  mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers,
+  mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id,
+  session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
 };
 installMore(APP);
 installMapEdit(APP);
 installTestdaten(APP);
+installExtras(APP);
+installSpiele(APP);
 
 start();

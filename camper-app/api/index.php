@@ -6,8 +6,9 @@ declare(strict_types=1);
 
 $CFG = require __DIR__ . '/config.php';
 const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta', 'photos',
-    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks'];
+    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games'];
 const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
+const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
 const TOKEN_DAYS = 400;
 const COOKIE = 'lammping';
 
@@ -230,7 +231,8 @@ case 'sync':
     $u = requireUser();
     $crew = requireCrew($u, $_GET['crew'] ?? '');
     $since = (int) ($_GET['since'] ?? 0);
-    $hide = canCash($u) ? '' : " AND coll NOT IN ('" . implode("', '", CASH_COLLS) . "')";
+    $hidden = array_merge(canCash($u) ? [] : CASH_COLLS, (int) $u['is_admin'] ? [] : ADMIN_COLLS);
+    $hide = $hidden ? " AND coll NOT IN ('" . implode("', '", $hidden) . "')" : '';
     $rows = all("SELECT coll, id, data, deleted, rev FROM docs WHERE crew_id = ? AND rev > ?$hide ORDER BY rev LIMIT 2000", [$crew, $since]);
     $docs = array_map(fn($r) => [
         'coll' => $r['coll'], 'id' => $r['id'], 'rev' => (int) $r['rev'],
@@ -251,6 +253,7 @@ case 'push':
         foreach ($changes as $c) {
             if (!in_array($c['coll'] ?? '', COLLS, true) || !validId($c['id'] ?? null)) continue;
             if (in_array($c['coll'], CASH_COLLS, true) && !canCash($u)) continue;
+            if (in_array($c['coll'], ADMIN_COLLS, true) && !(int) $u['is_admin']) continue;
             $data = $c['data'] ?? null;
             if ($data !== null && !is_array($data)) continue;
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen
@@ -275,6 +278,9 @@ case 'push':
 
 case 'photo':
     $u = requireUser();
+    // Bilder von Dokumenten (Kennung „doc-…“) gibt es nur für Verwalter
+    $pid = $method === 'POST' ? ($body['id'] ?? '') : ($_GET['id'] ?? '');
+    if (str_starts_with((string) $pid, 'doc-') && !(int) $u['is_admin']) fail('Nur für Verwalter', 403);
     if ($method === 'POST') {
         $crew = requireCrew($u, $body['crew'] ?? '');
         $id = $body['id'] ?? '';

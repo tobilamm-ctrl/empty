@@ -1,8 +1,8 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'lammping-9';
+const VERSION = 'lammping-10';
 const SHELL = [
-  './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/mehr.js', 'js/kartenedit.js', 'js/testdaten.js',
+  './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/mehr.js', 'js/kartenedit.js', 'js/testdaten.js', 'js/extras.js', 'js/spiele.js', 'js/kfz.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png',
 ];

@@ -109,17 +109,24 @@ export default function installTestdaten(app) {
       [1, '09:30', 'einkauf', 'Wochenmarkt Kaltern', 'Kaltern', 46.4150, 11.2430, 'IT', { cost: 23.8 }],
       [1, '14:30', 'service', 'Ver- und Entsorgung Arco', 'Arco', 45.9180, 10.8870, 'IT', { cost: 2, rating: 4 }],
       [1, '17:45', 'stellplatz', 'Stellplatz Riva del Garda', 'Riva del Garda', 45.8858, 10.8410, 'IT', { cost: 25, rating: 3, features: ['Strom', 'Entsorgung'], text: 'Laut, aber nah an der Altstadt.' }],
+      [1, '11:30', 'museum', 'MAG Museum Riva', 'Riva del Garda', 45.8860, 10.8440, 'IT', { cost: 6, rating: 3, text: 'Kleines Museum in der Wasserburg.' }],
+      [1, '20:00', 'restaurant', 'Pizzeria am Hafen', 'Riva del Garda', 45.8850, 10.8425, 'IT', { cost: 46.5, rating: 4 }],
+      [2, '08:30', 'faehre', 'Fähre Malcesine nach Limone', 'Malcesine', 45.7650, 10.8070, 'IT', { cost: 21.6, extra: { kind: 'Fähre' } }],
       [2, '10:00', 'sight', 'Seilbahn Monte Baldo', 'Malcesine', 45.7600, 10.8130, 'IT', { cost: 50, rating: 5, photo: ['Monte Baldo', 200], text: 'Drehende Gondel, oben klare Sicht über den ganzen See.' }],
       [2, '19:00', 'stellplatz', 'Agricamping bei Malcesine', 'Malcesine', 45.7700, 10.8200, 'IT', { cost: 28, rating: 5, features: ['Ruhig', 'Aussicht', 'Strom'], photo: ['Agricamping', 30], text: 'Olivenhain, eigene Eier zum Frühstück.' }],
       [3, '10:00', 'notiz', 'Regentag', 'Malcesine', 45.7660, 10.8100, 'IT', { text: 'Den ganzen Vormittag Regen. Karten gespielt, Fotos sortiert.' }],
+      [3, '13:00', 'wanderung', 'Ponale-Weg', 'Riva del Garda', 45.8700, 10.8300, 'IT', { rating: 5, extra: { mode: 'zu Fuß', km: 7.5, up: 380, hours: 3 }, text: 'Alte Straße hoch über dem See, toller Blick.' }],
+      [3, '17:30', 'waesche', 'Waschsalon Malcesine', 'Malcesine', 45.7630, 10.8100, 'IT', { cost: 9 }],
       [3, '15:00', 'pause', 'Café am Hafen', 'Malcesine', 45.7642, 10.8090, 'IT', { cost: 12.5, rating: 4 }],
       [4, '09:40', 'tank', 'Tanken Peschiera', 'Peschiera del Garda', 45.4390, 10.6920, 'IT', { fuel: { liters: 41.7, amount: 74.1, odo: 84560, full: true } }],
       [4, '11:00', 'sight', 'Scaligerburg Sirmione', 'Sirmione', 45.4920, 10.6080, 'IT', { cost: 12, rating: 4 }],
+      [4, '14:30', 'baden', 'Lido delle Bionde', 'Sirmione', 45.4960, 10.6110, 'IT', { rating: 4, extra: { where: 'See', water: 22 } }],
+      [5, '09:30', 'kinder', 'Gardaland', 'Castelnuovo del Garda', 45.4550, 10.7136, 'IT', { cost: 120, rating: 5, text: 'Den ganzen Vormittag Achterbahn.' }],
       [4, '18:00', 'stellplatz', 'Camping Sirmione', 'Sirmione', 45.4850, 10.6050, 'IT', { cost: 38, rating: 3, features: ['Strom', 'WC', 'Dusche'] }],
       [5, '11:00', 'sight', 'Arena von Verona', 'Verona', 45.4390, 10.9940, 'IT', { cost: 20, rating: 5 }],
       [5, '16:00', 'notiz', 'Heimweg', 'Verona', 45.4384, 10.9916, 'IT', { text: 'Schön war es. Nächstes Mal mit Fähre über den See.' }],
     ];
-    const CAT = { stellplatz: 'Stellplatz', sight: 'Eintritt', service: 'Stellplatz', einkauf: 'Lebensmittel', pause: 'Essen gehen' };
+
     E.forEach(([d, time, type, title, place, lat, lng, country, x], n) => {
       const id = `demo-e${n}`;
       let photos = [];
@@ -130,10 +137,10 @@ export default function installTestdaten(app) {
       }
       save('entries', {
         ...D, id, tripId: trip, type, title, place, lat, lng, country, date: `${day(d)}T${time}`,
-        text: x.text || '', rating: x.rating || 0, features: x.features || [], cost: x.cost || 0, photos,
+        text: x.text || '', rating: x.rating || 0, features: x.features || [], cost: x.cost || 0, photos, extra: x.extra || {},
       });
       if (x.cost && canCash()) {
-        save('expenses', { ...D, id: `demo-x${n}`, tripId: trip, entryId: id, amount: x.cost, date: day(d), cat: CAT[type], note: title, paidBy: payer(n), split: defaultSplit() });
+        save('expenses', { ...D, id: `demo-x${n}`, tripId: trip, entryId: id, amount: x.cost, date: day(d), cat: app.costCat(type, x.extra), note: title, paidBy: payer(n), split: defaultSplit() });
       }
       if (x.fuel && canCash()) {
         save('fuel', { ...D, id: `demo-f${n}`, tripId: trip, entryId: id, date: day(d), place, lat, lng, ...x.fuel });
@@ -176,6 +183,11 @@ export default function installTestdaten(app) {
     save('places', { ...D, id: 'demo-p2', kind: 'stellplatz', name: 'Test: Agricamping bei Malcesine', place: 'Malcesine', lat: 45.77, lng: 10.82, country: 'IT', tripId: null, fav: true, rating: 5, entryId: 'demo-e8' });
     [['stellplatz', 'Test: Stellplatz Fehmarn', 'Fehmarn', 54.44, 11.19, 60], ['poi', 'Test: Lübecker Altstadt', 'Lübeck', 53.8655, 10.6866, 61], ['stellplatz', 'Test: Stellplatz Warnemünde', 'Rostock', 54.178, 12.083, 62]]
       .forEach(([kind, name, place, lat, lng, d], n) => save('places', { ...D, id: `demo-pp${n}`, kind, name, place, lat, lng, country: 'DE', tripId: plan, planDate: dayOffset(d), fav: false, done: false, rating: 0 }));
+
+    // Ein paar gesammelte Kennzeichen je Person
+    members().forEach((m, k) => ['M', 'RO', 'TÖL', 'A', 'HH', 'S', 'B', 'GAP'].slice(0, 3 + k * 2).forEach(code =>
+      save('plates', { ...D, id: `demo-pl-${m.id}-${code}`, by: m.id, set: 'de', code, at: Date.now() - k * 60000, tripId: trip })));
+    ['I', 'NL', 'CH'].forEach(code => save('plates', { ...D, id: `demo-pl-${me()}-int-${code}`, by: me(), set: 'int', code, at: Date.now(), tripId: trip }));
 
     // Frist mit Erinnerung
     save('deadlines', { ...D, id: 'demo-d1', title: 'Test: Gasprüfung', due: dayOffset(20), repeat: 24, note: 'Beispiel für die Erinnerung', done: false });

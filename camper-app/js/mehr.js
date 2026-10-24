@@ -27,6 +27,13 @@ export default function installMore(app) {
     { route: 'checklisten', art: 'check', title: 'Checklisten', text: 'Abfahrt und Ankunft' },
     { route: 'fahrzeug', art: 'fahrzeug', title: 'Fahrzeug', text: 'Steckbrief und Fristen' },
     { route: 'statistik', art: 'statistik', title: 'Statistik', text: 'Eure Reisen in Zahlen' },
+    { route: 'wetter', art: 'wetter', title: 'Wetter', text: 'Vorhersage für Standort und Ziele' },
+    { route: 'laender', art: 'laender', title: 'Länderinfos', text: 'Maut, Tempo, Pflichtausstattung' },
+    { route: 'dokumente', art: 'dokumente', title: 'Dokumente & Notfall', text: 'Ausweise, Kontakte, Notruf', alt: 'Notfall' },
+    { route: 'album', art: 'album', title: 'Fotoalbum', text: 'Galerie und Jahresrückblick' },
+    { route: 'kochen', art: 'kochen', title: 'Kochen', text: 'Rezepte und Einkaufsliste' },
+    { route: 'autarkie', art: 'autarkie', title: 'Autarkie', text: 'Wasser, Gas und Strom' },
+    { route: 'spiele', art: 'spiele', title: 'Spiele & Co', text: 'Kennzeichen, Bingo, Quiz' },
     { route: 'reisen', art: 'reisen', title: 'Reisen', text: 'Alle Reisen und Archiv' },
     { route: 'einstellungen', art: 'einstellungen', title: 'Einstellungen', text: 'Crew, Abgleich, Darstellung' },
   ];
@@ -35,8 +42,9 @@ export default function installMore(app) {
     const due = dueCount();
     return `${pageHead('mehr', 'Mehr')}
       <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => !t.cash || canCash()).map(t => `<a class="tile" href="#/${t.route}">
-        ${art(t.art)}<b>${t.title}</b><small>${t.text}</small>
+        ${art(t.art)}<b>${t.alt && !(app.session().user.isAdmin) ? t.alt : t.title}</b><small>${t.text}</small>
         ${t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>` : ''}
+        ${t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : ''}
       </a>`).join('')}</nav>`;
   };
 
@@ -311,10 +319,32 @@ export default function installMore(app) {
   FORMS.entry = form => {
     const arrive = form.dataset.arrive;
     const fuel = readFuel(form);
+    const hike = pendingHike && pendingHike.form === form && form.dataset.type === 'wanderung' ? pendingHike : null;
+    pendingHike = null;
     const e = saveEntry(form);
     const p = arrive && S.places.find(x => x.id === arrive);
     if (p) save('places', { ...p, done: true, doneAt: Date.now() });
     if (e && fuel) saveFuelFromEntry(e, fuel);
+    // GPX einer Wanderung/Radtour: eigene Strecke, zählt nicht als gefahrene Kilometer
+    if (e && hike) {
+      S.tracks.filter(t => t.entryId === e.id).forEach(t => remove('tracks', t.id));
+      save('tracks', { id: newId(), kind: 'hike', entryId: e.id, tripId: e.tripId, name: e.title || hike.name, km: hike.km, pts: encodePts(hike.pts), createdAt: Date.now() });
+    }
+  };
+
+  let pendingHike = null;
+  CHANGES['hike-gpx'] = async el => {
+    const f = el.files[0];
+    el.value = '';
+    if (!f) return;
+    try {
+      const g = parseGpx(await f.text());
+      const form = el.closest('form');
+      pendingHike = { form, ...g };
+      document.getElementById('hikeInfo').textContent = `Strecke „${g.name || f.name}“ übernommen: ${fmtKm(g.km)}`;
+      const kmField = form.querySelector('[name=x_wanderung_km]');
+      if (kmField && !kmField.value) kmField.value = String(g.km).replace('.', ',');
+    } catch (err) { toast(err.message); }
   };
 
   // Tankstelle im Tagebuch: Liter und Betrag landen im Tankbuch (und in der Kasse der Reise)
@@ -452,6 +482,11 @@ export default function installMore(app) {
       const pts = decodePts(x.pts);
       if (pts.length < 2) return;
       const color = tripColor(S.trips.find(y => y.id === x.tripId));
+      if (x.kind === 'hike') {
+        // Wanderungen und Radtouren: grün gestrichelt
+        L.polyline(pts, { color: '#3E7B32', weight: 3, dashArray: '6 6' }).bindPopup(`<div class="popup"><strong>${esc(x.name)}</strong><span>Tour, ${fmtKm(x.km)}</span></div>`).addTo(layer);
+        return;
+      }
       L.polyline(pts, { color: '#fff', weight: 7, opacity: 0.85 }).addTo(layer);
       L.polyline(pts, { color, weight: 4 }).bindPopup(`<div class="popup"><strong>${esc(x.name)}</strong><span>${fmtKm(x.km)}</span></div>`).addTo(layer);
       ends.push(pts[0], pts[pts.length - 1], pts[Math.floor(pts.length / 2)]);
@@ -775,6 +810,7 @@ export default function installMore(app) {
     const dist = rows.reduce((s, r) => s + r.st.dist, 0);
     const sights = rows.reduce((s, r) => s + r.st.sights, 0);
     const photos = S.entries.reduce((s, e) => s + (e.photos || []).length, 0);
+    const hikeKm = S.entries.filter(e => e.type === 'wanderung').reduce((s, e) => s + (num((e.extra || {}).km) || 0), 0);
     const countries = [...new Set([...S.entries, ...S.places.filter(p => p.done)].map(x => x.country).filter(Boolean))];
     const years = {};
     rows.forEach(({ t, st }) => {
@@ -795,6 +831,7 @@ export default function installMore(app) {
         <div><b>${sights}</b><span>Sehenswertes</span></div>
         <div><b>${countries.length}</b><span>${countries.length === 1 ? 'Land' : 'Länder'}</span></div>
         <div><b>${photos}</b><span>Fotos</span></div>
+        ${hikeKm ? `<div><b>${fmtKm(hikeKm)}</b><span>gewandert und geradelt</span></div>` : ''}
         ${avg ? `<div><b>${dec(avg)} l</b><span>pro 100 km</span></div>` : ''}
       </div>
       ${countries.length ? `<p class="sub">${countries.map(regionName).sort().join(', ')}</p>` : ''}
