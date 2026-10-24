@@ -234,10 +234,10 @@ main { max-width: 680px; margin: 0 auto; padding: 24px 16px 40px; outline: none;
 /* ---------- Eintrag ---------- */
 
 .types label span { flex-direction: column; gap: 2px; min-height: 58px; font-size: 14px; }
-.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-bottom: 16px; }
-.type-grid label { position: relative; }
+.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); grid-auto-rows: 1fr; gap: 6px; margin-bottom: 16px; }
+.type-grid label { position: relative; display: flex; }
 .type-grid input { position: absolute; opacity: 0; }
-.type-grid span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 62px; padding: 6px 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 13px; text-align: center; line-height: 1.15; color: var(--muted); font-weight: 700; }
+.type-grid span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; flex: 1; min-height: 62px; padding: 6px 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 13px; text-align: center; line-height: 1.15; color: var(--muted); font-weight: 700; }
 .type-grid input:checked + span { border-color: var(--trip); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--trip); }
 .type-grid input:focus-visible + span { outline: 3px solid var(--trip); }
 form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellplatz { display: none; }
@@ -288,7 +288,7 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .sheet-foot.stack { flex-direction: column; align-items: stretch; }
 .sheet-foot.stack .danger { margin-right: 0; }
 
-.here-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.here-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 10px; }
 .here-grid button {
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
   padding: 16px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface);
@@ -337,6 +337,15 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .popup strong { font: 700 16px var(--head); }
 .popup span { color: var(--muted); }
 .popup .link { align-self: flex-start; }
+.popup { max-width: 240px; }
+.popup-kind { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.popup-kind .ic { width: 15px; height: 15px; }
+.popup .popup-stars { color: #E0A21B; letter-spacing: 1px; }
+.popup-photos { display: flex; gap: 4px; align-items: center; margin: 4px 0; }
+.popup-photos img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; }
+.popup-photos b { font-size: 13px; color: var(--muted); }
+.popup-text { color: var(--ink) !important; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.popup-feats { font-size: 13px; }
 
 /* ---------- Listen ---------- */
 
@@ -579,8 +588,8 @@ body.locked .backdrop { display: none; }
 /* Die Landschaft steht rechts auf dem Streckenband, die V-Klasse fährt das Band entlang
    und verschwindet kurz hinter dem Reisenamen. */
 .brandbar { justify-content: space-between; }
-.scenery { position: absolute; left: 0; right: 0; bottom: 3px; height: 44px; overflow: hidden; color: var(--wood); pointer-events: none; }
-.landscape { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 44px; opacity: .7; }
+.scenery { position: absolute; z-index: 2; left: 0; right: 0; bottom: 3px; height: 44px; overflow: hidden; color: var(--wood); pointer-events: none; }
+.landscape { position: absolute; left: var(--land-left, 0); right: 0; bottom: 0; width: calc(100% - var(--land-left, 0px)); height: 44px; opacity: .7; }
 .trip-chip { position: relative; z-index: 1; align-self: flex-start; padding-right: 10px; max-width: calc(100% - 40px); }
 .vklasse { position: absolute; bottom: 0; left: 0; width: 56px; height: 23px; color: #6B4226; animation: drive var(--drive-s, 16s) linear infinite; }
 .vklasse .wheel { animation: roll .6s linear infinite; }

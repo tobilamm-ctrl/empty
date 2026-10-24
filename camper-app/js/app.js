@@ -349,9 +349,21 @@ const pinIcon = (type, color, small) => {
 };
 
 function entryPopup(e, t) {
+  const fuel = S.fuel.find(f => f.entryId === e.id);
+  const facts = [
+    e.place ? esc(e.place) : '',
+    e.cost && canCash() ? money(e.cost) : '',
+    fuel && canCash() ? `${fuel.liters.toLocaleString('de-DE')} l für ${money(fuel.amount)}` : '',
+  ].filter(Boolean).join(', ');
+  const photos = (e.photos || []).slice(0, 3);
   return `<div class="popup">
+    <span class="popup-kind">${icon(e.type)}${TYPES[e.type].label}, ${t ? esc(t.name) + ', ' : ''}${fmtDay(e.date.slice(0, 10))} ${fmtTime(e.date)}</span>
     <strong>${esc(e.title || TYPES[e.type].label)}</strong>
-    <span>${t ? esc(t.name) + ', ' : ''}${fmtDay(e.date.slice(0, 10))}</span>
+    ${facts ? `<span>${facts}</span>` : ''}
+    ${e.rating ? `<span class="popup-stars" aria-label="${e.rating} von 5">${'★'.repeat(e.rating)}</span>` : ''}
+    ${photos.length ? `<span class="popup-photos">${photos.map(p => `<img src="${p.thumb}" alt="">`).join('')}${e.photos.length > 3 ? `<b>+${e.photos.length - 3}</b>` : ''}</span>` : ''}
+    ${e.text ? `<span class="popup-text">${esc(e.text)}</span>` : ''}
+    ${(e.features || []).length ? `<span class="popup-feats">${e.features.map(esc).join(', ')}</span>` : ''}
     <button class="link" data-action="open-entry" data-id="${e.id}">Eintrag öffnen</button>
   </div>`;
 }
@@ -1399,9 +1411,9 @@ if (scenery && 'ResizeObserver' in window) {
     // Gleichmäßiges Tempo von etwa 32 px pro Sekunde, egal wie breit der Bildschirm ist
     scenery.style.setProperty('--drive-s', ((w + 80) / 32 / 0.88).toFixed(1) + 's');
   }).observe(scenery);
-  // Die Landschaft beginnt rechts neben dem Reisenamen
+  // Die Landschaft beginnt rechts neben dem Reisenamen, das Auto fährt die ganze Breite
   const chip = $('#tripChip');
-  new ResizeObserver(() => { scenery.style.left = Math.round(chip.offsetLeft + chip.offsetWidth) + 'px'; }).observe(chip);
+  new ResizeObserver(() => scenery.style.setProperty('--land-left', Math.round(chip.offsetLeft + chip.offsetWidth) + 'px')).observe(chip);
 }
 
 /* ---------- Installieren ---------- */
