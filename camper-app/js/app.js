@@ -1,4 +1,5 @@
 import { SyncStore, api, newId } from './store.js';
+import installMore from './mehr.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -31,7 +32,10 @@ const SETTLE = 'Ausgleich';
 
 /* ---------- Zustand ---------- */
 
-const S = { trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], listItems: [], meta: [] };
+const S = {
+  trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], lists: [], listItems: [], meta: [],
+  fuel: [], places: [], checklists: [], checkstate: [], deadlines: [], tracks: [],
+};
 const WATCHED = Object.keys(S);
 let store = null;
 let session = null;   // { user, crews } vom Server bzw. zuletzt bekannt
@@ -48,6 +52,8 @@ const ui = {
   route: 'karte',
   mapScope: 'trip',
   diaryFilter: 'alle',
+  diaryMode: {},        // je Reise: 'planung' oder 'tagebuch'
+  showPlaces: LS.get('showPlaces', true),
   listTab: LS.get('listTab', 'einkauf'),
   packMode: 'packen',
   packQuery: '',
@@ -154,12 +160,16 @@ function tripStats(t) {
   const stops = es.filter(hasPos).sort(byDate);
   let dist = 0;
   for (let i = 1; i < stops.length; i++) dist += km(stops[i - 1], stops[i]);
+  // Mit importierter GPX-Strecke zählt die tatsächlich gefahrene Strecke
+  const tracks = S.tracks.filter(x => x.tripId === t.id);
+  const driven = tracks.length > 0;
+  if (driven) dist = tracks.reduce((sum, x) => sum + (x.km || 0), 0);
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
   const firstDay = t.start || (es.slice().sort(byDate)[0] || {}).date?.slice(0, 10);
   const lastDay = t.end && t.end < today() ? t.end : today();
   const days = firstDay && firstDay <= lastDay ? Math.round((dayDate(lastDay) - dayDate(firstDay)) / 864e5) + 1 : 0;
   return {
-    es, stops, dist, cost, days, firstDay,
+    es, stops, dist, driven, cost, days, firstDay,
     nights: es.filter(e => e.type === 'stellplatz').length,
     sights: es.filter(e => e.type === 'sight').length,
   };
@@ -184,12 +194,13 @@ function getPos() {
   });
 }
 
-async function placeName(p) {
+// Ortsname und Ländercode (für die Statistik) über OpenStreetMap
+async function placeInfo(p) {
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=de&lat=${p.lat}&lon=${p.lng}`);
     const a = (await r.json()).address || {};
-    return a.village || a.town || a.city || a.municipality || a.hamlet || a.county || '';
-  } catch { return ''; }
+    return { name: a.village || a.town || a.city || a.municipality || a.hamlet || a.county || '', cc: (a.country_code || '').toUpperCase() };
+  } catch { return { name: '', cc: '' }; }
 }
 
 /* ---------- Fotos ---------- */
@@ -203,6 +214,20 @@ async function shrink(file, max, quality) {
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', quality);
 }
+
+/* ---------- Seitenkopf mit Bereichsgrafik ---------- */
+
+// Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
+// Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "mehr": 1.826};
+const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
+const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
+  <div class="ph-text"><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${art(key)}
+</header>`;
+
+// Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
+const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung'];
+const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
 
@@ -226,14 +251,15 @@ function draw() {
   const t = currentTrip();
   document.documentElement.style.setProperty('--trip', tripColor(t));
   document.body.classList.toggle('no-cash', !canCash());
-  if (ui.route === 'kasse' && !canCash()) ui.route = 'tagebuch';
+  if (CASH_ROUTES.includes(ui.route) && !canCash()) ui.route = 'mehr';
   $('#syncDot').className = 'sync-dot ' + syncClass();
 
   $('#tripChip').innerHTML = t
     ? `<span class="dot"></span><span class="name">${esc(t.name)}</span>${t.archived ? '<span class="tag">Archiv</span>' : ''}`
     : `<span class="dot"></span><span class="name">Noch keine Reise</span>`;
   $('#routeBand').innerHTML = routeBand(t);
-  document.querySelectorAll('.tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === ui.route));
+  const tab = MORE_ROUTES.includes(ui.route) ? 'mehr' : ui.route;
+  document.querySelectorAll('.tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
 
   const onMap = ui.route === 'karte';
   $('#mapview').hidden = !onMap;
@@ -271,6 +297,7 @@ function routeBand(t) {
 /* ---------- Karte ---------- */
 
 let map, routeLayer, carLayer, meLayer, lastFit = '';
+const mapHooks = [];
 let pendingFocus = null;
 
 function ensureMap() {
@@ -305,9 +332,13 @@ function drawRoute(t, emphasis) {
   const color = tripColor(t);
   const stops = tripEntries(t).filter(hasPos).sort(byDate);
   const pts = stops.map(e => [e.lat, e.lng]);
-  if (pts.length > 1) {
+  // Mit GPX-Strecke zeigt die Linie zwischen den Stopps nur noch die Reihenfolge (gestrichelt)
+  const tracked = S.tracks.some(x => x.tripId === t.id);
+  if (pts.length > 1 && !tracked) {
     L.polyline(pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
     L.polyline(pts, { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);
+  } else if (pts.length > 1) {
+    L.polyline(pts, { color, weight: 2, opacity: 0.6, dashArray: '2 8' }).addTo(routeLayer);
   }
   stops.forEach(e => {
     const small = !emphasis || e.type === 'notiz';
@@ -333,6 +364,10 @@ function drawMap() {
   } else if (t) {
     pts = drawRoute(t, true);
   }
+
+  // Erweiterungen aus mehr.js: Orte und GPX-Strecken
+  mapHooks.forEach(h => { pts = pts.concat(h(routeLayer, ui.mapScope, t) || []); });
+  $('#placesBtn').setAttribute('aria-pressed', ui.showPlaces);
 
   const car = S.meta.find(m => m.id === 'car');
   const chip = $('#carChip');
@@ -372,23 +407,22 @@ function showMe(p) {
 
 function emptyTrip() {
   return `<section class="empty">
-    <img class="hero-sheep" src="icons/schaf.svg" alt="">
+    <svg class="hero-sheep" aria-hidden="true"><use href="#schaf"/></svg>
     <h1>Wohin geht's?</h1>
     <p>Legt eine Reise an. Danach landen Stellplätze, Sehenswertes, Notizen und Ausgaben automatisch bei dieser Reise.</p>
     <button class="primary" data-action="trip-form">Reise anlegen</button>
   </section>`;
 }
 
-function tripHead(t, st) {
+function tripHead(t, st, artKey = 'tagebuch') {
   const facts = [
     st.days ? `<div><b>${st.days}</b><span>${st.days === 1 ? 'Tag' : 'Tage'}</span></div>` : '',
     `<div><b>${st.nights}</b><span>${st.nights === 1 ? 'Stellplatz' : 'Stellplätze'}</span></div>`,
     `<div><b>${st.sights}</b><span>Sehenswertes</span></div>`,
-    st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>Luftlinie</span></div>` : '',
+    st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>${st.driven ? 'gefahren' : 'Luftlinie'}</span></div>` : '',
   ].join('');
   return `<header class="trip-head">
-    <h1>${esc(t.name)}</h1>
-    <p class="sub">${fmtRange(t)}</p>
+    <div class="page-head with-art"><div class="ph-text"><h1>${esc(t.name)}</h1><p class="sub">${fmtRange(t)}</p></div>${art(artKey)}</div>
     <div class="facts">${facts}</div>
   </header>`;
 }
@@ -397,6 +431,13 @@ VIEWS.tagebuch = () => {
   const t = currentTrip();
   if (!t) return emptyTrip();
   const st = tripStats(t);
+  // Kommende Reisen und Reisen ohne Einträge öffnen in der Planung
+  const mode = ui.diaryMode[t.id] || (st.es.length && !(t.start > today()) ? 'tagebuch' : 'planung');
+  const modeSeg = `<div class="seg tabs">
+    <button class="${mode === 'planung' ? 'on' : ''}" data-action="diary-mode" data-mode="planung">Planung</button>
+    <button class="${mode === 'tagebuch' ? 'on' : ''}" data-action="diary-mode" data-mode="tagebuch">Tagebuch</button>
+  </div>`;
+  if (mode === 'planung') return `${installHint()}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
   const filter = ui.diaryFilter;
   const list = st.es.filter(e => filter === 'alle' || e.type === filter).sort(byDate).reverse();
 
@@ -413,7 +454,7 @@ VIEWS.tagebuch = () => {
     </li>`;
   }).join('');
 
-  return `${installHint()}${tripHead(t, st)}
+  return `${installHint()}${tripHead(t, st)}${modeSeg}
     <div class="toolbar diary-bar">
       <div class="chips">${chips}</div>
       <button class="primary" data-action="entry-form">${icon('plus')}Eintrag</button>
@@ -473,7 +514,7 @@ function entryForm(e = {}) {
     </div>
     <div class="field">
       <span>Position</span>
-      <input type="hidden" name="lat" value="${e.lat ?? ''}"><input type="hidden" name="lng" value="${e.lng ?? ''}"><input type="hidden" name="acc" value="${e.acc ?? ''}">
+      <input type="hidden" name="lat" value="${e.lat ?? ''}"><input type="hidden" name="lng" value="${e.lng ?? ''}"><input type="hidden" name="acc" value="${e.acc ?? ''}"><input type="hidden" name="country" value="${esc(e.country)}">
       <p class="pos" id="posText">${hasPos(e) ? posLabel(e) : 'Noch keine Position'}</p>
       <div class="btnrow">
         <button type="button" class="ghost" data-action="pos-here">${icon('pin')}Aktuelle Position</button>
@@ -512,7 +553,10 @@ function setFormPos(form, p, fillPlace) {
   form.acc.value = p.acc || '';
   $('#posText').textContent = posLabel(p);
   if (pickMarker) pickMarker.setLatLng([p.lat, p.lng]);
-  if (fillPlace && !form.place.value) placeName(p).then(n => { if (n && !form.place.value) form.place.value = n; });
+  if (fillPlace) placeInfo(p).then(({ name, cc }) => {
+    if (name && form.place && !form.place.value) form.place.value = name;
+    if (form.country) form.country.value = cc;
+  });
 }
 
 async function locateInto(form) {
@@ -569,6 +613,7 @@ function submitEntry(form) {
     lat: isFinite(lat) ? lat : null,
     lng: isFinite(lng) ? lng : null,
     acc: parseInt(fd.get('acc')) || null,
+    country: fd.get('country') || '',
     rating: type === 'notiz' ? 0 : +fd.get('rating') || 0,
     features: type === 'stellplatz' ? fd.getAll('feat') : [],
     cost: type === 'notiz' ? 0 : num(fd.get('cost')),
@@ -618,6 +663,7 @@ function entryView(e) {
     </dl>
     <div class="sheet-foot">
       ${hasPos(e) ? `<button class="ghost" data-action="show-on-map" data-id="${e.id}">Auf der Karte</button><a class="ghost btn" href="${navUrl(e)}" target="_blank" rel="noopener">Hinfahren</a>` : ''}
+      ${hasPos(e) && e.type !== 'notiz' ? `<button class="ghost" data-action="entry-to-place" data-id="${e.id}">Als Lieblingsplatz merken</button>` : ''}
       <button class="primary" data-action="edit-entry" data-id="${e.id}">Bearbeiten</button>
     </div>
   </article>`;
@@ -677,95 +723,186 @@ async function parkHere() {
 
 /* ---------- Ansicht: Listen ---------- */
 
-VIEWS.listen = () => {
-  const tab = ui.listTab;
-  const items = S.listItems.filter(i => i.list === tab);
+const KINDS = {
+  einkauf: { label: 'Einkaufen', one: 'Einkaufsliste', empty: 'Alles da.', ph: 'Was fehlt? z. B. Gaskartusche' },
+  merken: { label: 'Merken', one: 'Merkliste', empty: 'Nichts vorgemerkt.', ph: 'Was wollt ihr nicht vergessen?' },
+};
+const listsOf = kind => S.lists.filter(l => l.kind === kind)
+  .sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+// Einträge ohne Listen-Zuordnung (frühere Version) gehören zur ersten Liste ihrer Art
+const itemListId = i => i.listId || (listsOf(i.list)[0] || {}).id;
+const itemsOf = l => S.listItems.filter(i => itemListId(i) === l.id);
+const openCount = l => itemsOf(l).filter(i => !i.done).length;
+
+function currentList(kind) {
+  const ls = listsOf(kind);
+  return ls.find(l => l.id === LS.get('list.' + kind, null)) || ls[0] || null;
+}
+
+function newList(kind, name, tripId) {
+  return save('lists', { id: newId(), kind, name: name || KINDS[kind].one, tripId: tripId || null, createdAt: Date.now(), order: listsOf(kind).length });
+}
+
+function listRow(i) {
+  return `<li class="${i.done ? 'done' : ''}">
+    <button class="tick" data-action="toggle-item" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="${i.done ? 'Wieder offen' : 'Erledigt'}"></button>
+    <button class="txt as-text" data-action="item-sheet" data-id="${i.id}">${esc(i.text)}</button>
+    <span class="who" title="${esc(personName(i.by))}">${initial(i.by)}</span>
+  </li>`;
+}
+
+// Eine Liste mit Eingabezeile, offen und erledigt (auch in der Reiseplanung verwendet)
+function listBlock(l, kind) {
+  const items = l ? itemsOf(l) : [];
   const open = items.filter(i => !i.done).sort((a, b) => b.createdAt - a.createdAt);
   const done = items.filter(i => i.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-  const count = l => S.listItems.filter(i => i.list === l && !i.done).length;
-  const row = i => `<li class="${i.done ? 'done' : ''}">
-    <button class="tick" data-action="toggle-item" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="${i.done ? 'Wieder offen' : 'Erledigt'}"></button>
-    <span class="txt">${esc(i.text)}</span>
-    <span class="who" title="${esc(personName(i.by))}">${initial(i.by)}</span>
-    <button class="icon-btn small" data-action="del-item" data-id="${i.id}" aria-label="Löschen">${icon('close')}</button>
-  </li>`;
-  return `<header class="page-head"><h1>Listen</h1></header>
-    <div class="seg tabs">
-      <button class="${tab === 'einkauf' ? 'on' : ''}" data-action="list-tab" data-tab="einkauf">Einkaufen <small>${count('einkauf')}</small></button>
-      <button class="${tab === 'merken' ? 'on' : ''}" data-action="list-tab" data-tab="merken">Merkliste <small>${count('merken')}</small></button>
-    </div>
-    <form class="adder" data-form="list-add">
-      <input name="text" data-keep="listAdd" placeholder="${tab === 'einkauf' ? 'Was fehlt? z. B. Gaskartusche' : 'Was wollt ihr nicht vergessen?'}" autocomplete="off" enterkeyhint="done">
+  return `<form class="adder" data-form="list-add" data-list="${l ? l.id : ''}" data-kind="${kind}">
+      <input name="text" data-keep="listAdd-${l ? l.id : kind}" placeholder="${KINDS[kind].ph}" autocomplete="off" enterkeyhint="done">
       <button class="primary" aria-label="Hinzufügen">${icon('plus')}</button>
     </form>
-    <ul class="checklist">${open.map(row).join('') || `<li class="none">${tab === 'einkauf' ? 'Alles da.' : 'Nichts vorgemerkt.'}</li>`}</ul>
-    ${done.length ? `<div class="done-head"><h2>Erledigt</h2><button class="link" data-action="clear-done">Erledigte entfernen</button></div>
-      <ul class="checklist">${done.map(row).join('')}</ul>` : ''}`;
+    <ul class="checklist">${open.map(listRow).join('') || `<li class="none">${KINDS[kind].empty}</li>`}</ul>
+    ${done.length ? `<div class="done-head"><h3>Erledigt</h3><button class="link" data-action="clear-done" data-list="${l.id}">Erledigte entfernen</button></div>
+      <ul class="checklist">${done.map(listRow).join('')}</ul>` : ''}`;
+}
+
+VIEWS.listen = () => {
+  const kind = ui.listTab;
+  const lists = listsOf(kind);
+  const cur = currentList(kind);
+  const count = k => listsOf(k).reduce((n, l) => n + openCount(l), 0);
+  const chips = lists.map(l => {
+    const trip = l.tripId && S.trips.find(t => t.id === l.tripId);
+    return `<button class="chip${cur && l.id === cur.id ? ' on' : ''}" data-action="list-pick" data-id="${l.id}">
+      ${trip ? `<i class="trip-dot" style="--c:${tripColor(trip)}"></i>` : ''}${esc(l.name)} <small>${openCount(l) || ''}</small></button>`;
+  }).join('');
+  const trip = cur && cur.tripId && S.trips.find(t => t.id === cur.tripId);
+  return `${pageHead('listen', 'Listen')}
+    <div class="seg tabs">
+      ${Object.entries(KINDS).map(([k, v]) => `<button class="${kind === k ? 'on' : ''}" data-action="list-tab" data-tab="${k}">${v.label} <small>${count(k)}</small></button>`).join('')}
+    </div>
+    <div class="chips list-chips">${chips}<button class="chip add" data-action="list-form" data-kind="${kind}">${icon('plus')}Neue ${KINDS[kind].one}</button></div>
+    ${cur ? `<div class="list-head"><h2>${esc(cur.name)}</h2>
+      ${trip ? `<span class="trip-tag" style="--c:${tripColor(trip)}">für ${esc(trip.name)}</span>` : ''}
+      <button class="icon-btn small" data-action="list-form" data-id="${cur.id}" aria-label="Liste bearbeiten">${icon('edit')}</button></div>` : ''}
+    ${listBlock(cur, kind)}`;
 };
 
-/* ---------- Ansicht: Boxen & Packliste ---------- */
+function listForm(id, kind, tripId) {
+  const l = S.lists.find(x => x.id === id) || { kind, tripId: tripId || null };
+  const n = l.id ? itemsOf(l).length : 0;
+  const trips = sortTrips(S.trips.filter(t => !t.archived || t.id === l.tripId));
+  openSheet(`<form data-form="list" data-id="${l.id || ''}" data-kind="${l.kind}">
+    <div class="sheet-head"><h2>${l.id ? 'Liste bearbeiten' : 'Neue ' + KINDS[l.kind].one}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <label class="field"><span>Name</span><input name="name" value="${esc(l.name)}" required placeholder="${l.kind === 'einkauf' ? 'z. B. Wochenmarkt oder Baumarkt' : 'z. B. Vorbereitung oder Ideen'}"></label>
+    <label class="field"><span>Gehört zur Reise</span><select name="tripId"><option value="">Keiner bestimmten Reise</option>
+      ${trips.map(t => `<option value="${t.id}"${t.id === l.tripId ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+    <div class="sheet-foot">
+      ${l.id ? `<button type="button" class="ghost danger" data-action="del-list" data-id="${l.id}" data-n="${n}">Löschen</button>` : ''}
+      <button class="primary">Speichern</button>
+    </div>
+  </form>`);
+}
 
-const LOOSE = { id: '', name: 'Ohne Box', where: 'lose im Auto' };
+// Eintrag bearbeiten oder in eine andere Liste verschieben
+function itemSheet(id) {
+  const i = S.listItems.find(x => x.id === id);
+  if (!i) return;
+  const cur = itemListId(i);
+  const group = k => `<optgroup label="${KINDS[k].label}">${listsOf(k).map(l =>
+    `<option value="${l.id}"${l.id === cur ? ' selected' : ''}>${esc(l.name)}</option>`).join('')}</optgroup>`;
+  openSheet(`<form data-form="list-item" data-id="${i.id}">
+    <div class="sheet-head"><h2>Eintrag</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <label class="field"><span>Text</span><input name="text" value="${esc(i.text)}" required></label>
+    <label class="field"><span>Liste</span><select name="listId">${group('einkauf')}${group('merken')}</select></label>
+    <p class="sub">Eingetragen von ${esc(personName(i.by))}${i.movedFrom ? `, verschoben aus „${esc(i.movedFrom)}“` : ''}</p>
+    <div class="sheet-foot">
+      <button type="button" class="ghost danger" data-action="del-item" data-id="${i.id}">Löschen</button>
+      <button class="primary">Speichern</button>
+    </div>
+  </form>`);
+}
+
+/* ---------- Ansicht: Boxen und Fächer & Packliste ---------- */
+
+const LOOSE = { id: '', name: 'Lose im Auto', where: 'in keiner Box und keinem Fach' };
+const boxLabel = b => (b.kind === 'fach' ? 'Fach' : 'Box');
+// Gegenstände mit tripId sind Extras, die nur für diese eine Reise mitkommen
+const extrasOf = t => (t ? S.items.filter(i => i.tripId === t.id) : []);
+const isPacked = (t, i) => !!t && S.packstate.some(p => p.id === `${t.id}_${i.id}` && p.packed);
+
+function packRow(t, i, setup) {
+  const where = i.boxId && S.boxes.find(b => b.id === i.boxId);
+  const note = [i.note, i.tripId && where ? `${boxLabel(where)}: ${where.name}` : ''].filter(Boolean).join(', ');
+  return setup
+    ? `<li><span class="txt">${esc(i.name)}${note ? `<small>${esc(note)}</small>` : ''}</span>
+        <button class="icon-btn small" data-action="item-form" data-id="${i.id}" aria-label="Bearbeiten">${icon('edit')}</button></li>`
+    : `<li class="${isPacked(t, i) ? 'done' : ''}"><button class="tick" data-action="pack" data-id="${i.id}" aria-pressed="${isPacked(t, i)}" aria-label="Eingepackt"></button>
+        <span class="txt">${esc(i.name)}${note ? `<small>${esc(note)}</small>` : ''}</span></li>`;
+}
 
 VIEWS.packen = () => {
   const t = currentTrip();
   const q = ui.packQuery.trim().toLowerCase();
-  const boxes = [...S.boxes.slice().sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name))];
-  if (S.items.some(i => !i.boxId || !S.boxes.find(b => b.id === i.boxId))) boxes.push(LOOSE);
-  const inBox = b => S.items.filter(i => (b === LOOSE ? !S.boxes.find(x => x.id === i.boxId) : i.boxId === b.id))
-    .filter(i => !q || i.name.toLowerCase().includes(q) || (i.note || '').toLowerCase().includes(q))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const packed = i => t && S.packstate.some(p => p.id === `${t.id}_${i.id}` && p.packed);
+  const match = i => !q || i.name.toLowerCase().includes(q) || (i.note || '').toLowerCase().includes(q);
+  const stock = S.items.filter(i => !i.tripId);
+  const boxes = S.boxes.slice().sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
+  if (stock.some(i => !S.boxes.find(b => b.id === i.boxId))) boxes.push(LOOSE);
+  const inBox = b => stock.filter(i => (b === LOOSE ? !S.boxes.find(x => x.id === i.boxId) : i.boxId === b.id))
+    .filter(match).sort((a, b) => a.name.localeCompare(b.name));
   const setup = ui.packMode === 'einrichten' || !t;
+  const extras = extrasOf(t).filter(match);
 
-  const total = S.items.length;
-  const packedCount = t ? S.items.filter(packed).length : 0;
+  const all = [...stock, ...extrasOf(t)];
+  const packedCount = all.filter(i => isPacked(t, i)).length;
+
+  const extraSection = t && (extras.length || !q) ? `<section class="box extra" style="--c:${tripColor(t)}">
+      <header>
+        <div><h2>Extra für „${esc(t.name)}“</h2><p class="sub">Kommt nur auf dieser Reise mit</p></div>
+        ${setup ? '' : `<span class="count">${extras.filter(i => isPacked(t, i)).length} / ${extras.length}</span>`}
+      </header>
+      <ul class="${setup ? 'inventory' : 'checklist'}">${extras.map(i => packRow(t, i, setup)).join('') || '<li class="none">Noch nichts Besonderes.</li>'}</ul>
+      <button class="link add-in" data-action="item-form" data-trip="${t.id}">${icon('plus')}Extra für diese Reise</button>
+    </section>` : '';
 
   const sections = boxes.map(b => {
     const items = inBox(b);
     if (q && !items.length) return '';
-    const got = items.filter(packed).length;
     return `<section class="box">
       <header>
-        <div><h2>${esc(b.name)}</h2>${b.where ? `<p class="sub">${esc(b.where)}</p>` : ''}</div>
+        <div><h2>${esc(b.name)}${b === LOOSE ? '' : ` <span class="kind">${boxLabel(b)}</span>`}</h2>${b.where ? `<p class="sub">${esc(b.where)}</p>` : ''}</div>
         ${setup
-          ? (b === LOOSE ? '' : `<button class="icon-btn small" data-action="box-form" data-id="${b.id}" aria-label="Box bearbeiten">${icon('edit')}</button>`)
-          : `<span class="count">${got} / ${items.length}</span>`}
+          ? (b === LOOSE ? '' : `<button class="icon-btn small" data-action="box-form" data-id="${b.id}" aria-label="${boxLabel(b)} bearbeiten">${icon('edit')}</button>`)
+          : `<span class="count">${items.filter(i => isPacked(t, i)).length} / ${items.length}</span>`}
       </header>
-      <ul class="${setup ? 'inventory' : 'checklist'}">
-        ${items.map(i => setup
-          ? `<li><span class="txt">${esc(i.name)}${i.note ? `<small>${esc(i.note)}</small>` : ''}</span>
-              <button class="icon-btn small" data-action="item-form" data-id="${i.id}" aria-label="Bearbeiten">${icon('edit')}</button></li>`
-          : `<li class="${packed(i) ? 'done' : ''}"><button class="tick" data-action="pack" data-id="${i.id}" aria-pressed="${packed(i)}" aria-label="Eingepackt"></button>
-              <span class="txt">${esc(i.name)}${i.note ? `<small>${esc(i.note)}</small>` : ''}</span></li>`).join('')
-          || '<li class="none">Leer</li>'}
-      </ul>
-      ${setup && b !== LOOSE ? `<button class="link add-in" data-action="item-form" data-box="${b.id}">${icon('plus')}Gegenstand in diese Box</button>` : ''}
+      <ul class="${setup ? 'inventory' : 'checklist'}">${items.map(i => packRow(t, i, setup)).join('') || '<li class="none">Leer</li>'}</ul>
+      ${setup && b !== LOOSE ? `<button class="link add-in" data-action="item-form" data-box="${b.id}">${icon('plus')}Gegenstand hinzufügen</button>` : ''}
     </section>`;
   }).join('');
 
-  return `<header class="page-head"><h1>Boxen</h1>
-      ${t && !setup ? `<p class="sub">${packedCount} von ${total} für „${esc(t.name)}“ eingepackt</p>` : '<p class="sub">Was liegt in welcher Box?</p>'}
-    </header>
+  return `${pageHead('boxen', 'Boxen und Fächer', t && !setup ? `${packedCount} von ${all.length} für „${esc(t.name)}“ eingepackt` : 'Was liegt in welcher Box, in welchem Fach?')}
     ${t ? `<div class="seg tabs">
       <button class="${!setup ? 'on' : ''}" data-action="pack-mode" data-mode="packen">Packen</button>
-      <button class="${setup ? 'on' : ''}" data-action="pack-mode" data-mode="einrichten">Boxen einrichten</button>
+      <button class="${setup ? 'on' : ''}" data-action="pack-mode" data-mode="einrichten">Einrichten</button>
     </div>` : ''}
-    ${t && !setup && total ? `<div class="progress" style="--p:${total ? packedCount / total : 0}"><span></span></div>` : ''}
+    ${t && !setup && all.length ? `<div class="progress" style="--p:${packedCount / all.length}"><span></span></div>` : ''}
     <label class="search">${icon('search')}<input type="search" data-keep="packQuery" data-action-input="pack-search" value="${esc(ui.packQuery)}" placeholder="Wo ist …?"></label>
-    ${sections || (q ? `<p class="hint">„${esc(ui.packQuery)}“ steht in keiner Box.</p>` : `<p class="hint">Legt eure Campingboxen an und tragt ein, was drin ist. Dann findet ihr alles über die Suche und habt beim Packen eine Liste zum Abhaken.</p>`)}
+    ${extraSection}
+    ${sections || (q ? (extras.length ? '' : `<p class="hint">„${esc(ui.packQuery)}“ steht in keiner Box und keinem Fach.</p>`) : `<p class="hint">Legt eure Campingboxen und Fächer an und tragt ein, was drin ist. Dann findet ihr alles über die Suche und habt beim Packen eine Liste zum Abhaken.</p>`)}
     <div class="toolbar end">
-      ${setup ? `<button class="ghost" data-action="item-form">${icon('plus')}Gegenstand</button><button class="primary" data-action="box-form">${icon('plus')}Neue Box</button>`
+      ${setup ? `<button class="ghost" data-action="item-form">${icon('plus')}Gegenstand</button><button class="primary" data-action="box-form">${icon('plus')}Box oder Fach</button>`
         : `<button class="ghost" data-action="pack-reset">Packliste zurücksetzen</button>`}
     </div>`;
 };
 
 function boxForm(id) {
-  const b = S.boxes.find(x => x.id === id) || {};
+  const b = S.boxes.find(x => x.id === id) || { kind: 'box' };
+  const kinds = [['box', 'Box'], ['fach', 'Fach']].map(([v, l]) =>
+    `<label><input type="radio" name="kind" value="${v}"${(b.kind || 'box') === v ? ' checked' : ''}><span>${l}</span></label>`).join('');
   openSheet(`<form data-form="box" data-id="${b.id || ''}">
-    <div class="sheet-head"><h2>${b.id ? 'Box bearbeiten' : 'Neue Box'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
-    <label class="field"><span>Name</span><input name="name" value="${esc(b.name)}" required placeholder="z. B. Küchenbox"></label>
-    <label class="field"><span>Wo steht sie?</span><input name="where" value="${esc(b.where)}" placeholder="z. B. hinten links unter dem Bett"></label>
+    <div class="sheet-head"><h2>${b.id ? boxLabel(b) + ' bearbeiten' : 'Neue Box oder neues Fach'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <div class="field"><span>Art</span><div class="seg">${kinds}</div></div>
+    <label class="field"><span>Name</span><input name="name" value="${esc(b.name)}" required placeholder="z. B. Küchenbox oder Türfach links"></label>
+    <label class="field"><span>Wo im Auto?</span><input name="where" value="${esc(b.where)}" placeholder="z. B. hinten links unter dem Bett"></label>
     <label class="field"><span>Reihenfolge</span><input name="order" type="number" inputmode="numeric" value="${b.order ?? S.boxes.length + 1}"></label>
     <div class="sheet-foot">
       ${b.id ? `<button type="button" class="ghost danger" data-action="del-box" data-id="${b.id}">Löschen</button>` : ''}
@@ -774,14 +911,16 @@ function boxForm(id) {
   </form>`);
 }
 
-function itemForm(id, boxId) {
-  const i = S.items.find(x => x.id === id) || { boxId: boxId || '' };
-  const opts = S.boxes.map(b => `<option value="${b.id}"${b.id === i.boxId ? ' selected' : ''}>${esc(b.name)}</option>`).join('');
+function itemForm(id, boxId, tripId) {
+  const i = S.items.find(x => x.id === id) || { boxId: boxId || '', tripId: tripId || null };
+  const t = currentTrip();
+  const opts = S.boxes.map(b => `<option value="${b.id}"${b.id === i.boxId ? ' selected' : ''}>${esc(b.name)} (${boxLabel(b)})</option>`).join('');
   openSheet(`<form data-form="item" data-id="${i.id || ''}">
     <div class="sheet-head"><h2>${i.id ? 'Gegenstand bearbeiten' : 'Neuer Gegenstand'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <label class="field"><span>Was?</span><input name="name" value="${esc(i.name)}" required placeholder="z. B. Stirnlampe"></label>
-    <label class="field"><span>In welcher Box?</span><select name="boxId"><option value="">Ohne Box</option>${opts}</select></label>
-    <label class="field"><span>Notiz</span><input name="note" value="${esc(i.note)}" placeholder="z. B. 2 Stück, im Seitenfach"></label>
+    <label class="field"><span>Wo kommt es hin?</span><select name="boxId"><option value="">Lose im Auto</option>${opts}</select></label>
+    <label class="field"><span>Notiz</span><input name="note" value="${esc(i.note)}" placeholder="z. B. 2 Stück"></label>
+    ${t || i.tripId ? `<label class="check"><input type="checkbox" name="extra" value="${i.tripId || t.id}"${i.tripId ? ' checked' : ''}><span>Nur für die Reise „${esc((S.trips.find(x => x.id === (i.tripId || t.id)) || {}).name || '')}“</span></label>` : ''}
     <div class="sheet-foot">
       ${i.id ? `<button type="button" class="ghost danger" data-action="del-pack-item" data-id="${i.id}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
@@ -848,7 +987,7 @@ VIEWS.kasse = () => {
     return 'für ' + who.map(id => esc(personName(id))).join(' und ');
   };
 
-  return `<header class="page-head"><h1>Kasse</h1><p class="sub">${esc(t.name)}</p></header>
+  return `${pageHead('kasse', 'Kasse', esc(t.name))}
     <section class="ledger-sum">
       <p class="total">${money(total)}</p>
       <p class="sub">${st.days ? `${money(total / st.days)} pro Tag, ` : ''}${st.nights ? `${money((byCat.Stellplatz || 0) / st.nights)} pro Nacht auf Stellplätzen` : 'ausgegeben'}</p>
@@ -929,7 +1068,7 @@ VIEWS.reisen = () => {
   const cur = currentTrip();
   const active = activeTrips();
   const archived = sortTrips(S.trips.filter(t => t.archived));
-  return `<header class="page-head"><h1>Reisen</h1><p class="sub">Tippe eine Reise an, um sie zu öffnen.</p></header>
+  return `${pageHead('reisen', 'Reisen', 'Tippe eine Reise an, um sie zu öffnen.')}
     <div class="toolbar"><h2>Unterwegs &amp; geplant</h2><button class="primary" data-action="trip-form">${icon('plus')}Neue Reise</button></div>
     <ul class="trips">${active.map(t => tripRow(t, cur && t.id === cur.id)).join('') || '<li class="none">Keine laufende Reise.</li>'}</ul>
     <div class="toolbar"><h2>Archiv</h2>${S.trips.length ? '<button class="link" data-action="all-on-map">Alle Reisen auf der Karte</button>' : ''}</div>
@@ -948,7 +1087,8 @@ function tripForm(id) {
       <label class="field"><span>Ende</span><input type="date" name="end" value="${t.end || ''}"></label>
     </div>
     <div class="field"><span>Farbe der Reise</span><div class="swatches">${swatches}</div></div>
-    ${t.id ? `<label class="check"><input type="checkbox" name="archived"${t.archived ? ' checked' : ''}><span>Reise ist abgeschlossen (ins Archiv)</span></label>` : ''}
+    ${t.id ? `<label class="check"><input type="checkbox" name="archived"${t.archived ? ' checked' : ''}><span>Reise ist abgeschlossen (ins Archiv)</span></label>
+    <div class="field"><span>Gefahrene Strecke (GPX)</span>${VIEWS.trackList(t)}</div>` : ''}
     <div class="sheet-foot">
       ${t.id ? `<button type="button" class="ghost danger" data-action="del-trip" data-id="${t.id}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
@@ -978,7 +1118,7 @@ function syncText() {
 VIEWS.einstellungen = () => {
   const u = session.user;
   const crews = session.crews;
-  return `<header class="page-head"><h1>Einstellungen</h1><p class="sub">Angemeldet als ${esc(u.name)}</p></header>
+  return `${pageHead('einstellungen', 'Einstellungen', 'Angemeldet als ' + esc(u.name))}
     <section class="panel">
       <h2>Crew</h2>
       ${crews.length > 1
@@ -1016,13 +1156,18 @@ VIEWS.einstellungen = () => {
       </div>
     </section>
     <section class="panel">
+      <h2>Darstellung</h2>
+      <div class="seg">${[['auto', 'Wie das Handy'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
+        `<button class="${LS.get('theme', 'auto') === v ? 'on' : ''}" data-action="set-theme" data-theme="${v}">${l}</button>`).join('')}</div>
+    </section>
+    <section class="panel">
       <h2>App installieren</h2>
       ${installText()}
     </section>
     <section class="panel">
       <button class="ghost danger" data-action="logout">Abmelden</button>
     </section>
-    <footer class="colophon"><img src="icons/lammping.svg" alt="LAMMping"><span>Unser Reisetagebuch für den Minicamper</span></footer>`;
+    <footer class="colophon"><svg class="wordmark" role="img" aria-label="LAMMping"><use href="#wort"/></svg><span>Unser Reisetagebuch für den Minicamper</span></footer>`;
 };
 
 /* ---------- Ansicht: Verwaltung (nur Eltern) ---------- */
@@ -1053,11 +1198,11 @@ async function refreshSession() {
 
 VIEWS.verwaltung = () => {
   if (!session.user.isAdmin) return '<p class="hint">Nur für Verwalter.</p>';
-  if (!admin) { loadAdmin(); return '<header class="page-head"><h1>Verwaltung</h1></header><p class="hint">Wird geladen …</p>'; }
-  if (admin.error) return `<header class="page-head"><h1>Verwaltung</h1></header><p class="hint">${esc(admin.error)} Die Verwaltung braucht eine Internetverbindung.</p>
+  if (!admin) { loadAdmin(); return pageHead('einstellungen', 'Verwaltung') + '<p class="hint">Wird geladen …</p>'; }
+  if (admin.error) return `${pageHead('einstellungen', 'Verwaltung')}<p class="hint">${esc(admin.error)} Die Verwaltung braucht eine Internetverbindung.</p>
     <button class="ghost" data-action="admin-reload">Noch einmal versuchen</button>`;
   const name = id => (admin.users.find(u => u.id === id) || {}).name || '?';
-  return `<header class="page-head"><h1>Verwaltung</h1><p class="sub">Nur Verwalter sehen diese Seite.</p></header>
+  return `${pageHead('einstellungen', 'Verwaltung', 'Nur Verwalter sehen diese Seite.')}
     <div class="toolbar"><h2>Personen</h2><button class="primary" data-action="user-form">${icon('plus')}Person</button></div>
     <ul class="people">${admin.users.map(u => `<li><button data-action="user-form" data-id="${u.id}">
       <span class="avatar">${esc(u.name[0] || '?')}</span>
@@ -1113,7 +1258,7 @@ function crewForm(id) {
 
 /* ---------- Ansicht: Anmeldung & Einrichtung ---------- */
 
-const HERO = `<div class="brand-hero"><img class="hero-sheep" src="icons/schaf.svg" alt=""><img class="wordmark" src="icons/lammping.svg" alt="LAMMping"></div>`;
+const HERO = `<div class="brand-hero"><svg class="hero-sheep" aria-hidden="true"><use href="#schaf"/></svg><svg class="wordmark" role="img" aria-label="LAMMping"><use href="#wort"/></svg></div>`;
 
 VIEWS.loading = () => `<section class="login">${HERO}<p class="sub">Wird geladen …</p></section>`;
 
@@ -1157,6 +1302,14 @@ VIEWS.offline = () => `<section class="login">
   <button class="primary" data-action="reload">Noch einmal versuchen</button>
 </section>`;
 
+/* ---------- Kopfzeile: Fahrstrecke der V-Klasse ---------- */
+
+// Die V-Klasse fährt genau einmal durch die Landschaft, egal wie breit sie gerade ist
+const scenery = $('.scenery');
+if (scenery && 'ResizeObserver' in window) {
+  new ResizeObserver(([e]) => scenery.style.setProperty('--scene-w', Math.round(e.contentRect.width) + 'px')).observe(scenery);
+}
+
 /* ---------- Installieren ---------- */
 
 let installPrompt = null;
@@ -1187,7 +1340,7 @@ function installText() {
 function installHint() {
   if (isStandalone() || LS.get('installHintDone', false) || !(installPrompt || isIOS)) return '';
   return `<aside class="install-hint">
-    <img src="icons/schaf-klein.svg" alt="">
+    <svg class="hint-sheep" aria-hidden="true"><use href="#schaf"/></svg>
     <p>${installPrompt ? 'LAMMping als App auf den Startbildschirm legen?' : `Als App installieren: ${SHARE_ICON} Teilen, dann „Zum Home-Bildschirm“.`}</p>
     ${installPrompt ? '<button class="primary" data-action="install">Installieren</button>' : ''}
     <button class="icon-btn small" data-action="install-hint-off" aria-label="Hinweis ausblenden">${icon('close')}</button>
@@ -1251,6 +1404,8 @@ $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeS
 
 /* ---------- Aktionen ---------- */
 
+const CHANGES = {};   // Erweiterungen für Datei-Eingaben (z. B. GPX)
+
 const ACTIONS = {
   close: closeSheet,
   'map-scope': el => { ui.mapScope = el.dataset.scope; render(); },
@@ -1285,6 +1440,14 @@ const ACTIONS = {
   'car-clear': () => { remove('meta', 'car'); closeSheet(); },
 
   'diary-filter': el => { ui.diaryFilter = el.dataset.f; render(); },
+  'diary-mode': el => { ui.diaryMode[currentTrip().id] = el.dataset.mode; render(); },
+  'toggle-places': () => { ui.showPlaces = !ui.showPlaces; LS.set('showPlaces', ui.showPlaces); render(); },
+  'set-theme': el => {
+    const v = el.dataset.theme;
+    LS.set('theme', v);
+    if (v === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
+    render();
+  },
   'entry-form': () => openEntryForm({ type: 'notiz' }),
   'open-entry': el => openEntry(el.dataset.id),
   'edit-entry': el => openEntryForm(S.entries.find(e => e.id === el.dataset.id)),
@@ -1325,8 +1488,18 @@ const ACTIONS = {
     const i = S.listItems.find(x => x.id === el.dataset.id);
     save('listItems', { ...i, done: !i.done, doneAt: Date.now() });
   },
-  'del-item': el => remove('listItems', el.dataset.id),
-  'clear-done': () => S.listItems.filter(i => i.list === ui.listTab && i.done).forEach(i => remove('listItems', i.id)),
+  'del-item': el => { remove('listItems', el.dataset.id); closeSheet(); },
+  'clear-done': el => S.listItems.filter(i => itemListId(i) === el.dataset.list && i.done).forEach(i => remove('listItems', i.id)),
+  'list-pick': el => { LS.set('list.' + ui.listTab, el.dataset.id); render(); },
+  'list-form': el => listForm(el.dataset.id, el.dataset.kind, el.dataset.trip),
+  'item-sheet': el => itemSheet(el.dataset.id),
+  'del-list': el => {
+    const n = +el.dataset.n;
+    if (!confirm(n ? `Liste mit ${n} Einträgen löschen?` : 'Liste löschen?')) return;
+    S.listItems.filter(i => itemListId(i) === el.dataset.id).forEach(i => remove('listItems', i.id));
+    remove('lists', el.dataset.id);
+    closeSheet();
+  },
 
   'pack-mode': el => { ui.packMode = el.dataset.mode; render(); },
   pack: el => {
@@ -1342,10 +1515,10 @@ const ACTIONS = {
     S.packstate.filter(p => p.tripId === t.id).forEach(p => remove('packstate', p.id));
   },
   'box-form': el => boxForm(el.dataset.id),
-  'item-form': el => itemForm(el.dataset.id, el.dataset.box),
+  'item-form': el => itemForm(el.dataset.id, el.dataset.box, el.dataset.trip),
   'del-box': el => {
     const n = S.items.filter(i => i.boxId === el.dataset.id).length;
-    if (!confirm(n ? `Box löschen? Ihre ${n} Gegenstände bleiben als „Ohne Box“ erhalten.` : 'Box löschen?')) return;
+    if (!confirm(n ? `Löschen? Die ${n} Gegenstände darin bleiben als „Lose im Auto“ erhalten.` : 'Wirklich löschen?')) return;
     remove('boxes', el.dataset.id);
     closeSheet();
   },
@@ -1423,18 +1596,42 @@ const FORMS = {
   'list-add': form => {
     const text = form.text.value.trim();
     if (!text) return;
-    save('listItems', { id: newId(), list: ui.listTab, text, done: false, by: me(), createdAt: Date.now() });
+    const kind = form.dataset.kind;
+    // Noch keine Liste dieser Art: die erste entsteht mit dem ersten Eintrag
+    const l = S.lists.find(x => x.id === form.dataset.list) || newList(kind);
+    save('listItems', { id: newId(), listId: l.id, list: l.kind, text, done: false, by: me(), createdAt: Date.now() });
     form.text.value = '';
     form.text.focus();
   },
+  list: form => {
+    const old = S.lists.find(l => l.id === form.dataset.id);
+    const l = save('lists', {
+      ...(old || { id: newId(), kind: form.dataset.kind, createdAt: Date.now(), order: listsOf(form.dataset.kind).length }),
+      name: form.name.value.trim(), tripId: form.tripId.value || null,
+    });
+    if (!old) LS.set('list.' + l.kind, l.id);
+    closeSheet();
+  },
+  'list-item': form => {
+    const i = S.listItems.find(x => x.id === form.dataset.id);
+    const target = S.lists.find(l => l.id === form.listId.value);
+    const from = S.lists.find(l => l.id === itemListId(i));
+    const moved = target && from && target.id !== from.id;
+    save('listItems', { ...i, text: form.text.value.trim(), listId: target.id, list: target.kind, movedFrom: moved ? from.name : i.movedFrom || '' });
+    closeSheet();
+    if (moved) toast(`Verschoben nach „${target.name}“`);
+  },
   box: form => {
     const old = S.boxes.find(b => b.id === form.dataset.id);
-    save('boxes', { ...(old || { id: newId() }), name: form.name.value.trim(), where: form.where.value.trim(), order: +form.order.value || 0 });
+    save('boxes', { ...(old || { id: newId() }), kind: form.kind.value, name: form.name.value.trim(), where: form.where.value.trim(), order: +form.order.value || 0 });
     closeSheet();
   },
   item: form => {
     const old = S.items.find(i => i.id === form.dataset.id);
-    save('items', { ...(old || { id: newId() }), name: form.name.value.trim(), boxId: form.boxId.value, note: form.note.value.trim() });
+    save('items', {
+      ...(old || { id: newId() }), name: form.name.value.trim(), boxId: form.boxId.value, note: form.note.value.trim(),
+      tripId: form.extra && form.extra.checked ? form.extra.value : null,
+    });
     closeSheet();
     toast(old ? 'Gespeichert' : 'Gegenstand angelegt');
   },
@@ -1541,6 +1738,7 @@ document.addEventListener('change', async ev => {
     }
   }
   if (el.dataset.action === 'import' && el.files[0]) { importAll(el.files[0]); el.value = ''; }
+  if (CHANGES[el.dataset.action]) CHANGES[el.dataset.action](el);
 });
 
 /* ---------- Navigation ---------- */
@@ -1614,7 +1812,7 @@ async function start() {
     if (ui.route === 'einstellungen' && !gate) render();
   });
   await store.init();
-  if (hadCash && !canCash()) await store.clearLocal('expenses');
+  if (hadCash && !canCash()) { await store.clearLocal('expenses'); await store.clearLocal('fuel'); }
   gate = null;
   WATCHED.forEach(c => store.watch(c, list => { S[c] = list; render(); }));
   onHash();
@@ -1623,5 +1821,17 @@ async function start() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
+
+// Stufe 2 (mehr.js): Mehr-Menü, Planung, Orte, Tankbuch, Checklisten, Fahrzeug, Statistik, GPX
+installMore({
+  S, ui, LS, VIEWS, ACTIONS, FORMS, CHANGES, mapHooks,
+  $, esc, money, num, icon, art, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
+  today, nowLocal, fmtDay, fmtShort, fmtRange, ago, km, fmtKm, hasPos, navUrl, byDate, sortTrips,
+  getPos, placeInfo, locateInto, openPicker, setFormPos, posLabel, pinIcon, entryPopup,
+  currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
+  openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
+  setPendingFocus: f => { pendingFocus = f; },
+  get map() { return map; },
+});
 
 start();

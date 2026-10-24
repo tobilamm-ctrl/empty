@@ -5,7 +5,8 @@
 //   get(coll, id), put(coll, doc), patch(coll, id, felder), del(coll, id)
 // Fotos: put('photos', {id, data}) lädt die volle Größe hoch, get('photos', id).data ist eine Bild-URL.
 
-export const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'listItems', 'meta'];
+export const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta',
+  'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks'];
 const SYNC_EVERY = 15000;
 
 export function newId() {
@@ -36,11 +37,13 @@ export async function api(action, body, query = '') {
 
 function openDb(name) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name, 1);
+    // Version erhöhen, sobald neue Sammlungen dazukommen; fehlende Speicher werden ergänzt
+    const req = indexedDB.open(name, 2);
     req.onupgradeneeded = () => {
-      COLLS.forEach(c => req.result.createObjectStore(c, { keyPath: 'id' }));
-      req.result.createObjectStore('outbox', { keyPath: 'key' });
-      req.result.createObjectStore('photoOut', { keyPath: 'id' });
+      const have = req.result.objectStoreNames;
+      COLLS.forEach(c => { if (!have.contains(c)) req.result.createObjectStore(c, { keyPath: 'id' }); });
+      if (!have.contains('outbox')) req.result.createObjectStore('outbox', { keyPath: 'key' });
+      if (!have.contains('photoOut')) req.result.createObjectStore('photoOut', { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

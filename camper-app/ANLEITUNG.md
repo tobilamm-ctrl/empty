@@ -101,3 +101,20 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Bereiche im Überblick
+
+- **Karte:** Route der Reise, gemerkte und geplante Orte (Herz-Knopf blendet sie ein und aus),
+  importierte GPX-Strecken, Auto-Standort.
+- **Tagebuch:** je Reise **Planung** (Stellplätze und Sehenswertes vormerken, Listen und Extras
+  zum Packen für diese Reise) und **Tagebuch** (Einträge unterwegs). „Hier sind wir“ macht aus
+  einem geplanten Ort einen Tagebuch-Eintrag.
+- **Listen:** beliebig viele Einkaufs- und Merklisten, auf Wunsch einer Reise zugeordnet.
+  Einträge antippen, um sie zu bearbeiten oder in eine andere Liste zu verschieben.
+- **Boxen & Fächer:** Inventar mit Suche „Wo ist …?“, Packliste pro Reise mit Extras.
+- **Mehr:** Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
+  (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
+  (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen.
+- **Darstellung:** hell, dunkel oder wie das Handy (Einstellungen → Darstellung).
+
+Tankbuch und Kasse sehen nur Personen mit Kassen-Freigabe.

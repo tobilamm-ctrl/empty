@@ -5,7 +5,9 @@
 declare(strict_types=1);
 
 $CFG = require __DIR__ . '/config.php';
-const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'listItems', 'meta', 'photos'];
+const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta', 'photos',
+    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks'];
+const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const TOKEN_DAYS = 400;
 const COOKIE = 'lammping';
 
@@ -207,7 +209,7 @@ case 'sync':
     $u = requireUser();
     $crew = requireCrew($u, $_GET['crew'] ?? '');
     $since = (int) ($_GET['since'] ?? 0);
-    $hide = canCash($u) ? '' : " AND coll <> 'expenses'";
+    $hide = canCash($u) ? '' : " AND coll NOT IN ('" . implode("', '", CASH_COLLS) . "')";
     $rows = all("SELECT coll, id, data, deleted, rev FROM docs WHERE crew_id = ? AND rev > ?$hide ORDER BY rev LIMIT 2000", [$crew, $since]);
     $docs = array_map(fn($r) => [
         'coll' => $r['coll'], 'id' => $r['id'], 'rev' => (int) $r['rev'],
@@ -227,7 +229,7 @@ case 'push':
     try {
         foreach ($changes as $c) {
             if (!in_array($c['coll'] ?? '', COLLS, true) || !validId($c['id'] ?? null)) continue;
-            if ($c['coll'] === 'expenses' && !canCash($u)) continue;
+            if (in_array($c['coll'], CASH_COLLS, true) && !canCash($u)) continue;
             $data = $c['data'] ?? null;
             if ($data !== null && !is_array($data)) continue;
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen

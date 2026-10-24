@@ -1,4 +1,5 @@
 /* LAMMping: Birkenholz wie das gravierte Logo, Schrift und Schaf in Brandbraun, Knöpfe in Petrol.
+   Dunkel: Hell- und Dunkelbraun tauschen, Schaf und Schriftzug werden hell.
    Jede Reise trägt ihre eigene Linienfarbe (--trip). */
 
 :root {
@@ -12,12 +13,29 @@
   --line: #E4D6BE;
   --muted: #7B6650;
   --danger: #B3261E;
+  --on-primary: #FFFFFF;
+  --engrave: rgba(255, 255, 255, .7);
   --trip: #0F6670;
   --head: 'Fredoka', 'Segoe UI', system-ui, sans-serif;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
-  --top: calc(58px + env(safe-area-inset-top));
+  --top: calc(98px + env(safe-area-inset-top));
   --bottom: calc(64px + env(safe-area-inset-bottom));
   color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #2B1B10; --surface: #3A2618; --ink: #F3E4C8; --wood: #EAD7B5;
+    --petrol: #7CC6CC; --petrol-deep: #A3DADE; --mist: #422C1C; --line: #5C4129; --muted: #C9B394;
+    --danger: #F2A08F; --on-primary: #2B1B10; --engrave: rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #2B1B10; --surface: #3A2618; --ink: #F3E4C8; --wood: #EAD7B5;
+  --petrol: #7CC6CC; --petrol-deep: #A3DADE; --mist: #422C1C; --line: #5C4129; --muted: #C9B394;
+  --danger: #F2A08F; --on-primary: #2B1B10; --engrave: rgba(0, 0, 0, .35);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -33,7 +51,7 @@ body {
 }
 h1, h2, h3 { font-family: var(--head); font-weight: 600; line-height: 1.1; margin: 0; color: var(--wood); }
 /* Leicht eingebrannt wie die Gravur im Holz */
-h1 { text-shadow: 0 1px 0 rgba(255, 255, 255, .7); }
+h1 { text-shadow: 0 1px 0 var(--engrave); }
 p { margin: 0 0 .75em; }
 a { color: var(--petrol); }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -49,19 +67,20 @@ button { cursor: pointer; }
   position: fixed; inset: 0 0 auto 0; z-index: 1000;
   height: var(--top);
   padding: env(safe-area-inset-top) 8px 0 16px;
-  display: flex; align-items: center; gap: 6px;
+  display: flex; flex-direction: column;
   background: var(--paper);
 }
-.topbar .settings-btn { margin-left: auto; }
-.brand { display: flex; align-items: center; flex: none; margin-right: 4px; }
-.brand img { width: 46px; height: 36px; display: block; }
+.brandbar { display: flex; align-items: center; gap: 8px; height: 54px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--wood); text-decoration: none; min-width: 0; }
+.brand-sheep { width: 52px; height: 41px; flex: none; --sw: 14; }
+.brand-word { width: 168px; height: 28px; --sw: 2.6; }
 .trip-chip {
-  display: flex; align-items: center; gap: 10px; min-width: 0;
+  display: flex; align-items: center; gap: 10px; min-width: 0; height: 40px;
   text-decoration: none; color: var(--ink);
-  padding: 6px 4px;
+  padding: 0 4px 4px;
 }
 .trip-chip .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--trip); box-shadow: 0 0 0 3px color-mix(in srgb, var(--trip) 22%, transparent); flex: none; }
-.trip-chip .name { font: 600 20px/1.1 var(--head); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-chip .name { font: 600 18px/1.1 var(--head); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trip-chip .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
 .trip-chip::after {
   content: ''; width: 7px; height: 7px; flex: none; margin-left: 2px;
@@ -95,8 +114,9 @@ button { cursor: pointer; }
 }
 .tabbar a {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  color: var(--muted); text-decoration: none; font-size: 12px; position: relative;
+  color: var(--muted); text-decoration: none; font-size: 12px; position: relative; white-space: nowrap; letter-spacing: -0.01em;
 }
+@media (max-width: 400px) { .tabbar a { font-size: 11px; } }
 .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar a.on { color: var(--ink); font-weight: 700; }
 .tabbar a.on::before { content: ''; position: absolute; top: -1px; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--trip); }
@@ -124,7 +144,7 @@ main { max-width: 680px; margin: 0 auto; padding: 24px 16px 40px; outline: none;
   min-height: 44px; padding: 0 18px; border-radius: 999px;
   font: 600 16px/1 var(--head); text-decoration: none; white-space: nowrap;
 }
-.primary { background: var(--petrol); color: #fff; border: 0; }
+.primary { background: var(--petrol); color: var(--on-primary); border: 0; }
 .primary:hover { background: var(--petrol-deep); }
 .primary .ic { stroke-width: 2.4; width: 18px; height: 18px; }
 .ghost { background: transparent; color: var(--petrol); border: 1.5px solid var(--petrol); }
@@ -284,7 +304,7 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
   box-shadow: 0 2px 10px rgba(58, 38, 23, .18);
 }
 .map-toggle button { white-space: nowrap; border: 0; background: none; padding: 8px 14px; border-radius: 999px; font-weight: 700; color: var(--muted); font-size: 14px; }
-.map-toggle button.on { background: var(--ink); color: #fff; }
+.map-toggle button.on { background: var(--ink); color: var(--paper); }
 .map-actions { position: absolute; right: 14px; bottom: 18px; z-index: 500; display: flex; align-items: center; gap: 10px; }
 .map-actions .big { min-height: 52px; padding: 0 24px; font-size: 17px; box-shadow: 0 4px 14px rgba(58, 38, 23, .28); }
 .round { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); display: grid; place-items: center; box-shadow: 0 2px 10px rgba(58, 38, 23, .2); }
@@ -292,7 +312,7 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .car-chip {
   position: absolute; left: 14px; top: 72px; z-index: 500;
   display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px;
-  border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 700; font-size: 14px;
+  border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 14px;
   box-shadow: 0 2px 10px rgba(58, 38, 23, .25);
 }
 .pin {
@@ -370,15 +390,15 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .trip-row strong { font: 700 19px/1.2 var(--head); }
 .trip-row small { display: block; color: var(--muted); font-size: 14px; }
 .trip-row.current strong::after { content: 'geöffnet'; font: 700 12px var(--body); color: #fff; background: var(--trip); border-radius: 999px; padding: 2px 8px; margin-left: 8px; vertical-align: 3px; }
-.sketch { width: 96px; height: 56px; border-radius: 10px; background: color-mix(in srgb, var(--trip) 9%, #fff); }
+.sketch { width: 96px; height: 56px; border-radius: 10px; background: color-mix(in srgb, var(--trip) 12%, var(--surface)); }
 .sketch polyline, .sketch path { fill: none; stroke: var(--trip); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .sketch circle { fill: var(--trip); }
-.sketch circle.start { fill: #fff; stroke: var(--trip); stroke-width: 2; }
+.sketch circle.start { fill: var(--surface); stroke: var(--trip); stroke-width: 2; }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
 .swatch input { position: absolute; opacity: 0; }
 .swatch span { display: block; width: 38px; height: 38px; border-radius: 50%; background: var(--c); cursor: pointer; }
-.swatch input:checked + span { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--c); }
+.swatch input:checked + span { box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--c); }
 .swatch input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 6px; }
 
 /* ---------- Einstellungen, Anmeldung ---------- */
@@ -412,8 +432,6 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .settle .move { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; width: 100%; }
 .settle .move + .move { padding-top: 12px; border-top: 1px solid var(--line); }
 
-.no-cash .tabbar { grid-template-columns: repeat(4, 1fr); }
-.no-cash .tabbar [data-tab=kasse] { display: none; }
 form:has([name=isAdmin]:checked) .cash-check { opacity: .5; pointer-events: none; }
 form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
 .admin-note { margin: -10px 0 16px; font-size: 14px; }
@@ -424,7 +442,7 @@ form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
   position: fixed; left: 50%; bottom: calc(var(--bottom) + 14px); z-index: 2000;
   transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   width: max-content; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px;
-  background: var(--ink); color: #fff; font-weight: 700; transition: .2s;
+  background: var(--ink); color: var(--paper); font-weight: 700; transition: .2s;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -435,18 +453,139 @@ form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
 /* ---------- Schaf & Schriftzug ---------- */
 
 .brand-hero { display: flex; flex-direction: column; align-items: center; gap: 18px; margin: 0 0 30px; }
-.brand-hero .hero-sheep { width: min(260px, 72vw); height: auto; }
-.brand-hero .wordmark { width: min(250px, 66vw); height: auto; }
+.hero-sheep { display: block; aspect-ratio: 516 / 406; color: var(--wood); }
+.wordmark { display: block; aspect-ratio: 401 / 67; color: var(--wood); }
+.brand-hero .hero-sheep { width: min(260px, 72vw); }
+.brand-hero .wordmark { width: min(250px, 66vw); }
 .login > h2 { font-size: 26px; margin-bottom: 8px; }
-.empty .hero-sheep { width: 150px; height: auto; display: block; margin-bottom: 18px; }
+.empty .hero-sheep { width: 150px; margin-bottom: 18px; }
 .colophon { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 0 10px; color: var(--muted); font-size: 14px; }
-.colophon img { width: 150px; height: auto; opacity: .9; }
+.colophon .wordmark { width: 150px; opacity: .9; }
 
 .install-hint {
   display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 12px 8px 12px 14px;
   border: 1.5px dashed var(--wood); border-radius: 16px; background: var(--surface);
 }
-.install-hint img { width: 44px; height: auto; flex: none; }
+.install-hint .hint-sheep { width: 46px; aspect-ratio: 516 / 406; flex: none; color: var(--wood); --sw: 12; }
 .install-hint p { margin: 0; flex: 1; font-size: 15px; }
 .install-hint .primary { min-height: 38px; padding: 0 14px; font-size: 15px; }
 .ios-share { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Bereichsgrafiken & Hintergrund-Schaf ---------- */
+
+.page-head.with-art { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.page-head.with-art .ph-text { min-width: 0; padding-bottom: 4px; }
+/* Alle Grafiken gleich hoch, damit beim Wechseln nichts springt */
+.art { height: 65px; width: calc(65px * var(--r, 1.85)); flex: none; color: var(--wood); --sw: 10; }
+.trip-head .page-head { margin-bottom: 0; }
+
+.backdrop {
+  position: fixed; z-index: -1; pointer-events: none;
+  left: 50%; bottom: calc(var(--bottom) + 4vh); transform: translateX(-50%);
+  width: min(880px, 130vw); aspect-ratio: 516 / 406;
+  color: var(--wood); opacity: .06;
+}
+body.locked .backdrop { display: none; }
+
+/* ---------- Mehr ---------- */
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.tile {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 12px 14px; text-decoration: none; color: var(--ink);
+  border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); position: relative;
+}
+.tile:hover { border-color: var(--wood); }
+.tile .art { height: 60px; width: calc(60px * var(--r, 1.85)); max-width: 100%; margin-bottom: 4px; }
+.tile b { font: 600 18px var(--head); color: var(--wood); }
+.tile small { color: var(--muted); font-size: 13px; line-height: 1.3; }
+.tile .badge { position: absolute; top: 10px; right: 10px; }
+.badge { display: inline-block; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: var(--danger); color: var(--paper); font: 700 12px/1.3 var(--body); text-align: center; }
+.badge.soon { background: #E0A21B; color: #2B1B10; }
+
+/* ---------- Listen ---------- */
+
+.list-chips { margin: 0 0 14px; padding-bottom: 2px; }
+.chip small { margin-left: 4px; opacity: .8; }
+.chip.add { border-style: dashed; color: var(--petrol); gap: 4px; }
+.chip.add .ic { width: 16px; height: 16px; }
+.trip-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+.chip.on .trip-dot { box-shadow: 0 0 0 2px var(--paper); }
+.list-head { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.list-head h2 { font-size: 22px; }
+.trip-tag { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--c); color: var(--ink); }
+.as-text { border: 0; background: none; padding: 4px 0; text-align: left; cursor: pointer; }
+.done-head h3 { font-size: 17px; color: var(--muted); }
+.box .kind { font: 500 12px var(--body); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; vertical-align: 4px; }
+.box.extra > header { border-bottom-color: var(--c); }
+
+/* ---------- Karte im Dunkeln etwas abdunkeln ---------- */
+
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .leaflet-tile-pane { filter: brightness(.82) contrast(1.05); } }
+:root[data-theme="dark"] .leaflet-tile-pane { filter: brightness(.82) contrast(1.05); }
+
+/* ---------- Planung & Orte ---------- */
+
+.plan-block { margin: 22px 0 8px; }
+.plan-block > h2 { font-size: 21px; margin-bottom: 10px; }
+.plan-block .btnrow { margin-top: 12px; }
+.plan-list { list-style: none; margin: 0; padding: 0; position: relative; }
+.plan-list::before { content: ''; position: absolute; left: 18px; top: 10px; bottom: 10px; border-left: 3px dashed var(--trip); }
+.plan-stop { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; }
+.plan-stop .node.filled { background: var(--trip); color: var(--paper); }
+.plan-stop .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.plan-stop.done .body strong { text-decoration: line-through; text-decoration-color: var(--muted); }
+.small-btn { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.done-tag { font-size: 13px; color: var(--muted); padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.plan-links, .places, .track-list, .search-results { list-style: none; margin: 0; padding: 0; }
+.plan-links button { display: flex; flex-direction: column; width: 100%; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.plan-links small, .place-row small { color: var(--muted); font-size: 14px; }
+.place-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.place-row .body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.place-row strong { font: 600 17px var(--head); color: var(--ink); }
+.node-mini { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; border: 2.5px solid var(--c); color: var(--c); }
+.node-mini .ic { width: 17px; height: 17px; }
+.search-results li button { display: block; width: 100%; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.search-results .sub { padding: 6px 0; }
+.track-list li { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.pin-place { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--c); border: 2.5px solid var(--c); box-shadow: 0 1px 3px rgba(0, 0, 0, .3); font-size: 15px; line-height: 1; }
+.pin-place .ic { width: 14px; height: 14px; stroke-width: 2.2; }
+.pin-place.planned { border-style: dashed; }
+.pin-place.done { opacity: .55; }
+.pin-place.fav { background: var(--c); color: #FBF6EC; }
+.presets { margin-bottom: 14px; }
+
+/* ---------- Tankbuch, Fahrzeug, Statistik ---------- */
+
+.ledger-sum .unit { font: 500 18px var(--body); color: var(--muted); letter-spacing: 0; }
+.due { font-size: 14px; white-space: nowrap; color: var(--muted); }
+.due.soon { color: #A86F00; font-weight: 700; }
+.due.over { color: var(--danger); font-weight: 700; }
+.all-done { margin-top: 14px; font: 600 18px var(--head); color: var(--wood); }
+.stat-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 4px 0 12px; }
+.stat-facts div { display: flex; align-items: baseline; gap: 6px; }
+.stat-facts b { font: 700 22px/1 var(--head); color: var(--ink); }
+.stat-facts span { color: var(--muted); font-size: 14px; }
+.stat-h { font-size: 19px; margin: 26px 0 10px; }
+.ledger .rating { color: #E0A21B; letter-spacing: 1px; }
+
+/* ---------- Kopfzeile: Landschaft mit vorbeifahrender V-Klasse ---------- */
+
+/* Die Landschaft steht rechts auf dem Streckenband, die V-Klasse fährt das Band entlang
+   und verschwindet kurz hinter dem Reisenamen. */
+.brandbar { justify-content: space-between; }
+.scenery { position: absolute; left: 0; right: 0; bottom: 3px; height: 44px; overflow: hidden; color: var(--wood); pointer-events: none; }
+.landscape { position: absolute; right: 8px; bottom: 0; width: 264px; max-width: 70%; height: 44px; opacity: .8; }
+.trip-chip { position: relative; z-index: 1; align-self: flex-start; background: var(--paper); border-radius: 0 999px 999px 0; padding-right: 14px; max-width: calc(100% - 40px); }
+.vklasse { position: absolute; bottom: 0; left: 0; width: 60px; height: 23px; color: #6B4226; animation: drive 24s linear infinite; }
+.vklasse .wheel { animation: roll .6s linear infinite; }
+@keyframes drive {
+  0% { transform: translateX(-70px); }
+  45% { transform: translateX(calc(var(--scene-w, 300px) + 10px)); }
+  100% { transform: translateX(calc(var(--scene-w, 300px) + 10px)); }
+}
+@keyframes roll { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .vklasse { animation: none !important; transform: translateX(calc(var(--scene-w, 300px) - 120px)); }
+  .vklasse .wheel { animation: none !important; }
+}
+.settings-btn { flex: none; }
