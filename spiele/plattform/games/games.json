@@ -5,5 +5,12 @@
     "description": "Würfeln, Farbe und Zahl wählen, Kästchen ankreuzen. Allein, zu mehreren an einem Gerät, gegen den Computer oder online.",
     "players": "1–6 Spieler · ca. 20 Minuten",
     "color": "#f4cb4d"
+  },
+  {
+    "id": "wuerfelpoker",
+    "title": "Würfelpoker",
+    "description": "Fünf Würfel, drei Würfe, dreizehn Zeilen. Allein auf Bestwert, zu mehreren an einem Gerät, gegen den Computer oder online.",
+    "players": "1–6 Spieler · ca. 20–30 Minuten",
+    "color": "#e3b341"
   }
 ]

@@ -4,7 +4,7 @@ Passwortgeschützte Seite für Familie und Freunde. Jede Person bekommt ein eige
 Nach der Anmeldung erscheinen alle hinterlegten Spiele. Spiele mit Online-Modus lassen sich
 an mehreren Geräten gegeneinander spielen.
 
-Enthalten: **Farbkreuz** (Würfelspiel nach den Regeln von „Noch mal!“) mit bis zu 6 Spielern:
+Enthalten: **Würfelpoker** (13 Runden, 5 Würfel, Wertungsblock) und **Farbkreuz** (Würfelspiel nach den Regeln von „Noch mal!“), jeweils mit bis zu 6 Spielern:
 allein (Solo-Regeln), an einem Gerät (Mitspieler reichen das Gerät weiter, dazu 0–5 Computer-Gegner)
 oder online an mehreren Geräten. Spielblatt wahlweise das Standardblatt oder zufällig verteilt.
 

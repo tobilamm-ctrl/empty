@@ -833,7 +833,7 @@ function render() {
       const rank = S.players.map(p => ({ p, s: score(p) })).sort((a, b) => b.s.total - a.s.total || a.p.jokers - b.p.jokers);
       const best = rank[0];
       const win = rank.filter(r => r.s.total === best.s.total && r.p.jokers === best.p.jokers).map(r => r.p.name);
-      res.innerHTML = `<h2>${win.length > 1 ? "Gleichstand" : `${esc(win[0])} gewinnt`}</h2>
+      res.innerHTML = `<h2>${win.length > 1 ? "Gleichstand" : `${esc(win[0])} ${win[0] === "Du" ? "gewinnst" : "gewinnt"}`}</h2>
         <ol class="rank">${rank.map(r => `<li><span>${esc(r.p.name)}</span><span>${r.s.total} Punkte · ${MAXJ - r.p.jokers} Joker übrig</span></li>`).join("")}</ol>${again}`;
     }
     res.hidden = false;

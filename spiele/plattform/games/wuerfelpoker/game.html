@@ -1,0 +1,465 @@
+<title>Würfelpoker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: grüner Würfelteller oben bzw. links, daneben der Wertungsblock mit einer Spalte je Spieler; schmal untereinander */
+:root {
+  color-scheme: dark;
+  --table: #0f1612;
+  --sheet: #18241d;
+  --sheet-2: #23332a;
+  --ink: #f1f4ef;
+  --muted: #9faea4;
+  --felt: #1f5b3d;
+  --felt-dark: #143d29;
+  --paper: #f4f5f1;
+  --paper-line: #d5dbd3;
+  --paper-ink: #24302a;
+  --pen: #213a8f;
+  --pencil: #8e97a3;
+  --accent: #e3b341;
+  --tile-ink: #1b2219;
+  --red: #e0605e;
+  --green: #6fbf73;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand", "Comic Sans MS", "Segoe Print", cursive;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 5vw, 42px); line-height: 1; margin: 0; letter-spacing: .5px; color: var(--ink); }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: 420px minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+/* schmal: Würfelteller, dann gleich der Block, danach Verlauf und Regeln */
+@media (max-width: 979px) {
+  .col { display: contents; }
+  .tray, .sk-lobby { order: 1; } .pad-panel { order: 2; } .log-panel { order: 3; } .rules { order: 4; }
+}
+
+/* ---------- Würfelteller ---------- */
+.tray { background: radial-gradient(ellipse at 50% 35%, var(--felt) 0%, var(--felt-dark) 100%); border-radius: 18px; padding: 18px; box-shadow: inset 0 0 0 6px #0b2416, inset 0 0 30px rgba(0,0,0,.35); }
+.tray h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 4px; }
+.turn-info { color: color-mix(in srgb, var(--ink) 75%, var(--felt)); font-size: 13px; margin-bottom: 14px; font-variant-numeric: tabular-nums; }
+.dice { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 8px 0 20px; }
+.die {
+  width: 62px; height: 62px; border: 0; border-radius: 13px; padding: 9px; cursor: pointer; position: relative;
+  background: #fbfbf8; box-shadow: inset 0 -5px 0 rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.3);
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); transition: transform .15s ease;
+}
+.die i { width: 10px; height: 10px; border-radius: 50%; background: var(--tile-ink); place-self: center; }
+.die.blank { background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); cursor: default; }
+.die.held { transform: translateY(-8px); box-shadow: 0 0 0 3px var(--accent), 0 8px 14px rgba(0,0,0,.35); }
+.die.held::after { content: "gehalten"; position: absolute; left: 50%; bottom: -24px; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: .04em; }
+.die:disabled:not(.blank) { cursor: default; }
+.die.rolling { animation: tumble .5s ease; }
+@keyframes tumble { 0% { transform: rotate(0) } 30% { transform: rotate(-25deg) translateY(-10px) } 60% { transform: rotate(18deg) } 100% { transform: rotate(0) } }
+.status { min-height: 3em; margin: 6px 0 12px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn.go { background: var(--accent); color: var(--tile-ink); }
+
+/* ---------- Wertungsblock ---------- */
+.pad { background: var(--paper); color: var(--paper-ink); border-radius: 12px; padding: 12px 4px 8px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.pad-wrap { overflow-x: auto; }
+table.score { border-collapse: collapse; width: 100%; min-width: 300px; font-variant-numeric: tabular-nums; }
+.score th, .score td { border-bottom: 1px solid var(--paper-line); padding: 0; height: 36px; }
+.score thead th { font-family: var(--font-display); font-weight: 400; font-size: 15px; padding: 4px 6px 8px; text-align: center; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th.cat-h { text-align: left; padding-left: 12px; color: color-mix(in srgb, var(--paper-ink) 60%, var(--paper)); font-family: var(--font-body); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.score thead th.on { color: var(--pen); }
+.who-ai { display: block; font-family: var(--font-body); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--paper-ink) 50%, var(--paper)); }
+.muted { color: var(--muted); }
+.score thead th.on::after { content: ""; display: block; height: 3px; margin: 4px auto 0; width: 70%; border-radius: 2px; background: var(--accent); }
+.score .cat { text-align: left; padding: 3px 10px 3px 12px; }
+.score .cat b { display: block; font-weight: 800; font-size: 14px; line-height: 1.15; }
+.score .cat small { display: block; color: color-mix(in srgb, var(--paper-ink) 55%, var(--paper)); font-size: 11.5px; line-height: 1.2; }
+.score td.v { text-align: center; font-family: var(--font-hand); font-size: 22px; color: var(--pen); min-width: 46px; }
+.score td.v.zero { color: var(--red); }
+.score td.v.col-on { background: color-mix(in srgb, var(--accent) 12%, var(--paper)); }
+.score tr.sum td, .score tr.sum .cat { background: color-mix(in srgb, var(--paper-line) 45%, var(--paper)); }
+.score tr.sum .cat b { font-size: 13px; }
+.score tr.total td.v { font-size: 26px; }
+.score tr.total .cat b { font-family: var(--font-display); font-weight: 400; font-size: 17px; }
+.score tr.gap td, .score tr.gap th { height: 10px; border: 0; }
+.opt {
+  width: 100%; height: 100%; min-height: 34px; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--font-hand); font-size: 21px; color: var(--pencil);
+}
+.opt:hover, .opt:focus-visible { background: color-mix(in srgb, var(--pen) 10%, var(--paper)); color: var(--pen); outline: none; }
+.opt.pick { background: color-mix(in srgb, var(--accent) 45%, var(--paper)); color: var(--pen); box-shadow: inset 0 0 0 2px var(--pen); }
+.opt.nil { color: color-mix(in srgb, var(--red) 70%, var(--paper)); }
+
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; max-height: 260px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 12px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; }
+/* schmale Bildschirme: Block enger setzen (steht am Ende, damit es die Grundregeln übersteuert) */
+@media (max-width: 560px) {
+  .score .cat { padding-left: 8px; }
+  .score td.v { font-size: 19px; min-width: 34px; }
+  .score .cat b { font-size: 13px; }
+  .pad-panel { padding: 12px; }
+  .score thead .who-ai { display: none; }
+  .score thead th { font-size: 13px; padding-inline: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Würfel<span>poker</span></h1>
+      <div class="sub">Fünf Würfel, drei Würfe, dreizehn Zeilen</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="tray" id="tray" aria-label="Würfelteller">
+        <h2 id="tray-title">Würfelteller</h2>
+        <div class="turn-info" id="turn-info"></div>
+        <div class="dice" id="dice"></div>
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="actions" id="tray-actions">
+          <button class="btn primary big" id="btn-roll" type="button">Würfeln</button>
+          <button class="btn go big" id="btn-write" type="button" disabled>Eintragen</button>
+        </div>
+      </section>
+      <section class="panel log-panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Gespielt werden 13 Runden. In jedem Zug darfst du bis zu <b>dreimal würfeln</b>. Würfel, die du behalten willst, tippst du zwischen den Würfen an.</li>
+            <li>Danach trägst du das Ergebnis in <b>eine freie Zeile</b> deiner Spalte ein. Passt nichts, streichst du eine Zeile mit 0 Punkten.</li>
+            <li><b>Oberer Teil:</b> Einser bis Sechser zählen nur die passenden Augen. Ab 63 Punkten oben gibt es <b>35 Bonus</b>.</li>
+            <li><b>Dreierpasch / Viererpasch:</b> mindestens 3 bzw. 4 gleiche, es zählen alle Augen.</li>
+            <li><b>Full House:</b> 3 gleiche und 2 gleiche, 25 Punkte. <b>Kleine Straße:</b> 4 in Folge, 30. <b>Große Straße:</b> 5 in Folge, 40.</li>
+            <li><b>Poker:</b> 5 gleiche, 50 Punkte. <b>Chance:</b> alle Augen, ohne Bedingung.</li>
+            <li>Wenn alle Zeilen voll sind, gewinnt die höchste Summe.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+    <section class="panel pad-panel" aria-label="Wertungsblock">
+      <h2>Wertungsblock</h2>
+      <div class="pad"><div class="pad-wrap"><table class="score" id="score"></table></div></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+const ROUNDS = 13, BONUS_AT = 63, BONUS = 35;
+const UPPER = ["c1", "c2", "c3", "c4", "c5", "c6"];
+const LOWER = ["drei", "vier", "full", "klein", "gross", "poker", "chance"];
+const CATS = UPPER.concat(LOWER);
+const INFO = {
+  c1: ["Einser", "nur Einsen zählen"], c2: ["Zweier", "nur Zweien zählen"], c3: ["Dreier", "nur Dreien zählen"],
+  c4: ["Vierer", "nur Vieren zählen"], c5: ["Fünfer", "nur Fünfen zählen"], c6: ["Sechser", "nur Sechsen zählen"],
+  drei: ["Dreierpasch", "3 gleiche · alle Augen"], vier: ["Viererpasch", "4 gleiche · alle Augen"],
+  full: ["Full House", "3 + 2 gleiche · 25"], klein: ["Kleine Straße", "4 in Folge · 30"], gross: ["Große Straße", "5 in Folge · 40"],
+  poker: ["Poker", "5 gleiche · 50"], chance: ["Chance", "alle Augen"],
+};
+// Pip-Positionen im 3×3-Raster (1–9, zeilenweise)
+const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+const RATING = [
+  [300, "Würfelprofi", "Eine Ausnahmerunde. Mehr Glück und Übersicht geht kaum."],
+  [250, "Stark", "Da lagen die Würfel richtig gut."],
+  [200, "Gut", "Eine runde Sache, mit der man sich sehen lassen kann."],
+  [160, "Solide", "Ordentlich gespielt, ein paar Punkte lagen noch auf dem Tisch."],
+  [-Infinity, "Ausbaufähig", "Die nächste Runde wird besser. Tipp: auf den Bonus oben achten."],
+];
+
+let S, kit;
+const UI = { pick: null, pickFor: "", animSeq: -1 };
+
+// ---------- Wertung ----------
+const counts = d => { const c = [0, 0, 0, 0, 0, 0, 0]; d.forEach(v => c[v]++); return c; };
+const sum = d => d.reduce((a, b) => a + b, 0);
+function scoreCat(cat, d) {
+  const c = counts(d), max = Math.max(...c), has = v => c[v] > 0;
+  const run = len => [1, 2, 3].some(s => { for (let k = 0; k < len; k++) if (!has(s + k)) return false; return true; });
+  switch (cat) {
+    case "drei": return max >= 3 ? sum(d) : 0;
+    case "vier": return max >= 4 ? sum(d) : 0;
+    case "full": return c.includes(3) && c.includes(2) ? 25 : 0;
+    case "klein": return run(4) ? 30 : 0;
+    case "gross": return run(5) ? 40 : 0;
+    case "poker": return max === 5 ? 50 : 0;
+    case "chance": return sum(d);
+    default: { const v = +cat.slice(1); return c[v] * v; }
+  }
+}
+function totals(p) {
+  const up = UPPER.reduce((a, k) => a + (p.sheet[k] || 0), 0);
+  const low = LOWER.reduce((a, k) => a + (p.sheet[k] || 0), 0);
+  const bonus = up >= BONUS_AT ? BONUS : 0;
+  return { up, bonus, low, total: up + bonus + low };
+}
+const filled = p => CATS.filter(k => p.sheet[k] != null).length;
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, sheet: Object.fromEntries(CATS.map(k => [k, null])) });
+function newState({ roster, mode }) {
+  const nh = roster.filter(r => !r.ai).length;
+  const s = { players: roster.map(newPlayer), active: 0, dice: [null, null, null, null, null], held: [false, false, false, false, false],
+    rollsLeft: 3, rollSeq: 0, phase: "play", log: [] };
+  if (mode === "local" && nh > 1) s.active = rnd(nh);
+  return s;
+}
+function onStart(s) {
+  s.active = rnd(s.players.length); s.phase = "play";
+  kit.addLog(`<b>${esc(s.players[s.active].name)}</b> beginnt.`);
+  playBots();
+}
+const whoActs = () => (S.phase === "play" ? [S.active] : []);
+const rolled = () => S.dice[0] != null;
+const round = () => Math.min(ROUNDS, Math.min(...S.players.map(filled)) + 1);
+
+// ---------- Züge (verändern nur S, laufen über kit.act) ----------
+function roll() {
+  const first = !rolled();
+  S.dice = S.dice.map((v, i) => (first || !S.held[i] ? 1 + rnd(6) : v));
+  if (first) S.held = [false, false, false, false, false];
+  S.rollsLeft--; S.rollSeq++;
+}
+function write(cat) {
+  const p = S.players[S.active], pts = scoreCat(cat, S.dice);
+  p.sheet[cat] = pts;
+  kit.addLog(`<b>${esc(p.name)}</b>: ${INFO[cat][0]} ${pts ? pts : "gestrichen"} <span class="muted">(${S.dice.join(" ")})</span>`);
+  S.dice = [null, null, null, null, null]; S.held = [false, false, false, false, false]; S.rollsLeft = 3;
+  if (S.players.every(q => filled(q) === ROUNDS)) {
+    S.phase = "over";
+    kit.addLog("<b>Spielende.</b>");
+    if (kit.solo()) { // Bestwert dieses Geräts einmalig beim Spielende vergleichen
+      S.prevBest = +(kit.store.get("rekord") || 0);
+      if (totals(p).total > S.prevBest) kit.store.set("rekord", String(totals(p).total));
+    }
+    return;
+  }
+  S.active = (S.active + 1) % S.players.length;
+  playBots();
+}
+
+// ---------- Computer-Gegner ----------
+// Richtwerte je Zeile: was dort „normal“ wäre. Der Computer schreibt dahin, wo er den Richtwert am meisten übertrifft.
+const PAR = { c1: 2, c2: 5, c3: 8, c4: 11, c5: 14, c6: 17, drei: 17, vier: 10, full: 14, klein: 18, gross: 14, poker: 8, chance: 22 };
+function catValue(p, cat, d) {
+  const pts = scoreCat(cat, d);
+  let v = pts - PAR[cat];
+  if (UPPER.includes(cat)) {
+    const face = +cat.slice(1), { up } = totals(p);
+    const openUp = UPPER.filter(k => p.sheet[k] == null).length;
+    if (up < BONUS_AT) {
+      if (up + pts >= BONUS_AT) v += 25;                       // Bonus sicher
+      else v += (pts - 3 * face) * (openUp > 1 ? 0.8 : 0.3);  // Vorsprung oder Rückstand auf den Bonus
+    }
+  }
+  if (cat === "chance" && pts < 20) v -= 4;                    // Chance nicht billig verbrauchen
+  return v;
+}
+function bestCat(p, d) {
+  let best = null, bv = -Infinity;
+  for (const k of CATS) if (p.sheet[k] == null) { const v = catValue(p, k, d); if (v > bv) { bv = v; best = k; } }
+  return { cat: best, value: bv };
+}
+// Welche Würfel halten? Für jede Auswahl einige Hundert Würfe durchspielen und den Mittelwert vergleichen.
+function bestHold(p, d, rollsLeft) {
+  const seen = new Set();
+  let best = { mask: 31, value: bestCat(p, d).value }; // 31 = alle halten = aufhören
+  for (let mask = 0; mask < 31; mask++) {
+    const keep = d.filter((_, i) => mask & (1 << i)).sort().join("");
+    if (seen.has(keep)) continue;
+    seen.add(keep);
+    const N = 160;
+    let tot = 0;
+    for (let n = 0; n < N; n++) {
+      let t = d.map((v, i) => (mask & (1 << i) ? v : 1 + rnd(6)));
+      if (rollsLeft > 1) { // zweiter Wurf grob: Paare und mehr behalten
+        const c = counts(t), top = c.indexOf(Math.max(...c));
+        t = t.map(v => (v === top ? v : 1 + rnd(6)));
+      }
+      tot += bestCat(p, t).value;
+    }
+    const v = tot / N;
+    if (v > best.value + 0.2) best = { mask, value: v };
+  }
+  return best.mask;
+}
+function playBots() {
+  let guard = 0;
+  while (S.phase === "play" && S.players[S.active].ai && guard++ < 20) {
+    const p = S.players[S.active];
+    roll();
+    while (S.rollsLeft > 0) {
+      const mask = bestHold(p, S.dice, S.rollsLeft);
+      if (mask === 31) break;
+      S.held = S.held.map((_, i) => !!(mask & (1 << i)));
+      roll();
+    }
+    write(bestCat(p, S.dice).cat);
+  }
+}
+
+// ---------- Eingaben ----------
+const mine = () => S.phase === "play" && kit.me() === S.active;
+$("btn-roll").addEventListener("click", () => {
+  const seq = S.rollSeq;
+  kit.act(() => { if (!mine() || S.rollsLeft <= 0 || S.rollSeq !== seq) return false; roll(); });
+});
+$("dice").addEventListener("click", e => {
+  const b = e.target.closest(".die"); if (!b) return;
+  const i = +b.dataset.i, seq = S.rollSeq;
+  kit.act(() => { if (!mine() || !rolled() || S.rollsLeft <= 0 || S.rollSeq !== seq) return false; S.held[i] = !S.held[i]; });
+});
+$("score").addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  UI.pick = UI.pick === b.dataset.cat ? null : b.dataset.cat;
+  render();
+});
+$("btn-write").addEventListener("click", () => {
+  const cat = UI.pick, seq = S.rollSeq;
+  if (!cat) return;
+  UI.pick = null;
+  kit.act(() => { if (!mine() || !rolled() || S.rollSeq !== seq || S.players[S.active].sheet[cat] != null) return false; write(cat); });
+});
+$("result").addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Darstellung ----------
+const dieHtml = (v, i, cls, dis) =>
+  `<button type="button" class="die${cls}" data-i="${i}" aria-label="${v ? `Würfel ${i + 1}: ${v}${S.held[i] ? ", gehalten" : ""}` : "noch nicht gewürfelt"}" aria-pressed="${!!S.held[i]}"${dis ? " disabled" : ""}>` +
+  (v ? Array.from({ length: 9 }, (_, k) => (PIPS[v].includes(k + 1) ? `<i style="grid-area:${Math.floor(k / 3) + 1}/${k % 3 + 1}"></i>` : "")).join("") : "") + `</button>`;
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine(), a = S.players[S.active];
+  $("tray").hidden = lobby;
+  $("dice").hidden = $("tray-actions").hidden = S.phase === "over";
+  // Auswahl gehört zu Spieler und Wurf
+  const key = `${S.active}:${S.rollSeq}:${mi}`;
+  if (UI.pickFor !== key) { UI.pick = null; UI.pickFor = key; }
+
+  $("tray-title").textContent = S.phase === "over" ? "Spielende" : me ? `${a.name}, du bist dran` : `${a.name} ist dran`;
+  $("turn-info").textContent = S.phase === "over" ? `${S.players.length} Spieler · 13 Runden gespielt`
+    : `Runde ${round()} von ${ROUNDS} · ${S.rollsLeft} Wurf${S.rollsLeft === 1 ? "" : "e"} übrig${kit.online() ? ` · Raum ${kit.roomId()}` : ""}`;
+  const anim = S.rollSeq !== UI.animSeq && rolled();
+  $("dice").innerHTML = S.dice.map((v, i) => dieHtml(v, i,
+    (v ? "" : " blank") + (S.held[i] ? " held" : "") + (anim && !S.held[i] ? " rolling" : ""),
+    !me || !rolled() || S.rollsLeft <= 0)).join("");
+  UI.animSeq = S.rollSeq;
+
+  let st = "";
+  if (S.phase === "play") {
+    if (!me) st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>.`;
+    else if (!rolled()) st = filled(a) === 0 && S.players.every(p => filled(p) === 0)
+      ? "Würfle, um zu beginnen. Mitspieler und Computer-Gegner stellst du unter „Neues Spiel“ ein."
+      : "Würfle für deinen Zug.";
+    else if (UI.pick) st = `<strong>${INFO[UI.pick][0]}</strong>: ${scoreCat(UI.pick, S.dice) || "0 Punkte, die Zeile wird gestrichen"}${scoreCat(UI.pick, S.dice) ? " Punkte" : ""}. Mit „Eintragen“ bestätigen.`;
+    else if (S.rollsLeft > 0) st = "Tippe Würfel an, um sie zu halten, und würfle weiter. Oder wähle im Block eine Zeile.";
+    else st = "Keine Würfe mehr. Wähle im Block eine Zeile zum Eintragen.";
+  }
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("btn-roll").disabled = !me || S.rollsLeft <= 0;
+  $("btn-roll").textContent = !rolled() ? "Würfeln" : `Nochmal würfeln (${S.rollsLeft})`;
+  $("btn-write").disabled = !me || !UI.pick;
+  $("btn-write").textContent = UI.pick ? `Eintragen: ${INFO[UI.pick][0]}` : "Eintragen";
+
+  // Wertungsblock
+  const showOpts = me && rolled();
+  const head = `<thead><tr><th class="cat-h" scope="col">Zeile</th>${S.players.map((p, i) =>
+    `<th scope="col" class="${i === S.active && S.phase === "play" ? "on" : ""}" title="${esc(p.name)}${p.ai ? " (Computer)" : ""}">${esc(p.name)}${p.ai ? `<small class="who-ai">Computer</small>` : ""}</th>`).join("")}</tr></thead>`;
+  const cell = (p, i, k) => {
+    const v = p.sheet[k], on = i === S.active && S.phase === "play" ? " col-on" : "";
+    if (v != null) return `<td class="v${v === 0 ? " zero" : ""}${on}">${v === 0 ? "–" : v}</td>`;
+    if (showOpts && i === S.active) {
+      const pts = scoreCat(k, S.dice);
+      return `<td class="v${on}"><button type="button" class="opt${pts ? "" : " nil"}${UI.pick === k ? " pick" : ""}" data-cat="${k}" aria-label="${INFO[k][0]}: ${pts} Punkte">${pts || "0"}</button></td>`;
+    }
+    return `<td class="v${on}"></td>`;
+  };
+  const row = k => `<tr><th class="cat" scope="row"><b>${INFO[k][0]}</b><small>${INFO[k][1]}</small></th>${S.players.map((p, i) => cell(p, i, k)).join("")}</tr>`;
+  const sumRow = (label, sub, f, cls = "sum") => `<tr class="${cls}"><th class="cat" scope="row"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</th>${S.players.map((p, i) =>
+    `<td class="v${i === S.active && S.phase === "play" ? " col-on" : ""}">${f(totals(p), p)}</td>`).join("")}</tr>`;
+  $("score").innerHTML = head + "<tbody>" + UPPER.map(row).join("")
+    + sumRow("Summe oben", `Bonus ab ${BONUS_AT}`, t => t.up)
+    + sumRow("Bonus", `+${BONUS}`, (t, p) => (t.bonus ? t.bonus : UPPER.every(k => p.sheet[k] != null) ? "–" : `<span style="color:var(--pencil);font-size:15px">noch ${Math.max(0, BONUS_AT - t.up)}</span>`))
+    + `<tr class="gap"><td colspan="${S.players.length + 1}"></td></tr>`
+    + LOWER.map(row).join("")
+    + sumRow("Summe unten", "", t => t.low)
+    + sumRow("Gesamt", "", t => t.total, "sum total") + "</tbody>";
+
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neue Runde im selben Raum" : "Noch eine Runde"}</button>`;
+    const rank = S.players.map(p => ({ p, t: totals(p).total })).sort((x, y) => y.t - x.t);
+    if (kit.solo()) {
+      const t = rank[0].t, [, name, text] = RATING.find(([min]) => t >= min);
+      const best = S.prevBest || 0;
+      res.innerHTML = `<h2>${t} Punkte · ${name}</h2><p>${text} ${t > best ? (best ? `Neuer Bestwert, bisher ${best}.` : "Dein erster Bestwert.") : `Dein Bestwert: ${best}.`}</p>${again}`;
+    } else {
+      const win = rank.filter(r => r.t === rank[0].t).map(r => r.p.name);
+      res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(esc).join(" und ")}` : `${esc(win[0])} ${win[0] === "Du" ? "gewinnst" : "gewinnt"}`}</h2>
+        <ol class="rank">${rank.map(r => `<li><span>${esc(r.p.name)}</span><span>${r.t} Punkte</span></li>`).join("")}</ol>${again}`;
+    }
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "wuerfelpoker", version: 1, minPlayers: 2, maxPlayers: 6, bots: true, defaultBots: 1,
+  solo: { label: "Allein", small: "13 Runden, Bestwert schlagen" },
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.dice) && s.players.every(p => p.sheet),
+  roomStatus: s => `läuft · Runde ${Math.min(ROUNDS, Math.min(...s.players.map(filled)) + 1)}`,
+  handoverText: s => `Runde ${round()} von ${ROUNDS}. Du würfelst.`,
+});
+kit.start();
+})();
+</script>

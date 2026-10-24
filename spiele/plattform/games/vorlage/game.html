@@ -127,7 +127,7 @@ function render() {
   $("die").textContent = S.die || "–";
   $("die").className = "die" + (S.die === 1 ? " one" : "");
   $("turn-sum").textContent = S.turn;
-  const st = S.phase === "over" ? `Spielende: <b>${esc(S.players.find(p => p.score >= GOAL).name)}</b> gewinnt.`
+  const st = S.phase === "over" ? `Spielende: <b>${esc(S.players.find(p => p.score >= GOAL).name)}</b> ${S.players.find(p => p.score >= GOAL).name === "Du" ? "gewinnst" : "gewinnt"}.`
     : mine() ? `<b>${esc(a.name)}</b>, du bist dran. Würfeln oder Punkte behalten?`
     : `Warte auf <b>${esc(a.name)}</b>.`;
   $("status").innerHTML = st + (kit.error ? ` <span class="sk-err">${esc(kit.error)}</span>` : "");
