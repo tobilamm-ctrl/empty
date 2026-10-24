@@ -1,0 +1,52 @@
+/* Spielkit: Bedienelemente, die alle Spiele teilen. Farben kommen aus den Tokens des Spiels
+   (--sheet, --sheet-2, --ink, --muted, --accent, --tile-ink, --red, --font-display); die Werte
+   hinter dem Komma gelten, wenn ein Spiel sie nicht setzt. */
+[hidden] { display: none !important; }
+.btn { border: 0; border-radius: 999px; padding: 9px 18px; font: inherit; font-weight: 800; cursor: pointer; background: var(--sheet-2, #2a2932); color: var(--ink, #f6f5f8); }
+.btn:hover:not(:disabled) { filter: brightness(1.15); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: var(--accent, #f4cb4d); color: var(--tile-ink, #1e1d24); }
+.btn.big { font-size: 17px; padding: 12px 24px; }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn:focus-visible, .sk-home:focus-visible, .sk-dialog input:focus-visible, .sk-dialog select:focus-visible { outline: 3px solid var(--accent, #f4cb4d); outline-offset: 2px; }
+
+.sk-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sk-home { color: var(--muted, #a3a1b0); font-weight: 700; text-decoration: none; margin-right: 6px; }
+.sk-home:hover { color: var(--ink, #f6f5f8); }
+.sk-banner { margin: 0; background: color-mix(in srgb, var(--red, #ec5f74) 25%, var(--sheet, #1e1d24)); border-radius: 10px; padding: 10px 14px; }
+.sk-label { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; color: var(--muted, #a3a1b0); }
+.sk-muted { color: var(--muted, #a3a1b0); }
+.sk-err { color: var(--red, #ec5f74); font-weight: 700; }
+
+/* Wartebereich eines Online-Raums */
+.sk-lobby h2 { font-family: var(--font-display, sans-serif); font-weight: 400; font-size: 20px; margin: 0 0 10px; }
+.sk-lobby p { margin: 6px 0 0; }
+.sk-code { font-family: var(--font-display, sans-serif); font-size: 28px; letter-spacing: 3px; color: var(--accent, #f4cb4d); }
+.sk-roster { list-style: none; padding: 0; margin: 10px 0 14px; display: grid; gap: 6px; }
+.sk-roster li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 8px 12px; }
+.sk-chip { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--sheet, #1e1d24); color: var(--muted, #a3a1b0); white-space: nowrap; }
+.sk-chip.on { background: var(--accent, #f4cb4d); color: var(--tile-ink, #1e1d24); }
+.sk-chip.done { background: color-mix(in srgb, var(--green, #78b75e) 35%, var(--sheet, #1e1d24)); color: var(--ink, #f6f5f8); }
+.sk-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* Dialoge */
+.sk-overlay { position: fixed; inset: 0; background: rgba(8, 8, 12, .72); display: grid; place-items: center; z-index: 20; padding: 16px; overflow-y: auto; }
+.sk-dialog { background: var(--sheet, #1e1d24); color: var(--ink, #f6f5f8); border-radius: 16px; padding: 22px; width: min(460px, 100%); display: grid; gap: 14px; margin: auto; }
+.sk-dialog h2 { font-family: var(--font-display, sans-serif); font-weight: 400; margin: 0; font-size: 24px; }
+.sk-field { display: grid; gap: 5px; }
+.sk-field > .btn { justify-self: start; }
+.sk-dialog select, .sk-dialog input:not([type="radio"]):not([type="checkbox"]) { background: var(--sheet-2, #2a2932); border: 0; border-radius: 8px; padding: 9px 11px; color: var(--ink, #f6f5f8); font: inherit; min-width: 0; }
+.sk-seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.sk-seg label { flex: 1; min-width: 120px; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 10px; cursor: pointer; }
+.sk-seg input { accent-color: var(--accent, #f4cb4d); margin-right: 6px; }
+.sk-seg small { display: block; color: var(--muted, #a3a1b0); }
+.sk-humans { display: grid; gap: 6px; }
+.sk-hrow { display: flex; gap: 6px; }
+.sk-hrow input { flex: 1; }
+.sk-rooms { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+.sk-rooms li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 8px 10px; }
+.sk-r-info { min-width: 0; }
+.sk-r-info small { display: block; color: var(--muted, #a3a1b0); }
+.sk-ho { text-align: center; }
+.sk-ho p { margin: 0; }
+.sk-big { font-family: var(--font-display, sans-serif); font-size: 34px; color: var(--accent, #f4cb4d); line-height: 1.1; }

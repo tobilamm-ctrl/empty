@@ -49,28 +49,70 @@ vor den Ordner legen. Dann fragt der Browser vor der Login-Seite noch ein zweite
 Wichtig ist nur der Ordner `data/`: `users.json` (Konten) und `rooms/` (laufende Online-Spiele).
 Online-Räume ohne Änderung werden nach 3 Tagen automatisch gelöscht.
 
-## Ein neues Spiel hinzufügen
+## Ein neues Spiel bauen
 
-1. Ordner `games/<kennung>/` anlegen (Kennung: Kleinbuchstaben, Ziffern, Minus) und darin
-   eine `game.html` ablegen. Sie enthält nur den Seiteninhalt (Styles, Markup, Skript) ohne
-   `<html>`/`<head>`. Den Rahmen ergänzt `play.php`.
-2. In `games/games.json` einen Eintrag ergänzen:
+Alle Spiele nutzen das gemeinsame Gerüst **Spielkit** (`assets/spielkit.js`, `assets/spielkit.css`).
+Es übernimmt:
+
+- den Dialog „Neues Spiel“: Spielart (an diesem Gerät / allein / online), Spieler mit Namen,
+  Computer-Gegner und einen Bereich für eigene Einstellungen des Spiels
+- Online-Räume: eröffnen, beitreten, Wartebereich, Computer-Gegner hinzufügen, starten, neue Runde,
+  Abgleich zwischen den Geräten
+- den Bildschirm „Gerät weitergeben an …“, wenn mehrere Menschen an einem Gerät spielen
+- Speichern des laufenden Spiels auf dem Gerät und den Rückweg zur Spieleübersicht
+
+Das Spiel liefert nur Regeln und Darstellung. Ein vollständiges, kommentiertes Beispiel ist
+`games/vorlage/game.html` (das Würfelspiel „Schweinchen“). So geht's:
+
+1. `games/vorlage/` kopieren, z. B. nach `games/meinspiel/`.
+2. In `game.html` Regeln und Darstellung ersetzen. Die Platzhalter für das Gerüst bleiben stehen:
+   `data-sk-toolbar` (Knöpfe oben), `data-sk-banner` (Hinweise), `data-sk-lobby` (Wartebereich online).
+3. In `games/games.json` eintragen:
    ```json
-   { "id": "kennung", "title": "Name", "description": "Ein Satz", "players": "2–4 Spieler", "color": "#58a8e2" }
+   { "id": "meinspiel", "title": "Name", "description": "Ein Satz", "players": "2–4 Spieler", "color": "#58a8e2" }
    ```
-3. Im Spiel steht `window.PLATFORM` bereit: `user`, `name`, `game`, `api`, `home`, `csrf`.
-   Für Online-Spiele die Raum-Schnittstelle `api.php` nutzen:
 
-   | Aufruf | Zweck |
-   |---|---|
-   | `GET api.php?a=rooms&game=<id>` | offene Räume des Spiels |
-   | `POST api.php?a=create` `{game, state, meta}` | Raum anlegen → `{id, version}` |
-   | `GET api.php?a=get&id=<id>&since=<version>` | Spielstand abholen (`changed: false`, wenn unverändert) |
-   | `POST api.php?a=put` `{id, version, state, meta}` | Spielstand speichern; bei veralteter Version Antwort 409 mit aktuellem Stand |
-   | `POST api.php?a=delete` `{id}` | Raum schließen (nur wer ihn eröffnet hat) |
+### Was das Spiel dem Spielkit übergibt
 
-   POST-Aufrufe brauchen den Header `X-CSRF-Token: PLATFORM.csrf`. `meta` ist
-   `{title, status, players[], open}` und wird nur für die Raumliste genutzt.
+```js
+const kit = Spielkit.create({
+  id: "meinspiel",            // Kennung für das Speichern
+  version: 1,                 // erhöhen, wenn alte Spielstände nicht mehr passen
+  minPlayers: 2, maxPlayers: 6,
+  bots: true,                 // gibt es Computer-Gegner?
+  solo: { label: "Allein", small: "…" },   // nur wenn es eine Solo-Variante gibt
+  setup: { html, init, sync, read },        // eigene Felder im Dialog (optional, Beispiel: Farbkreuz)
+  newPlayer: r => ({ ...r, punkte: 0 }),    // r = { id, name, ai }
+  newState: ({ mode, roster, options, rematch }) => ({ players: roster.map(newPlayer), phase: "…", log: [] }),
+  onStart: s => { … },        // online: Gastgeber startet (aus dem Wartebereich oder als neue Runde)
+  whoActs: () => [ … ],       // Indizes der Spieler, die gerade handeln dürfen (Reihenfolge zählt)
+  onState: s => { S = s; },   // das Spielkit hat einen neuen Spielstand (laden, Server, neues Spiel)
+  render,                     // Spielstand anzeigen
+  roomStatus: s => "…",       // Text in der Raumliste (optional)
+  handoverText: (s, i) => "…",// Text auf dem Weitergeben-Bildschirm (optional)
+});
+kit.start();
+```
+
+Jede Änderung am Spielstand läuft über `kit.act(() => { … })`. Lokal wird sofort gespeichert. Online
+wird an den Server geschickt, und wenn ein anderes Gerät schneller war, läuft die Funktion auf dem
+neuesten Stand erneut. Gibt sie `false` zurück (Zug nicht mehr erlaubt), wird nichts gespeichert.
+
+Weitere Helfer: `kit.me()` (wer bedient gerade das Gerät, online −1 = Zuschauer), `kit.addLog(html)`,
+`kit.isHost()`, `kit.online()`, `kit.solo()`, `kit.hotSeat()`, `kit.roomId()`, `kit.rematch()`,
+`kit.openSetup()`, `kit.error`.
+
+Spielstände müssen als JSON speicherbar sein (keine Funktionen, keine `Set`/`Map`).
+
+### Raum-Schnittstelle (nutzt das Spielkit selbst)
+
+| Aufruf | Zweck |
+|---|---|
+| `GET api.php?a=rooms&game=<id>` | offene Räume des Spiels |
+| `POST api.php?a=create` `{game, state, meta}` | Raum anlegen → `{id, version}` |
+| `GET api.php?a=get&id=<id>&since=<version>` | Spielstand abholen (`changed: false`, wenn unverändert) |
+| `POST api.php?a=put` `{id, version, state, meta}` | Spielstand speichern; bei veralteter Version Antwort 409 mit aktuellem Stand |
+| `POST api.php?a=delete` `{id}` | Raum schließen (nur wer ihn eröffnet hat) |
 
 ## Ordner
 
@@ -83,6 +125,6 @@ play.php       liefert ein Spiel nach Anmeldung aus
 api.php        Online-Räume
 lib/           PHP-Kern (gesperrt)
 data/          Konten und Räume (gesperrt, wird beim Einrichten befüllt)
-games/         Spiele (gesperrt, nur über play.php erreichbar)
-assets/        Gestaltung und Schriften
+games/         Spiele (gesperrt, nur über play.php erreichbar), vorlage/ als Startpunkt
+assets/        Gestaltung, Schriften und das Spielkit (spielkit.js, spielkit.css)
 ```
