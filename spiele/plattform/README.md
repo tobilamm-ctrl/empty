@@ -44,6 +44,23 @@ Rechte `770` (oder `775`) setzen.
 Zusätzlich lässt sich in der konsoleH ein Verzeichnisschutz (Benutzer + Passwort des Webservers)
 vor den Ordner legen. Dann fragt der Browser vor der Login-Seite noch ein zweites Passwort ab.
 
+## In eine andere Seite einbetten (z. B. LAMMping)
+
+Alle Seiten senden `Content-Security-Policy: frame-ancestors 'self' https://lamm7.de https://*.lamm7.de`.
+Damit dürfen nur die eigene Seite und Seiten unter `lamm7.de` die Plattform per `<iframe>` einbinden,
+etwa `https://lammping.lamm7.de`. Jede andere Seite zeigt statt der Plattform eine Fehlermeldung des Browsers.
+
+```html
+<iframe src="https://spieleabend.lamm7.de/play.php?spiel=farbkreuz" style="width:100%;height:100vh;border:0"></iframe>
+```
+
+- Die Anmeldung funktioniert auch eingebettet. Das Sitzungs-Cookie (`SameSite=Lax`) wird mitgeschickt,
+  weil beide Seiten zur selben Website `lamm7.de` gehören. Voraussetzung: **beide laufen über HTTPS**.
+- `play.php?spiel=<id>` bleibt direkt aufrufbar. Ohne Anmeldung kommt zuerst die Anmeldeseite.
+- Weitere erlaubte Seiten trägt man in `lib/bootstrap.php` bei `FRAME_ANCESTORS` ein. Eine Seite unter
+  einer *anderen* Domain einzubetten, würde zusätzlich andere Cookie-Einstellungen brauchen, und viele
+  Browser blockieren das inzwischen. Das klappt also nur unter `lamm7.de` zuverlässig.
+
 ## Sicherung
 
 Wichtig ist nur der Ordner `data/`: `users.json` (Konten) und `rooms/` (laufende Online-Spiele).

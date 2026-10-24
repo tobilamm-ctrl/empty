@@ -23,7 +23,7 @@ $platform = [
 ];
 
 header('Content-Type: text/html; charset=utf-8');
-header('X-Frame-Options: SAMEORIGIN');
+send_frame_policy();
 header('Cache-Control: no-store');
 echo '<!doctype html><html lang="de"><head><meta charset="utf-8">';
 echo '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';

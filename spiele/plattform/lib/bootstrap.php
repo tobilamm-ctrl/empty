@@ -8,6 +8,8 @@ const GAMES_DIR = __DIR__ . '/../games';
 const MIN_PASSWORD = 8;
 const MAX_LOGIN_FAILS = 8;          // danach Sperre
 const LOGIN_LOCK_SECONDS = 900;     // 15 Minuten
+// Wer die Seiten einbetten darf: die eigene Seite und alles unter lamm7.de (z. B. LAMMping)
+const FRAME_ANCESTORS = "'self' https://lamm7.de https://*.lamm7.de";
 
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
@@ -220,10 +222,15 @@ function h($s): string
     return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 }
 
+function send_frame_policy(): void
+{
+    header('Content-Security-Policy: frame-ancestors ' . FRAME_ANCESTORS);
+}
+
 function page_start(string $title, ?array $user = null): void
 {
     header('Content-Type: text/html; charset=utf-8');
-    header('X-Frame-Options: SAMEORIGIN');
+    send_frame_policy();
     echo '<!doctype html><html lang="de"><head><meta charset="utf-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<meta name="robots" content="noindex, nofollow">';
