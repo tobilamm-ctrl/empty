@@ -4,8 +4,9 @@ Passwortgeschützte Seite für Familie und Freunde. Jede Person bekommt ein eige
 Nach der Anmeldung erscheinen alle hinterlegten Spiele. Spiele mit Online-Modus lassen sich
 an mehreren Geräten gegeneinander spielen.
 
-Enthalten: **Farbkreuz** (Würfelspiel nach den Regeln von „Noch mal!“) – solo, gegen den Computer
-oder online mit bis zu 6 Spielern, wahlweise mit Original-Blatt oder zufällig erzeugtem Blatt.
+Enthalten: **Farbkreuz** (Würfelspiel nach den Regeln von „Noch mal!“) mit bis zu 6 Spielern:
+allein (Solo-Regeln), an einem Gerät (Mitspieler reichen das Gerät weiter, dazu 0–5 Computer-Gegner)
+oder online an mehreren Geräten. Spielblatt wahlweise das Standardblatt oder zufällig verteilt.
 
 Voraussetzungen: PHP 8.1 oder neuer, Apache mit `.htaccess` (bei Hetzner Webhosting gegeben).
 Keine Datenbank nötig. Die Daten liegen als Dateien im Ordner `data/`.

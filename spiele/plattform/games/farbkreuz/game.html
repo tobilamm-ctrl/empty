@@ -220,6 +220,17 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); gri
 .rooms .r-info { min-width: 0; }
 .rooms .r-info small { display: block; color: var(--muted); }
 .muted { color: var(--muted); }
+.humans { display: grid; gap: 6px; }
+.humans .hrow { display: flex; gap: 6px; }
+.humans input { flex: 1; min-width: 0; background: var(--sheet-2); border: 0; border-radius: 8px; padding: 9px 11px; color: var(--ink); font: inherit; }
+.preview { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; margin-top: 4px; }
+.preview i { aspect-ratio: 1; border-radius: 2px; background: var(--c); position: relative; }
+.preview i.s::after { content: ""; position: absolute; inset: 28%; border-radius: 50%; background: var(--tile); }
+.preview i.h { box-shadow: 0 0 0 1px var(--tile); }
+.preview i.c-r { --c: var(--red); } .preview i.c-o { --c: var(--orange); } .preview i.c-y { --c: var(--yellow); }
+.preview i.c-g { --c: var(--green); } .preview i.c-b { --c: var(--blue); }
+.handover { text-align: center; }
+.handover .big-name { font-family: var(--font-display); font-size: 34px; color: var(--accent); line-height: 1.1; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -310,25 +321,32 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); gri
 <div class="overlay" id="dlg" hidden>
   <form class="dialog" id="new-form">
     <h2>Neues Spiel</h2>
-    <div class="seg" role="radiogroup" aria-label="Spielart">
-      <label><input type="radio" name="mode" id="mode-local" value="local" checked>Gegen Computer<small>auf diesem Gerät</small></label>
-      <label><input type="radio" name="mode" id="mode-solo" value="solo">Solo<small>30 Würfe, Level-Tabelle</small></label>
-      <label id="mode-online-wrap" hidden><input type="radio" name="mode" id="mode-online" value="online">Online<small>mehrere Geräte</small></label>
+    <div class="field">
+      <div class="label">Spielart</div>
+      <div class="seg" role="radiogroup" aria-label="Spielart">
+        <label><input type="radio" name="mode" id="mode-local" value="local" checked>An diesem Gerät<small>Mitspieler und/oder Computer</small></label>
+        <label><input type="radio" name="mode" id="mode-solo" value="solo">Allein<small>Solo-Regeln, 30 Würfe</small></label>
+        <label id="mode-online-wrap" hidden><input type="radio" name="mode" id="mode-online" value="online">Online<small>jeder am eigenen Gerät</small></label>
+      </div>
     </div>
-    <div class="seg" role="radiogroup" aria-label="Spielblatt">
-      <label><input type="radio" name="board" id="board-original" value="original" checked>Original-Blatt<small>wie der gedruckte Block</small></label>
-      <label><input type="radio" name="board" id="board-zufall" value="zufall">Zufälliges Blatt<small>jedes Spiel neu</small></label>
+    <div class="field" id="humans-field">
+      <div class="label" id="humans-label">Spieler an diesem Gerät</div>
+      <div class="humans" id="humans"></div>
+      <button class="btn small" type="button" id="btn-add-human" style="justify-self:start">+ Spieler</button>
     </div>
     <div class="field" id="opp-field">
-      <label class="label" for="opp-n">Anzahl Computer-Gegner</label>
-      <select id="opp-n">
-        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option>
-        <option value="4">4</option><option value="5">5</option>
-      </select>
+      <label class="label" for="opp-n">Computer-Gegner</label>
+      <select id="opp-n"></select>
+      <small class="muted" id="count-hint"></small>
     </div>
-    <div class="field" id="name-field">
-      <label class="label" for="pname">Dein Name</label>
-      <input id="pname" maxlength="16" value="Du" autocomplete="off">
+    <div class="field">
+      <div class="label">Spielblatt</div>
+      <div class="seg" role="radiogroup" aria-label="Spielblatt">
+        <label><input type="radio" name="board" id="board-original" value="original" checked>Standardblatt<small>wie der gedruckte Block</small></label>
+        <label><input type="radio" name="board" id="board-zufall" value="zufall">Zufällig verteilt<small>Farben und Sterne neu</small></label>
+      </div>
+      <div class="preview" id="preview" aria-hidden="true"></div>
+      <button class="btn small" type="button" id="btn-reshuffle" style="justify-self:start" hidden>Neu verteilen</button>
     </div>
     <div class="field" id="rooms-field" hidden>
       <div class="label">Offene Räume</div>
@@ -340,6 +358,15 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); gri
       <button class="btn" type="button" id="btn-cancel">Abbrechen</button>
     </div>
   </form>
+</div>
+
+<div class="overlay" id="handover" hidden>
+  <div class="dialog handover" role="dialog" aria-labelledby="ho-name">
+    <div class="label" id="ho-label">Gerät weitergeben an</div>
+    <div class="big-name" id="ho-name"></div>
+    <p class="muted" id="ho-text" style="margin:0"></p>
+    <button class="btn primary big" type="button" id="btn-ho">Los geht's</button>
+  </div>
 </div>
 
 <script>
@@ -368,20 +395,21 @@ const CVAR = { r: "--red", o: "--orange", y: "--yellow", g: "--green", b: "--blu
 const COLOR_FACES = ["g","y","b","r","o","J"];
 const NUM_FACES = [1,2,3,4,5,"J"];
 const BOT_NAMES = ["Ada","Kurt","Mila","Ole","Pia"];
+// Bewertung im Solo-Spiel: [Mindestpunkte, Stufe, Spruch]
 const LEVELS = [
-  [41, "Es gibt also doch Superhelden!"],
-  [37, "Wirst du „Glückspilz“ oder „The Brain“ genannt?"],
-  [33, "Du könntest auch Profi-Spieler sein."],
-  [29, "Super! Welch grandioses Ergebnis!"],
-  [25, "Hoffentlich ohne Schummeln geschafft!"],
-  [21, "Klasse! Das lief ja gut."],
-  [17, "Das war wohl nicht dein erstes Mal …"],
-  [13, "Gut, aber das geht noch besser."],
-  [9, "Na, wird doch langsam."],
-  [5, "Nicht ganz schlecht."],
-  [1, "Da muss wohl noch etwas geübt werden."],
-  [0, "Dabei sein ist alles."],
-  [-Infinity, "Das grenzt ja schon an Arbeitsverweigerung."],
+  [41, "Würfelkönig", "Mehr geht kaum. Das Blatt hat sich vor dir verneigt."],
+  [37, "Meisterklasse", "Glück und Köpfchen in Bestform."],
+  [33, "Profi", "Damit gewinnst du jeden Spieleabend."],
+  [29, "Spitze", "Eine richtig starke Runde."],
+  [25, "Sehr gut", "Kaum ein Kreuz am falschen Platz."],
+  [21, "Gut", "Das kann sich sehen lassen."],
+  [17, "Geübt", "Man merkt, dass du das nicht zum ersten Mal spielst."],
+  [13, "Ordentlich", "Solide, aber da ist noch Luft nach oben."],
+  [9, "Im Kommen", "Die Richtung stimmt."],
+  [5, "Einsteiger", "Ein Anfang ist gemacht."],
+  [1, "Anfänger", "Beim nächsten Mal läuft es bestimmt besser."],
+  [0, "Null auf Null", "Immerhin nicht im Minus."],
+  [-Infinity, "Pechvogel", "Heute waren die Würfel nicht auf deiner Seite."],
 ];
 
 const rc = i => [Math.floor(i / NC), i % NC];
@@ -456,33 +484,53 @@ function genBoard() {
 // ---------- Zustand ----------
 // S ist der gemeinsame Spielstand (online liegt er auf dem Server), UI ist nur für dieses Gerät.
 let S;
-const UI = { sel: { ci: null, ni: null, cells: [] }, selThrow: -1, err: "", room: null, busy: false, rolled: false, banner: "" };
+const UI = { sel: { ci: null, ni: null, cells: [] }, selThrow: -1, err: "", room: null, busy: false, rolled: false, banner: "",
+  lastHuman: 0, ackHuman: null, preview: null };
 
 function newPlayer(id, name, ai) {
   return { id, name, ai, x: Array(NR * NC).fill(false), jokers: 0, colDone: Array(NC).fill(null), colorDone: {}, fresh: [] };
 }
-function freshState(mode, roster, boardKind) {
+function freshState(mode, roster, boardKind, rows) {
   const nd = mode === "solo" ? 2 : 3;
   return {
-    v: 2, mode, boardKind, board: boardKind === "zufall" ? genBoard() : ORIGINAL.slice(),
+    v: 2, mode, boardKind, board: rows ? rows.slice() : boardKind === "zufall" ? genBoard() : ORIGINAL.slice(),
     players: roster.map(r => newPlayer(r.id, r.name, r.ai)),
     host: P ? P.user : null, active: 0, throw: 0, phase: mode === "online" ? "lobby" : "idle",
     dice: { c: Array(nd).fill(null), n: Array(nd).fill(null) },
     activeUsed: null, choices: {}, firstCol: Array(NC).fill(null), firstColor: {}, log: [],
   };
 }
-function localGame(mode, nOpp, name, boardKind) {
-  const roster = [{ id: "me", name: name || "Du", ai: false }];
-  if (mode === "local") for (let k = 0; k < nOpp; k++) roster.push({ id: "bot" + k, name: BOT_NAMES[k], ai: true });
-  const s = freshState(mode, roster, boardKind);
-  s.log.unshift(mode === "solo" ? "Solo-Spiel gestartet: 30 Würfe." : `Neues Spiel mit ${nOpp} Computer-Gegner${nOpp > 1 ? "n" : ""}.`);
+// humans: Namen der Menschen an diesem Gerät; bots: Anzahl Computer-Gegner
+function localGame(mode, humans, bots, boardKind, rows) {
+  const names = (mode === "solo" ? humans.slice(0, 1) : humans).map(n => n || "Du");
+  const roster = names.map((n, k) => ({ id: "h" + k, name: n, ai: false }));
+  const taken = new Set(names);
+  const botNames = BOT_NAMES.filter(n => !taken.has(n)).concat(BOT_NAMES);
+  if (mode === "local") for (let k = 0; k < bots; k++) roster.push({ id: "bot" + k, name: botNames[k], ai: true });
+  const s = freshState(mode, roster, boardKind, rows);
+  if (mode === "local" && names.length > 1) s.active = rnd(names.length);
+  const parts = [];
+  if (names.length > 1) parts.push(`${names.length} Spieler an diesem Gerät`);
+  if (bots) parts.push(`${bots} Computer-Gegner`);
+  s.log.unshift(mode === "solo" ? "Solo-Spiel gestartet: 30 Würfe." : `Neues Spiel: ${parts.join(" und ")}.`);
   return s;
 }
+const defaultGame = () => localGame("local", [P ? P.name : "Du"], 2, "original");
 function addLog(html) { S.log.unshift(html); S.log = S.log.slice(0, 60); }
+const humanIdx = () => S.players.map((p, i) => i).filter(i => !S.players[i].ai);
+// Wer sitzt gerade am Gerät? Online: das eigene Konto. Lokal: der Mensch, der jetzt entscheiden muss.
 function meIdx() {
-  if (S.mode !== "online") return 0;
-  return S.players.findIndex(p => !p.ai && p.id === P.user);
+  if (S.mode === "online") return S.players.findIndex(p => !p.ai && p.id === P.user);
+  if (S.mode === "solo") return 0;
+  const n = S.players.length;
+  if (S.phase === "choose") {
+    for (let k = 0; k < n; k++) { const i = (S.active + k) % n; if (!S.players[i].ai && canChoose(i)) return i; }
+  }
+  if (S.phase === "idle" && !S.players[S.active].ai) return S.active;
+  const hs = humanIdx();
+  return hs.includes(UI.lastHuman) ? UI.lastHuman : hs[0];
 }
+const hotSeat = () => S.mode === "local" && humanIdx().length > 1;
 const isHost = () => S.mode === "online" && P && S.host === P.user;
 
 // ---------- Regeln ----------
@@ -711,8 +759,8 @@ async function openRoom(id) {
   render();
   return true;
 }
-async function createRoom(boardKind) {
-  const s = freshState("online", [{ id: P.user, name: P.name, ai: false }], boardKind);
+async function createRoom(boardKind, rows) {
+  const s = freshState("online", [{ id: P.user, name: P.name, ai: false }], boardKind, rows);
   s.log.unshift(`<b>${esc(P.name)}</b> hat den Raum eröffnet.`);
   const prev = S; S = s;
   const r = await api("create", { game: P.game, state: s, meta: roomMeta() });
@@ -723,7 +771,7 @@ async function createRoom(boardKind) {
 }
 function leaveRoom() {
   const wasLobby = S.phase === "lobby", mi = meIdx();
-  const finish = () => { UI.room = null; storeSet("farbkreuz-room", ""); S = load() || localGame("local", 2, P ? P.name : "Du", "original"); render(); };
+  const finish = () => { UI.room = null; storeSet("farbkreuz-room", ""); S = load() || defaultGame(); render(); };
   if (wasLobby && mi >= 0 && !isHost()) {
     act(() => { const k = meIdx(); if (S.phase !== "lobby" || k < 0) return false; S.players.splice(k, 1); addLog(`<b>${esc(P.name)}</b> hat den Raum verlassen.`); }).then(finish);
   } else finish();
@@ -732,7 +780,7 @@ async function poll() {
   if (!UI.room || UI.busy || document.hidden) return;
   const r = await api("get", null, `&id=${UI.room.id}&since=${UI.room.version}`);
   if (UI.busy || !UI.room) return;
-  if (r.status === 404) { UI.banner = "Der Raum wurde geschlossen."; UI.room = null; storeSet("farbkreuz-room", ""); S = load() || localGame("local", 2, P.name, "original"); render(); return; }
+  if (r.status === 404) { UI.banner = "Der Raum wurde geschlossen."; UI.room = null; storeSet("farbkreuz-room", ""); S = load() || defaultGame(); render(); return; }
   if (r.ok && r.data.changed) { S = r.data.state; UI.room.version = r.data.version; render(); }
 }
 async function loadRooms() {
@@ -826,7 +874,7 @@ function onRoomAction(a, arg) {
   else if (a === "close") {
     api("delete", { id: UI.room.id }).then(r => {
       if (!r.ok) { UI.banner = r.data.error || "Raum konnte nicht geschlossen werden."; render(); return; }
-      UI.room = null; storeSet("farbkreuz-room", ""); S = load() || localGame("local", 2, P.name, "original"); render();
+      UI.room = null; storeSet("farbkreuz-room", ""); S = load() || defaultGame(); render();
     });
   }
   else if (a === "rematch") act(() => {
@@ -869,6 +917,8 @@ function render() {
   ensureBoard();
   const solo = S.mode === "solo", online = S.mode === "online";
   const mi = meIdx(), vi = mi >= 0 ? mi : 0, me = S.players[vi], sc = score(me);
+  if (S.mode === "local") UI.lastHuman = vi;
+  const seat = hotSeat();
   if (UI.selThrow !== S.throw || !canChoose(mi)) { UI.sel = { ci: null, ni: null, cells: [] }; UI.selThrow = S.throw; }
   const myTurn = canChoose(mi);
   const active = S.players[S.active];
@@ -879,7 +929,7 @@ function render() {
   if (P) $("home-link").href = P.home;
   $("btn-leave").hidden = !online;
   $("btn-leave").textContent = isHost() && lobby ? "Zurück" : "Raum verlassen";
-  $("who").textContent = mi < 0 ? `Blatt von ${me.name} (Zuschauer)` : (online || me.name !== "Du") ? `Blatt von ${me.name}` : "Dein Blatt";
+  $("who").textContent = mi < 0 ? `Blatt von ${me.name} (Zuschauer)` : (online || seat || me.name !== "Du") ? `Blatt von ${me.name}` : "Dein Blatt";
   $("meta").textContent = solo ? `Wurf ${S.throw} von 30` : `${online ? `Raum ${UI.room.id} · ` : ""}Wurf ${S.throw} · ${S.players.length} Spieler · ${S.boardKind === "zufall" ? "Zufallsblatt" : "Original-Blatt"}`;
 
   $("letters").innerHTML = [...LET].map((l, j) => {
@@ -967,7 +1017,9 @@ function render() {
   if (S.phase === "idle") {
     if (online && !active.ai && S.active !== mi) st = `Warte, bis <strong>${esc(active.name)}</strong> würfelt.`;
     else if (active.ai) st = `<strong>${esc(active.name)}</strong> (Computer) ist aktiver Spieler. Würfle für ${esc(active.name)}.`;
+    else if (seat) st = `<strong>${esc(me.name)}</strong>, du bist aktiver Spieler. Würfle!`;
     else st = S.throw === 0 ? "Würfle, um zu beginnen. Dein erstes Kreuz muss in der Startspalte <strong>H</strong> liegen." : "Du bist aktiver Spieler. Würfle!";
+    if (S.throw === 0 && !online) st += `<br><span class="muted">Mitspieler, Computer-Gegner und Spielblatt stellst du unter „Neues Spiel“ ein.</span>`;
   } else if (S.phase === "choose") {
     const { ci, ni, cells } = UI.sel;
     if (S.active !== mi && S.choices[S.active]) {
@@ -979,6 +1031,7 @@ function render() {
     } else if (!myTurn) {
       st += mi < 0 ? "Du schaust zu." : `Warte, bis <strong>${esc(active.name)}</strong> gewählt hat.`;
     } else {
+      if (seat) st += `<strong>${esc(me.name)}</strong> ist dran. `;
       if (!solo && S.active !== mi && S.throw <= 3) st += "In den ersten 3 Würfen darfst du aus allen Würfeln wählen. ";
       if (ci == null || ni == null) st += "Wähle einen <strong>Farbwürfel</strong> und einen <strong>Zahlenwürfel</strong> oder passe.";
       else {
@@ -1020,6 +1073,17 @@ function render() {
   }).join("");
   $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
 
+  // Gerät weitergeben (mehrere Menschen an einem Gerät)
+  const ho = seat && (S.phase === "idle" || S.phase === "choose") && mi !== UI.ackHuman && $("dlg").hidden;
+  $("handover").hidden = !ho;
+  if (ho) {
+    $("ho-label").textContent = UI.ackHuman == null ? "Es beginnt" : "Gerät weitergeben an";
+    $("ho-name").textContent = me.name;
+    $("ho-text").textContent = S.phase === "idle" ? "Du bist aktiver Spieler und würfelst."
+      : mi === S.active ? "Du hast gewürfelt. Wähle deine Würfel." : "Wähle eine Kombination aus den Würfeln.";
+    $("btn-ho").textContent = `Los geht's, ${me.name}`;
+  }
+
   // Ergebnis
   const res = $("result");
   if (S.phase === "over") {
@@ -1027,8 +1091,8 @@ function render() {
       ? (isHost() ? `<button class="btn primary" type="button" data-room-act="rematch">Neue Runde im selben Raum</button>` : `<p class="muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`)
       : `<button class="btn primary" type="button" data-again>Noch eine Runde</button>`;
     if (solo) {
-      const lv = LEVELS.find(([min]) => sc.total >= min)[1];
-      res.innerHTML = `<h2>Spielende: ${sc.total} Punkte</h2><p>${lv}</p>${again}`;
+      const [, lvName, lvText] = LEVELS.find(([min]) => sc.total >= min);
+      res.innerHTML = `<h2>Spielende: ${sc.total} Punkte · ${lvName}</h2><p>${lvText}</p>${again}`;
     } else {
       const rank = S.players.map(p => ({ p, s: score(p) })).sort((a, b) => b.s.total - a.s.total || a.p.jokers - b.p.jokers);
       const best = rank[0];
@@ -1051,20 +1115,46 @@ function load() {
 }
 
 // ---------- Dialog „Neues Spiel“ ----------
+const DLG = { humans: [P ? P.name : "Du"], bots: 2 };
+try { const d = JSON.parse(storeGet("farbkreuz-setup")); if (d && Array.isArray(d.humans) && d.humans.length) Object.assign(DLG, d); } catch (e) {}
+const dlgMode = () => document.querySelector('input[name="mode"]:checked').value;
 function syncDlg() {
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-  $("opp-field").hidden = mode !== "local";
-  $("name-field").hidden = !!P;
+  const mode = dlgMode(), local = mode === "local";
+  if (mode === "solo") DLG.humans = DLG.humans.slice(0, 1);
+  DLG.humans = DLG.humans.slice(0, MAXP);
+  const nh = DLG.humans.length, minBots = local && nh < 2 ? 1 : 0, maxBots = local ? MAXP - nh : 0;
+  DLG.bots = Math.min(maxBots, Math.max(minBots, DLG.bots));
+  $("humans-field").hidden = mode === "online";
+  $("humans-label").textContent = mode === "solo" ? "Dein Name" : "Spieler an diesem Gerät";
+  $("humans").innerHTML = DLG.humans.map((n, k) => `<div class="hrow">
+      <input id="h-name-${k}" data-h="${k}" maxlength="16" value="${esc(n)}" aria-label="Name Spieler ${k + 1}" autocomplete="off">
+      ${nh > 1 ? `<button class="btn small" type="button" data-hdel="${k}" aria-label="Spieler ${k + 1} entfernen">Entfernen</button>` : ""}</div>`).join("");
+  $("btn-add-human").hidden = !local || nh >= MAXP;
+  $("opp-field").hidden = !local;
+  let opts = "";
+  for (let b = minBots; b <= maxBots; b++) opts += `<option value="${b}"${b === DLG.bots ? " selected" : ""}>${b === 0 ? "keine" : b}</option>`;
+  $("opp-n").innerHTML = opts;
+  $("count-hint").textContent = local ? `Insgesamt ${nh + DLG.bots} Spieler${nh > 1 ? ". Das Gerät wird nach jedem Zug weitergegeben." : "."}` : "";
   $("rooms-field").hidden = mode !== "online";
   $("btn-start").textContent = mode === "online" ? "Neuen Raum eröffnen" : "Spiel starten";
-  if (mode === "online") loadRooms();
+  const zufall = $("board-zufall").checked;
+  if (zufall && !UI.preview) UI.preview = genBoard();
+  const rows = parseBoard(zufall ? UI.preview : ORIGINAL);
+  $("preview").innerHTML = rows.flatMap(r => r.map((c, j) => `<i class="c-${c.c}${c.star ? " s" : ""}${j === H ? " h" : ""}"></i>`)).join("");
+  $("btn-reshuffle").hidden = !zufall;
 }
-function openDlg() { $("dlg").hidden = false; syncDlg(); }
+function openDlg() {
+  $("dlg").hidden = false; $("handover").hidden = true;
+  if (S.mode === "solo") $("mode-solo").checked = true;
+  else if (S.mode === "local") $("mode-local").checked = true;
+  syncDlg();
+  if (dlgMode() === "online") loadRooms();
+}
 
 // ---------- Start ----------
 async function start(data) {
   S = (!P && data && data.v === 2 && data.board) ? data : load();
-  if (!S) S = localGame("local", 2, P ? P.name : "Du", "original");
+  if (!S) S = defaultGame();
   $("mode-online-wrap").hidden = !P;
   $("board").addEventListener("click", e => { const b = e.target.closest(".cell"); if (b) onCell(+b.dataset.i); });
   document.querySelector(".tray").addEventListener("click", e => {
@@ -1082,10 +1172,17 @@ async function start(data) {
   $("btn-force").addEventListener("click", onForce);
   $("btn-leave").addEventListener("click", leaveRoom);
   $("btn-new").addEventListener("click", openDlg);
-  $("btn-cancel").addEventListener("click", () => { $("dlg").hidden = true; });
+  $("btn-cancel").addEventListener("click", () => { $("dlg").hidden = true; render(); });
   $("btn-refresh").addEventListener("click", loadRooms);
-  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", syncDlg));
-  $("dlg").addEventListener("keydown", e => { if (e.key === "Escape") $("dlg").hidden = true; });
+  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => { syncDlg(); if (dlgMode() === "online") loadRooms(); }));
+  document.querySelectorAll('input[name="board"]').forEach(r => r.addEventListener("change", syncDlg));
+  $("btn-reshuffle").addEventListener("click", () => { UI.preview = genBoard(); syncDlg(); });
+  $("btn-add-human").addEventListener("click", () => { DLG.humans.push(`Spieler ${DLG.humans.length + 1}`); syncDlg(); $("h-name-" + (DLG.humans.length - 1)).select(); });
+  $("humans").addEventListener("input", e => { const k = e.target.dataset.h; if (k != null) DLG.humans[+k] = e.target.value; });
+  $("humans").addEventListener("click", e => { const b = e.target.closest("[data-hdel]"); if (b) { DLG.humans.splice(+b.dataset.hdel, 1); syncDlg(); } });
+  $("opp-n").addEventListener("change", () => { DLG.bots = +$("opp-n").value; syncDlg(); });
+  $("btn-ho").addEventListener("click", () => { UI.ackHuman = meIdx(); render(); });
+  $("dlg").addEventListener("keydown", e => { if (e.key === "Escape") { $("dlg").hidden = true; render(); } });
   $("room-list").addEventListener("click", async e => {
     const b = e.target.closest("[data-room]");
     if (!b) return;
@@ -1095,10 +1192,16 @@ async function start(data) {
     e.preventDefault();
     const mode = document.querySelector('input[name="mode"]:checked').value;
     const boardKind = $("board-zufall").checked ? "zufall" : "original";
+    const rows = boardKind === "zufall" ? UI.preview : null;
+    UI.preview = null;
     UI.err = ""; UI.banner = "";
-    if (mode === "online") { await createRoom(boardKind); $("dlg").hidden = true; return; }
+    if (mode === "online") { await createRoom(boardKind, rows); $("dlg").hidden = true; return; }
+    const names = DLG.humans.map((n, k) => n.trim() || `Spieler ${k + 1}`);
+    DLG.humans = names;
+    storeSet("farbkreuz-setup", JSON.stringify(DLG));
     UI.room = null; storeSet("farbkreuz-room", "");
-    S = localGame(mode, +$("opp-n").value, P ? P.name : ($("pname").value.trim() || "Du"), boardKind);
+    S = localGame(mode, names, DLG.bots, boardKind, rows);
+    UI.ackHuman = null; UI.lastHuman = 0;
     $("dlg").hidden = true;
     save(); render();
   });
