@@ -1,0 +1,21 @@
+# Spieleabend – Schutzregeln für Apache (Hetzner Webhosting)
+Options -Indexes
+DirectoryIndex index.php
+
+# Versteckte Dateien (.htaccess, .git …) und Hilfsdateien sperren
+<FilesMatch "^\.|\.(md|json|tmp|bak|log)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "same-origin"
+  Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+
+# Immer verschlüsselt (HTTPS) – erst aktivieren, wenn das SSL-Zertifikat eingerichtet ist
+#<IfModule mod_rewrite.c>
+#  RewriteEngine On
+#  RewriteCond %{HTTPS} off
+#  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+#</IfModule>
