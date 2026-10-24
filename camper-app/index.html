@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bordbuch</title>
+<meta name="description" content="Unser Reisetagebuch für den Minicamper">
+<meta name="theme-color" content="#0F6670">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bordbuch">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+<script src="config.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="trip-chip" href="#/reisen" id="tripChip" aria-label="Reise wechseln"></a>
+  <a class="icon-btn" href="#/einstellungen" aria-label="Einstellungen">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </a>
+  <div class="route-band" id="routeBand" aria-hidden="true"></div>
+</header>
+
+<div id="mapview" class="mapview" hidden>
+  <div id="map"></div>
+  <div class="map-toggle" role="group" aria-label="Kartenansicht">
+    <button data-action="map-scope" data-scope="trip" class="on">Diese Reise</button>
+    <button data-action="map-scope" data-scope="all">Alle Reisen</button>
+  </div>
+  <div class="map-actions">
+    <button class="round" data-action="locate" aria-label="Meine Position zeigen">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    </button>
+    <button class="primary big" data-action="here-menu">Ich bin hier …</button>
+  </div>
+  <button class="car-chip" id="carChip" data-action="car-sheet" hidden></button>
+</div>
+
+<main id="view" tabindex="-1"></main>
+
+<nav class="tabbar" aria-label="Bereiche">
+  <a href="#/karte" data-tab="karte"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span>Karte</span></a>
+  <a href="#/tagebuch" data-tab="tagebuch"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg><span>Tagebuch</span></a>
+  <a href="#/listen" data-tab="listen"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2"/><circle cx="5" cy="18" r="1.2"/></svg><span>Listen</span></a>
+  <a href="#/packen" data-tab="packen"><svg viewBox="0 0 24 24"><path d="M3 8h18v12H3zM3 8l2-4h14l2 4M9 12h6"/></svg><span>Boxen</span></a>
+  <a href="#/kasse" data-tab="kasse"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span>Kasse</span></a>
+</nav>
+
+<dialog id="sheet" class="sheet"><div id="sheetBody"></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
