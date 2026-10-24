@@ -484,7 +484,7 @@ function genBoard() {
 // ---------- Zustand ----------
 // S ist der gemeinsame Spielstand (online liegt er auf dem Server), UI ist nur für dieses Gerät.
 let S;
-const UI = { sel: { ci: null, ni: null, cells: [] }, selThrow: -1, err: "", room: null, busy: false, rolled: false, banner: "",
+const UI = { sel: { ci: null, ni: null, cells: [] }, selThrow: -1, selFor: -1, err: "", room: null, busy: false, rolled: false, banner: "",
   lastHuman: 0, ackHuman: null, preview: null };
 
 function newPlayer(id, name, ai) {
@@ -919,7 +919,11 @@ function render() {
   const mi = meIdx(), vi = mi >= 0 ? mi : 0, me = S.players[vi], sc = score(me);
   if (S.mode === "local") UI.lastHuman = vi;
   const seat = hotSeat();
-  if (UI.selThrow !== S.throw || !canChoose(mi)) { UI.sel = { ci: null, ni: null, cells: [] }; UI.selThrow = S.throw; }
+  // Auswahl gehört zu einem Spieler und einem Wurf – beim Wechsel (z. B. Gerät weitergegeben) verwerfen
+  if (UI.selThrow !== S.throw || UI.selFor !== mi) UI.err = "";
+  if (UI.selThrow !== S.throw || UI.selFor !== mi || !canChoose(mi)) {
+    UI.sel = { ci: null, ni: null, cells: [] }; UI.selThrow = S.throw; UI.selFor = mi;
+  }
   const myTurn = canChoose(mi);
   const active = S.players[S.active];
   const lobby = S.phase === "lobby";
