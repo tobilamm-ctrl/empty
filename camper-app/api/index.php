@@ -52,6 +52,10 @@ function db(): PDO {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
     }
     if (!$mysql) $pdo->exec('CREATE INDEX IF NOT EXISTS docs_rev ON docs (crew_id, rev)');
+    // Spätere Ergänzung: Wer darf die Kasse sehen? (bestehende Konten: ja)
+    $cols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM users')->fetchAll(), 'Field')
+                   : array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name');
+    if (!in_array('can_cash', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN can_cash INT NOT NULL DEFAULT 1');
     $pdo->exec("INSERT INTO counter (name, value) SELECT 'rev', 0 WHERE NOT EXISTS (SELECT 1 FROM counter WHERE name = 'rev')");
     return $pdo;
 }
@@ -107,6 +111,9 @@ function requireAdmin(): array {
     return $u;
 }
 
+// Verwalter sehen die Kasse immer, alle anderen nur mit Freigabe
+function canCash(array $u): bool { return (int) $u['is_admin'] || (int) $u['can_cash']; }
+
 function requireCrew(array $u, $crew): string {
     if (!validId($crew) || !one('SELECT 1 AS ok FROM members WHERE crew_id = ? AND user_id = ?', [$crew, $u['id']])) {
         fail('Kein Zugriff auf diese Crew', 403);
@@ -140,7 +147,7 @@ function sessionInfo(array $u): array {
             all('SELECT u.id, u.name, m.shares FROM members m JOIN users u ON u.id = m.user_id WHERE m.crew_id = ? ORDER BY u.name', [$c['id']]));
     }
     return [
-        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'isAdmin' => (bool) (int) $u['is_admin']],
+        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'isAdmin' => (bool) (int) $u['is_admin'], 'canCash' => canCash($u)],
         'crews' => $crews,
     ];
 }
@@ -200,7 +207,8 @@ case 'sync':
     $u = requireUser();
     $crew = requireCrew($u, $_GET['crew'] ?? '');
     $since = (int) ($_GET['since'] ?? 0);
-    $rows = all('SELECT coll, id, data, deleted, rev FROM docs WHERE crew_id = ? AND rev > ? ORDER BY rev LIMIT 2000', [$crew, $since]);
+    $hide = canCash($u) ? '' : " AND coll <> 'expenses'";
+    $rows = all("SELECT coll, id, data, deleted, rev FROM docs WHERE crew_id = ? AND rev > ?$hide ORDER BY rev LIMIT 2000", [$crew, $since]);
     $docs = array_map(fn($r) => [
         'coll' => $r['coll'], 'id' => $r['id'], 'rev' => (int) $r['rev'],
         'data' => (int) $r['deleted'] ? null : json_decode($r['data'], true),
@@ -219,6 +227,7 @@ case 'push':
     try {
         foreach ($changes as $c) {
             if (!in_array($c['coll'] ?? '', COLLS, true) || !validId($c['id'] ?? null)) continue;
+            if ($c['coll'] === 'expenses' && !canCash($u)) continue;
             $data = $c['data'] ?? null;
             if ($data !== null && !is_array($data)) continue;
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen
@@ -269,7 +278,7 @@ case 'photo':
 
 case 'admin':
     requireAdmin();
-    $users = array_map(fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin']],
+    $users = array_map(fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin'], 'canCash' => (bool) (int) $r['can_cash']],
         all('SELECT * FROM users ORDER BY name'));
     $crews = all('SELECT id, name FROM crews ORDER BY name');
     foreach ($crews as &$c) {
@@ -286,18 +295,19 @@ case 'user-save':
     $taken = one('SELECT id FROM users WHERE login = ?', [$login]);
     if ($taken && $taken['id'] !== $id) fail('Diesen Anmeldenamen gibt es schon.');
     $isAdmin = !empty($body['isAdmin']) ? 1 : 0;
+    $cash = !empty($body['canCash']) || $isAdmin ? 1 : 0;
     if ($id) {
         if (!one('SELECT id FROM users WHERE id = ?', [$id])) fail('Konto nicht gefunden', 404);
         if ($id === $admin['id'] && !$isAdmin) fail('Du kannst dir die Verwaltung nicht selbst entziehen.');
-        q('UPDATE users SET name = ?, login = ?, is_admin = ? WHERE id = ?', [$name, $login, $isAdmin, $id]);
+        q('UPDATE users SET name = ?, login = ?, is_admin = ?, can_cash = ? WHERE id = ?', [$name, $login, $isAdmin, $cash, $id]);
         if (!empty($body['password'])) {
             q('UPDATE users SET pass = ? WHERE id = ?', [checkPassword($body['password']), $id]);
             q('DELETE FROM tokens WHERE user_id = ?', [$id]);
         }
     } else {
         $id = newId();
-        q('INSERT INTO users (id, name, login, pass, is_admin, created) VALUES (?, ?, ?, ?, ?, ?)',
-            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, now()]);
+        q('INSERT INTO users (id, name, login, pass, is_admin, can_cash, created) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, $cash, now()]);
     }
     out(['id' => $id]);
 

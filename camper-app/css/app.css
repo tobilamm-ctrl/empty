@@ -404,6 +404,12 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .settle .move { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; width: 100%; }
 .settle .move + .move { padding-top: 12px; border-top: 1px solid var(--line); }
 
+.no-cash .tabbar { grid-template-columns: repeat(4, 1fr); }
+.no-cash .tabbar [data-tab=kasse] { display: none; }
+form:has([name=isAdmin]:checked) .cash-check { opacity: .5; pointer-events: none; }
+form:not(:has([name=isAdmin]:checked)) .admin-note { display: none; }
+.admin-note { margin: -10px 0 16px; font-size: 14px; }
+
 /* ---------- Hinweis ---------- */
 
 .toast {

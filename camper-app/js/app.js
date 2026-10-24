@@ -134,6 +134,7 @@ function remove(coll, id) {
 const members = () => (crew && crew.members) || [];
 const payers = () => members().filter(m => m.shares);
 const me = () => session.user.id;
+const canCash = () => !!session.user.canCash;
 const personName = id => (members().find(m => m.id === id) || {}).name || 'Ehemaliges Mitglied';
 const initial = id => (personName(id)[0] || '?').toUpperCase();
 const setTrip = id => LS.set('trip.' + crew.id, id);
@@ -224,6 +225,8 @@ function draw() {
   }
   const t = currentTrip();
   document.documentElement.style.setProperty('--trip', tripColor(t));
+  document.body.classList.toggle('no-cash', !canCash());
+  if (ui.route === 'kasse' && !canCash()) ui.route = 'tagebuch';
   $('#syncDot').className = 'sync-dot ' + syncClass();
 
   $('#tripChip').innerHTML = t
@@ -482,7 +485,7 @@ function entryForm(e = {}) {
     <div class="field only-stellplatz"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
     <div class="row2 not-notiz">
       <label class="field"><span>Kosten in €</span><input name="cost" inputmode="decimal" value="${e.cost ? String(e.cost).replace('.', ',') : ''}" placeholder="0"></label>
-      <label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>
+      ${canCash() ? `<label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>` : ''}
     </div>
     <div class="field"><span>Fotos</span>
       <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
@@ -1052,7 +1055,7 @@ VIEWS.verwaltung = () => {
     <div class="toolbar"><h2>Personen</h2><button class="primary" data-action="user-form">${icon('plus')}Person</button></div>
     <ul class="people">${admin.users.map(u => `<li><button data-action="user-form" data-id="${u.id}">
       <span class="avatar">${esc(u.name[0] || '?')}</span>
-      <span class="txt"><b>${esc(u.name)}</b><small>Anmeldename: ${esc(u.login)}${u.isAdmin ? ', Verwalter' : ''}</small></span>
+      <span class="txt"><b>${esc(u.name)}</b><small>Anmeldename: ${esc(u.login)}${u.isAdmin ? ', Verwalter' : u.canCash ? ', sieht die Kasse' : ', ohne Kasse'}</small></span>
       ${icon('edit')}</button></li>`).join('')}</ul>
     <div class="toolbar"><h2>Crews</h2><button class="primary" data-action="crew-form">${icon('plus')}Crew</button></div>
     <ul class="people">${admin.crews.map(c => `<li><button data-action="crew-form" data-id="${c.id}">
@@ -1069,6 +1072,8 @@ function userForm(id) {
     <label class="field"><span>Anmeldename</span><input name="login" value="${esc(u.login)}" required autocapitalize="none" autocomplete="off" placeholder="z. B. lena"></label>
     <label class="field"><span>${u.id ? 'Neues Passwort (leer lassen = unverändert)' : 'Passwort (mindestens 6 Zeichen)'}</span><input name="password" type="text" autocomplete="off" ${u.id ? '' : 'required minlength="6"'}></label>
     <label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Verwalter (darf Konten und Crews verwalten)</span></label>
+    <label class="check cash-check"><input type="checkbox" name="canCash"${u.isAdmin || u.canCash ? ' checked' : ''}><span>Darf die Kasse sehen</span></label>
+    <p class="sub admin-note">Verwalter sehen die Kasse immer.</p>
     ${u.id ? '' : `<label class="check"><input type="checkbox" name="joinCrew" checked><span>Gleich in die Crew „${esc(crew.name)}“ aufnehmen</span></label>`}
     <div class="sheet-foot">
       ${u.id && !self ? `<button type="button" class="ghost danger" data-action="del-user" data-id="${u.id}">Löschen</button>` : ''}
@@ -1417,7 +1422,7 @@ const FORMS = {
     try {
       const res = await api('user-save', {
         id, name: form.name.value.trim(), login: form.login.value.trim(),
-        password: form.password.value, isAdmin: form.isAdmin.checked || (id === session.user.id),
+        password: form.password.value, isAdmin: form.isAdmin.checked || (id === session.user.id), canCash: form.canCash.checked,
       });
       if (!id && form.joinCrew && form.joinCrew.checked) {
         const c = admin.crews.find(x => x.id === crew.id);
@@ -1538,6 +1543,11 @@ async function start() {
   if (!crew) { gate = 'nocrew'; return render(); }
   LS.set('crew', crew.id);
 
+  // Kassen-Freigabe geändert? Neu freigegeben: alles neu holen. Entzogen: lokale Kasse löschen.
+  const cashKey = 'cash.' + crew.id, hadCash = LS.get(cashKey, null);
+  if (hadCash === false && canCash()) localStorage.setItem('bb.rev.' + crew.id, '0');
+  LS.set(cashKey, canCash());
+
   store = new SyncStore(crew.id);
   store.onStatus(st => {
     syncState = { ...st };
@@ -1547,6 +1557,7 @@ async function start() {
     if (ui.route === 'einstellungen' && !gate) render();
   });
   await store.init();
+  if (hadCash && !canCash()) await store.clearLocal('expenses');
   gate = null;
   WATCHED.forEach(c => store.watch(c, list => { S[c] = list; render(); }));
   onHash();

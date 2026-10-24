@@ -227,6 +227,12 @@ export class SyncStore {
     }
   }
 
+  // Lokale Kopie einer Sammlung verwerfen (z. B. Kasse, wenn die Freigabe entzogen wurde)
+  async clearLocal(coll) {
+    await tx(this.db, coll, 'readwrite', s => s.clear());
+    this._notify(coll);
+  }
+
   // Alles neu vom Server holen (z. B. nach dem Einspielen einer Sicherung auf einem anderen Gerät)
   async resync() {
     this.rev = 0;
