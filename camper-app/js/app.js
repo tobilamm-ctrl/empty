@@ -1271,6 +1271,11 @@ VIEWS.verwaltung = () => {
       ${icon('edit')}</button></li>`).join('')}</ul>`;
 };
 
+// Eigenes Feld ohne Passwort-Namen: Passwortmanager sollen hier nichts eintragen oder speichern
+const pwInput = required => `<label class="field"><span>${required ? 'Passwort (mindestens 6 Zeichen)' : 'Neues Passwort'}</span>
+  <input name="newPw" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore
+    ${required ? 'required ' : ''}minlength="6"></label>`;
+
 function userForm(id) {
   const u = (admin.users.find(x => x.id === id)) || {};
   const self = u.id === session.user.id;
@@ -1278,7 +1283,9 @@ function userForm(id) {
     <div class="sheet-head"><h2>${u.id ? 'Person bearbeiten' : 'Neue Person'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <label class="field"><span>Name</span><input name="name" value="${esc(u.name)}" required placeholder="z. B. Lena"></label>
     <label class="field"><span>Anmeldename</span><input name="login" value="${esc(u.login)}" required autocapitalize="none" autocomplete="off" placeholder="z. B. lena"></label>
-    <label class="field"><span>${u.id ? 'Neues Passwort (leer lassen = unverändert)' : 'Passwort (mindestens 6 Zeichen)'}</span><input name="password" type="text" autocomplete="off" ${u.id ? '' : 'required minlength="6"'}></label>
+    ${u.id
+      ? `<div class="field" id="pwField"><span>Passwort</span><button type="button" class="ghost" data-action="show-pw-field">Neues Passwort festlegen</button></div>`
+      : pwInput(true)}
     <label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Verwalter (darf Konten und Crews verwalten)</span></label>
     <label class="check cash-check"><input type="checkbox" name="canCash"${u.isAdmin || u.canCash ? ' checked' : ''}><span>Darf die Kasse sehen</span></label>
     <p class="sub admin-note">Verwalter sehen die Kasse immer.</p>
@@ -1327,6 +1334,21 @@ VIEWS.login = () => `<section class="login">
     <label class="field"><span>Passwort</span><input type="password" name="password" autocomplete="current-password" required></label>
     <button class="primary">Anmelden</button>
   </form>
+  <button class="link" data-action="reset-form">Passwort vergessen?</button>
+</section>`;
+
+VIEWS.reset = () => `<section class="login">
+  ${HERO}
+  <h2>Neues Passwort festlegen</h2>
+  <p>Wer ein Konto verwaltet, kann in den Einstellungen unter Verwaltung jedes Passwort neu setzen.
+    Kommt niemand mehr hinein, hilft der Einrichtungscode: Er steht auf eurem Webspace in der Datei <b>api/config.php</b> bei <b>setup_code</b>.</p>
+  <form data-form="reset" class="panel">
+    <label class="field"><span>Einrichtungscode</span><input name="code" required autocapitalize="none" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>Anmeldename</span><input name="login" required autocapitalize="none" autocomplete="username"></label>
+    <label class="field"><span>Neues Passwort (mindestens 6 Zeichen)</span><input type="password" name="password" minlength="6" required autocomplete="new-password"></label>
+    <button class="primary">Passwort setzen und anmelden</button>
+  </form>
+  <button class="link" data-action="back-to-login">Zurück zur Anmeldung</button>
 </section>`;
 
 VIEWS.setup = () => `<section class="login">
@@ -1638,6 +1660,9 @@ const ACTIONS = {
 
   'admin-reload': () => { admin = null; render(); },
   'user-form': el => userForm(el.dataset.id),
+  'show-pw-field': () => { $('#pwField').outerHTML = pwInput(false); $('[name=newPw]').focus(); },
+  'reset-form': () => { gate = 'reset'; render(); },
+  'back-to-login': () => { gate = 'login'; render(); },
   'crew-form': el => crewForm(el.dataset.id),
   'del-user': async el => {
     const u = admin.users.find(x => x.id === el.dataset.id);
@@ -1728,6 +1753,7 @@ const FORMS = {
     } catch (e) { toast(e.message); }
   },
   login: form => sendAuth(form, 'login', { login: form.login.value.trim(), password: form.password.value }),
+  reset: form => sendAuth(form, 'reset', { code: form.code.value.trim(), login: form.login.value.trim(), password: form.password.value }),
   setup: form => sendAuth(form, 'setup', {
     code: form.code.value.trim(), crew: form.crew.value.trim(), name: form.name.value.trim(),
     login: form.login.value.trim(), password: form.password.value,
@@ -1737,7 +1763,7 @@ const FORMS = {
     try {
       const res = await api('user-save', {
         id, name: form.name.value.trim(), login: form.login.value.trim(),
-        password: form.password.value, isAdmin: form.isAdmin.checked || (id === session.user.id), canCash: form.canCash.checked,
+        password: form.newPw ? form.newPw.value : '', isAdmin: form.isAdmin.checked || (id === session.user.id), canCash: form.canCash.checked,
       });
       if (!id && form.joinCrew && form.joinCrew.checked) {
         const c = admin.crews.find(x => x.id === crew.id);

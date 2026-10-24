@@ -131,6 +131,19 @@ function login(string $userId): void {
     setCookieToken($token, (int) ($expires / 1000));
 }
 
+// Höchstens 10 Fehlversuche je Gerät (IP) in 15 Minuten
+function limitAttempts(): void {
+    q('DELETE FROM attempts WHERE ts < ?', [now() - 15 * 60000]);
+    if ((int) one('SELECT COUNT(*) AS n FROM attempts WHERE ip = ?', [$_SERVER['REMOTE_ADDR'] ?? ''])['n'] >= 10) {
+        fail('Zu viele Fehlversuche. Bitte in 15 Minuten noch einmal probieren.', 429);
+    }
+}
+function failedAttempt(string $msg): void {
+    q('INSERT INTO attempts (ip, ts) VALUES (?, ?)', [$_SERVER['REMOTE_ADDR'] ?? '', now()]);
+    usleep(400000);
+    fail($msg, 401);
+}
+
 function checkPassword($pw): string {
     if (!is_string($pw) || mb_strlen($pw) < 6) fail('Das Passwort braucht mindestens 6 Zeichen.');
     return password_hash($pw, PASSWORD_DEFAULT);
@@ -178,19 +191,27 @@ case 'setup':
     out(sessionInfo(one('SELECT * FROM users WHERE id = ?', [$uid])));
 
 case 'login':
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-    q('DELETE FROM attempts WHERE ts < ?', [now() - 15 * 60000]);
-    if ((int) one('SELECT COUNT(*) AS n FROM attempts WHERE ip = ?', [$ip])['n'] >= 10) {
-        fail('Zu viele Fehlversuche. Bitte in 15 Minuten noch einmal probieren.', 429);
-    }
-    $u = one('SELECT * FROM users WHERE login = ?', [mb_strtolower(trim((string) ($body['login'] ?? '')))]);
-    if (!$u || !password_verify((string) ($body['password'] ?? ''), $u['pass'])) {
-        q('INSERT INTO attempts (ip, ts) VALUES (?, ?)', [$ip, now()]);
-        usleep(400000);
-        fail('Anmeldename oder Passwort stimmt nicht.', 401);
-    }
+    limitAttempts();
+    $name = mb_strtolower(trim((string) ($body['login'] ?? '')));
+    $u = one('SELECT * FROM users WHERE login = ?', [$name]);
+    // Bewusst getrennte Meldungen: hilft der Familie beim Finden des Fehlers (Versuche sind begrenzt)
+    if (!$u) failedAttempt("Den Anmeldenamen „{$name}“ gibt es nicht. Groß- und Kleinschreibung spielt keine Rolle.");
+    if (!password_verify((string) ($body['password'] ?? ''), $u['pass'])) failedAttempt('Das Passwort stimmt nicht.');
     login($u['id']);
     out(sessionInfo($u));
+
+case 'reset':
+    // Passwort vergessen: mit dem Einrichtungscode aus api/config.php ein neues Passwort setzen
+    limitAttempts();
+    if ($CFG['setup_code'] === 'bitte-aendern' || !hash_equals((string) $CFG['setup_code'], trim((string) ($body['code'] ?? '')))) {
+        failedAttempt('Der Einrichtungscode stimmt nicht. Er steht in api/config.php bei setup_code.');
+    }
+    $u = one('SELECT * FROM users WHERE login = ?', [mb_strtolower(trim((string) ($body['login'] ?? '')))]);
+    if (!$u) failedAttempt('Diesen Anmeldenamen gibt es nicht.');
+    q('UPDATE users SET pass = ? WHERE id = ?', [checkPassword($body['password'] ?? ''), $u['id']]);
+    q('DELETE FROM tokens WHERE user_id = ?', [$u['id']]);
+    login($u['id']);
+    out(sessionInfo(one('SELECT * FROM users WHERE id = ?', [$u['id']])));
 
 case 'logout':
     if (!empty($_COOKIE[COOKIE])) q('DELETE FROM tokens WHERE hash = ?', [hash('sha256', $_COOKIE[COOKIE])]);

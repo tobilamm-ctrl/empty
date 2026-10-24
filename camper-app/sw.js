@@ -1,6 +1,6 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'lammping-6';
+const VERSION = 'lammping-7';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/mehr.js', 'js/kartenedit.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
