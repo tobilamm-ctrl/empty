@@ -1,6 +1,6 @@
-# Bordbuch – Einrichtung
+# LAMMping – Einrichtung
 
-Das Bordbuch ist eine Web-App für euren Minicamper: Karte mit Reiseroute, Tagebuch mit
+LAMMping ist eine Web-App für euren Minicamper: Karte mit Reiseroute, Tagebuch mit
 Stellplätzen und Sehenswertem, Auto-Standort, Einkaufs- und Merkliste, Boxen-Inventar mit
 Packliste, Kassenbuch und ein Archiv aller Reisen. Alles läuft auf eurem eigenen Webspace,
 eure Daten und Fotos bleiben dort.
@@ -27,17 +27,17 @@ zum Verwalter macht.
 ## 2. Hochladen
 
 1. Den **Inhalt** des Ordners per SFTP (z. B. mit FileZilla) in einen Ordner auf dem
-   Webspace kopieren, z. B. `public_html/bordbuch`. Die versteckten Dateien `.htaccess`
+   Webspace kopieren, z. B. `public_html/lammping`. Die versteckten Dateien `.htaccess`
    (auch die in `api/data/`) müssen mit (in FileZilla: Server → Versteckte Dateien anzeigen).
 2. Der Ordner `api/data` muss für PHP **beschreibbar** sein. Dort landen die Datenbank
-   (`bordbuch.sqlite`) und die Fotos. Bei Hetzner passt das meist von selbst; sonst in
+   (`lammping.sqlite`) und die Fotos. Bei Hetzner passt das meist von selbst; sonst in
    FileZilla Rechtsklick → Dateiberechtigungen → 755 (oder 775).
-3. Prüfen, dass die Daten geschützt sind: `https://eure-domain.de/bordbuch/api/data/`
+3. Prüfen, dass die Daten geschützt sind: `https://eure-domain.de/lammping/api/data/`
    muss „Forbidden“ zeigen.
 
 ## 3. Ersteinrichtung
 
-1. `https://eure-domain.de/bordbuch/` öffnen.
+1. `https://eure-domain.de/lammping/` öffnen.
 2. Einrichtungscode, Name der Crew (z. B. „Familie“), deinen Namen, Anmeldenamen und
    Passwort eingeben → **Einrichten**. Du bist jetzt Verwalter.
 3. Einstellungen (Zahnrad) → **Personen und Crews verwalten** → für jede Person
@@ -46,10 +46,15 @@ zum Verwalter macht.
 4. In der Crew festlegen, wer **mitzahlt**: Nur diese Personen werden in der Kasse bei
    geteilten Ausgaben berücksichtigt. Kinder stehen standardmäßig auf „zahlt nicht mit“.
 
-## 4. Auf den Startbildschirm legen
+## 4. Als App installieren
 
-- **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“
-- **Android (Chrome):** Menü ⋮ → „App installieren“
+LAMMping lässt sich wie eine normale App mit dem Schaf als Symbol auf den Startbildschirm legen.
+Sie startet dann ohne Browserleiste und funktioniert auch offline.
+
+- **Android (Chrome):** Die App bietet selbst „Installieren“ an (Hinweis im Tagebuch und in
+  den Einstellungen unter „App installieren“). Alternativ Menü ⋮ → „App installieren“.
+- **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“. Die App zeigt diesen Hinweis
+  einmal im Tagebuch an.
 
 ## Crews
 
@@ -73,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'bordbuch-2'` hochzählen, damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-4'` hochzählen, damit die
 Handys die neue Version laden.
 
 ## Sicherung

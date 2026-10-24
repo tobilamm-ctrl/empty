@@ -21,7 +21,7 @@ export async function api(action, body, query = '') {
   try {
     res = await fetch(`api/?a=${action}${query}`, body === undefined
       ? { credentials: 'same-origin' }
-      : { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Bordbuch': '1' }, body: JSON.stringify(body) });
+      : { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Lammping': '1' }, body: JSON.stringify(body) });
   } catch {
     throw new Error('Keine Verbindung zum Server.');
   }
@@ -61,13 +61,13 @@ export class SyncStore {
     this.crew = crewId;
     this.subs = {};
     this.statusSubs = [];
-    this.status = { pending: 0, lastSync: +localStorage.getItem('bb.lastSync.' + crewId) || 0, error: null, busy: false };
+    this.status = { pending: 0, lastSync: +localStorage.getItem('lp.lastSync.' + crewId) || 0, error: null, busy: false };
   }
 
   async init() {
-    this.db = await openDb('bordbuch-' + this.crew);
-    this.rev = +localStorage.getItem('bb.rev.' + this.crew) || 0;
-    this.bc = 'BroadcastChannel' in window ? new BroadcastChannel('bordbuch-' + this.crew) : null;
+    this.db = await openDb('lammping-' + this.crew);
+    this.rev = +localStorage.getItem('lp.rev.' + this.crew) || 0;
+    this.bc = 'BroadcastChannel' in window ? new BroadcastChannel('lammping-' + this.crew) : null;
     if (this.bc) this.bc.onmessage = e => this._notify(e.data, false);
     await this._countPending();
     window.addEventListener('online', () => this.sync());
@@ -166,7 +166,7 @@ export class SyncStore {
       await this._pushPhotos();
       await this._push();
       await this._pull();
-      localStorage.setItem('bb.lastSync.' + this.crew, Date.now());
+      localStorage.setItem('lp.lastSync.' + this.crew, Date.now());
       this._setStatus({ lastSync: Date.now(), error: null });
     } catch (e) {
       this._setStatus({ error: e instanceof AuthError ? 'auth' : e.message });
@@ -222,7 +222,7 @@ export class SyncStore {
         });
       }
       this.rev = res.rev;
-      localStorage.setItem('bb.rev.' + this.crew, this.rev);
+      localStorage.setItem('lp.rev.' + this.crew, this.rev);
       touched.forEach(c => this._notify(c));
     }
   }

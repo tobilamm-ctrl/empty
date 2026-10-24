@@ -40,8 +40,8 @@ let gate = 'loading'; // setup | login | nocrew | offline | null (App läuft)
 let syncState = { pending: 0, lastSync: 0, error: null, busy: false };
 
 const LS = {
-  get(k, d) { try { const v = localStorage.getItem('bb.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem('bb.' + k, JSON.stringify(v)); } catch { /* privater Modus */ } },
+  get(k, d) { try { const v = localStorage.getItem('lp.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('lp.' + k, JSON.stringify(v)); } catch { /* privater Modus */ } },
 };
 
 const ui = {
@@ -372,6 +372,7 @@ function showMe(p) {
 
 function emptyTrip() {
   return `<section class="empty">
+    <img class="hero-sheep" src="icons/schaf.svg" alt="">
     <h1>Wohin geht's?</h1>
     <p>Legt eine Reise an. Danach landen Stellplätze, Sehenswertes, Notizen und Ausgaben automatisch bei dieser Reise.</p>
     <button class="primary" data-action="trip-form">Reise anlegen</button>
@@ -412,7 +413,7 @@ VIEWS.tagebuch = () => {
     </li>`;
   }).join('');
 
-  return `${tripHead(t, st)}
+  return `${installHint()}${tripHead(t, st)}
     <div class="toolbar diary-bar">
       <div class="chips">${chips}</div>
       <button class="primary" data-action="entry-form">${icon('plus')}Eintrag</button>
@@ -1015,8 +1016,13 @@ VIEWS.einstellungen = () => {
       </div>
     </section>
     <section class="panel">
+      <h2>App installieren</h2>
+      ${installText()}
+    </section>
+    <section class="panel">
       <button class="ghost danger" data-action="logout">Abmelden</button>
-    </section>`;
+    </section>
+    <footer class="colophon"><img src="icons/lammping.svg" alt="LAMMping"><span>Unser Reisetagebuch für den Minicamper</span></footer>`;
 };
 
 /* ---------- Ansicht: Verwaltung (nur Eltern) ---------- */
@@ -1107,10 +1113,12 @@ function crewForm(id) {
 
 /* ---------- Ansicht: Anmeldung & Einrichtung ---------- */
 
-VIEWS.loading = () => '<section class="login"><h1>Bordbuch</h1><p>Wird geladen …</p></section>';
+const HERO = `<div class="brand-hero"><img class="hero-sheep" src="icons/schaf.svg" alt=""><img class="wordmark" src="icons/lammping.svg" alt="LAMMping"></div>`;
+
+VIEWS.loading = () => `<section class="login">${HERO}<p class="sub">Wird geladen …</p></section>`;
 
 VIEWS.login = () => `<section class="login">
-  <h1>Bordbuch</h1>
+  ${HERO}
   <p>Meldet euch mit eurem Anmeldenamen an. Neue Konten legen die Verwalter in den Einstellungen an.</p>
   <form data-form="login" class="panel">
     <label class="field"><span>Anmeldename</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
@@ -1120,7 +1128,8 @@ VIEWS.login = () => `<section class="login">
 </section>`;
 
 VIEWS.setup = () => `<section class="login">
-  <h1>Willkommen an Bord</h1>
+  ${HERO}
+  <h2>Willkommen bei LAMMping</h2>
   <p>Einmalige Einrichtung: Du legst dein Verwalter-Konto und eure erste Crew an. Konten für die anderen folgen danach in den Einstellungen.</p>
   <form data-form="setup" class="panel">
     <label class="field"><span>Einrichtungscode (steht in api/config.php)</span><input name="code" required autocapitalize="none" autocomplete="off"></label>
@@ -1135,16 +1144,55 @@ VIEWS.setup = () => `<section class="login">
 </section>`;
 
 VIEWS.nocrew = () => `<section class="login">
-  <h1>Hallo ${esc(session.user.name)}</h1>
+  ${HERO}
+  <h2>Hallo ${esc(session.user.name)}</h2>
   <p>Du gehörst noch zu keiner Crew. Bitte einen Verwalter, dich in eine Crew aufzunehmen, und öffne die App dann neu.</p>
   <button class="ghost danger" data-action="logout">Abmelden</button>
 </section>`;
 
 VIEWS.offline = () => `<section class="login">
-  <h1>Keine Verbindung</h1>
-  <p>Beim ersten Öffnen braucht das Bordbuch einmal Internet, damit ihr euch anmelden könnt. Danach geht es auch offline.</p>
+  ${HERO}
+  <h2>Keine Verbindung</h2>
+  <p>Beim ersten Öffnen braucht LAMMping einmal Internet, damit ihr euch anmelden könnt. Danach geht es auch offline.</p>
   <button class="primary" data-action="reload">Noch einmal versuchen</button>
 </section>`;
+
+/* ---------- Installieren ---------- */
+
+let installPrompt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const SHARE_ICON = '<svg class="ios-share" viewBox="0 0 24 24" aria-label="Teilen-Symbol"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+
+window.addEventListener('beforeinstallprompt', e => {
+  // Chrome/Android: eigenen Knopf anbieten statt des Browser-Banners
+  e.preventDefault();
+  installPrompt = e;
+  render();
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  toast('LAMMping ist installiert');
+  render();
+});
+
+function installText() {
+  if (isStandalone()) return '<p>LAMMping läuft als installierte App.</p>';
+  if (installPrompt) return `<p>Mit dem Schaf auf dem Startbildschirm, ohne Browserleiste und auch offline.</p>
+    <button class="primary" data-action="install">LAMMping installieren</button>`;
+  if (isIOS) return `<p>In Safari unten auf ${SHARE_ICON} <b>Teilen</b> tippen, dann <b>„Zum Home-Bildschirm“</b>.</p>`;
+  return '<p>Im Browser-Menü <b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b> wählen.</p>';
+}
+
+function installHint() {
+  if (isStandalone() || LS.get('installHintDone', false) || !(installPrompt || isIOS)) return '';
+  return `<aside class="install-hint">
+    <img src="icons/schaf-klein.svg" alt="">
+    <p>${installPrompt ? 'LAMMping als App auf den Startbildschirm legen?' : `Als App installieren: ${SHARE_ICON} Teilen, dann „Zum Home-Bildschirm“.`}</p>
+    ${installPrompt ? '<button class="primary" data-action="install">Installieren</button>' : ''}
+    <button class="icon-btn small" data-action="install-hint-off" aria-label="Hinweis ausblenden">${icon('close')}</button>
+  </aside>`;
+}
 
 /* ---------- Sicherung ---------- */
 
@@ -1161,19 +1209,19 @@ async function exportAll() {
       } catch { /* Foto nicht erreichbar: nur Vorschaubild bleibt erhalten */ }
     }
   }
-  const data = { app: 'bordbuch', version: 2, crew: crew.name, created: new Date().toISOString(), photos };
+  const data = { app: 'lammping', version: 2, crew: crew.name, created: new Date().toISOString(), photos };
   WATCHED.forEach(c => { data[c] = S[c]; });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
-  a.download = `bordbuch-${crew.name.replace(/[^\wäöüÄÖÜß-]+/g, '-')}-${today()}.json`;
+  a.download = `lammping-${crew.name.replace(/[^\wäöüÄÖÜß-]+/g, '-')}-${today()}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
 async function importAll(file) {
   let data;
-  try { data = JSON.parse(await file.text()); } catch { return toast('Die Datei ist keine Bordbuch-Sicherung.'); }
-  if (data.app !== 'bordbuch') return toast('Die Datei ist keine Bordbuch-Sicherung.');
+  try { data = JSON.parse(await file.text()); } catch { return toast('Die Datei ist keine LAMMping-Sicherung.'); }
+  if (data.app !== 'lammping' && data.app !== 'bordbuch') return toast('Die Datei ist keine LAMMping-Sicherung.');
   const n = WATCHED.reduce((s, c) => s + (data[c] || []).length, 0);
   if (!confirm(`${n} Einträge und ${(data.photos || []).length} Fotos in die Crew „${crew.name}“ einspielen? Gleiche Einträge werden überschrieben, alles andere bleibt.`)) return;
   for (const p of data.photos || []) await store.put('photos', p);
@@ -1341,6 +1389,15 @@ const ACTIONS = {
     location.reload();
   },
   reload: () => location.reload(),
+  install: async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    installPrompt = null;
+    if (outcome === 'accepted') LS.set('installHintDone', true);
+    render();
+  },
+  'install-hint-off': () => { LS.set('installHintDone', true); render(); },
   relogin: () => { gate = 'login'; render(); },
   'sync-now': () => store.sync(),
   'switch-crew': el => { LS.set('crew', el.dataset.id); location.hash = '#/karte'; location.reload(); },
@@ -1545,7 +1602,7 @@ async function start() {
 
   // Kassen-Freigabe geändert? Neu freigegeben: alles neu holen. Entzogen: lokale Kasse löschen.
   const cashKey = 'cash.' + crew.id, hadCash = LS.get(cashKey, null);
-  if (hadCash === false && canCash()) localStorage.setItem('bb.rev.' + crew.id, '0');
+  if (hadCash === false && canCash()) localStorage.setItem('lp.rev.' + crew.id, '0');
   LS.set(cashKey, canCash());
 
   store = new SyncStore(crew.id);
@@ -1562,7 +1619,7 @@ async function start() {
   WATCHED.forEach(c => store.watch(c, list => { S[c] = list; render(); }));
   onHash();
 
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }

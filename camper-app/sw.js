@@ -1,13 +1,13 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'bordbuch-3';
+const VERSION = 'lammping-4';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
-  'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png',
+  'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/schaf.svg', 'icons/schaf-klein.svg', 'icons/lammping.svg', 'icons/apple-touch-icon.png',
 ];
-const TILES = 'bordbuch-tiles';
-const PHOTOS = 'bordbuch-photos';
+const TILES = 'lammping-tiles';
+const PHOTOS = 'lammping-photos';
 const MAX_TILES = 3000;
 
 self.addEventListener('install', e => {

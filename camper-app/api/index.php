@@ -1,5 +1,5 @@
 <?php
-// Bordbuch-Server: Konten, Crews, Abgleich der Daten und Fotos.
+// LAMMping-Server: Konten, Crews, Abgleich der Daten und Fotos.
 // Alle Anfragen laufen über api/?a=<aktion>. Antworten sind JSON.
 
 declare(strict_types=1);
@@ -7,7 +7,7 @@ declare(strict_types=1);
 $CFG = require __DIR__ . '/config.php';
 const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'listItems', 'meta', 'photos'];
 const TOKEN_DAYS = 400;
-const COOKIE = 'bordbuch';
+const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -75,7 +75,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $body = [];
 if ($method === 'POST') {
     // Eigener Header: Formulare fremder Seiten können ihn nicht setzen (Schutz vor CSRF)
-    if (($_SERVER['HTTP_X_BORDBUCH'] ?? '') !== '1') fail('Ungültige Anfrage', 403);
+    if (($_SERVER['HTTP_X_LAMMPING'] ?? '') !== '1') fail('Ungültige Anfrage', 403);
     $body = json_decode(file_get_contents('php://input') ?: '[]', true);
     if (!is_array($body)) fail('Ungültige Daten');
 }

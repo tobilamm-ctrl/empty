@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Bordbuch</title>
-<meta name="description" content="Unser Reisetagebuch für den Minicamper">
-<meta name="theme-color" content="#0F6670">
+<title>LAMMping</title>
+<meta name="description" content="LAMMping: unser Reisetagebuch für den Minicamper">
+<meta name="theme-color" content="#FBF6EC">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Bordbuch">
+<meta name="apple-mobile-web-app-title" content="LAMMping">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/app.css">
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -22,6 +23,7 @@
 </head>
 <body>
 <header class="topbar">
+  <a class="brand" href="#/karte" aria-label="LAMMping, zur Karte"><img src="icons/schaf-klein.svg" alt=""></a>
   <a class="trip-chip" href="#/reisen" id="tripChip" aria-label="Reise wechseln"></a>
   <a class="icon-btn settings-btn" href="#/einstellungen" aria-label="Einstellungen">
     <span id="syncDot" class="sync-dot ok"></span>

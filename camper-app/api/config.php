@@ -1,12 +1,12 @@
 <?php
-// Einstellungen für den Server-Teil des Bordbuchs (siehe ANLEITUNG.md).
+// Einstellungen für den Server-Teil von LAMMping (siehe ANLEITUNG.md).
 
 return [
     // Wird einmalig bei der Ersteinrichtung abgefragt. Unbedingt ändern!
     'setup_code' => 'bitte-aendern',
 
     // Speicherort: SQLite-Datei (Standard, nichts einzurichten) …
-    'db' => 'sqlite:' . __DIR__ . '/data/bordbuch.sqlite',
+    'db' => 'sqlite:' . __DIR__ . '/data/lammping.sqlite',
     'db_user' => null,
     'db_pass' => null,
 
