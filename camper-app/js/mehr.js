@@ -310,10 +310,32 @@ export default function installMore(app) {
   const saveEntry = FORMS.entry;
   FORMS.entry = form => {
     const arrive = form.dataset.arrive;
-    saveEntry(form);
+    const fuel = readFuel(form);
+    const e = saveEntry(form);
     const p = arrive && S.places.find(x => x.id === arrive);
     if (p) save('places', { ...p, done: true, doneAt: Date.now() });
+    if (e && fuel) saveFuelFromEntry(e, fuel);
   };
+
+  // Tankstelle im Tagebuch: Liter und Betrag landen im Tankbuch (und in der Kasse der Reise)
+  function readFuel(form) {
+    if (!form.fuelLiters || form.dataset.type !== 'tank') return null;
+    const liters = num(form.fuelLiters.value), amount = num(form.fuelAmount.value);
+    if (liters <= 0 || amount <= 0) return null;
+    return { liters, amount, odo: parseInt(form.fuelOdo.value.replace(/\D/g, '')) || 0, full: form.fuelFull.checked };
+  }
+  function saveFuelFromEntry(e, f) {
+    const old = S.fuel.find(x => x.entryId === e.id);
+    const doc = save('fuel', {
+      ...(old || { id: newId(), by: me(), tripId: e.tripId, entryId: e.id }),
+      ...f, date: e.date.slice(0, 10), place: e.place || e.title || '', lat: e.lat, lng: e.lng,
+    });
+    const linked = S.expenses.find(x => x.fuelId === doc.id);
+    save('expenses', {
+      ...(linked || { id: newId(), tripId: e.tripId, paidBy: me(), split: defaultSplit(), fuelId: doc.id }),
+      amount: f.amount, date: doc.date, cat: 'Sprit', note: 'Tanken' + (doc.place ? ' ' + doc.place : ''),
+    });
+  }
 
   // Karte: gemerkte und geplante Orte
   const placeIcon = (p, color) => window.L.divIcon({
@@ -344,6 +366,8 @@ export default function installMore(app) {
 
   const encodePts = pts => pts.map(([a, b]) => `${a.toFixed(5)},${b.toFixed(5)}`).join(';');
   const decodePts = s => (s ? s.split(';').map(p => p.split(',').map(Number)) : []);
+  app.encodePts = encodePts;
+  app.decodePts = decodePts;
 
   // Douglas-Peucker in Metern (lokal flach gerechnet)
   function simplify(pts, tol) {
@@ -366,6 +390,13 @@ export default function installMore(app) {
     }
     return pts.filter((_, i) => keep[i]);
   }
+
+  // Auf höchstens max Punkte vereinfachen (zum Bearbeiten importierter Strecken)
+  app.simplifyTo = (pts, max) => {
+    let tol = 10, out = simplify(pts, tol);
+    while (out.length > max) out = simplify(pts, tol *= 1.6);
+    return out;
+  };
 
   function parseGpx(text) {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -417,6 +448,7 @@ export default function installMore(app) {
     const list = scope === 'all' ? S.tracks : S.tracks.filter(x => t && x.tripId === t.id);
     const ends = [];
     list.forEach(x => {
+      if (x.id === app.editingTrackId) return;   // wird gerade im Editor gezeichnet
       const pts = decodePts(x.pts);
       if (pts.length < 2) return;
       const color = tripColor(S.trips.find(y => y.id === x.tripId));

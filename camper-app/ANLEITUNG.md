@@ -115,6 +115,15 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Mehr:** Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
   (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen.
+- **Karte bearbeiten** (Stift-Knopf auf der Karte):
+  - *Orte:* auf die Karte tippen fügt nachträglich einen Stellplatz, Sehenswertes, eine Tankstelle,
+    Ver- und Entsorgung, einen Einkauf, eine Pause oder eine Notiz ein. Datum und Uhrzeit werden so
+    vorgeschlagen, dass der Ort zwischen den nächstgelegenen Stopps landet. Stopps lassen sich ziehen.
+  - *Strecke:* Punkte antippen zeichnet die gefahrene Strecke, Punkte ziehen, antippen löscht,
+    ○ fügt einen Zwischenpunkt ein. „Straßen folgen“ legt die Linie automatisch auf die Straßen
+    (über den freien Routendienst von OpenStreetMap, braucht Internet). Auch importierte
+    GPX-Strecken lassen sich so korrigieren.
+  - Lange auf die Karte drücken öffnet das Einfügen auch ohne Bearbeiten-Modus.
 - **Darstellung:** hell, dunkel oder wie das Handy (Einstellungen → Darstellung).
 
 Tankbuch und Kasse sehen nur Personen mit Kassen-Freigabe.

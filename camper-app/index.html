@@ -151,11 +151,15 @@
     <button class="round" data-action="locate" aria-label="Meine Position zeigen">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
+    <button class="round" data-action="map-edit" aria-label="Karte bearbeiten: Orte einfügen, Strecke zeichnen">
+      <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>
+    </button>
     <button class="round" data-action="toggle-places" id="placesBtn" aria-label="Gemerkte Orte zeigen" aria-pressed="true">
       <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><path d="M12 13c-2.6-1.7-1.6-4 0-2.8 1.6-1.2 2.6 1.1 0 2.8z"/></svg>
     </button>
     <button class="primary big" data-action="here-menu">Ich bin hier …</button>
   </div>
+  <div class="map-edit" id="mapEditBar" hidden></div>
   <button class="car-chip" id="carChip" data-action="car-sheet" hidden></button>
 </div>
 

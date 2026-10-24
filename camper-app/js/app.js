@@ -1,5 +1,6 @@
 import { SyncStore, api, newId } from './store.js';
 import installMore from './mehr.js';
+import installMapEdit from './kartenedit.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -18,14 +19,28 @@ const ICONS = {
   pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  tank: '<path d="M5 20V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v15M3 20h13M7 8h5v4H7zM14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-2-3"/>',
+  service: '<path d="M12 3s-6 6.6-6 11a6 6 0 0 0 12 0c0-4.4-6-11-6-11z"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5"/>',
+  einkauf: '<path d="M5 8h14l-1.5 12h-11zM9 8V6a3 3 0 0 1 6 0v2"/>',
+  pause: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M11 3v3M14 3v3"/>',
+  route: '<path d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
 };
 const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
+// Eintragsarten: was das Formular zeigt (Kosten, Bewertung, Ausstattung, Tankdaten) und wohin Kosten gebucht werden
 const TYPES = {
-  stellplatz: { label: 'Stellplatz', many: 'Stellplätze' },
-  sight: { label: 'Sehenswert', many: 'Sehenswertes' },
-  notiz: { label: 'Notiz', many: 'Notizen' },
+  stellplatz: { label: 'Stellplatz', many: 'Stellplätze', hint: 'Hier übernachten wir', cost: 'Stellplatz', rating: true, features: true },
+  sight: { label: 'Sehenswert', many: 'Sehenswertes', hint: 'Ausflug, Aussicht, Lokal', cost: 'Eintritt', rating: true },
+  tank: { label: 'Tankstelle', many: 'Tankstopps', hint: 'Liter und Betrag ins Tankbuch', fuel: true, minor: true },
+  service: { label: 'Ver- & Entsorgung', many: 'Ver- & Entsorgung', hint: 'Wasser, Toilette, Grauwasser', cost: 'Stellplatz', rating: true, minor: true },
+  einkauf: { label: 'Einkauf', many: 'Einkäufe', hint: 'Supermarkt, Markt, Bäcker', cost: 'Lebensmittel', minor: true },
+  pause: { label: 'Pause', many: 'Pausen', hint: 'Rast, Café, Mittag', cost: 'Essen gehen', rating: true, minor: true },
+  notiz: { label: 'Notiz', many: 'Notizen', hint: 'Gedanken zum Tag' },
 };
+// Unterwegs-Stopps werden im Tagebuch-Filter zusammengefasst
+const MINOR = Object.keys(TYPES).filter(k => TYPES[k].minor);
 const FEATURES = ['Strom', 'Wasser', 'Entsorgung', 'WC', 'Dusche', 'Ruhig', 'Eben', 'Aussicht', 'Kostenlos'];
 const CATS = ['Stellplatz', 'Sprit', 'Lebensmittel', 'Essen gehen', 'Eintritt', 'Maut & Vignette', 'Fähre', 'Ausrüstung', 'Sonstiges'];
 const SETTLE = 'Ausgleich';
@@ -310,15 +325,22 @@ function ensureMap() {
   routeLayer = L.layerGroup().addTo(map);
   carLayer = L.layerGroup().addTo(map);
   meLayer = L.layerGroup().addTo(map);
+  // Tippen (oder lange drücken) auf die Karte: der Bearbeiten-Modus aus kartenedit.js entscheidet
+  map.on('click contextmenu', ev => mapClickHooks.some(h => h(ev.latlng, ev.type)));
 }
+const mapClickHooks = [];
 
-const pinIcon = (type, color, small) => L.divIcon({
-  className: '',
-  html: `<div class="pin pin-${type}${small ? ' small' : ''}" style="--c:${color}">${small ? '' : icon(type)}</div>`,
-  iconSize: small ? [14, 14] : [30, 30],
-  iconAnchor: small ? [7, 7] : [15, 15],
-  popupAnchor: [0, -14],
-});
+const pinIcon = (type, color, small) => {
+  const minor = !small && TYPES[type] && TYPES[type].minor;
+  const size = small ? 14 : minor ? 24 : 30;
+  return L.divIcon({
+    className: '',
+    html: `<div class="pin pin-${type}${small ? ' small' : ''}${minor ? ' minor' : ''}" style="--c:${color}">${small ? '' : icon(type)}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+};
 
 function entryPopup(e, t) {
   return `<div class="popup">
@@ -340,14 +362,27 @@ function drawRoute(t, emphasis) {
   } else if (pts.length > 1) {
     L.polyline(pts, { color, weight: 2, opacity: 0.6, dashArray: '2 8' }).addTo(routeLayer);
   }
+  const movable = emphasis && ui.mapEdit === 'orte';
   stops.forEach(e => {
     const small = !emphasis || e.type === 'notiz';
-    const m = L.marker([e.lat, e.lng], { icon: pinIcon(e.type, color, small) })
+    const m = L.marker([e.lat, e.lng], { icon: pinIcon(e.type, color, small && !movable), draggable: movable })
       .bindPopup(entryPopup(e, emphasis ? null : t))
       .addTo(routeLayer);
     m.entryId = e.id;
+    if (movable) m.on('dragend', () => moveEntry(e, m.getLatLng()));
   });
   return pts;
+}
+
+// Stopp auf der Karte verschoben: Position übernehmen, Ortsname neu bestimmen
+function moveEntry(e, ll) {
+  const p = { lat: ll.lat, lng: ll.lng };
+  save('entries', { ...e, ...p, acc: null });
+  toast(`„${e.title || TYPES[e.type].label}“ verschoben`);
+  placeInfo(p).then(({ name, cc }) => {
+    const cur = S.entries.find(x => x.id === e.id);
+    if (cur && name && name !== cur.place) save('entries', { ...cur, place: name, country: cc || cur.country });
+  });
 }
 
 function drawMap() {
@@ -439,10 +474,11 @@ VIEWS.tagebuch = () => {
   </div>`;
   if (mode === 'planung') return `${installHint()}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
   const filter = ui.diaryFilter;
-  const list = st.es.filter(e => filter === 'alle' || e.type === filter).sort(byDate).reverse();
+  const list = st.es.filter(e => filter === 'alle' || e.type === filter || (filter === 'unterwegs' && MINOR.includes(e.type))).sort(byDate).reverse();
 
-  const chips = ['alle', 'stellplatz', 'sight', 'notiz'].map(f =>
-    `<button class="chip${filter === f ? ' on' : ''}" data-action="diary-filter" data-f="${f}">${f === 'alle' ? 'Alles' : TYPES[f].many}</button>`).join('');
+  const label = f => ({ alle: 'Alles', unterwegs: 'Unterwegs' })[f] || TYPES[f].many;
+  const chips = ['alle', 'stellplatz', 'sight', 'unterwegs', 'notiz'].map(f =>
+    `<button class="chip${filter === f ? ' on' : ''}" data-action="diary-filter" data-f="${f}">${label(f)}</button>`).join('');
 
   const days = {};
   list.forEach(e => (days[e.date.slice(0, 10)] ||= []).push(e));
@@ -496,6 +532,8 @@ function entryForm(e = {}) {
   const linked = !isNew && S.expenses.some(x => x.entryId === e.id);
   const typeRadios = Object.entries(TYPES).map(([k, v]) =>
     `<label><input type="radio" name="type" value="${k}"${k === type ? ' checked' : ''}><span>${icon(k)}${v.label}</span></label>`).join('');
+  const fuel = !isNew && S.fuel.find(f => f.entryId === e.id) || {};
+  const numVal = v => (v ? String(v).replace('.', ',') : '');
   const feats = FEATURES.map(f =>
     `<label class="chip"><input type="checkbox" name="feat" value="${f}"${(e.features || []).includes(f) ? ' checked' : ''}><span>${f}</span></label>`).join('');
   const stars = [1, 2, 3, 4, 5].map(n =>
@@ -506,7 +544,7 @@ function entryForm(e = {}) {
       <h2>${isNew ? 'Neuer Eintrag' : 'Eintrag bearbeiten'}</h2>
       <button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button>
     </div>
-    <div class="seg types">${typeRadios}</div>
+    <div class="type-grid">${typeRadios}</div>
     <label class="field"><span>Titel</span><input name="title" value="${esc(e.title)}" placeholder="z. B. Wiese am Seeufer" autocomplete="off"></label>
     <div class="row2">
       <label class="field"><span>Wann</span><input type="datetime-local" name="date" value="${esc(e.date || nowLocal())}" required></label>
@@ -523,9 +561,20 @@ function entryForm(e = {}) {
       <div id="pickMap" class="pick-map" hidden></div>
     </div>
     <label class="field"><span>Was war los?</span><textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
-    <div class="field not-notiz"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
-    <div class="field only-stellplatz"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
-    <div class="row2 not-notiz">
+    <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
+    <div class="field" data-show="features"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
+    ${canCash() ? `<div data-show="fuel">
+      <div class="row2">
+        <label class="field"><span>Liter</span><input name="fuelLiters" inputmode="decimal" value="${numVal(fuel.liters)}" placeholder="0,00"></label>
+        <label class="field"><span>Betrag in €</span><input name="fuelAmount" inputmode="decimal" value="${numVal(fuel.amount)}" placeholder="0,00"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Kilometerstand</span><input name="fuelOdo" inputmode="numeric" value="${fuel.odo || ''}"></label>
+        <label class="check"><input type="checkbox" name="fuelFull"${fuel.id ? (fuel.full ? ' checked' : '') : ' checked'}><span>Vollgetankt</span></label>
+      </div>
+      <p class="sub">Mit Liter und Betrag landet der Stopp auch im Tankbuch${currentTrip() ? ' und in der Kasse' : ''}.</p>
+    </div>` : ''}
+    <div class="row2" data-show="cost">
       <label class="field"><span>Kosten in €</span><input name="cost" inputmode="decimal" value="${e.cost ? String(e.cost).replace('.', ',') : ''}" placeholder="0"></label>
       ${canCash() ? `<label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>` : ''}
     </div>
@@ -587,13 +636,20 @@ function openPicker(form) {
   setTimeout(() => pickMap.invalidateSize(), 50);
 }
 
+// Nur zeigen, was zur gewählten Art passt
+function applyType(form) {
+  const type = form.querySelector('[name=type]:checked').value;
+  form.dataset.type = type;
+  form.querySelectorAll('[data-show]').forEach(el => { el.hidden = !TYPES[type][el.dataset.show]; });
+}
+
 function openEntryForm(e, opts = {}) {
   if (!currentTrip()) { toast('Legt zuerst eine Reise an.'); return tripForm(); }
   openSheet(entryForm(e), form => {
-    form.addEventListener('change', ev => {
-      if (ev.target.name === 'type') form.dataset.type = ev.target.value;
-    });
+    applyType(form);
+    form.addEventListener('change', ev => { if (ev.target.name === 'type') applyType(form); });
     if (opts.locate) locateInto(form);
+    if (opts.at) setFormPos(form, opts.at, true);
   });
 }
 
@@ -614,9 +670,9 @@ function submitEntry(form) {
     lng: isFinite(lng) ? lng : null,
     acc: parseInt(fd.get('acc')) || null,
     country: fd.get('country') || '',
-    rating: type === 'notiz' ? 0 : +fd.get('rating') || 0,
-    features: type === 'stellplatz' ? fd.getAll('feat') : [],
-    cost: type === 'notiz' ? 0 : num(fd.get('cost')),
+    rating: TYPES[type].rating ? +fd.get('rating') || 0 : 0,
+    features: TYPES[type].features ? fd.getAll('feat') : [],
+    cost: TYPES[type].cost ? num(fd.get('cost')) : 0,
   };
 
   // Fotos: neue als eigene Dokumente speichern, im Eintrag nur Vorschaubilder
@@ -632,7 +688,7 @@ function submitEntry(form) {
       ...(linked || { id: newId(), tripId: e.tripId, paidBy: me(), split: defaultSplit(), entryId: e.id }),
       amount: e.cost,
       date: e.date.slice(0, 10),
-      cat: e.type === 'stellplatz' ? 'Stellplatz' : 'Eintritt',
+      cat: TYPES[e.type].cost,
       note: e.title || e.place,
     });
   } else if (linked && (!fd.get('toKasse') || !e.cost)) {
@@ -640,6 +696,7 @@ function submitEntry(form) {
   }
   closeSheet();
   toast(old ? 'Eintrag gespeichert' : 'Eintrag angelegt');
+  return e;
 }
 
 function entryView(e) {
@@ -1412,8 +1469,8 @@ const ACTIONS = {
   'here-menu': () => openSheet(`<div>
     <div class="sheet-head"><h2>Ich bin hier …</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <div class="here-grid">
-      <button data-action="new-here" data-type="stellplatz">${icon('stellplatz')}<b>Stellplatz</b><small>Hier übernachten wir</small></button>
-      <button data-action="new-here" data-type="sight">${icon('sight')}<b>Sehenswert</b><small>Ausflug, Aussicht, Lokal</small></button>
+      ${Object.entries(TYPES).filter(([k]) => k !== 'notiz').map(([k, v]) =>
+        `<button data-action="new-here" data-type="${k}">${icon(k)}<b>${v.label}</b><small>${v.hint}</small></button>`).join('')}
       <button data-action="park-here">${icon('car')}<b>Auto geparkt</b><small>Standort merken</small></button>
       <button data-action="new-here" data-type="notiz">${icon('notiz')}<b>Notiz</b><small>Ohne Position</small></button>
     </div></div>`),
@@ -1456,6 +1513,10 @@ const ACTIONS = {
     if (!e || !confirm('Diesen Eintrag mit seinen Fotos löschen?')) return;
     (e.photos || []).forEach(p => remove('photos', p.id));
     S.expenses.filter(x => x.entryId === e.id).forEach(x => remove('expenses', x.id));
+    S.fuel.filter(f => f.entryId === e.id).forEach(f => {
+      S.expenses.filter(x => x.fuelId === f.id).forEach(x => remove('expenses', x.id));
+      remove('fuel', f.id);
+    });
     remove('entries', e.id);
     closeSheet();
   },
@@ -1823,7 +1884,7 @@ async function start() {
 }
 
 // Stufe 2 (mehr.js): Mehr-Menü, Planung, Orte, Tankbuch, Checklisten, Fahrzeug, Statistik, GPX
-installMore({
+const APP = {
   S, ui, LS, VIEWS, ACTIONS, FORMS, CHANGES, mapHooks,
   $, esc, money, num, icon, art, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
   today, nowLocal, fmtDay, fmtShort, fmtRange, ago, km, fmtKm, hasPos, navUrl, byDate, sortTrips,
@@ -1831,7 +1892,10 @@ installMore({
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
+  mapClickHooks, MINOR, applyType,
   get map() { return map; },
-});
+};
+installMore(APP);
+installMapEdit(APP);
 
 start();
