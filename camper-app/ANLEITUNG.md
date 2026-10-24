@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-10'` hochzählen (z. B. auf `lammping-11`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-11'` hochzählen (z. B. auf `lammping-12`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -132,7 +132,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     „Ver- und Entsorgung“ mit Häkchen „Wasser getankt“ füllt den Wassertank wieder auf.
   - *Spiele & Co:* Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
-    Länder-Sticker und ein Link zu eurem Brettspieleportal. Kennzeichen-Daten: Senatsverwaltung
+    Länder-Sticker und euer Spieleportal Spieleabend (`https://spieleabend.lamm7.de/`) direkt in der App;
+    Farbkreuz und weitere Portal-Spiele bekommen eine eigene Kachel (unter Brettspiele → Einstellungen änderbar). Kennzeichen-Daten: Senatsverwaltung
     Berlin, CC BY 3.0.
 - **Karte bearbeiten** (Stift-Knopf auf der Karte):
   - *Orte:* auf die Karte tippen fügt nachträglich einen Stellplatz, Sehenswertes, eine Tankstelle,

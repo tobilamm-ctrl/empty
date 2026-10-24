@@ -753,3 +753,6 @@ body.locked .backdrop { display: none; }
 .sticker span { font-size: 38px; line-height: 1; }
 .sticker b { font: 600 14px var(--head); color: var(--wood); }
 .sticker.new { border: 2px solid var(--trip); }
+
+/* Spieleportal eingebettet */
+.portal-frame { display: block; width: 100%; height: min(78vh, 760px); border: 1.5px solid var(--line); border-radius: 14px; background: var(--paper); margin: 10px 0 6px; }
