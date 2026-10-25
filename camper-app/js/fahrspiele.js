@@ -1,6 +1,8 @@
 // Spiele für die Fahrt: Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu (mit Bildern), Flaggen-Quiz,
 // Reise-Memory (mit euren Fotos) und Sudoku (4×4 oder 9×9, mit Zahlen oder Tieren). Alles geht ohne Internet.
 
+import { flagImg } from './flaggen.js';
+
 export default function installFahrspiele(app) {
   const { S, LS, ACTIONS, CHANGES, esc, save, toast, render, currentTrip, tripEntries, members, me, personName } = app;
   const player = () => (app.player ? app.player() : me());
@@ -154,7 +156,8 @@ export default function installFahrspiele(app) {
     }
     return `<p class="fb-clock">Noch <b data-until="${g.until}" data-onend="wb-end">${mmss((g.until - Date.now()) / 1000)}</b> · ${g.ok} erraten</p>
       <div class="big-card"><span class="bc-pic">${g.card[1]}</span><b>${esc(g.card[0])}</b></div>
-      <div class="btnrow big-row"><button class="ghost big-btn" data-action="wb-next" data-r="pass">Passen</button><button class="primary big-btn" data-action="wb-next" data-r="ok">Erraten!</button></div>`;
+      <div class="btnrow big-row"><button class="ghost big-btn" data-action="wb-next" data-r="pass">Passen</button><button class="primary big-btn" data-action="wb-next" data-r="ok">Erraten!</button></div>
+      <div class="btnrow"><button class="link" data-action="wb-stop">Runde beenden</button></div>`;
   }
   const wbDraw = g => {
     const pool = (g.cat === 'Alle' ? Object.values(WHO).flat() : WHO[g.cat]).filter(c => !g.seen.includes(c[0]));
@@ -165,6 +168,7 @@ export default function installFahrspiele(app) {
   ACTIONS['wb-start'] = () => { LS.set('wb', wbDraw({ ...wb(), ok: 0, pass: 0, until: Date.now() + 120000, seen: [] })); render(); };
   ACTIONS['wb-next'] = el => { const g = wb(); g[el.dataset.r]++; if (el.dataset.r === 'ok' && navigator.vibrate) navigator.vibrate(60); LS.set('wb', wbDraw(g)); render(); };
   ACTIONS['wb-end'] = () => render();
+  ACTIONS['wb-stop'] = () => { LS.set('wb', { ...wb(), until: Date.now() - 1 }); render(); };
 
   /* ====================================================================== */
   /* Tabu (mit Bildern)                                                      */
@@ -194,7 +198,7 @@ export default function installFahrspiele(app) {
     if (!live) {
       return `<p>Eine Person erklärt das Wort, ohne es zu sagen – die anderen raten. Mit Bild ist es leichter für Kleine, mit verbotenen Wörtern wird es knifflig.</p>
         <div class="seg"><button class="${g.mode === 'bild' ? 'on' : ''}" data-action="tb-mode" data-m="bild">Mit Bild</button><button class="${g.mode === 'profi' ? 'on' : ''}" data-action="tb-mode" data-m="profi">Mit verbotenen Wörtern</button></div>
-        ${g.until ? `<p class="win">Letzte Runde: ${g.ok - g.bad} Punkte (${g.ok} richtig${g.bad ? `, ${g.bad} Tabu` : ''})</p>` : ''}
+        ${g.until ? `<p class="win">Letzte Runde: ${g.ok - g.bad} ${Math.abs(g.ok - g.bad) === 1 ? 'Punkt' : 'Punkte'} (${g.ok} richtig${g.bad ? `, ${g.bad} Tabu` : ''})</p>` : ''}
         <button class="primary" data-action="tb-start">Runde starten (1 Minute)</button>`;
     }
     const [word, pic, banned] = g.card;
@@ -202,12 +206,14 @@ export default function installFahrspiele(app) {
       <div class="big-card"><span class="bc-pic">${pic}</span><b>${esc(word)}</b>
         ${g.mode === 'profi' ? `<ul class="tb-banned">${banned.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}</div>
       <div class="btnrow big-row">${g.mode === 'profi' ? '<button class="ghost big-btn danger" data-action="tb-next" data-r="bad">Tabu!</button>' : ''}
-        <button class="ghost big-btn" data-action="tb-next" data-r="skip">Weiter</button><button class="primary big-btn" data-action="tb-next" data-r="ok">Richtig!</button></div>`;
+        <button class="ghost big-btn" data-action="tb-next" data-r="skip">Weiter</button><button class="primary big-btn" data-action="tb-next" data-r="ok">Richtig!</button></div>
+      <div class="btnrow"><button class="link" data-action="tb-stop">Runde beenden</button></div>`;
   }
   const tbDraw = g => { const pool = TABU.filter(c => !g.seen.includes(c[0])); const card = pick(pool.length ? pool : TABU); return { ...g, card, seen: pool.length ? [...g.seen, card[0]] : [card[0]] }; };
   ACTIONS['tb-mode'] = el => { LS.set('tabu', { ...tb(), mode: el.dataset.m }); render(); };
   ACTIONS['tb-start'] = () => { LS.set('tabu', tbDraw({ ...tb(), ok: 0, bad: 0, skip: 0, until: Date.now() + 60000, seen: tb().seen.length > 50 ? [] : tb().seen })); render(); };
   ACTIONS['tb-next'] = el => { const g = tb(); g[el.dataset.r]++; LS.set('tabu', tbDraw(g)); render(); };
+  ACTIONS['tb-stop'] = () => { LS.set('tabu', { ...tb(), until: Date.now() - 1 }); render(); };
   ACTIONS['tb-end'] = () => { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); render(); };
 
   /* ====================================================================== */
@@ -216,7 +222,6 @@ export default function installFahrspiele(app) {
 
   const EUROPE = 'DE AT CH IT FR ES PT NL BE LU DK SE NO FI IS IE GB PL CZ SK HU SI HR BA RS ME AL MK GR BG RO MD UA BY LT LV EE TR CY MT LI MC SM AD VA XK'.split(' ');
   const WORLD = 'US CA MX BR AR CL PE CO VE CU JM CN JP KR IN PK TH VN ID PH MY SG AU NZ ZA EG MA TN KE NG GH ET TZ SA AE IL IR IQ NP LK MN KZ RU'.split(' ');
-  const flag = cc => String.fromCodePoint(...[...cc].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
   const cname = cc => { try { return new Intl.DisplayNames(['de'], { type: 'region' }).of(cc); } catch { return cc; } };
   const flagDoc = () => S.games.find(g => g.id === `flaggen_${player()}`) || { id: `flaggen_${player()}`, kind: 'flaggen', by: player(), best: {} };
   let fq = null;
@@ -236,7 +241,7 @@ export default function installFahrspiele(app) {
     const best = (flagDoc().best || {})[level] || 0;
     return `<div class="seg"><button class="${level === 'europa' ? 'on' : ''}" data-action="fq-level" data-l="europa">Europa</button><button class="${level === 'welt' ? 'on' : ''}" data-action="fq-level" data-l="welt">Welt</button></div>
       <p class="plate-progress">In Folge richtig: <b>${fq.streak}</b> · Rekord ${esc(personName(player()))}: <b>${best}</b></p>
-      <div class="fq-flag">${flag(fq.cc)}</div>
+      <div class="fq-flag">${flagImg(fq.cc, 'fq-img')}</div>
       <div class="fq-opts">${fq.opts.map(c => `<button class="fq-opt${fq.answer ? (c === fq.cc ? ' right' : c === fq.answer ? ' wrong' : '') : ''}" data-action="fq-answer" data-c="${c}"${fq.answer ? ' disabled' : ''}>${esc(cname(c))}</button>`).join('')}</div>
       ${fq.answer ? `<p class="${fq.answer === fq.cc ? 'win' : 'sub'}">${fq.answer === fq.cc ? 'Richtig!' : `Das ist ${esc(cname(fq.cc))}.`}</p><button class="primary" data-action="fq-next">Nächste Flagge</button>` : ''}`;
   }

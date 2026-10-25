@@ -1,5 +1,7 @@
 // Weitere Bereiche im Mehr-Menü: Wetter, Länderinfos, Dokumente & Notfall, Fotoalbum, Kochen, Autarkie.
 
+import { flagImg, flagText } from './flaggen.js';
+
 export default function installExtras(app) {
   const {
     S, ui, LS, VIEWS, ACTIONS, FORMS, CHANGES, esc, num, icon, pageHead, newId, save, remove, toast, render, go,
@@ -133,8 +135,10 @@ export default function installExtras(app) {
     HU: { name: 'Ungarn', speed: '50 / 90 / 130', alc: '0,0 ‰', toll: 'E-Vignette für Autobahnen.', must: 'Warndreieck, Warnweste, Verbandkasten', sos: '112', tip: 'Außerorts Abblendlicht auch tagsüber.' },
   };
   app.COUNTRIES = COUNTRIES;
-  const flag = cc => (cc && cc.length === 2 ? String.fromCodePoint(...[...cc.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '');
+  // Flaggen als Bild (HTML); als Text nur, wo kein HTML geht
+  const flag = cc => flagImg(cc);
   app.flag = flag;
+  app.flagText = flagText;
   // Länder einer Reise: aus Einträgen und geplanten Orten
   const tripCountries = t => [...new Set([...tripEntries(t), ...S.places.filter(p => p.tripId === t.id)].map(x => x.country).filter(Boolean))];
   app.tripCountries = tripCountries;
@@ -178,12 +182,12 @@ export default function installExtras(app) {
     const em = emergency();
     const t = currentTrip();
     const ccs = t ? tripCountries(t) : [];
-    const sosHere = ccs.map(cc => COUNTRIES[cc] && `${flag(cc)} ${COUNTRIES[cc].name}: ${COUNTRIES[cc].sos}`).filter(Boolean);
+    const sosHere = ccs.map(cc => COUNTRIES[cc] && `${flag(cc)} ${esc(`${COUNTRIES[cc].name}: ${COUNTRIES[cc].sos}`)}`).filter(Boolean);
     const docs = S.documents.slice().sort((a, b) => (a.person || '').localeCompare(b.person || '') || a.title.localeCompare(b.title));
     return `${pageHead('dokumente', isAdmin() ? 'Dokumente & Notfall' : 'Notfall', 'Alles Wichtige griffbereit, auch offline')}
       <section class="panel sos">
         <a class="primary btn sos-call" href="tel:112">Notruf 112</a>
-        ${sosHere.length ? `<p class="sub">${sosHere.map(esc).join('<br>')}</p>` : '<p class="sub">112 gilt in ganz Europa.</p>'}
+        ${sosHere.length ? `<p class="sub">${sosHere.join('<br>')}</p>` : '<p class="sub">112 gilt in ganz Europa.</p>'}
       </section>
       <section class="panel">
         <div class="toolbar"><h2>Notfallkontakte</h2><button class="ghost" data-action="emergency-form">Bearbeiten</button></div>

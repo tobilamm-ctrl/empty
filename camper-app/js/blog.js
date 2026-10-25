@@ -1,6 +1,8 @@
 // Reiseblog: zeigt eine Reise zum Lesen an, ohne Anmeldung. Der Schlüssel steht hinter dem # in der Adresse,
 // der Server liefert nur Strecke und Einträge dieser einen Reise (ohne Kosten und Namen).
 
+import { flagImg } from './flaggen.js';
+
 const TYPE = {
   stellplatz: 'Stellplatz', sight: 'Sehenswert', museum: 'Museum', wanderung: 'Wanderung / Radtour', baden: 'Baden',
   restaurant: 'Café / Restaurant', kinder: 'Kinder-Highlight', tank: 'Tankstopp', service: 'Ver- & Entsorgung',
@@ -12,7 +14,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const day = d => new Date(d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 const long = d => new Date(d + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-const flag = cc => cc && cc.length === 2 ? String.fromCodePoint(...[...cc.toUpperCase()].map(c => 127397 + c.charCodeAt(0))) : '';
+const flag = cc => flagImg(cc);
 const hasPos = e => typeof e.lat === 'number' && typeof e.lng === 'number';
 const km = (a, b) => {
   const R = 6371, r = x => x * Math.PI / 180;

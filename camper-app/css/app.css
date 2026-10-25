@@ -1559,3 +1559,8 @@ dialog.draw::backdrop { background: rgba(43, 27, 16, .6); }
 .story-die { width: 92px; height: 92px; border-radius: 20px; border: 2px solid var(--line); background: var(--surface); box-shadow: 0 4px 0 var(--line); font-size: 54px; line-height: 1; display: grid; place-items: center; animation: die-in .45s both; animation-delay: var(--d); }
 @keyframes die-in { from { transform: rotate(-200deg) scale(.3); opacity: 0; } }
 .story-mini { font-size: 34px; text-align: center; margin: 0 0 8px; }
+
+/* ---------- Flaggen als Bild (vendor/flaggen) ---------- */
+img.fl { display: inline-block; height: 1em; width: 1.333em; vertical-align: -0.14em; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); object-fit: cover; }
+.fq-flag .fq-img { width: min(240px, 70vw); height: auto; aspect-ratio: 4 / 3; border-radius: 10px; box-shadow: 0 4px 14px rgba(58, 38, 23, .2), 0 0 0 1px rgba(0, 0, 0, .1); }
+.fq-flag { line-height: 0; }

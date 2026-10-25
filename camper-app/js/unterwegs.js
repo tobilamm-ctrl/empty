@@ -189,7 +189,7 @@ export default function installUnterwegs(app) {
     const c = fx();
     openSheet(`<form data-form="fx">${sheetHead('Währung umrechnen')}
       <label class="field"><span>Währung</span><select name="cur" data-action-input="fx">${Object.entries(CUR).map(([k, v]) =>
-        `<option value="${k}"${k === code ? ' selected' : ''}>${app.flag ? app.flag(v[1]) : ''} ${v[0]} (${k})</option>`).join('')}</select></label>
+        `<option value="${k}"${k === code ? ' selected' : ''}>${app.flagText ? app.flagText(v[1]) : ''} ${v[0]} (${k})</option>`).join('')}</select></label>
       <div class="row2">
         <label class="field"><span>Betrag in ${code}</span><input name="amt" inputmode="decimal" data-action-input="fx" placeholder="0" value="${esc(LS.get('fx.amt', ''))}"></label>
         <label class="field"><span>Das sind in €</span><output name="eur" class="fx-out">–</output></label>

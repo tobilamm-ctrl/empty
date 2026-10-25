@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-29'` hochzählen (z. B. auf `lammping-30`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-30'` hochzählen (z. B. auf `lammping-31`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
