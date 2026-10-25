@@ -73,6 +73,7 @@ h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 
 const GOAL = 50;
 const $ = id => document.getElementById(id);
 const { esc, rnd } = Spielkit;
+const vb = (n, du, er) => (n === "Du" ? du : er); // Verbform für „Du“ oder einen Namen
 let S, kit;
 
 // ---------- Spielstand ----------
@@ -89,15 +90,15 @@ const whoActs = () => (S.phase === "play" ? [S.active] : []);
 function rollOnce() {
   const p = S.players[S.active];
   S.die = 1 + rnd(6);
-  if (S.die === 1) { kit.addLog(`<b>${esc(p.name)}</b> würfelt eine 1 und verliert ${S.turn} Punkte.`); S.turn = 0; nextPlayer(); }
+  if (S.die === 1) { kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "würfelst", "würfelt")} eine 1 und ${vb(p.name, "verlierst", "verliert")} ${S.turn} Punkte.`); S.turn = 0; nextPlayer(); }
   else S.turn += S.die;
 }
 function hold() {
   const p = S.players[S.active];
   p.score += S.turn;
-  kit.addLog(`<b>${esc(p.name)}</b> behält ${S.turn} Punkte (jetzt ${p.score}).`);
+  kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "behältst", "behält")} ${S.turn} Punkte (jetzt ${p.score}).`);
   S.turn = 0;
-  if (p.score >= GOAL) { S.phase = "over"; kit.addLog(`<b>${esc(p.name)}</b> gewinnt!`); return; }
+  if (p.score >= GOAL) { S.phase = "over"; kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "gewinnst", "gewinnt")}!`); return; }
   nextPlayer();
 }
 function nextPlayer() {

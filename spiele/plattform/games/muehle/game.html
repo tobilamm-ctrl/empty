@@ -373,8 +373,9 @@ const level = () => (S.options && R.LEVELS[S.options.level] ? S.options.level : 
 
 // ---------- Züge (verändern nur S, laufen über kit.act) ----------
 function step(f, t) {
-  const c = S.turn, p = S.players[c], verb = f < 0 ? `setzt auf ${R.name(t)}`
-    : `${R.mode(pos(), c) === "jump" ? "springt" : "zieht"} von ${R.name(f)} nach ${R.name(t)}`;
+  const c = S.turn, p = S.players[c], du = p.name === "Du";
+  const verb = f < 0 ? `setzt auf ${R.name(t)}`
+    : `${R.mode(pos(), c) === "jump" ? (du ? "springst" : "springt") : (du ? "ziehst" : "zieht")} von ${R.name(f)} nach ${R.name(t)}`;
   if (f < 0) S.hand[c]--; else S.b[f] = -1;
   S.b[t] = c;
   S.last = { c, f, t, x: -1, mill: false };
@@ -388,7 +389,7 @@ function step(f, t) {
 function removeStone(x) {
   const c = S.turn;
   S.b[x] = -1; S.last.x = x; S.awaitRemove = false; S.seq++;
-  kit.addLog(`<b>${esc(S.players[c].name)}</b> nimmt den Stein auf ${R.name(x)} vom Brett.`);
+  kit.addLog(`<b>${esc(S.players[c].name)}</b> ${S.players[c].name === "Du" ? "nimmst" : "nimmt"} den Stein auf ${R.name(x)} vom Brett.`);
   finishTurn(true);
 }
 function finishTurn(captured) {
@@ -399,7 +400,7 @@ function finishTurn(captured) {
   const why = R.lost(pos());
   if (why) {
     const loser = S.players[S.turn];
-    return end(1 - S.turn, why === "material" ? `${esc(loser.name)} hat nur noch zwei Steine.` : `${esc(loser.name)} kann keinen Stein mehr ziehen.`);
+    return end(1 - S.turn, why === "material" ? `${esc(loser.name)} ${loser.name === "Du" ? "hast" : "hat"} nur noch zwei Steine.` : `${esc(loser.name)} ${loser.name === "Du" ? "kannst" : "kann"} keinen Stein mehr ziehen.`);
   }
   if (S.hand[0] + S.hand[1] === 0) {
     const key = S.b.map(v => (v < 0 ? "." : v)).join("") + S.turn;
@@ -413,7 +414,7 @@ function end(winner, reason) {
   S.result = { winner, reason };
   if (winner >= 0) {
     S.wins[winner]++;
-    kit.addLog(`<b>${esc(S.players[winner].name)}</b> gewinnt. ${reason}`);
+    kit.addLog(`<b>${esc(S.players[winner].name)}</b> ${S.players[winner].name === "Du" ? "gewinnst" : "gewinnt"}. ${reason}`);
   } else {
     S.draws++;
     kit.addLog(`<b>Unentschieden.</b> ${reason}`);

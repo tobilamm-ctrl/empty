@@ -367,7 +367,7 @@ const whoActs = () => (S.phase === "make" ? [S.maker] : S.phase === "guess" ? [S
 const validCode = c => Array.isArray(c) && c.length === S.len && c.every(v => Number.isInteger(v) && v >= 0 && v < S.ncol);
 function setCode(code) {
   S.code = code.slice(); S.phase = "guess";
-  addLog(`<b>${esc(S.players[S.maker].name)}</b> hat den Code gelegt.`);
+  addLog(`<b>${esc(S.players[S.maker].name)}</b> ${S.players[S.maker].name === "Du" ? "hast" : "hat"} den Code gelegt.`);
   playBots();
 }
 function submitGuess(g) {
@@ -386,8 +386,8 @@ function endRound(cracked) {
   if (S.maker >= 0) {
     const mk = S.players[S.maker];
     mk.score += pts;
-    addLog(cracked ? `<b>${esc(br)}</b> knackt den Code in ${n} ${n === 1 ? "Versuch" : "Versuchen"}. ${esc(mk.name)} bekommt ${pts} ${pts === 1 ? "Punkt" : "Punkte"}.`
-      : `<b>${esc(br)}</b> knackt den Code nicht (${miniHtml(S.code)}). ${esc(mk.name)} bekommt ${FAIL} Punkte.`);
+    addLog(cracked ? `<b>${esc(br)}</b> ${br === "Du" ? "knackst" : "knackt"} den Code in ${n} ${n === 1 ? "Versuch" : "Versuchen"}. ${esc(mk.name)} ${mk.name === "Du" ? "bekommst" : "bekommt"} ${pts} ${pts === 1 ? "Punkt" : "Punkte"}.`
+      : `<b>${esc(br)}</b> ${br === "Du" ? "knackst" : "knackt"} den Code nicht (${miniHtml(S.code)}). ${esc(mk.name)} ${mk.name === "Du" ? "bekommst" : "bekommt"} ${FAIL} Punkte.`);
   } else {
     addLog(cracked ? `<b>Geknackt</b> in ${n} ${n === 1 ? "Versuch" : "Versuchen"}.` : `Nicht geknackt. Der Code war ${miniHtml(S.code)}.`);
   }

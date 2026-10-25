@@ -417,7 +417,7 @@ function newState({ mode, roster, options, rematch }) {
 // Online: Gastgeber startet aus dem Wartebereich oder eine neue Runde
 function onStart(s) {
   s.active = rnd(s.players.length); s.phase = "idle";
-  kit.addLog(`Spiel beginnt. <b>${esc(s.players[s.active].name)}</b> würfelt zuerst.`);
+  kit.addLog(`Spiel beginnt. <b>${esc(s.players[s.active].name)}</b> ${s.players[s.active].name === "Du" ? "würfelst" : "würfelt"} zuerst.`);
 }
 // Wer darf gerade handeln? (für den Spielerwechsel an einem Gerät)
 function whoActs() {

@@ -489,7 +489,7 @@ function newState({ mode, roster, options, rematch }) {
 }
 function onStart(s) {
   s.active = rnd(s.players.length); s.phase = "idle";
-  kit.addLog(`Spiel beginnt. <b>${esc(s.players[s.active].name)}</b> würfelt zuerst.`);
+  kit.addLog(`Spiel beginnt. <b>${esc(s.players[s.active].name)}</b> ${s.players[s.active].name === "Du" ? "würfelst" : "würfelt"} zuerst.`);
 }
 function whoActs() {
   const n = S.players.length, out = [];
@@ -801,7 +801,7 @@ function advanceBonus() {
       while (p.ai && p.pendingBombs > 0) {
         const sp = bestSpecial(p, "bomb");
         p.pendingBombs--;
-        if (sp) { kit.addLog(`<b>${esc(p.name)}</b> zündet die Bonus-Bombe (${sp.cells.length} Felder).`); crossCells(p, sp.cells); }
+        if (sp) { kit.addLog(`<b>${esc(p.name)}</b> ${p.name === "Du" ? "zündest" : "zündet"} die Bonus-Bombe (${sp.cells.length} Felder).`); crossCells(p, sp.cells); }
       }
     });
     if (S.players.some(p => p.pendingBombs > 0)) return; // Menschen sind dran
@@ -880,7 +880,7 @@ function onConfirm() {
       const k = kit.me(), p = S.players[k];
       if (S.phase !== "bonus" || S.throw !== thr || !p || p.pendingBombs <= 0 || validateSpecial(p, "bomb", cells) !== "ok") return false;
       p.pendingBombs--;
-      kit.addLog(`<b>${esc(p.name)}</b> zündet die Bonus-Bombe (${cells.length} Felder).`);
+      kit.addLog(`<b>${esc(p.name)}</b> ${p.name === "Du" ? "zündest" : "zündet"} die Bonus-Bombe (${cells.length} Felder).`);
       crossCells(p, cells);
       advanceBonus();
     });
@@ -905,7 +905,7 @@ function onPass() {
     if (S.phase === "bonus") { // Bonus-Bombe verfallen lassen
       const p = S.players[k];
       if (!p || p.pendingBombs <= 0) return false;
-      p.pendingBombs--; kit.addLog(`<b>${esc(p.name)}</b> verzichtet auf die Bonus-Bombe.`); advanceBonus(); return;
+      p.pendingBombs--; kit.addLog(`<b>${esc(p.name)}</b> ${p.name === "Du" ? "verzichtest" : "verzichtet"} auf die Bonus-Bombe.`); advanceBonus(); return;
     }
     if (S.throw !== thr || !canChoose(k)) return false;
     submitRaw(k, null); advance();

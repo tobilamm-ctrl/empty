@@ -872,6 +872,14 @@ function render() {
   $("board").hidden = lobby;
   const mi = kit.me(), viewer = mi >= 0 ? mi : 0, g = S.game;
   const rel = i => (i - viewer + 4) % 4;
+  // Wartebereich: noch keine 4 Spieler, also nur Kontostand und Verlauf
+  if (lobby) {
+    $("bids").hidden = true; $("hand").innerHTML = ""; $("actions").innerHTML = ""; $("status").innerHTML = "";
+    $("result").hidden = true;
+    renderTafel();
+    $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+    return;
+  }
 
   // Kopfzeile
   if (!lobby) {
