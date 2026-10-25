@@ -1230,3 +1230,18 @@ body.blog-page { padding: 0; }
 .tile-order li.off b, .tile-order li.off .art { opacity: .4; }
 .tile-order .eye[aria-pressed="false"] { color: var(--muted); }
 .tile-edit-link { text-align: center; margin: 14px 0 0; }
+
+/* ---------- Google-Zeitachse importieren ---------- */
+.import-row { margin: -4px 0 8px; align-items: center; }
+.import-row .ic { width: 16px; height: 16px; margin-right: 6px; }
+.help-list { padding-left: 20px; }
+.help-list li { margin-bottom: 8px; }
+.tl-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.tl-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tl-list li > input[type=checkbox] { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--petrol); flex: none; }
+.tl-list li > div { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; }
+.tl-list small { grid-column: 1 / -1; color: var(--muted); }
+.tl-list input[name^=title_] { min-width: 0; min-height: 40px; }
+.tl-list select { min-height: 40px; max-width: 150px; }
+.tl-list li:has(> input:not(:checked)) > div { opacity: .45; }
+.chips .chip.on { background: var(--trip); border-color: var(--trip); color: #fff; }

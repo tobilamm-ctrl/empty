@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-23'` hochzählen (z. B. auf `lammping-24`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-24'` hochzählen (z. B. auf `lammping-25`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -182,6 +182,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   „Einkaufsliste“ und „Highlight des Tages“. Die Einträge lassen sich auch einzeln auf den Startbildschirm
   ziehen. Auf dem iPhone geht das nicht; dort hilft die App „Kurzbefehle“ mit „URL öffnen“, z. B.
   `https://lammping.lamm7.de/lammping/#/karte/hier`.
+- **Aus Google Maps importieren** (Seite „Reisen“): Zeitachse in Google Maps exportieren (Android:
+  Einstellungen → Standort → Standortdienste → Zeitachse → „Zeitachsendaten exportieren“; iPhone: Google Maps →
+  Einstellungen → Persönliche Inhalte), Datei auswählen, Zeitraum wählen (von Google erkannte Reisen werden
+  vorgeschlagen). LAMMping macht daraus Strecke, Stellplätze (Übernachtungen) und Orte ab 25 Minuten Aufenthalt,
+  dazu Fähren, Rad- und Fußtouren. Namen kommen von OpenStreetMap (etwa eine Sekunde pro Ort). Vor dem Übernehmen
+  lässt sich alles abwählen, umbenennen und die Art ändern. Danach am besten „Fotos einsortieren“.
 - **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
   kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
   Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.

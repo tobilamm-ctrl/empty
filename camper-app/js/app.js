@@ -14,11 +14,12 @@ import installPackhilfe from './packhilfe.js';
 import installFamilie from './familie.js';
 import installFilm from './film.js';
 import installAlltag from './alltag.js';
+import installZeitachse from './zeitachse.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 23;
+const APP_VERSION = 24;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2158,5 +2159,6 @@ installPackhilfe(APP);
 installFilm(APP);
 installFamilie(APP);
 installAlltag(APP);
+installZeitachse(APP);
 
 start();
