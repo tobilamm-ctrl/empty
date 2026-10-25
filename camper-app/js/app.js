@@ -17,6 +17,9 @@ import installAlltag from './alltag.js';
 
 /* ---------- Konstanten ---------- */
 
+// Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
+const APP_VERSION = 23;
+
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
   ['Pflaume', '#7B4B94'], ['Himmel', '#2E7FB8'], ['Rost', '#A4462B'], ['Schiefer', '#46596E'],
@@ -44,6 +47,8 @@ const ICONS = {
   mountain: '<path d="M2 20 9 7l4 7 3-4 6 10z"/><path d="M7.5 10l1.5 1.5L10.5 10"/>',
   film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4M10.5 9.5v5l4-2.5z"/>',
   archive: '<path d="M3 5h18v4H3zM5 9v10h14V9M10 13h4"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  eyeoff: '<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.5 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   play: '<path d="M8 5v14l11-7z"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
@@ -1408,7 +1413,7 @@ VIEWS.einstellungen = () => {
     <section class="panel">
       <button class="ghost danger" data-action="logout">Abmelden</button>
     </section>
-    <footer class="colophon"><svg class="wordmark" role="img" aria-label="LAMMping"><use href="#wort"/></svg><span>Unser Reisetagebuch für den Minicamper</span></footer>`;
+    <footer class="colophon"><svg class="wordmark" role="img" aria-label="LAMMping"><use href="#wort"/></svg><span>Unser Reisetagebuch für den Minicamper</span><small>Version ${APP_VERSION}</small></footer>`;
 };
 
 /* ---------- Ansicht: Verwaltung (nur Eltern) ---------- */

@@ -1221,3 +1221,12 @@ body.blog-page { padding: 0; }
 .blog-row .ic { width: 16px; height: 16px; margin-right: 4px; }
 .check small.sub { display: block; font-size: 13px; }
 .blog-greeting { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--trip) 10%, var(--surface)); font-size: 17px; }
+
+/* ---------- Mehr: Kacheln anordnen ---------- */
+.tile-order { list-style: none; margin: 12px 0; padding: 0; }
+.tile-order li { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.tile-order .art { height: 36px; width: auto; flex: none; color: var(--wood); }
+.tile-order b { flex: 1; font: 600 16px var(--head); min-width: 0; }
+.tile-order li.off b, .tile-order li.off .art { opacity: .4; }
+.tile-order .eye[aria-pressed="false"] { color: var(--muted); }
+.tile-edit-link { text-align: center; margin: 14px 0 0; }

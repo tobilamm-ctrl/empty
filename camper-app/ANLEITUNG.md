@@ -89,12 +89,15 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 
 ## Updates einspielen
 
+Jede Lieferung heißt `lammping-komplett-NN.zip` mit fortlaufender Nummer. Dieselbe Nummer steht unten in den
+Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste Version hat.
+
 **Wichtig:** Immer auch `api/index.php` mit hochladen. Ist sie veraltet, meldet die App Verwaltern
 „Der Server-Teil ist veraltet“, und neue Funktionen wie Reiseblog, Sicherungen oder Kinder-Freigaben
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-22'` hochzählen (z. B. auf `lammping-23`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-23'` hochzählen (z. B. auf `lammping-24`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -191,7 +194,7 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Fähre & Maut, Werkstatt, Wäsche, Notiz. Bei Stellplatz, Baden, Café / Restaurant, Museum,
   Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
   passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen.
-- **Mehr:** Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
+- **Mehr:** Unten auf der Seite „Kacheln anordnen“: Reihenfolge mit Pfeilen festlegen und Kacheln ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
   (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen, außerdem:
   - *Wetter* am aktuellen Standort bzw. letzten Stellplatz (Open-Meteo, braucht Internet).

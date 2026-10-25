@@ -42,15 +42,61 @@ export default function installMore(app) {
   ];
 
   app.TILES = TILES;
+  // Eigene Reihenfolge und ausgeblendete Kacheln je Person (wird mit der Crew abgeglichen)
+  const tileKey = () => 'tiles_' + me();
+  const tilePrefs = () => S.meta.find(m => m.id === tileKey()) || { id: tileKey(), order: [], hidden: [] };
+  const available = () => TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route)));
+  function ordered() {
+    const o = tilePrefs().order || [];
+    const pos = t => (o.includes(t.route) ? o.indexOf(t.route) : 1000 + TILES.indexOf(t));
+    return available().sort((a, b) => pos(a) - pos(b));
+  }
+  const label = t => (t.alt && !(app.session().user.isAdmin) ? t.alt : t.title);
+
   VIEWS.mehr = () => {
     const due = dueCount();
+    const hidden = tilePrefs().hidden || [];
+    if (ui.tileEdit) {
+      const list = ordered();
+      return `${pageHead('mehr', 'Mehr', 'Reihenfolge und Auswahl festlegen')}
+        <p class="sub">Mit den Pfeilen verschieben, mit dem Auge aus- oder einblenden. Das gilt nur für dich, auf allen deinen Geräten.</p>
+        <ul class="tile-order">${list.map((t, i) => `<li class="${hidden.includes(t.route) ? 'off' : ''}">
+          ${art(t.art)}<b>${esc(label(t))}</b>
+          <button class="icon-btn small" data-action="tile-move" data-r="${t.route}" data-dir="-1" aria-label="Nach oben"${i === 0 ? ' disabled' : ''}>${icon('up')}</button>
+          <button class="icon-btn small" data-action="tile-move" data-r="${t.route}" data-dir="1" aria-label="Nach unten"${i === list.length - 1 ? ' disabled' : ''}>${icon('down')}</button>
+          ${t.route === 'einstellungen' ? '<span class="icon-btn small"></span>'
+            : `<button class="icon-btn small eye" data-action="tile-hide" data-r="${t.route}" aria-pressed="${!hidden.includes(t.route)}" aria-label="${hidden.includes(t.route) ? 'Einblenden' : 'Ausblenden'}">${icon(hidden.includes(t.route) ? 'eyeoff' : 'eye')}</button>`}
+        </li>`).join('')}</ul>
+        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button><button class="ghost" data-action="tile-reset">Zurücksetzen</button></div>`;
+    }
+    const shown = ordered().filter(t => !hidden.includes(t.route));
+    const nHidden = ordered().length - shown.length;
     return `${pageHead('mehr', 'Mehr')}
-      <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route))).map(t => `<a class="tile" href="#/${t.route}">
-        ${art(t.art)}<b>${t.alt && !(app.session().user.isAdmin) ? t.alt : t.title}</b><small>${t.text}</small>
+      <nav class="tiles" aria-label="Weitere Bereiche">${shown.map(t => `<a class="tile" href="#/${t.route}">
+        ${art(t.art)}<b>${label(t)}</b><small>${t.text}</small>
         ${t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>` : ''}
         ${t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>` : ''}
         ${t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : ''}
-      </a>`).join('')}</nav>`;
+      </a>`).join('')}</nav>
+      <p class="sub tile-edit-link"><button class="link" data-action="tile-edit">Kacheln anordnen${nHidden ? ` (${nHidden} ausgeblendet)` : ''}</button></p>`;
+  };
+  ACTIONS['tile-edit'] = () => { ui.tileEdit = !ui.tileEdit; render(); window.scrollTo(0, 0); };
+  ACTIONS['tile-move'] = el => {
+    const list = ordered().map(t => t.route);
+    const i = list.indexOf(el.dataset.r), j = i + +el.dataset.dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    // Nicht verfügbare Kacheln (z. B. Kasse ohne Freigabe) behalten ihren Platz am Ende
+    const rest = (tilePrefs().order || []).filter(r => !list.includes(r));
+    save('meta', { ...tilePrefs(), order: [...list, ...rest] });
+  };
+  ACTIONS['tile-hide'] = el => {
+    const p = tilePrefs(), h = p.hidden || [], r = el.dataset.r;
+    save('meta', { ...p, hidden: h.includes(r) ? h.filter(x => x !== r) : [...h, r] });
+  };
+  ACTIONS['tile-reset'] = () => {
+    if (!confirm('Reihenfolge und Auswahl auf den Anfang zurücksetzen?')) return;
+    save('meta', { id: tileKey(), order: [], hidden: [] });
   };
 
   /* ---------- Orte: Wunschliste, Lieblingsplätze, für Reisen vorgemerkt ---------- */
