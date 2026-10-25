@@ -42,6 +42,13 @@
     "color": "#f2c84b"
   },
   {
+    "id": "kronland",
+    "title": "Kronland",
+    "description": "Dominos wählen und ein Reich aus Feldern, Wäldern und Seen bauen, Kronen bringen Punkte. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–4 Spieler · ca. 20 Minuten",
+    "color": "#8cc94f"
+  },
+  {
     "id": "codeknacker",
     "title": "Codeknacker",
     "description": "Den geheimen Farbcode mit möglichst wenigen Versuchen knacken. Allein gegen den Computer, zu zweit an einem Gerät oder online.",

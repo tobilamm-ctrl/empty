@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Schafkopf.
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Schafkopf.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
@@ -17,7 +17,7 @@ oder Kartenbild 1:1 kopieren.
 | ✓ | **Reversi** | 2 | fertig | sehr gut (8×8) | drei Stärken | „Othello“ ist ein Markenname |
 | ✓ | **Skyjo** → Zwölfer | 2–8 | fertig | gut (eigenes 3×4-Raster) | ja | „Skyjo“ ist ein Markenname |
 | ✓ | **Mau-Mau im Uno-Stil** → Kunterbunt | 2–8 | fertig | gut | ja | eigenes Kartendesign (Raute statt Oval, Farbe plus Zeichen); „UNO“ ist ein Markenname |
-| 3 | **Kingdomino** | 2–4 | mittel | sehr gut (5×5) | mittel | 48 Dominos selbst gestalten; Wertung Fläche × Kronen |
+| ✓ | **Kingdomino** → Kronland | 2–4 | fertig | sehr gut (5×5) | ja | eigene Landschaftsbilder mit Muster; „Kingdomino“ ist ein Markenname |
 | 4 | **Azul** | 2–4 | mittel | gut | mittel | Fliesen zusätzlich mit Muster unterscheidbar |
 | 5 | **Rommé** | 2–4 | mittel–hoch | gut mit sortierter Hand, Sätze untereinander | mittel | Hausregeln als Einstellungen (40 Punkte zum Auslegen, Joker tauschen); kein Rummikub (freies Umbauen am Handy unpraktisch) |
 | 6 | **Patchwork** | 2 | mittel–hoch | gut, Drehen/Spiegeln braucht gute Bedienung | mittel | 33 Flicken selbst gestalten |

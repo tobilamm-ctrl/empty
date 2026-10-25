@@ -14,6 +14,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Vier in einer Reihe** | 2 | Computer in drei Stärken |
 | **Reversi** | 2 | Computer in drei Stärken, perfektes Endspiel auf „schwer“ |
 | **Zwölfer** | 2–8 | Kartenspiel nach dem Prinzip „Skyjo“, Spielende bei 100 oder 50 Punkten |
+| **Kronland** | 2–4 | Domino-Legespiel nach dem Prinzip „Kingdomino“, Reich 5×5 oder zu zweit 7×7, Zusatzpunkte wählbar |
 | **Codeknacker** | 1–2 | Farbcode knacken, allein gegen den Computer oder abwechselnd zu zweit |
 | **Mühle** | 2 | Setzen, Ziehen, Springen |
 | **Backgammon** | 2 | Partie bis 1, 3 oder 5 Punkte, ohne Verdopplungswürfel |
