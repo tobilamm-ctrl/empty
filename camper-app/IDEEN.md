@@ -28,6 +28,15 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Würdest du lieber …?** Zwei lustige Möglichkeiten, alle entscheiden sich und begründen.
 - **Tick-Tack-Bumm:** Kategorie nennen, Handy wandert reihum, nach zufälliger Zeit explodiert die Bombe.
 
+**Neu vorgemerkt (App):**
+
+- **Reise-Check für die Route:** aus den geplanten Ländern Vignetten, Plaketten, Warnwesten, Fähren usw. als Liste.
+- **Spritkosten der geplanten Route:** Verbrauch und Preis aus dem Tankbuch mal geplante Strecke, auch fürs Budget.
+- **Medikamenten-Erinnerung:** z. B. 3 × täglich für 7 Tage, in der Heute-Karte zum Abhaken.
+- **Camping-Freundebuch:** Familien, die ihr unterwegs kennenlernt, mit Steckbrief, Kontakt, Foto und Stellplatz.
+- **Ausmalbild aus einem Foto:** Malvorlage mit schwarzen Linien zum Ausdrucken.
+- **Wetter-Bilanz der Reise:** Sonnentage, Regentage, wärmste und kälteste Nacht in der Statistik.
+
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
 - Wetterwarnung (Sturm, Gewitter, Starkregen am Stellplatz oder nächsten Ziel)
@@ -58,3 +67,4 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Mastermind (Farbcode knacken); Wörter-Gitter (4 × 4 Buchstaben); Puzzle und Schiebepuzzle aus einem Reisefoto
 - Zwei Wahrheiten, eine Lüge; Zungenbrecher-Challenge; Emoji-Rätsel; Wortsalat; Reim-Duell; Zahlen-Jagd; Stellplatz-Quartett;
   Finde die Unterschiede; Pantomime; Stille Post mit Bildern; Schere-Stein-Papier-Turnier
+- Fristen nach Kilometern; Mitbringsel-Liste; Kartengrüße-Liste; Spiele-Meisterschaft
