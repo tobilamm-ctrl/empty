@@ -8,6 +8,9 @@ import installIdeen from './ideen.js';
 import installExport from './export.js';
 import installUnterwegs from './unterwegs.js';
 import installTeilen from './teilen.js';
+import installFotos from './fotos.js';
+import installReisepass from './reisepass.js';
+import installPackhilfe from './packhilfe.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -33,6 +36,11 @@ const ICONS = {
   card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M13 5v14M15.5 9h3M15.5 12h3M6 9h4M6 12h4"/><rect x="16" y="14" width="3" height="3"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
   coin: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9.5a3.5 3.5 0 1 0 0 5M8 11h5M8 13h5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  badge: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 21l5-2.5 5 2.5-1.5-7"/>',
   up: '<path d="M6 15l6-6 6 6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
@@ -62,7 +70,13 @@ const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" ari
 // Zusatzfelder (extras): options = Auswahl, num = Zahl, check = Häkchen; gespeichert in entry.extra
 const TYPES = {
   stellplatz: { label: 'Stellplatz', many: 'Stellplätze', hint: 'Hier übernachten wir', cost: 'Stellplatz', rating: true, features: true,
-    extras: [{ key: 'stay', label: 'Übernachtung', options: ['Campingplatz', 'Stellplatz', 'Frei stehen'] }] },
+    extras: [{ key: 'stay', label: 'Übernachtung', options: ['Campingplatz', 'Stellplatz', 'Frei stehen'] },
+      { key: 'ground', label: 'Untergrund', options: ['Wiese', 'Schotter', 'Asphalt', 'Sand'] },
+      { key: 'shade', label: 'Sonne', options: ['sonnig', 'halbschattig', 'schattig'] },
+      { key: 'noise', label: 'Lärm', options: ['sehr ruhig', 'etwas Lärm', 'laut'] },
+      { key: 'checkout', label: 'Abreise bis', text: true, ph: 'z. B. 11 Uhr' },
+      { key: 'dogs', label: 'Hunde erlaubt', check: true },
+      { key: 'again', label: 'Wiederkommen?', options: ['Gern wieder', 'Vielleicht', 'Lieber nicht'] }] },
   sight: { label: 'Sehenswert', many: 'Sehenswertes', hint: 'Ausflug, Aussicht, Altstadt', cost: 'Eintritt', rating: true, group: 'erleben' },
   museum: { label: 'Museum', many: 'Museen', hint: 'Ausstellung, Schloss, Kirche', cost: 'Eintritt', rating: true, group: 'erleben' },
   wanderung: { label: 'Wanderung / Radtour', many: 'Touren', hint: 'Länge, Höhenmeter, Strecke', rating: true, group: 'erleben', gpx: true,
@@ -91,7 +105,7 @@ const costCat = (type, extra = {}) => (TYPES[type].catOf ? TYPES[type].catOf(ext
 function extraText(e) {
   const x = e.extra || {};
   return (TYPES[e.type].extras || []).filter(f => x[f.key] !== undefined && x[f.key] !== '' && x[f.key] !== false && x[f.key] !== 0)
-    .map(f => (f.check ? f.label : f.options ? x[f.key] : `${f.label.replace(/ in .*$/, '')}: ${String(x[f.key]).replace('.', ',')}${f.label.includes('°C') ? ' °C' : f.label.includes(' km') ? ' km' : ''}`))
+    .map(f => (f.check ? f.label : f.options ? x[f.key] : f.text ? `${f.label} ${x[f.key]}` : `${f.label.replace(/ in .*$/, '')}: ${String(x[f.key]).replace('.', ',')}${f.label.includes('°C') ? ' °C' : f.label.includes(' km') ? ' km' : ''}`))
     .join(', ');
 }
 const FEATURES = ['Strom', 'Wasser', 'Entsorgung', 'WC', 'Dusche', 'Ruhig', 'Eben', 'Aussicht', 'Kostenlos'];
@@ -301,7 +315,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -659,7 +673,7 @@ function entryForm(e = {}) {
       </div>
       <div id="pickMap" class="pick-map" hidden></div>
     </div>
-    <label class="field"><span>Was war los?</span><textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
+    <label class="field voice-field"><span>Was war los?</span>${APP.voiceBtn ? APP.voiceBtn('text') : ''}<textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
     <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
     ${Object.entries(TYPES).filter(([, v]) => v.extras).map(([k, v]) => `<div class="extras" data-extras="${k}">
       ${v.extras.map(f => {
@@ -668,6 +682,7 @@ function entryForm(e = {}) {
         if (f.check) return `<label class="check"><input type="checkbox" name="${name}"${val ? ' checked' : ''}><span>${f.label}</span></label>`;
         if (f.options) return `<div class="field"><span>${f.label}</span><div class="chips wrap">${f.options.map(o =>
           `<label class="chip"><input type="radio" name="${name}" value="${o}"${val === o ? ' checked' : ''}><span>${o}</span></label>`).join('')}</div></div>`;
+        if (f.text) return `<label class="field half"><span>${f.label}</span><input name="${name}" value="${esc(val || '')}" placeholder="${f.ph || ''}"></label>`;
         return `<label class="field half"><span>${f.label}</span><input name="${name}" inputmode="decimal" value="${val != null ? String(val).replace('.', ',') : ''}"></label>`;
       }).join('')}
       ${v.gpx ? `<label class="ghost file">GPX-Strecke der Tour${e.id && S.tracks.some(t => t.entryId === e.id) ? ' ersetzen' : ''}<input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" data-action="hike-gpx"></label><p class="sub" id="hikeInfo"></p>` : ''}
@@ -788,7 +803,7 @@ function submitEntry(form) {
     cost: TYPES[type].cost ? num(fd.get('cost')) : 0,
     extra: Object.fromEntries((TYPES[type].extras || []).map(f => {
       const v = fd.get(`x_${type}_${f.key}`);
-      return [f.key, f.check ? !!v : f.num ? (v ? num(v) : '') : v || ''];
+      return [f.key, f.check ? !!v : f.num ? (v ? num(v) : '') : String(v || '').trim()];
     })),
   };
 
@@ -2066,7 +2081,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
-  crewId: () => crew.id, nextColor, setTrip, tripHead, afterDraw, openEntry,
+  crewId: () => crew.id, crewName: () => crew.name, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
@@ -2081,5 +2096,8 @@ installIdeen(APP);
 installExport(APP);
 installUnterwegs(APP);
 installTeilen(APP);
+installFotos(APP);
+installReisepass(APP);
+installPackhilfe(APP);
 
 start();

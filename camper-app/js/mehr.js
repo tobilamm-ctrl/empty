@@ -60,7 +60,7 @@ export default function installMore(app) {
 
   function placeRow(p) {
     const trip = tripOf(p);
-    const meta = [PLACE_KINDS[p.kind], p.place, stars(p.rating), trip ? `für ${trip.name}` : '', p.done ? 'besucht' : ''].filter(Boolean);
+    const meta = [PLACE_KINDS[p.kind], p.place, stars(p.rating), p.again, trip ? `für ${trip.name}` : '', p.done ? 'besucht' : ''].filter(Boolean);
     return `<li class="place-row">
       <span class="node-mini" style="--c:${trip ? tripColor(trip) : 'var(--wood)'}">${kindIcon(p.kind)}</span>
       <button class="as-text body" data-action="place-form" data-id="${p.id}">
@@ -227,6 +227,7 @@ export default function installMore(app) {
       kind: e.type === 'stellplatz' ? 'stellplatz' : 'poi', name: e.title || e.place || TYPES[e.type].label,
       place: e.place || '', lat: e.lat, lng: e.lng, country: e.country || '', rating: e.rating || 0,
       features: e.features || [], note: (e.text || '').slice(0, 300), tripId: null, planDate: '',
+      again: (e.extra || {}).again || '', extra: e.extra || {},
     });
     toast('Als Lieblingsplatz gemerkt');
   };
@@ -240,7 +241,9 @@ export default function installMore(app) {
     const extras = extrasOf(t);
     const all = [...stock, ...extras];
     const packed = all.filter(i => isPacked(t, i)).length;
-    const rows = stops.map(p => `<li class="plan-stop${p.done ? ' done' : ''}">
+    // Zwischen zwei geplanten Orten: Kilometer und Fahrzeit (unterwegs.js)
+    const leg = i => (i > 0 && app.legHtml ? app.legHtml(stops[i - 1], stops[i]) : '');
+    const rows = stops.map((p, i) => `${leg(i)}<li class="plan-stop${p.done ? ' done' : ''}">
         <span class="node${p.kind === 'stellplatz' ? ' filled' : ''}">${kindIcon(p.kind)}</span>
         <button class="body as-text" data-action="place-form" data-id="${p.id}">
           <span class="time">${p.planDate ? fmtDay(p.planDate) : 'Noch ohne Datum'}, ${PLACE_KINDS[p.kind]}</span>
@@ -332,6 +335,7 @@ export default function installMore(app) {
       S.tracks.filter(t => t.entryId === e.id).forEach(t => remove('tracks', t.id));
       save('tracks', { id: newId(), kind: 'hike', entryId: e.id, tripId: e.tripId, name: e.title || hike.name, km: hike.km, pts: encodePts(hike.pts), createdAt: Date.now() });
     }
+    return e;
   };
 
   let pendingHike = null;

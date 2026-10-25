@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-17'` hochzählen (z. B. auf `lammping-18`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-18'` hochzählen (z. B. auf `lammping-19`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -117,13 +117,29 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   (Luftlinie) und Länder des Tages. Das erste Foto eines Eintrags erscheint groß. Neue Einträge über den
   runden Knopf „+ Eintrag“ unten rechts.
 - **Was ist in der Nähe?** (Lupe auf der Karte oder in der Heute-Karte): Trinkwasser, Entsorgung, WC und
-  Dusche, Supermarkt, Tankstelle, Spielplatz, Baden, Stell- und Campingplätze aus OpenStreetMap im Umkreis
+  Dusche, Supermarkt, Bäcker, Tankstelle, Waschsalon, Werkstatt, Spielplatz, Baden, Stell- und Campingplätze
+  sowie Apotheke, Arzt und Krankenhaus aus OpenStreetMap im Umkreis
   von 2, 5 oder 15 km. Treffer lassen sich ansteuern oder in die Wunschliste übernehmen.
 - **Reiseblog** (Knopf über dem Tagebuch, nur Verwalter): erzeugt einen geheimen Link zum Lesen, z. B. für
   die Großeltern. Zu sehen sind Strecke, Einträge und Fotos, nicht Kosten, Listen, Dokumente oder Namen.
   Einzelne Einträge blendet „Nicht im Reiseblog zeigen“ aus. Ausschalten macht den Link ungültig.
 - **Postkarte** (in einem Eintrag mit Foto): Foto, Gruß, Text und Mini-Karte der Strecke als Bild zum
   Teilen, z. B. per WhatsApp.
+- **Planung:** Zwischen den geplanten Orten stehen Kilometer und Fahrzeit (über den freien Routendienst
+  von OpenStreetMap, ohne Netz grob geschätzt). Etappen über 4 Stunden werden markiert.
+- **Fotos einsortieren** (Knopf über dem Tagebuch): Fotos aus der Galerie auswählen. LAMMping liest
+  Aufnahmezeit und, falls vorhanden, den Ort aus den Fotos und schlägt den passenden Eintrag vor. Fotos ohne
+  passenden Eintrag werden zu neuen Einträgen zusammengefasst. Manche Handys entfernen den Ort beim
+  Auswählen, dann zählt nur die Zeit.
+- **Diktieren:** Das Mikrofon im Textfeld eines Eintrags schreibt Gesprochenes mit (Spracherkennung des
+  Handys; nicht jeder Browser kann das).
+- **Neues Land:** Beim ersten Eintrag in einem neuen Land einer Reise erscheinen Tempo, Promille, Maut,
+  Pflichtausstattung und Notruf.
+- **Stellplatz-Steckbrief:** Untergrund, Sonne, Lärm, Abreise bis, Hunde erlaubt und „Wiederkommen?“.
+  Bei Lieblingsplätzen steht „Gern wieder“ mit in der Liste.
+- **Packliste auswerten** (nach „Reise beenden“): festhalten, was gefehlt hat und was nie gebraucht wurde.
+  Beim Packen der nächsten Reise erscheinen die Hinweise; „Einpacken“ setzt Fehlendes direkt als Extra auf
+  die Packliste.
 - **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
   kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
   Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.
@@ -153,6 +169,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     neue Reise; die Notizen landen auf Wunsch als Merkliste in deren Planung.
   - *Währung umrechnen* (in Länderinfos und Kasse): Franken, Kronen, Złoty, Forint und Pfund mit dem
     Tageskurs der EZB, ohne Internet mit dem zuletzt geladenen Kurs.
+  - *Reisepass* (in Spiele & Co): Stempel für erste Nacht, Kilometer, Länder, Fähre, Meer, Gipfel,
+    Museen, Kennzeichen und mehr. Werden automatisch aus euren Einträgen vergeben.
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,

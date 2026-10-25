@@ -56,6 +56,12 @@ export default function installUnterwegs(app) {
     baden: { label: 'Baden', q: ['nwr[leisure=bathing_place]', 'nwr[natural=beach]', 'nwr[leisure=swimming_area]'], icon: 'baden', kind: 'poi' },
     stellplatz: { label: 'Stellplatz', q: ['nwr[tourism=caravan_site]'], icon: 'stellplatz', kind: 'stellplatz' },
     camping: { label: 'Campingplatz', q: ['nwr[tourism=camp_site]'], icon: 'stellplatz', kind: 'stellplatz' },
+    baecker: { label: 'Bäcker', q: ['nwr[shop=bakery]'], icon: 'einkauf', kind: 'poi' },
+    waschsalon: { label: 'Waschsalon', q: ['nwr[shop=laundry]', 'nwr[amenity=washing_machine]'], icon: 'waesche', kind: 'poi' },
+    werkstatt: { label: 'Werkstatt', q: ['nwr[shop=car_repair]', 'nwr[shop=tyres]'], icon: 'werkstatt', kind: 'poi' },
+    apotheke: { label: 'Apotheke', q: ['nwr[amenity=pharmacy]'], icon: 'cross', kind: 'poi', sos: true },
+    arzt: { label: 'Arzt', q: ['nwr[amenity=doctors]', 'nwr[amenity=clinic]'], icon: 'cross', kind: 'poi', sos: true },
+    krankenhaus: { label: 'Krankenhaus', q: ['nwr[amenity=hospital][emergency!=no]'], icon: 'cross', kind: 'poi', sos: true },
   };
   let nearLayer = null;
   let nearResults = [];
@@ -63,8 +69,11 @@ export default function installUnterwegs(app) {
   ACTIONS.near = () => {
     const cat = LS.get('near.cat', 'wasser'), r = LS.get('near.r', 5);
     openSheet(`<form data-form="near">${sheetHead('Was ist in der Nähe?')}
-      <div class="field"><span>Was sucht ihr?</span><div class="chips wrap">${Object.entries(NEAR).map(([k, c]) =>
+      <div class="field"><span>Was sucht ihr?</span><div class="chips wrap">${Object.entries(NEAR).filter(([, c]) => !c.sos).map(([k, c]) =>
         `<label class="chip"><input type="radio" name="cat" value="${k}"${k === cat ? ' checked' : ''} hidden>${icon(c.icon)}${c.label}</label>`).join('')}</div></div>
+      <div class="field"><span>Gesundheit</span><div class="chips wrap">${Object.entries(NEAR).filter(([, c]) => c.sos).map(([k, c]) =>
+        `<label class="chip sos-chip"><input type="radio" name="cat" value="${k}"${k === cat ? ' checked' : ''} hidden>${icon(c.icon)}${c.label}</label>`).join('')}</div>
+        <p class="sub">Im Notfall immer zuerst 112 anrufen.</p></div>
       <div class="field"><span>Umkreis</span><div class="seg">${[2, 5, 15].map(v =>
         `<label><input type="radio" name="r" value="${v}"${v === r ? ' checked' : ''}><span>${v} km</span></label>`).join('')}</div></div>
       <div class="field"><span>Ausgehend von</span><div class="seg">
@@ -379,4 +388,108 @@ export default function installUnterwegs(app) {
     if (cc.length && app.flag) bits.push(`<span class="dx-cc">${cc.map(app.flag).join(' ')}</span>`);
     return bits.length ? `<span class="day-extra">${bits.join('')}</span>` : '';
   };
+
+  /* ====================================================================== */
+  /* Planung: Kilometer und Fahrzeit zwischen den geplanten Orten            */
+  /* ====================================================================== */
+
+  const LONG_LEG = 4 * 60;                // ab 4 Stunden Fahrt gibt es einen Hinweis
+  const legKey = (a, b) => `leg.${a.lat.toFixed(3)},${a.lng.toFixed(3)}>${b.lat.toFixed(3)},${b.lng.toFixed(3)}`;
+  const legQueue = [];
+  let legBusy = false;
+  async function legRun() {
+    if (legBusy) return;
+    legBusy = true;
+    let changed = false;
+    while (legQueue.length) {
+      const { a, b, key } = legQueue.shift();
+      try {
+        const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`);
+        const d = await r.json();
+        if (!d.routes || !d.routes[0]) throw new Error();
+        LS.set(key, { km: d.routes[0].distance / 1000, min: d.routes[0].duration / 60 * 1.12 });
+        changed = true;
+      } catch { LS.set(key + '.err', Date.now()); }
+    }
+    legBusy = false;
+    if (changed && ui.route === 'tagebuch') render();
+  }
+  app.legHtml = (a, b) => {
+    if (!hasPos(a) || !hasPos(b)) return '';
+    const key = legKey(a, b);
+    const c = LS.get(key, null);
+    if (!c && Date.now() - LS.get(key + '.err', 0) > 10 * 60000 && !legQueue.some(q => q.key === key)) { legQueue.push({ a, b, key }); setTimeout(legRun, 50); }
+    const k = c ? c.km : km(a, b) * 1.3, m = c ? c.min : k / 70 * 60;
+    const long = m > LONG_LEG;
+    return `<li class="plan-leg${long ? ' long' : ''}"><span>${icon('car')}${c ? '' : 'ca. '}${fmtKm(k)} · ${c ? '' : 'ca. '}${dur(m)}</span>
+      ${long ? `<small>Lange Etappe. Pausen einplanen oder einen Zwischenstopp suchen.</small>` : ''}</li>`;
+  };
+
+  /* ====================================================================== */
+  /* Spracheingabe für Texte (Spracherkennung des Handys)                    */
+  /* ====================================================================== */
+
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  app.voiceBtn = name => Speech ? `<button type="button" class="icon-btn small mic" data-action="voice" data-name="${name}" aria-label="Diktieren">${icon('mic')}</button>` : '';
+  ACTIONS.voice = el => {
+    if (rec) { rec.stop(); return; }
+    const field = el.closest('form')?.querySelector(`[name="${el.dataset.name}"]`);
+    if (!field) return;
+    rec = new Speech();
+    rec.lang = 'de-DE';
+    rec.interimResults = true;
+    rec.continuous = true;
+    const before = field.value ? field.value.replace(/\s*$/, ' ') : '';
+    let done = '';
+    el.classList.add('on');
+    rec.onresult = ev => {
+      let interim = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) done += t; else interim += t;
+      }
+      const text = (done + interim).trim();
+      field.value = before + (text ? text[0].toUpperCase() + text.slice(1) : '');
+    };
+    rec.onerror = ev => { if (ev.error === 'not-allowed') toast('Das Mikrofon ist für LAMMping nicht freigegeben.'); };
+    rec.onend = () => { el.classList.remove('on'); rec = null; };
+    rec.start();
+    toast('Sprich jetzt. Zum Beenden noch einmal auf das Mikrofon tippen.');
+  };
+
+  /* ====================================================================== */
+  /* Neues Land: beim ersten Eintrag dort die wichtigsten Länderinfos zeigen */
+  /* ====================================================================== */
+
+  const saveEntry = FORMS.entry;
+  FORMS.entry = form => {
+    const e = saveEntry(form);
+    if (e && e.country) setTimeout(() => welcome(e), 400);
+    return e;
+  };
+  ACTIONS['welcome-more'] = () => { closeSheet(); go('laender'); };
+  function welcome(e) {
+    const t = S.trips.find(x => x.id === e.tripId);
+    const info = app.COUNTRIES && app.COUNTRIES[e.country];
+    if (!t || !info) return;
+    const seenKey = `cc.seen.${t.id}`;
+    const seen = LS.get(seenKey, null);
+    // Beim ersten Land einer Reise (meist zu Hause) still merken, erst ab dem Grenzübertritt melden
+    if (!seen) return LS.set(seenKey, [e.country]);
+    if (seen.includes(e.country)) return;
+    LS.set(seenKey, [...seen, e.country]);
+    if (document.querySelector('#sheet[open]')) return;
+    openSheet(`<div class="welcome">${sheetHead(`${app.flag(e.country)} Willkommen in ${esc(info.name)}!`)}
+      <dl class="facts-list">
+        <div><dt>Tempo</dt><dd>${esc(info.speed)}</dd></div>
+        <div><dt>Promille</dt><dd>${esc(info.alc)}</dd></div>
+        <div><dt>Maut</dt><dd>${esc(info.toll)}</dd></div>
+        <div><dt>Pflicht im Auto</dt><dd>${esc(info.must)}</dd></div>
+        <div><dt>Notruf</dt><dd><a href="tel:112">${esc(info.sos)}</a></dd></div>
+      </dl>
+      ${info.tip ? `<p class="sub">${esc(info.tip)}</p>` : ''}
+      <p class="sub">Ohne Gewähr, Regeln ändern sich.</p>
+      <div class="sheet-foot"><button class="ghost" data-action="welcome-more">Alle Länderinfos</button><button class="primary" data-action="close">Gute Fahrt!</button></div></div>`);
+  }
 }

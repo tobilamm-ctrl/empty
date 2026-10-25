@@ -969,3 +969,63 @@ body.blog-page { padding: 0; }
   .map-actions { flex-direction: column; align-items: flex-end; gap: 10px; }
   .map-actions .round { width: 48px; height: 48px; }
 }
+
+/* ---------- Planung: Fahrzeit zwischen den Orten ---------- */
+.plan-leg { list-style: none; display: flex; flex-direction: column; gap: 2px; margin: -2px 0 -2px 52px; padding: 4px 0; color: var(--muted); font-size: 14px; }
+.plan-leg span { display: inline-flex; align-items: center; gap: 6px; }
+.plan-leg .ic { width: 16px; height: 16px; }
+.plan-leg.long span { color: #B26A00; font-weight: 700; }
+.plan-leg small { color: #B26A00; }
+
+/* ---------- Spracheingabe ---------- */
+.voice-field { position: relative; }
+.voice-field .mic { position: absolute; right: 6px; top: 26px; z-index: 1; background: var(--surface); }
+.voice-field textarea { padding-right: 46px; }
+.mic.on { color: #fff; background: var(--danger); animation: mic-pulse 1.2s ease-in-out infinite; }
+@keyframes mic-pulse { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--danger) 25%, transparent); } }
+
+/* ---------- In der Nähe: Gesundheit ---------- */
+.sos-chip:has(input:checked) { background: var(--danger); border-color: var(--danger); }
+
+/* ---------- Fotos einsortieren ---------- */
+.import-list { list-style: none; margin: 8px 0; padding: 0; }
+.import-list li { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.import-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; }
+.import-list div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.import-list small { color: var(--muted); }
+.import-list select { width: 100%; min-height: 40px; }
+
+/* ---------- Packliste: Hinweise vom letzten Mal ---------- */
+.pack-hints { margin: 14px 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, #E0A21B 14%, var(--surface)); border: 1.5px solid color-mix(in srgb, #E0A21B 40%, transparent); }
+.pack-hints h3 { font-size: 16px; margin: 0 0 6px; }
+.pack-hints ul { list-style: none; margin: 0 0 8px; padding: 0; }
+.pack-hints li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.pack-hints li span { flex: 1; }
+.pack-hints .ic { width: 18px; height: 18px; }
+
+/* ---------- Reisepass ---------- */
+.passport { padding: 16px; border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, #2E5FA8 8%, var(--surface)), var(--surface)); border: 1.5px solid var(--line); }
+.passport header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pp-sheep { width: 58px; height: 46px; color: var(--wood); }
+.passport header b { display: block; font: 700 22px var(--head); color: var(--wood); letter-spacing: .04em; text-transform: uppercase; }
+.passport header span { color: var(--muted); }
+.pp-progress { height: 8px; border-radius: 4px; background: var(--mist); overflow: hidden; margin-bottom: 14px; }
+.pp-progress span { display: block; height: 100%; background: var(--trip); }
+.stamps { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 10px; }
+.stamps.single { grid-template-columns: 140px; justify-content: center; margin: 4px 0 12px; }
+.stamp { all: unset; cursor: pointer; display: grid; place-items: center; }
+.st-ring {
+  width: 100px; height: 100px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: #2E5FA8; border: 3px solid currentColor; box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 5px currentColor;
+  transform: rotate(var(--rot, 0deg)); text-align: center; padding: 6px; box-sizing: border-box;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.stamp:not(.locked) .st-ring { color: var(--ink); opacity: .9; }
+.st-ring .ic { width: 24px; height: 24px; }
+.st-ring b { font: 700 12px/1.1 var(--head); text-transform: uppercase; letter-spacing: .02em; }
+.st-ring small { font: 600 10px var(--body); }
+.stamp.locked .st-ring { color: var(--muted); border-style: dashed; box-shadow: none; opacity: .65; }
+.stamp:focus-visible .st-ring { outline: 3px solid var(--trip); outline-offset: 3px; }
+.stamp-sheet .st-ring { width: 130px; height: 130px; }
+.stamp-sheet .st-ring b { font-size: 15px; }
+.game-tile.pass { background: color-mix(in srgb, #2E5FA8 8%, var(--surface)); border-color: color-mix(in srgb, #2E5FA8 30%, transparent); }

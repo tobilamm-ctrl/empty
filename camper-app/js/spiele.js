@@ -31,6 +31,7 @@ export default function installSpiele(app) {
   // Kleine Bilder für die Spiele-Kacheln (Linien in Holzbraun wie die Bereichsgrafiken)
   const ART = {
     nochweit: '<path d="M4 38h56" stroke-dasharray="5 5"/><path d="M10 33V20q0-4 4-4h20l8 8h8q3 0 4 4v5z" fill="var(--paper)"/><circle cx="18" cy="34" r="4" fill="var(--paper)"/><circle cx="44" cy="34" r="4" fill="var(--paper)"/><path d="M14 22h18v6H14z"/><path d="M54 8v12M54 8l6 3-6 3"/>',
+    reisepass: '<rect x="16" y="4" width="32" height="40" rx="4" fill="var(--paper)"/><circle cx="32" cy="20" r="8"/><path d="M24 20h16M32 12q-4 8 0 16q4-8 0-16M23 34h18M26 39h12"/><circle cx="50" cy="36" r="9" fill="var(--paper)" stroke="#B3261E" transform="rotate(-12 50 36)"/><path d="M46 36l3 3 5-6" stroke="#B3261E"/>',
     kennzeichen: '<rect x="6" y="14" width="52" height="20" rx="3" fill="#fff"/><path d="M7 15h8v18H7z" fill="#003399" stroke="none"/><text x="38" y="29" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial">M·LP</text>',
     laenderkz: '<ellipse cx="32" cy="24" rx="22" ry="14" fill="#fff"/><text x="32" y="29" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial">CH</text>',
     bingo: '<rect x="14" y="6" width="36" height="36" rx="3" fill="var(--paper)"/><path d="M26 6v36M38 6v36M14 18h36M14 30h36"/><path d="M29 9l6 6M35 9l-6 6M17 33l6 6M23 33l-6 6M41 21l6 6M47 21l-6 6" stroke="#B3261E"/>',
@@ -55,6 +56,7 @@ export default function installSpiele(app) {
     return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
       <nav class="game-tiles">
         <a class="game-tile wide" href="#/nochweit">${tile('nochweit', 'Wie lange noch?', 'Restzeit bis zum Ziel, groß für die Rückbank')}</a>
+        <a class="game-tile wide pass" href="#/reisepass">${tile('reisepass', 'Reisepass', 'Stempel für eure Camper-Erlebnisse', app.stampCount ? `<span class="score">${app.stampCount()}</span>` : '')}</a>
         ${GAMES.map(([k, t, s]) => k === 'brettspiele' && p.url
           ? `<a class="game-tile" href="${esc(p.url)}" target="_blank" rel="noopener">${tile(k, t, `${esc(p.name)}, online`, `<span class="open-ic">${icon('open')}</span>`)}</a>`
           : `<button class="game-tile" data-action="game-open" data-g="${k}">${tile(k, t, s, scoreHint(k))}</button>`).join('')}

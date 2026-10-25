@@ -540,7 +540,8 @@ export default function installExtras(app) {
   const saveEntry = FORMS.entry;
   FORMS.entry = form => {
     const filled = form.dataset.type === 'service' && form.querySelector('[name=x_service_water]:checked');
-    saveEntry(form);
+    const e = saveEntry(form);
     if (filled) app.fillWater();
+    return e;
   };
 }
