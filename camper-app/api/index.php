@@ -50,6 +50,8 @@ function db(): PDO {
             . ($mysql ? ', INDEX docs_rev (crew_id, rev)' : ''),
         'counter' => 'name VARCHAR(16) PRIMARY KEY, value BIGINT NOT NULL',
         'attempts' => 'ip VARCHAR(64) NOT NULL, ts BIGINT NOT NULL',
+        // Reiseblog: geheimer Link zum Lesen einer Reise
+        'shares' => 'token CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, trip_id VARCHAR(64) NOT NULL, created BIGINT NOT NULL, by_user VARCHAR(32)',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
@@ -302,6 +304,70 @@ case 'photo':
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
+
+/* ----- Reiseblog: geheimer Link zum Lesen (für Großeltern & Co.) ----- */
+
+case 'share':
+    $u = requireUser();
+    if ($method === 'POST') {
+        if (!(int) $u['is_admin']) fail('Nur Verwalter können den Reiseblog ein- und ausschalten.', 403);
+        $crew = requireCrew($u, $body['crew'] ?? '');
+        $trip = $body['trip'] ?? '';
+        if (!validId($trip)) fail('Ungültige Reise');
+        q('DELETE FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
+        if (empty($body['on'])) out(['token' => null]);
+        $token = bin2hex(random_bytes(16));
+        q('INSERT INTO shares (token, crew_id, trip_id, created, by_user) VALUES (?, ?, ?, ?, ?)', [$token, $crew, $trip, now(), $u['id']]);
+        out(['token' => $token]);
+    }
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    $row = one('SELECT token FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, (string) ($_GET['trip'] ?? '')]);
+    out(['token' => $row ? $row['token'] : null]);
+
+case 'blog':
+case 'blogphoto':
+    header('X-Robots-Tag: noindex, nofollow');
+    $token = (string) ($_GET['t'] ?? '');
+    $share = preg_match('/^[a-f0-9]{32}$/', $token) ? one('SELECT * FROM shares WHERE token = ?', [$token]) : null;
+    if (!$share) fail('Diesen Reiseblog gibt es nicht (mehr).', 404);
+    $crew = $share['crew_id'];
+    $tripRow = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'trips' AND id = ? AND deleted = 0", [$crew, $share['trip_id']]);
+    if (!$tripRow) fail('Diese Reise gibt es nicht mehr.', 404);
+    $trip = json_decode($tripRow['data'], true);
+    // Nur was zur Reise gehört und nicht ausgeblendet ist; ohne Kosten und ohne Namen
+    $entries = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'entries' AND deleted = 0", [$crew]) as $r) {
+        $e = json_decode($r['data'], true);
+        if (($e['tripId'] ?? '') !== $share['trip_id'] || !empty($e['blogHide'])) continue;
+        $entries[] = [
+            'id' => $e['id'], 'type' => $e['type'] ?? 'notiz', 'title' => $e['title'] ?? '', 'place' => $e['place'] ?? '',
+            'date' => $e['date'] ?? '', 'text' => $e['text'] ?? '', 'rating' => $e['rating'] ?? 0, 'country' => $e['country'] ?? '',
+            'lat' => $e['lat'] ?? null, 'lng' => $e['lng'] ?? null, 'extra' => $e['extra'] ?? new stdClass(),
+            'photos' => array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
+                fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
+        ];
+    }
+    if ($action === 'blogphoto') {
+        $id = (string) ($_GET['id'] ?? '');
+        $ok = false;
+        foreach ($entries as $e) foreach ($e['photos'] as $p) if ($p['id'] === $id) $ok = true;
+        $path = $ok ? photoPath($crew, $id) : '';
+        if (!$path || !is_file($path)) fail('Foto nicht gefunden', 404);
+        header('Content-Type: image/jpeg');
+        header('Cache-Control: private, max-age=86400');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+    $tracks = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND deleted = 0", [$crew]) as $r) {
+        $k = json_decode($r['data'], true);
+        if (($k['tripId'] ?? '') === $share['trip_id']) $tracks[] = ['kind' => $k['kind'] ?? '', 'name' => $k['name'] ?? '', 'pts' => $k['pts'] ?? ''];
+    }
+    out([
+        'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
+        'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
+    ]);
 
 /* ----- Verwaltung (nur Eltern) ----- */
 

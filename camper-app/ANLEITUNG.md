@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-16'` hochzählen (z. B. auf `lammping-17`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-17'` hochzählen (z. B. auf `lammping-18`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -112,6 +112,18 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Tagebuch:** je Reise **Planung** (Stellplätze und Sehenswertes vormerken, Listen und Extras
   zum Packen für diese Reise) und **Tagebuch** (Einträge unterwegs). „Hier sind wir“ macht aus
   einem geplanten Ort einen Tagebuch-Eintrag.
+- **Tagebuch unterwegs:** Während einer laufenden Reise zeigt die **Heute-Karte** Reisetag, Wetter,
+  Sonnenauf- und -untergang, das geparkte Auto und das nächste Ziel. Der Tageskopf zeigt Wetter, Kilometer
+  (Luftlinie) und Länder des Tages. Das erste Foto eines Eintrags erscheint groß. Neue Einträge über den
+  runden Knopf „+ Eintrag“ unten rechts.
+- **Was ist in der Nähe?** (Lupe auf der Karte oder in der Heute-Karte): Trinkwasser, Entsorgung, WC und
+  Dusche, Supermarkt, Tankstelle, Spielplatz, Baden, Stell- und Campingplätze aus OpenStreetMap im Umkreis
+  von 2, 5 oder 15 km. Treffer lassen sich ansteuern oder in die Wunschliste übernehmen.
+- **Reiseblog** (Knopf über dem Tagebuch, nur Verwalter): erzeugt einen geheimen Link zum Lesen, z. B. für
+  die Großeltern. Zu sehen sind Strecke, Einträge und Fotos, nicht Kosten, Listen, Dokumente oder Namen.
+  Einzelne Einträge blendet „Nicht im Reiseblog zeigen“ aus. Ausschalten macht den Link ungültig.
+- **Postkarte** (in einem Eintrag mit Foto): Foto, Gruß, Text und Mini-Karte der Strecke als Bild zum
+  Teilen, z. B. per WhatsApp.
 - **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
   kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
   Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.
@@ -139,7 +151,10 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   - *Reiseideen:* Vorschläge für künftige Ziele mit Ort, Reisezeit und Dauer. Alle können Notizen und
     Links dazuschreiben und mit dem Herz zeigen, wem die Idee gefällt. „Reise planen“ macht daraus eine
     neue Reise; die Notizen landen auf Wunsch als Merkliste in deren Planung.
-  - *Spiele & Co:* Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
+  - *Währung umrechnen* (in Länderinfos und Kasse): Franken, Kronen, Złoty, Forint und Pfund mit dem
+    Tageskurs der EZB, ohne Internet mit dem zuletzt geladenen Kurs.
+  - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
+    einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
     Länder-Sticker und euer Spieleportal Spieleabend (`https://spieleabend.lamm7.de/`), das sich mit einem Tipp direkt öffnet;
     die Adresse lässt sich unter „Spieleportal einstellen“ ändern. Kennzeichen-Daten: Senatsverwaltung

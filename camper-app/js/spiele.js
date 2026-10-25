@@ -28,6 +28,19 @@ export default function installSpiele(app) {
   ];
   const game = () => ui.game || null;
 
+  // Kleine Bilder für die Spiele-Kacheln (Linien in Holzbraun wie die Bereichsgrafiken)
+  const ART = {
+    nochweit: '<path d="M4 38h56" stroke-dasharray="5 5"/><path d="M10 33V20q0-4 4-4h20l8 8h8q3 0 4 4v5z" fill="var(--paper)"/><circle cx="18" cy="34" r="4" fill="var(--paper)"/><circle cx="44" cy="34" r="4" fill="var(--paper)"/><path d="M14 22h18v6H14z"/><path d="M54 8v12M54 8l6 3-6 3"/>',
+    kennzeichen: '<rect x="6" y="14" width="52" height="20" rx="3" fill="#fff"/><path d="M7 15h8v18H7z" fill="#003399" stroke="none"/><text x="38" y="29" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial">M·LP</text>',
+    laenderkz: '<ellipse cx="32" cy="24" rx="22" ry="14" fill="#fff"/><text x="32" y="29" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial">CH</text>',
+    bingo: '<rect x="14" y="6" width="36" height="36" rx="3" fill="var(--paper)"/><path d="M26 6v36M38 6v36M14 18h36M14 30h36"/><path d="M29 9l6 6M35 9l-6 6M17 33l6 6M23 33l-6 6M41 21l6 6M47 21l-6 6" stroke="#B3261E"/>',
+    slf: '<rect x="4" y="12" width="16" height="22" rx="3" fill="var(--paper)"/><rect x="24" y="12" width="16" height="22" rx="3" fill="var(--paper)"/><rect x="44" y="12" width="16" height="22" rx="3" fill="var(--paper)"/><g fill="currentColor" stroke="none" font-size="13" font-weight="700" text-anchor="middle" font-family="Fredoka, sans-serif"><text x="12" y="28">S</text><text x="32" y="28">L</text><text x="52" y="28">F</text></g>',
+    quiz: '<rect x="4" y="18" width="38" height="16" rx="3" fill="#fff"/><path d="M5 19h6v14H5z" fill="#003399" stroke="none"/><path d="M48 14q0-6 6-6t6 6q0 4-6 6v4M54 30v1"/>',
+    sticker: '<path d="M14 42V6"/><path d="M14 8h32l-6 8 6 8H14z" fill="var(--paper)"/><circle cx="44" cy="36" r="8" fill="var(--paper)"/><path d="M40 36l3 3 5-6"/>',
+    brettspiele: '<rect x="8" y="14" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(-10 19 25)"/><rect x="34" y="10" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(10 45 21)"/><g fill="currentColor" stroke="none"><circle cx="15" cy="20" r="2"/><circle cx="19" cy="25" r="2"/><circle cx="23" cy="30" r="2"/><circle cx="40" cy="16" r="2"/><circle cx="50" cy="16" r="2"/><circle cx="40" cy="26" r="2"/><circle cx="50" cy="26" r="2"/></g>',
+  };
+  const gameArt = k => `<svg class="game-art" viewBox="0 0 64 48" aria-hidden="true">${ART[k] || ''}</svg>`;
+
   VIEWS.spiele = () => {
     const g = game();
     if (g && GAME_VIEWS[g]) {
@@ -38,17 +51,21 @@ export default function installSpiele(app) {
     }
     // Brettspiele öffnet Spieleabend direkt in einem eigenen Fenster
     const p = portal();
+    const tile = (k, t, s, extra = '') => `${gameArt(k)}<b>${t}</b><small>${s}</small>${extra}`;
     return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
-      <ul class="ledger">${GAMES.map(([k, t, s]) => k === 'brettspiele' && p.url
-        ? `<li><a class="row" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="txt"><b>${t}</b><small>${esc(p.name)}: online gegeneinander</small></span>${icon('open')}</a></li>`
-        : `<li><button data-action="game-open" data-g="${k}"><span class="txt"><b>${t}</b><small>${s}</small></span>${scoreHint(k)}</button></li>`).join('')}</ul>
+      <nav class="game-tiles">
+        <a class="game-tile wide" href="#/nochweit">${tile('nochweit', 'Wie lange noch?', 'Restzeit bis zum Ziel, groß für die Rückbank')}</a>
+        ${GAMES.map(([k, t, s]) => k === 'brettspiele' && p.url
+          ? `<a class="game-tile" href="${esc(p.url)}" target="_blank" rel="noopener">${tile(k, t, `${esc(p.name)}, online`, `<span class="open-ic">${icon('open')}</span>`)}</a>`
+          : `<button class="game-tile" data-action="game-open" data-g="${k}">${tile(k, t, s, scoreHint(k))}</button>`).join('')}
+      </nav>
       <button class="link" data-action="portal-form">Spieleportal einstellen</button>`;
   };
   ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; render(); window.scrollTo(0, 0); };
 
   function scoreHint(k) {
-    if (k === 'kennzeichen') return `<span class="amt">${platesOf(player(), 'de').length}</span>`;
-    if (k === 'laenderkz') return `<span class="amt">${platesOf(player(), 'int').length}</span>`;
+    if (k === 'kennzeichen') return `<span class="score">${platesOf(player(), 'de').length}</span>`;
+    if (k === 'laenderkz') return `<span class="score">${platesOf(player(), 'int').length}</span>`;
     return '';
   }
 

@@ -52,7 +52,7 @@ export default function installExtras(app) {
       if (!cached) LS.set(key + '.err', Date.now());
     } finally {
       wxLoading.delete(key);
-      if (ui.route === 'wetter') render();
+      if (ui.route === 'wetter' || ui.route === 'tagebuch') render();
     }
   }
 
@@ -77,6 +77,8 @@ export default function installExtras(app) {
       </li>`).join('')}</ul>
     </section>`;
   }
+
+  app.wx = { wx, wxIcon, wxKey, loadWeather, WX_ICON };
 
   VIEWS.wetter = () => {
     const t = currentTrip();

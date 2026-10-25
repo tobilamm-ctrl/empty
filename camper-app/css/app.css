@@ -842,3 +842,130 @@ body.locked .backdrop { display: none; }
 .pd-cost td:last-child { text-align: right; }
 .pd-cost .sum td { font-weight: 700; border-top: 2px solid #999; }
 .pd footer { margin-top: 18px; font-size: 8pt; color: #999; }
+
+/* ---------- Tagebuch: Filter in eigener Zeile, schwebender Eintrag-Knopf ---------- */
+.diary-chips { margin: 22px 0 6px; padding-bottom: 2px; }
+.fab {
+  position: fixed; right: max(16px, calc(50% - 340px + 16px)); bottom: calc(var(--bottom) + 16px); z-index: 40;
+  display: inline-flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 22px 0 18px; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--trip) 88%, #000); color: #fff; font: 600 17px var(--head);
+  box-shadow: 0 6px 18px rgba(58, 38, 23, .3);
+}
+.fab .ic { width: 24px; height: 24px; stroke-width: 2.4; }
+.fab:active { transform: scale(.96); }
+body.locked .fab, #sheet[open] ~ main .fab { display: none; }
+.timeline { padding-bottom: 72px; }
+
+/* Große Fotos im Tagebuch */
+.body .hero-photo { width: 100%; max-height: 300px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; margin-top: 8px; background: var(--mist); }
+.thumbs b { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 8px; background: var(--mist); color: var(--muted); font: 700 16px var(--head); }
+
+/* Tageskopf mit Wetter, Kilometern und Ländern; Reisefarbe */
+.day h2 { flex-wrap: wrap; }
+.day h2 > span:first-child { color: color-mix(in srgb, var(--trip) 80%, var(--wood)); }
+.day-extra { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; font: 500 15px var(--body); color: var(--muted); }
+.day-extra .ic.wx { width: 22px; height: 22px; vertical-align: -5px; margin-right: 3px; }
+.dx-wx { color: var(--ink); }
+.trip-head .page-head h1 { box-shadow: inset 0 -6px 0 color-mix(in srgb, var(--trip) 28%, transparent); display: inline; }
+.topbar { box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--trip) 25%, transparent); }
+
+/* ---------- Heute-Karte ---------- */
+.today { margin: 16px 0 6px; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--c) 9%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--c) 30%, transparent); }
+.today header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; color: var(--muted); font-size: 14px; }
+.today-k { font: 700 17px var(--head); color: color-mix(in srgb, var(--c) 80%, var(--ink)); }
+.today-grid { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 10px; }
+.today-wx { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); text-decoration: none; }
+.today-wx .ic.wx { width: 34px; height: 34px; }
+.today-wx b { font: 700 26px var(--head); }
+.today-wx small { color: var(--muted); font-size: 14px; }
+.today-sun { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.today-sun .ic { width: 20px; height: 20px; color: #C9961A; margin-left: 6px; }
+.today-sun .ic:first-child { margin-left: 0; }
+.today-car { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.today-car .ic { width: 20px; height: 20px; }
+.today-next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--c) 25%, transparent); }
+.today-next .ic, .today-links .ic { width: 18px; height: 18px; margin-right: 5px; vertical-align: -3px; }
+.today-links { margin-top: 8px; }
+
+/* ---------- Was ist in der Nähe? ---------- */
+.chips.wrap .chip .ic { width: 18px; height: 18px; margin-right: 5px; vertical-align: -3px; }
+.near-list { list-style: none; margin: 0; padding: 0; }
+.near-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.near-list .body { flex: 1; text-align: left; }
+.near-list small { color: var(--muted); }
+.near-pop .btnrow { margin-top: 8px; gap: 6px; }
+
+/* ---------- Währungsrechner ---------- */
+.fx-row { margin: -6px 0 12px; }
+.fx-row .ic { width: 18px; height: 18px; margin-right: 6px; }
+.fx-out { display: flex; align-items: center; min-height: 48px; font: 700 24px var(--head); }
+.fx-table { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.fx-table li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--mist); font-variant-numeric: tabular-nums; }
+
+/* ---------- Wie lange noch? ---------- */
+.eta { text-align: center; padding: 18px 0 8px; }
+.eta-pre { font: 600 22px var(--head); color: var(--muted); margin: 0; }
+.eta-big { font: 700 clamp(34px, 11vw, 60px)/1.05 var(--head); color: color-mix(in srgb, var(--trip) 85%, var(--ink)); margin: 0 0 8px; }
+.eta-sub { font-size: 19px; margin: 0 0 18px; }
+.eta-road { position: relative; height: 80px; margin: 10px 8px 6px; background: linear-gradient(var(--muted), var(--muted)) left 0 bottom 10px / 100% 3px no-repeat; }
+.eta-road::after { content: ''; position: absolute; left: 0; bottom: 10px; height: 3px; width: calc(var(--p) * 100%); background: var(--trip); transition: width 1s; }
+.eta-van { position: absolute; bottom: 12px; left: calc(var(--p) * (100% - 110px)); width: 110px; transition: left 1s; color: var(--ink); }
+.eta-van svg { width: 110px; height: auto; display: block; }
+.eta-flag { position: absolute; right: -6px; bottom: 12px; color: var(--danger); }
+.eta-flag .ic { width: 34px; height: 34px; }
+.eta-fun { font-size: 17px; color: var(--wood); margin: 12px 0 4px; }
+.eta-search { display: flex; gap: 8px; align-items: flex-end; margin-top: 16px; }
+.eta-search .field { flex: 1; margin: 0; }
+
+/* ---------- Spiele & Co: Kacheln mit Bildern ---------- */
+.game-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.game-tile {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px 14px;
+  border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; text-decoration: none;
+}
+.game-tile.wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center;
+  background: color-mix(in srgb, var(--trip) 9%, var(--surface)); border-color: color-mix(in srgb, var(--trip) 35%, transparent); }
+.game-tile.wide .game-art { grid-row: span 2; margin: 0; }
+.game-tile b { font: 600 17px/1.2 var(--head); }
+.game-tile small { color: var(--muted); font-size: 14px; }
+.game-art { width: 64px; height: 48px; margin-bottom: 6px; fill: none; stroke: var(--wood); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; color: var(--wood); }
+.game-tile .score { position: absolute; top: 10px; right: 12px; font: 700 18px var(--head); color: var(--trip); }
+.game-tile .open-ic { position: absolute; top: 10px; right: 10px; color: var(--muted); }
+.game-tile .open-ic .ic { width: 18px; height: 18px; }
+.game-tile:active { transform: scale(.98); }
+
+/* ---------- Teilen: Reiseblog und Postkarte ---------- */
+.blog-sheet .blog-link { width: 100%; font-size: 14px; }
+.card-photos { display: flex; gap: 8px; overflow-x: auto; }
+.card-photos label { flex: none; }
+.card-photos input { position: absolute; opacity: 0; }
+.card-photos img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 3px solid transparent; }
+.card-photos input:checked + img { border-color: var(--trip); }
+.card-preview img { width: 100%; border-radius: 8px; box-shadow: 0 4px 14px rgba(58, 38, 23, .2); margin: 8px 0; }
+.sheet-foot .ic { width: 18px; height: 18px; margin-right: 6px; }
+
+/* ---------- Reiseblog (öffentliche Seite) ---------- */
+body.blog-page { padding: 0; }
+.blog-top { display: flex; align-items: center; gap: 10px; max-width: 680px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top)) 16px 4px; color: var(--wood); }
+.blog-top .brand-sheep { width: 56px; height: 44px; }
+.blog-top .brand-word { width: 170px; height: 28px; }
+.blog-kicker { margin-left: auto; font: 600 14px var(--head); color: var(--muted); }
+.blog-head h1 { font-size: clamp(32px, 9vw, 44px); }
+.blog-map { height: 320px; border-radius: 16px; margin: 16px 0 8px; border: 1.5px solid var(--line); }
+.blog-stop { display: grid; grid-template-columns: 40px 1fr; gap: 14px; padding: 10px 0; }
+.blog-stop .node { width: 24px; height: 24px; margin: 8px; }
+.stop-stellplatz .blog-stop .node { width: 40px; height: 40px; margin: 0; }
+.blog-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.blog-photos img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; cursor: zoom-in; }
+.blog-photos img.hero-photo { width: 100%; height: auto; max-height: 340px; aspect-ratio: 4 / 3; border-radius: 12px; }
+.blog-foot { margin: 24px 0 40px; }
+.blog-viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 92vh; }
+.blog-viewer::backdrop { background: rgba(20, 12, 6, .85); }
+.blog-viewer img { max-width: 96vw; max-height: 88vh; border-radius: 10px; display: block; }
+.blog-viewer button { position: absolute; top: 8px; right: 8px; background: rgba(255, 255, 255, .85); }
+
+/* Kartenknöpfe: runde Knöpfe übereinander, damit auch „In der Nähe“ auf schmale Handys passt */
+@media (max-width: 520px) {
+  .map-actions { flex-direction: column; align-items: flex-end; gap: 10px; }
+  .map-actions .round { width: 48px; height: 48px; }
+}

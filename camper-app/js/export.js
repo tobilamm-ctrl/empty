@@ -111,13 +111,12 @@ ${trks}
 
   // Streckenkarte: OpenStreetMap-Kacheln werden vorab zu einem Bild zusammengesetzt (doppelte Auflösung für den Druck),
   // darüber liegt die Strecke als SVG. So ist die Karte sicher geladen, bevor das Druckfenster aufgeht.
-  async function staticMap(lines, marks, color, W = 680, H = 400) {
-    const all = [...lines.flatMap(l => l.pts), ...marks.map(m => [m.lat, m.lng])];
-    if (!all.length) return '';
-    const proj = (la, ln, z) => {
-      const s = 256 * 2 ** z, r = Math.max(-85, Math.min(85, la)) * Math.PI / 180;
-      return [(ln + 180) / 360 * s, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * s];
-    };
+  const proj = (la, ln, z) => {
+    const s = 256 * 2 ** z, r = Math.max(-85, Math.min(85, la)) * Math.PI / 180;
+    return [(ln + 180) / 360 * s, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * s];
+  };
+  // Zoomstufe und Ausschnitt so wählen, dass alle Punkte mit etwas Rand hineinpassen
+  function fit(all, W, H) {
     const lats = all.map(p => p[0]), lngs = all.map(p => p[1]);
     const n = Math.max(...lats), s = Math.min(...lats), e = Math.max(...lngs), w = Math.min(...lngs);
     let z = 15;
@@ -128,7 +127,13 @@ ${trks}
     }
     if (all.length === 1) z = 11;
     const [cx1, cy1] = proj(n, w, z), [cx2, cy2] = proj(s, e, z);
-    const left = (cx1 + cx2) / 2 - W / 2, top = (cy1 + cy2) / 2 - H / 2;
+    return { z, left: (cx1 + cx2) / 2 - W / 2, top: (cy1 + cy2) / 2 - H / 2 };
+  }
+
+  async function staticMap(lines, marks, color, W = 680, H = 400) {
+    const all = [...lines.flatMap(l => l.pts), ...marks.map(m => [m.lat, m.lng])];
+    if (!all.length) return '';
+    const { z, left, top } = fit(all, W, H);
     const base = await baseMap(z, left, top, W, H);
     const xy = (la, ln) => { const [px, py] = proj(la, ln, z); return [(px - left).toFixed(1), (py - top).toFixed(1)]; };
     const poly = (line, style) => `<polyline points="${line.map(p => xy(p[0], p[1]).join(',')).join(' ')}" ${style}/>`;
@@ -142,6 +147,12 @@ ${trks}
   }
 
   async function baseMap(z, left, top, W, H) {
+    const { cv, ok } = await tileCanvas(z, left, top, W, H);
+    if (!ok) return '';
+    try { return cv.toDataURL('image/jpeg', 0.86); } catch { return ''; }
+  }
+
+  async function tileCanvas(z, left, top, W, H) {
     const k = z < 18 ? 2 : 1;                // eine Zoomstufe feiner = doppelte Auflösung
     const zz = z + (k === 2 ? 1 : 0), L = left * k, T = top * k, max = 2 ** zz;
     const cv = document.createElement('canvas');
@@ -159,9 +170,33 @@ ${trks}
       }
     }
     const ok = (await Promise.all(jobs)).reduce((a, b) => a + b, 0);
-    if (!ok) return '';
-    try { return cv.toDataURL('image/jpeg', 0.86); } catch { return ''; }
+    return { cv, ok, k };
   }
+
+  // Karte mit Strecke als Bild (für die Postkarte)
+  app.routeCanvas = async (t, W, H) => {
+    const { lines, marks, color } = mapData(t);
+    const all = [...lines.filter(l => !l.plan).flatMap(l => l.pts), ...marks.filter(m => !m.plan).map(m => [m.lat, m.lng])];
+    if (!all.length) return null;
+    const { z, left, top } = fit(all, W, H);
+    const { cv, k } = await tileCanvas(z, left, top, W, H);
+    const ctx = cv.getContext('2d');
+    const xy = (la, ln) => { const [px, py] = proj(la, ln, z); return [(px - left) * k, (py - top) * k]; };
+    ctx.lineJoin = ctx.lineCap = 'round';
+    lines.filter(l => !l.plan).forEach(l => {
+      [['#fff', 9], [l.hike ? '#2F8F4E' : color, 5]].forEach(([c, w]) => {
+        ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = w * k;
+        l.pts.forEach((p, i) => { const [x, y] = xy(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.stroke();
+      });
+    });
+    marks.filter(m => m.label && !m.plan).forEach(m => {
+      const [x, y] = xy(m.lat, m.lng);
+      ctx.beginPath(); ctx.arc(x, y, 7 * k, 0, 7); ctx.fillStyle = color; ctx.fill();
+      ctx.lineWidth = 2.5 * k; ctx.strokeStyle = '#fff'; ctx.stroke();
+    });
+    return cv;
+  };
 
   // Etappen: je Tag die Einträge, Start- und Zielort und die Luftlinie seit dem letzten Ort des Vortags
   function stages(t, st) {
@@ -184,10 +219,10 @@ ${trks}
   }
   const placeName = e => e && (e.place || e.title) || '';
 
-  async function bookHtml(t, opt) {
+  function mapData(t) {
     const st = tripStats(t);
     const color = tripColor(t);
-    const { list: sts, no } = stages(t, st);
+    const { no } = stages(t, st);
     const tracks = tracksOf(t);
     const drive = tracks.filter(k => k.kind !== 'hike');
     const plan = plannedOf(t);
@@ -201,6 +236,13 @@ ${trks}
       ...st.stops.filter(e => e.type === 'stellplatz').map(e => ({ lat: e.lat, lng: e.lng, label: no.get(e.id) })),
       ...plan.map((p, i) => ({ lat: p.lat, lng: p.lng, label: String.fromCharCode(65 + (i % 26)), plan: true })),
     ];
+    return { lines, marks, color, plan };
+  }
+
+  async function bookHtml(t, opt) {
+    const st = tripStats(t);
+    const { list: sts, no } = stages(t, st);
+    const { lines, marks, color, plan } = mapData(t);
     const countries = (app.tripCountries ? app.tripCountries(t) : []).map(cc => `${app.flag(cc)} ${esc((app.COUNTRIES[cc] || {}).name || cc)}`).join(', ');
     const cost = opt.cost ? S.expenses.filter(x => x.tripId === t.id && x.cat !== app.SETTLE) : [];
     const byCat = {};

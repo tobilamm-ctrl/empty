@@ -6,6 +6,8 @@ import installExtras from './extras.js';
 import installSpiele from './spiele.js';
 import installIdeen from './ideen.js';
 import installExport from './export.js';
+import installUnterwegs from './unterwegs.js';
+import installTeilen from './teilen.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -24,6 +26,13 @@ const ICONS = {
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
   print: '<path d="M7 9V4h10v5M7 17H4v-7h16v7h-3M7 14h10v6H7z"/>',
+  near: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M11 8v6M8 11h6"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  sunset: '<path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 4v4M4.6 9.6l1.8 1.4M19.4 9.6l-1.8 1.4M9 21h6"/>',
+  share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M13 5v14M15.5 9h3M15.5 12h3M6 9h4M6 12h4"/><rect x="16" y="14" width="3" height="3"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
+  coin: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9.5a3.5 3.5 0 1 0 0 5M8 11h5M8 13h5"/>',
   up: '<path d="M6 15l6-6 6 6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
@@ -292,7 +301,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -341,6 +350,8 @@ function draw() {
   const sel = focusKey ? [act.selectionStart, act.selectionEnd] : null;
 
   view.innerHTML = (VIEWS[ui.route] || VIEWS.tagebuch)();
+  upgradePhotos(view);
+  afterDraw.forEach(h => h(view));
 
   view.querySelectorAll('[data-keep]').forEach(i => {
     if (kept[i.dataset.keep] != null && i.dataset.keep !== 'packQuery') i.value = kept[i.dataset.keep];
@@ -349,6 +360,28 @@ function draw() {
     const el = view.querySelector(`[data-keep="${focusKey}"]`);
     if (el) { el.focus(); try { el.setSelectionRange(...sel); } catch { /* kein Textfeld */ } }
   }
+}
+
+const afterDraw = [];
+
+// Große Fotos im Tagebuch: erst das Vorschaubild, sichtbar gewordene in voller Größe nachladen
+const fullPhotos = new Map();
+let photoObserver = null;
+function upgradePhotos(root) {
+  const imgs = root.querySelectorAll('img.hero-photo[data-photo]');
+  if (!imgs.length) return;
+  photoObserver ||= new IntersectionObserver(list => list.forEach(en => {
+    if (!en.isIntersecting) return;
+    const img = en.target, id = img.dataset.photo;
+    photoObserver.unobserve(img);
+    store.get('photos', id).then(p => {
+      if (p && p.data) { fullPhotos.set(id, p.data); img.src = p.data; }
+    }).catch(() => {});
+  }), { rootMargin: '300px' });
+  imgs.forEach(img => {
+    const full = fullPhotos.get(img.dataset.photo);
+    if (full) img.src = full; else photoObserver.observe(img);
+  });
 }
 
 // Das Streckenband unter der Kopfzeile: jede Übernachtung ein Halt auf der Linie
@@ -549,23 +582,23 @@ VIEWS.tagebuch = () => {
   const timeline = Object.entries(days).map(([day, es]) => {
     const n = st.firstDay ? Math.round((dayDate(day) - dayDate(st.firstDay)) / 864e5) + 1 : null;
     return `<li class="day">
-      <h2><span>${n && n > 0 ? 'Tag ' + n : fmtDay(day)}</span>${n && n > 0 ? `<small>${fmtDay(day)}</small>` : ''}</h2>
+      <h2><span>${n && n > 0 ? 'Tag ' + n : fmtDay(day)}</span>${n && n > 0 ? `<small>${fmtDay(day)}</small>` : ''}${APP.dayExtras ? APP.dayExtras(day, t) : ''}</h2>
       <ol>${es.map(stopItem).join('')}</ol>
     </li>`;
   }).join('');
 
-  return `${installHint()}${tripHead(t, st)}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
-    <div class="toolbar diary-bar">
-      <div class="chips">${chips}</div>
-      <button class="primary" data-action="entry-form">${icon('plus')}Eintrag</button>
-    </div>
+  return `${installHint()}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
+    <div class="chips diary-chips">${chips}</div>
+    <button class="fab" data-action="entry-form" aria-label="Neuer Eintrag">${icon('plus')}<span>Eintrag</span></button>
     ${list.length
       ? `<ol class="timeline">${timeline}</ol>`
       : `<p class="hint">Noch keine Einträge. Auf der Karte trägst du mit „Ich bin hier …“ den aktuellen Ort ein, hier kannst du auch nachträglich schreiben.</p>`}`;
 };
 
 function stopItem(e) {
-  const thumbs = (e.photos || []).slice(0, 4).map(p => `<img src="${p.thumb}" alt="">`).join('');
+  // Erstes Foto groß wie im Fotobuch, weitere klein darunter
+  const [first, ...rest] = e.photos || [];
+  const thumbs = rest.slice(0, 4).map(p => `<img src="${p.thumb}" alt="">`).join('');
   const bits = [
     e.place ? esc(e.place) : '',
     e.rating ? '★'.repeat(e.rating) : '',
@@ -580,7 +613,8 @@ function stopItem(e) {
         <strong>${esc(e.title || (e.type === 'notiz' ? 'Notiz' : 'Ohne Titel'))}</strong>
         ${bits.length ? `<span class="meta">${bits.join(', ')}</span>` : ''}
         ${e.text ? `<span class="text">${esc(e.text)}</span>` : ''}
-        ${thumbs ? `<span class="thumbs">${thumbs}</span>` : ''}
+        ${first ? `<img class="hero-photo" data-photo="${first.id}" src="${first.thumb}" alt="">` : ''}
+        ${thumbs ? `<span class="thumbs">${thumbs}${e.photos.length > 5 ? `<b>+${e.photos.length - 5}</b>` : ''}</span>` : ''}
       </span>
     </button>
   </li>`;
@@ -654,6 +688,7 @@ function entryForm(e = {}) {
       <label class="field"><span>Kosten in €</span><input name="cost" inputmode="decimal" value="${e.cost ? String(e.cost).replace('.', ',') : ''}" placeholder="0"></label>
       ${canCash() ? `<label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>` : ''}
     </div>
+    <label class="check small"><input type="checkbox" name="blogHide"${e.blogHide ? ' checked' : ''}><span>Nicht im Reiseblog zeigen</span></label>
     <div class="field"><span>Fotos</span>
       <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
       <label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
@@ -749,6 +784,7 @@ function submitEntry(form) {
     country: fd.get('country') || '',
     rating: TYPES[type].rating ? +fd.get('rating') || 0 : 0,
     features: TYPES[type].features ? fd.getAll('feat') : [],
+    blogHide: !!fd.get('blogHide'),
     cost: TYPES[type].cost ? num(fd.get('cost')) : 0,
     extra: Object.fromEntries((TYPES[type].extras || []).map(f => {
       const v = fd.get(`x_${type}_${f.key}`);
@@ -803,6 +839,7 @@ function entryView(e) {
     <div class="sheet-foot">
       ${hasPos(e) ? `<button class="ghost" data-action="show-on-map" data-id="${e.id}">Auf der Karte</button><a class="ghost btn" href="${navUrl(e)}" target="_blank" rel="noopener">Hinfahren</a>` : ''}
       ${hasPos(e) && e.type !== 'notiz' ? `<button class="ghost" data-action="entry-to-place" data-id="${e.id}">Als Lieblingsplatz merken</button>` : ''}
+      ${APP.entryButtons ? APP.entryButtons(e) : ''}
       <button class="primary" data-action="edit-entry" data-id="${e.id}">Bearbeiten</button>
     </div>
   </article>`;
@@ -2029,10 +2066,11 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
-  crewId: () => crew.id, nextColor, setTrip, tripHead,
+  crewId: () => crew.id, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
+  ensureMap,
 };
 installMore(APP);
 installMapEdit(APP);
@@ -2041,5 +2079,7 @@ installExtras(APP);
 installSpiele(APP);
 installIdeen(APP);
 installExport(APP);
+installUnterwegs(APP);
+installTeilen(APP);
 
 start();
