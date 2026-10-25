@@ -14,4 +14,4 @@ Welche Lieferung auf dem Server liegt, steht unten auf der Spieleübersicht („
 | 2 | 25.10.2026 | e0e00cc | Sprachausgabe (Knopf „🗣“: aus, wer dran ist, mit Zügen, mit Anweisungen); Verlaufstexte mit „du“-Formen in Mau-Mau, Backgammon, Codeknacker; Stand-Anzeige auf der Spieleübersicht |
 | 3 | 25.10.2026 | b8e00a8 | Neu: Punkteblock (Qwirkle oder allgemein, ein Gerät für alle) und Farbreihen (Prinzip „Qwixx“); Spielkit: Einstellung für ein gemeinsames Gerät |
 | 4 | 25.10.2026 | 573eb48 | Punkteblock mit weiteren Voreinstellungen: Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel (ein angefangener Qwirkle-Block aus Lieferung 3 beginnt neu) |
-| 5 | 25.10.2026 | (dieser Stand) | Punkteblock: UNO (Sieger sammelt bzw. Minuspunkte), Scrabble (Bingo +50, Restbuchstaben), Take That (Plus, Minus, Kröten) |
+| 5 | 25.10.2026 | 20c9588 | Punkteblock: UNO (Sieger sammelt bzw. Minuspunkte), Scrabble (Bingo +50, Restbuchstaben), Take That (Plus, Minus, Kröten) |
