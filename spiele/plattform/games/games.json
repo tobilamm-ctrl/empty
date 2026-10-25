@@ -19,5 +19,54 @@
     "description": "Fünf Würfel, drei Würfe, dreizehn Zeilen. Allein auf Bestwert, zu mehreren an einem Gerät, gegen den Computer oder online.",
     "players": "1–6 Spieler · ca. 20–30 Minuten",
     "color": "#e3b341"
+  },
+  {
+    "id": "vierreihe",
+    "title": "Vier in einer Reihe",
+    "description": "Steine einwerfen, vier in einer Reihe gewinnen. Zu zweit an einem Gerät, gegen den Computer oder online.",
+    "players": "2 Spieler · ca. 5–10 Minuten",
+    "color": "#4f7fe0"
+  },
+  {
+    "id": "codeknacker",
+    "title": "Codeknacker",
+    "description": "Den geheimen Farbcode mit möglichst wenigen Versuchen knacken. Allein gegen den Computer, zu zweit an einem Gerät oder online.",
+    "players": "1–2 Spieler · ca. 10 Minuten",
+    "color": "#c77dd6"
+  },
+  {
+    "id": "muehle",
+    "title": "Mühle",
+    "description": "Der Brettspielklassiker mit neun Steinen. Zu zweit an einem Gerät, gegen den Computer oder online.",
+    "players": "2 Spieler · ca. 15 Minuten",
+    "color": "#c99a5b"
+  },
+  {
+    "id": "backgammon",
+    "title": "Backgammon",
+    "description": "Das alte Brettspiel mit zwei Würfeln. Zu zweit an einem Gerät, gegen den Computer oder online.",
+    "players": "2 Spieler · ca. 15–30 Minuten",
+    "color": "#e4b24c"
+  },
+  {
+    "id": "schiffe",
+    "title": "Schiffe versenken",
+    "description": "Flotte verdeckt aufstellen und die gegnerischen Schiffe suchen. Zu zweit an einem Gerät, gegen den Computer oder online.",
+    "players": "2 Spieler · ca. 15 Minuten",
+    "color": "#3fb3b0"
+  },
+  {
+    "id": "maumau",
+    "title": "Mau-Mau",
+    "description": "Das Kartenspiel mit Siebenern, Achtern und Wünschern. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–6 Spieler · ca. 15 Minuten",
+    "color": "#5fbf7a"
+  },
+  {
+    "id": "schafkopf",
+    "title": "Schafkopf",
+    "description": "Bayerisches Kartenspiel zu viert mit Sauspiel, Wenz und Solo. Fehlende Mitspieler übernimmt der Computer.",
+    "players": "4 Spieler · Sitzung nach Wahl",
+    "color": "#d0574c"
   }
 ]

@@ -4,9 +4,20 @@ Passwortgeschützte Seite für Familie und Freunde. Jede Person bekommt ein eige
 Nach der Anmeldung erscheinen alle hinterlegten Spiele. Spiele mit Online-Modus lassen sich
 an mehreren Geräten gegeneinander spielen.
 
-Enthalten: **Würfelpoker** (13 Runden, 5 Würfel, Wertungsblock) und **Farbkreuz** (Würfelspiel nach den Regeln von „Noch mal!“), jeweils mit bis zu 6 Spielern:
-allein (Solo-Regeln), an einem Gerät (Mitspieler reichen das Gerät weiter, dazu 0–5 Computer-Gegner)
-oder online an mehreren Geräten. Spielblatt wahlweise das Standardblatt oder zufällig verteilt.
+Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und online spielbar):
+
+| Spiel | Spieler | Besonderheit |
+|---|---|---|
+| **Farbkreuz** | 1–6 | Würfelspiel nach den Regeln von „Noch mal!“, Standard- oder Zufallsblatt, Solo mit 30 Würfen |
+| **Farbkreuz Plus** | 1–6 | nach „Noch mal so gut!“: Sonderwürfel, Bomben, Herzen, Zeilenboni |
+| **Würfelpoker** | 1–6 | 13 Runden, 5 Würfel, Wertungsblock, Solo mit Bestwert |
+| **Vier in einer Reihe** | 2 | Computer in drei Stärken |
+| **Codeknacker** | 1–2 | Farbcode knacken, allein gegen den Computer oder abwechselnd zu zweit |
+| **Mühle** | 2 | Setzen, Ziehen, Springen |
+| **Backgammon** | 2 | Partie bis 1, 3 oder 5 Punkte, ohne Verdopplungswürfel |
+| **Schiffe versenken** | 2 | verdeckte Aufstellung |
+| **Mau-Mau** | 2–6 | Sonderkarten einzeln abschaltbar, Strafpunkte über mehrere Runden |
+| **Schafkopf** | 4 | Sauspiel, Wenz, Farbsolo, Abrechnung über die Sitzung; fehlende Spieler übernimmt der Computer |
 
 Voraussetzungen: PHP 8.1 oder neuer, Apache mit `.htaccess` (bei Hetzner Webhosting gegeben).
 Keine Datenbank nötig. Die Daten liegen als Dateien im Ordner `data/`.

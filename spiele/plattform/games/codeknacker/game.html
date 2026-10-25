@@ -1,0 +1,651 @@
+<title>Codeknacker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: links das Steckbrett mit Farbauswahl, rechts Punktestand, Durchgänge, Verlauf und Regeln; schmal untereinander */
+:root {
+  color-scheme: dark;
+  --table: #101318;
+  --sheet: #1a1f27;
+  --sheet-2: #262d38;
+  --ink: #eef1f5;
+  --muted: #9aa4b2;
+  --accent: #f2b84b;
+  --tile-ink: #1a1f27;
+  --red: #e8605a;
+  --green: #6cc07a;
+  --board: #23272e;
+  --board-hi: #333a44;
+  --board-lo: #15181d;
+  --hole: #0c0e11;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --peg: 34px;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 5vw, 42px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { main.game { grid-template-columns: minmax(0, 470px) minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 899px) {
+  .col { display: contents; }
+  .sk-lobby, .bench { order: 1; } .score-panel { order: 2; } .rounds-panel { order: 3; } .log-panel { order: 4; } .rules { order: 5; }
+}
+
+/* ---------- Steckbrett ---------- */
+.bench { display: grid; gap: 14px; justify-items: center; }
+.board-wrap { width: 100%; max-width: 400px; }
+.board {
+  width: 100%; max-width: 400px; border-radius: 18px; padding: 12px 12px 14px;
+  background: linear-gradient(160deg, var(--board-hi), var(--board) 40%, var(--board-lo));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -3px 0 rgba(0,0,0,.35), 0 10px 26px rgba(0,0,0,.45);
+}
+.board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 4px 8px; }
+.board-head b { font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: .3px; }
+.board-head small { color: var(--muted); font-size: 12.5px; text-align: right; }
+.vault {
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 8px; margin-bottom: 10px; border-radius: 12px;
+  background: var(--board-lo); box-shadow: inset 0 2px 6px rgba(0,0,0,.6);
+}
+.vault .lbl { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; writing-mode: horizontal-tb; }
+.shield {
+  width: var(--peg); height: var(--peg); border-radius: 8px; display: grid; place-items: center;
+  background: repeating-linear-gradient(135deg, #39404b 0 5px, #2e343d 5px 10px); color: var(--muted); font-family: var(--font-display); font-size: 17px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06), inset 0 -2px 0 rgba(0,0,0,.35);
+}
+.rows { display: grid; gap: 5px; }
+.row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 10px; }
+.row .nr { color: #646d7a; font-size: 12px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.row.now { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); }
+.row.now .nr { color: var(--accent); }
+.row.win { background: color-mix(in srgb, var(--green) 16%, transparent); }
+.pegs { display: flex; gap: 6px; justify-content: center; }
+.hole { width: var(--peg); height: var(--peg); border-radius: 50%; display: grid; place-items: center; flex: none; }
+.hole::before { content: ""; width: 38%; height: 38%; border-radius: 50%; background: var(--hole); box-shadow: inset 0 2px 3px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.06); }
+.peg {
+  width: var(--peg); height: var(--peg); border-radius: 50%; display: grid; place-items: center; flex: none; position: relative;
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--c) 45%, #fff) 0, var(--c) 42%, color-mix(in srgb, var(--c) 62%, #000) 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,.55), inset 0 -2px 3px rgba(0,0,0,.25);
+}
+.peg svg { width: 52%; height: 52%; fill: var(--k); stroke: var(--k); }
+.c0 { --c: #e0443c; --k: rgba(255,255,255,.9); }
+.c1 { --c: #f3c623; --k: rgba(30,25,0,.62); }
+.c2 { --c: #3daa58; --k: rgba(0,25,5,.62); }
+.c3 { --c: #3a78e0; --k: rgba(255,255,255,.9); }
+.c4 { --c: #f2872c; --k: rgba(40,15,0,.62); }
+.c5 { --c: #9a5ae0; --k: rgba(255,255,255,.9); }
+.c6 { --c: #f1efe7; --k: rgba(20,20,30,.62); }
+.c7 { --c: #2fbcbf; --k: rgba(0,25,30,.66); }
+.fb { display: grid; grid-template-columns: repeat(2, 11px); gap: 4px; padding: 5px; border-radius: 8px; background: #4a515c; box-shadow: inset 0 1px 3px rgba(0,0,0,.5); }
+.fb.five { grid-template-columns: repeat(3, 11px); }
+.pin { width: 11px; height: 11px; border-radius: 50%; background: #2a2f37; box-shadow: inset 0 1px 2px rgba(0,0,0,.7); }
+.pin.b { background: radial-gradient(circle at 35% 30%, #555 0, #0b0b0d 70%); box-shadow: 0 0 0 1.5px #d9dde3, 0 1px 2px rgba(0,0,0,.6); }
+.pin.w { background: radial-gradient(circle at 35% 30%, #fff 0, #e3e3e3 70%); box-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.fb-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+/* Eingabe-Stecker in der aktuellen Reihe und im Geheimfach */
+.slot { border: 0; padding: 0; cursor: pointer; }
+.slot.hole { background: transparent; }
+.slot.hole::before { width: 46%; height: 46%; }
+.slot.sel { outline: 3px solid var(--accent); outline-offset: 2px; }
+.slot:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.row.now .slot, .vault .slot { width: 40px; height: 40px; }
+.board.fresh .row.done { animation: drop .35s ease both; animation-delay: calc(var(--i) * 90ms); }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 440px; }
+.palette .peg { width: 46px; height: 46px; border: 0; cursor: pointer; }
+.palette .peg:disabled { cursor: not-allowed; opacity: .35; }
+.palette .peg:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.palette .peg .key { position: absolute; right: -3px; bottom: -3px; font-size: 10px; font-weight: 800; background: var(--sheet); color: var(--muted); border-radius: 6px; padding: 0 4px; line-height: 15px; }
+@media (hover: none) { .palette .peg .key { display: none; } }
+.status { min-height: 1.5em; margin: 0; text-align: center; max-width: 420px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+/* ---------- Seitenleiste ---------- */
+.players { display: grid; gap: 8px; }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; background: var(--sheet-2); border-radius: 10px; padding: 9px 12px; }
+.prow.on { box-shadow: 0 0 0 2px var(--accent); }
+.prow .role { display: block; font-size: 12px; color: var(--muted); }
+.prow .pts { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+.rounds { display: grid; gap: 8px; }
+.rounds details { background: var(--sheet-2); border-radius: 10px; padding: 8px 12px; }
+.rounds summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between; min-height: 32px; }
+.rounds summary .code { display: flex; gap: 4px; --peg: 20px; }
+.rounds .board { margin: 10px auto 4px; --peg: 26px; }
+.rounds .row.now { background: none; box-shadow: none; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; max-height: 260px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.mini { display: inline-flex; gap: 3px; vertical-align: -3px; --peg: 15px; }
+.mini .peg { box-shadow: none; }
+.mini .peg svg { display: none; }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.rules .pin { display: inline-block; vertical-align: -1px; }
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 12px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 420px) {
+  :root { --peg: 30px; }
+  .board { padding: 10px 8px 12px; }
+  .row { gap: 6px; padding: 4px; grid-template-columns: 18px minmax(0, 1fr) auto; }
+  .pegs { gap: 5px; }
+  .board.len5 { --peg: 28px; }
+  .board.len5 .row.now .slot, .board.len5 .vault .slot { width: 36px; height: 36px; }
+  .board.len5 .pegs { gap: 4px; }
+  .palette { gap: 5px; }
+  .palette .peg { width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Code<span>knacker</span></h1>
+      <div class="sub">Farben stecken, Hinweise deuten, den geheimen Code finden</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="bench" id="bench" aria-label="Steckbrett">
+        <div class="board-wrap" id="board"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="palette" id="palette" role="group" aria-label="Farben"></div>
+        <div class="actions" id="actions">
+          <button class="btn big" id="btn-back" type="button">Zurück</button>
+          <button class="btn primary big" id="btn-ok" type="button">Raten</button>
+        </div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel score-panel" id="score-panel">
+        <h2>Punkte</h2>
+        <div class="players" id="players"></div>
+        <p class="hint" id="score-hint"></p>
+      </section>
+      <section class="panel rounds-panel" id="rounds-panel">
+        <h2>Durchgänge</h2>
+        <div class="rounds" id="rounds"></div>
+      </section>
+      <section class="panel log-panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Ein geheimer Code besteht aus <b>4 Steckern in 6 Farben</b> (Klassisch) oder <b>5 Steckern in 8 Farben</b> (Knifflig). Eine Farbe darf mehrmals vorkommen.</li>
+            <li>Du hast <b>höchstens 10 Versuche</b>. Jeder Versuch ist eine vollständige Reihe Stecker.</li>
+            <li>Nach jedem Versuch gibt es Hinweise: ein <b>schwarzer Stift</b> <span class="pin b"></span> heißt „richtige Farbe an der richtigen Stelle“, ein <b>weißer Stift</b> <span class="pin w"></span> heißt „richtige Farbe, aber an einer anderen Stelle“. Welcher Stecker gemeint ist, verraten die Stifte nicht.</li>
+            <li>Jeder Stecker im Code zählt nur einmal. Beispiel: Code Rot Rot Blau Gelb, Versuch Rot Blau Blau Blau ergibt 2 schwarze Stifte (Rot vorne, Blau an Stelle 3) und keinen weißen.</li>
+            <li>Jede Farbe trägt zusätzlich ein Zeichen (Punkt, Dreieck, Quadrat, Kreuz, Raute, Stern, Ring, Balken), damit man sie auch bei Farbschwäche unterscheidet.</li>
+            <li><b>Allein:</b> Der Computer denkt sich einen Code aus. Je weniger Versuche du brauchst, desto besser. Dein Bestwert bleibt auf diesem Gerät gespeichert.</li>
+            <li><b>Zu zweit:</b> In jedem Durchgang legt einer verdeckt einen Code, der andere rät. Danach wird getauscht. Wer den Code legt, bekommt so viele Punkte, wie der andere Versuche braucht. Wird der Code nicht geknackt, gibt es 11 Punkte. Nach allen Durchgängen gewinnt, wer mehr Punkte hat.</li>
+            <li>Bedienung: Farbe antippen, sie landet im nächsten freien Loch. Ein gesteckter Stecker wird durch Antippen wieder herausgezogen. Am Rechner gehen auch die Zifferntasten, Rücktaste und Eingabe.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+const LEVELS = {
+  klassisch: { len: 4, ncol: 6, name: "Klassisch" },
+  knifflig: { len: 5, ncol: 8, name: "Knifflig" },
+};
+const MAXTRY = 10, FAIL = 11;
+const COLORS = [
+  { name: "Rot", sym: '<circle cx="12" cy="12" r="6"/>' },
+  { name: "Gelb", sym: '<path d="M12 4.5 20 19H4z"/>' },
+  { name: "Grün", sym: '<rect x="6" y="6" width="12" height="12" rx="1"/>' },
+  { name: "Blau", sym: '<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z"/>' },
+  { name: "Orange", sym: '<path d="M12 3 21 12 12 21 3 12z"/>' },
+  { name: "Lila", sym: '<path d="M12 2.5l2.8 6.1 6.7.6-5 4.5 1.5 6.6L12 16.9l-6 3.4 1.5-6.6-5-4.5 6.7-.6z"/>' },
+  { name: "Weiß", sym: '<circle cx="12" cy="12" r="6.5" fill="none" stroke-width="3.2"/>' },
+  { name: "Türkis", sym: '<rect x="4" y="6.5" width="16" height="3.6" rx="1"/><rect x="4" y="13.9" width="16" height="3.6" rx="1"/>' },
+];
+const RATING = [
+  [3, "Meisterhaft", "So schnell knackt das kaum jemand."],
+  [5, "Stark", "Sauber kombiniert."],
+  [7, "Gut", "Mit Überlegung ans Ziel."],
+  [MAXTRY, "Geschafft", "Knapp, aber geknackt. Tipp: Rate nur Codes, die zu allen bisherigen Hinweisen passen."],
+];
+
+let S, kit;
+// Verlauf direkt am eigenen Stand (auch beim Anlegen eines neuen Spiels, bevor das Spielkit ihn kennt)
+const addLog = h => { S.log.unshift(h); S.log = S.log.slice(0, 80); };
+const UI = { draft: [], sel: 0, key: "", seenDone: 0, freshDone: -1 };
+
+// ---------- Regeln: Rückmeldung ----------
+// Liefert [schwarz, weiß]: schwarz = gleiche Farbe an gleicher Stelle; weiß = übrige gemeinsame Farben,
+// jede Farbe so oft, wie sie in beiden Reihen (ohne die schwarzen Stellen) mindestens vorkommt.
+const CA = new Int8Array(8), CB = new Int8Array(8);
+function feedback(code, guess) {
+  CA.fill(0); CB.fill(0);
+  let b = 0, w = 0;
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === guess[i]) b++;
+    else { CA[code[i]]++; CB[guess[i]]++; }
+  }
+  for (let c = 0; c < 8; c++) w += CA[c] < CB[c] ? CA[c] : CB[c];
+  return [b, w];
+}
+const fbKey = (code, guess) => { const [b, w] = feedback(code, guess); return b * 10 + w; };
+const randomCode = (len, ncol) => Array.from({ length: len }, () => rnd(ncol));
+
+// ---------- Computer als Ratender ----------
+// Kennt nur die bisherigen Versuche mit ihren Stiften. Rät immer einen Code, der zu allen Hinweisen passt,
+// und wählt unter diesen den, dessen ungünstigste Antwort am wenigsten Möglichkeiten übrig lässt (Minimax nach Knuth,
+// bei sehr vielen Möglichkeiten auf einer Stichprobe).
+const ALL = {};
+function allCodes(len, ncol) {
+  const k = len + ":" + ncol;
+  if (ALL[k]) return ALL[k];
+  const out = [], n = ncol ** len;
+  for (let x = 0; x < n; x++) {
+    const c = new Array(len);
+    let y = x;
+    for (let i = len - 1; i >= 0; i--) { c[i] = y % ncol; y = Math.floor(y / ncol); }
+    out.push(c);
+  }
+  return (ALL[k] = out);
+}
+function sample(arr, n) {
+  if (arr.length <= n) return arr;
+  const a = arr.slice();
+  for (let i = 0; i < n; i++) { const j = i + rnd(a.length - i); [a[i], a[j]] = [a[j], a[i]]; }
+  return a.slice(0, n);
+}
+function candidates(len, ncol, guesses) {
+  return allCodes(len, ncol).filter(c => guesses.every(g => fbKey(c, g.g) === g.b * 10 + g.w));
+}
+function botGuess(len, ncol, guesses) {
+  if (!guesses.length) {
+    // Eröffnung: zwei Paare (bei 5 Stellen zwei Paare und eine dritte Farbe), Farben zufällig
+    const perm = Array.from({ length: ncol }, (_, i) => i);
+    for (let i = ncol - 1; i > 0; i--) { const j = rnd(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+    return (len === 4 ? [0, 0, 1, 1] : [0, 0, 1, 1, 2]).map(i => perm[i]);
+  }
+  const cands = candidates(len, ncol, guesses);
+  if (cands.length <= 2) return cands[rnd(cands.length)];
+  const pool = sample(cands, 220), secrets = sample(cands, 700);
+  const parts = new Int32Array(60);
+  let best = null, bestScore = Infinity, ties = 0;
+  for (const g of pool) {
+    parts.fill(0);
+    let worst = 0;
+    for (const s of secrets) { const v = ++parts[fbKey(s, g)]; if (v > worst) { worst = v; if (worst > bestScore) break; } }
+    if (worst < bestScore) { bestScore = worst; best = g; ties = 1; }
+    else if (worst === bestScore && rnd(++ties) === 0) best = g;
+  }
+  return best;
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, score: 0 });
+function newState({ mode, roster, options }) {
+  const level = LEVELS[options.level] ? options.level : "klassisch", L = LEVELS[level];
+  const s = {
+    players: roster.map(newPlayer), level, len: L.len, ncol: L.ncol,
+    rounds: mode === "solo" ? 1 : (options.rounds === 4 ? 4 : 2),
+    round: 0, maker: -1, breaker: 0, code: null, guesses: [], done: [], phase: "make", log: [], mode,
+  };
+  // an diesem Gerät und allein geht es sofort los; online startet der Gastgeber (onStart)
+  if (mode !== "online") { S = s; setupGame(s); beginRound(); }
+  return s;
+}
+// Startet das Spiel auf dem Stand s (auch online aus dem Wartebereich und für die neue Runde)
+function setupGame(s) {
+  s.players.forEach(p => { p.score = 0; });
+  s.round = 0; s.done = [];
+  if (s.mode === "solo") { s.maker = -1; s.breaker = 0; }
+  else {
+    const bot = s.players.findIndex(p => p.ai), hum = s.players.findIndex(p => !p.ai);
+    // gegen den Computer rätst du im ersten Durchgang, sonst entscheidet das Los
+    s.maker = s.mode === "local" && bot >= 0 && hum >= 0 ? bot : rnd(2);
+    s.breaker = 1 - s.maker;
+  }
+}
+function beginRound() {
+  S.code = null; S.guesses = []; S.phase = "make";
+  if (S.maker < 0) {
+    S.code = randomCode(S.len, S.ncol); S.phase = "guess";
+    addLog(`Der Computer hat sich einen Code ausgedacht (${LEVELS[S.level].name}: ${S.len} Stellen, ${S.ncol} Farben).`);
+  } else {
+    addLog(`<b>Durchgang ${S.round + 1} von ${S.rounds}:</b> ${esc(S.players[S.maker].name)} legt den Code, ${esc(S.players[S.breaker].name)} rät.`);
+  }
+  playBots();
+}
+function onStart(s) {
+  S = s;
+  setupGame(S);
+  beginRound();
+}
+const whoActs = () => (S.phase === "make" ? [S.maker] : S.phase === "guess" ? [S.breaker] : []);
+
+// ---------- Züge (verändern nur S, laufen über kit.act) ----------
+const validCode = c => Array.isArray(c) && c.length === S.len && c.every(v => Number.isInteger(v) && v >= 0 && v < S.ncol);
+function setCode(code) {
+  S.code = code.slice(); S.phase = "guess";
+  addLog(`<b>${esc(S.players[S.maker].name)}</b> hat den Code gelegt.`);
+  playBots();
+}
+function submitGuess(g) {
+  const [b, w] = feedback(S.code, g);
+  S.guesses.push({ g: g.slice(), b, w });
+  const n = S.guesses.length, p = S.players[S.breaker];
+  addLog(`<b>${esc(p.name)}</b>, Versuch ${n}: ${miniHtml(g)} ${b} schwarz, ${w} weiß`);
+  if (b === S.len) endRound(true);
+  else if (n >= MAXTRY) endRound(false);
+}
+function endRound(cracked) {
+  const n = S.guesses.length, pts = cracked ? n : FAIL;
+  const rec = { maker: S.maker, breaker: S.breaker, code: S.code, guesses: S.guesses, cracked, pts };
+  S.done.push(rec);
+  const br = S.players[S.breaker].name;
+  if (S.maker >= 0) {
+    const mk = S.players[S.maker];
+    mk.score += pts;
+    addLog(cracked ? `<b>${esc(br)}</b> knackt den Code in ${n} ${n === 1 ? "Versuch" : "Versuchen"}. ${esc(mk.name)} bekommt ${pts} ${pts === 1 ? "Punkt" : "Punkte"}.`
+      : `<b>${esc(br)}</b> knackt den Code nicht (${miniHtml(S.code)}). ${esc(mk.name)} bekommt ${FAIL} Punkte.`);
+  } else {
+    addLog(cracked ? `<b>Geknackt</b> in ${n} ${n === 1 ? "Versuch" : "Versuchen"}.` : `Nicht geknackt. Der Code war ${miniHtml(S.code)}.`);
+  }
+  S.code = null; S.guesses = [];
+  S.round++;
+  if (S.round >= S.rounds) { finish(); return; }
+  [S.maker, S.breaker] = [S.breaker, S.maker];
+  beginRound();
+}
+function finish() {
+  S.phase = "over";
+  if (S.mode === "solo") { // Bestwert (weniger Versuche ist besser) je Schwierigkeit, einmalig beim Spielende
+    const r = S.done[0], key = "best-" + S.level;
+    const prev = +(kit.store.get(key) || 0);
+    S.prevBest = prev;
+    if (r.cracked && (!prev || r.pts < prev)) kit.store.set(key, String(r.pts));
+    addLog("<b>Spielende.</b>");
+    return;
+  }
+  const [a, b] = S.players;
+  addLog(a.score === b.score ? `<b>Spielende:</b> Gleichstand mit ${a.score} Punkten.`
+    : `<b>Spielende:</b> ${esc((a.score > b.score ? a : b).name)} gewinnt mit ${Math.max(a.score, b.score)} zu ${Math.min(a.score, b.score)} Punkten.`);
+}
+// Computer: als Codemacher zufällig, als Ratender mit der Strategie oben – alles im selben Zug
+function playBots() {
+  let guard = 0;
+  while (guard++ < 100) {
+    if (S.phase === "make" && S.players[S.maker].ai) setCode(randomCode(S.len, S.ncol));
+    else if (S.phase === "guess" && S.players[S.breaker].ai) submitGuess(botGuess(S.len, S.ncol, S.guesses));
+    else break;
+  }
+}
+
+// ---------- Eingaben ----------
+const myTurn = () => (S.phase === "make" || S.phase === "guess") && whoActs()[0] === kit.me() && kit.me() >= 0 && !S.players[kit.me()].ai;
+function place(c) {
+  if (!myTurn() || c >= S.ncol) return;
+  // in das gewählte Loch, sonst ins erste freie; sind alle voll, wird der gewählte Stecker ersetzt
+  let i = UI.draft[UI.sel] == null ? UI.sel : UI.draft.indexOf(null);
+  if (i < 0) i = UI.sel;
+  UI.draft[i] = c;
+  UI.sel = i;
+  for (let k = 1; k < S.len; k++) { const j = (i + k) % S.len; if (UI.draft[j] == null) { UI.sel = j; break; } }
+  render();
+}
+function onSlot(i) {
+  if (!myTurn()) return;
+  if (UI.draft[i] != null) UI.draft[i] = null;
+  UI.sel = i;
+  render();
+}
+function back() {
+  if (!myTurn()) return;
+  let i = -1;
+  UI.draft.forEach((v, k) => { if (v != null) i = k; });
+  if (i >= 0) { UI.draft[i] = null; UI.sel = i; }
+  render();
+}
+function confirm() {
+  if (!myTurn() || UI.draft.includes(null)) return;
+  const g = UI.draft.slice(), round = S.round, n = S.guesses.length, phase = S.phase;
+  kit.act(() => {
+    if (S.phase !== phase || S.round !== round || !myTurn() || !validCode(g)) return false;
+    if (phase === "make") { if (S.code) return false; setCode(g); }
+    else { if (S.guesses.length !== n || !S.code) return false; submitGuess(g); }
+  });
+}
+$("palette").addEventListener("click", e => { const b = e.target.closest("[data-c]"); if (b) place(+b.dataset.c); });
+$("board").addEventListener("click", e => { const b = e.target.closest("[data-slot]"); if (b) onSlot(+b.dataset.slot); });
+$("btn-back").addEventListener("click", back);
+$("btn-ok").addEventListener("click", confirm);
+$("result").addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+document.addEventListener("keydown", e => {
+  if (!S || e.ctrlKey || e.metaKey || e.altKey || !myTurn()) return;
+  if (e.target.closest && e.target.closest("input, select, textarea, .sk-overlay:not([hidden])")) return;
+  if (!$("sk-dlg") || !$("sk-dlg").hidden || !$("sk-handover").hidden) return;
+  if (/^[1-8]$/.test(e.key)) { place(+e.key - 1); e.preventDefault(); }
+  else if (e.key === "Backspace") { back(); e.preventDefault(); }
+  else if (e.key === "Enter" && !UI.draft.includes(null) && !(e.target.closest && e.target.closest("button"))) { confirm(); e.preventDefault(); }
+});
+
+// ---------- Darstellung ----------
+const pegHtml = (c, extra = "") => `<span class="peg c${c}"${extra} role="img" aria-label="${COLORS[c].name}"><svg viewBox="0 0 24 24" aria-hidden="true">${COLORS[c].sym}</svg></span>`;
+const miniHtml = code => `<span class="mini">${code.map(c => `<span class="peg c${c}" title="${COLORS[c].name}"></span>`).join("")}</span>`;
+const holeHtml = () => `<span class="hole" aria-hidden="true"></span>`;
+function fbHtml(len, g) {
+  const pins = [];
+  for (let k = 0; k < len; k++) pins.push(g && k < g.b ? "b" : g && k < g.b + g.w ? "w" : "");
+  return `<span class="fb${len === 5 ? " five" : ""}"${g ? ` title="${g.b} schwarz, ${g.w} weiß"` : ' aria-hidden="true"'}>${pins.map(p => `<i class="pin ${p}"></i>`).join("")}${g ? `<span class="fb-text">${g.b} schwarz, ${g.w} weiß</span>` : ""}</span>`;
+}
+function slotsHtml(len) {
+  return Array.from({ length: len }, (_, i) => {
+    const v = UI.draft[i], lbl = `Stelle ${i + 1}: ${v == null ? "leer" : COLORS[v].name}`;
+    return v == null ? `<button type="button" class="slot hole${UI.sel === i ? " sel" : ""}" data-slot="${i}" aria-label="${lbl}"></button>`
+      : `<button type="button" class="slot peg c${v}${UI.sel === i ? " sel" : ""}" data-slot="${i}" aria-label="${lbl}, antippen zum Herausziehen"><svg viewBox="0 0 24 24" aria-hidden="true">${COLORS[v].sym}</svg></button>`;
+  }).join("");
+}
+// Ein Brett: v = { code, guesses, cracked }, o = { show: Code zeigen, input: "make"|"guess"|null, head, sub, fresh }
+function boardHtml(len, v, o) {
+  let vault;
+  if (o.input === "make") vault = slotsHtml(len);
+  else if (o.show && v.code) vault = v.code.map(c => pegHtml(c)).join("");
+  else vault = Array.from({ length: len }, () => `<span class="shield" aria-hidden="true">?</span>`).join("");
+  const rows = [];
+  const cur = o.input === "guess" ? v.guesses.length : -1;
+  for (let r = 0; r < MAXTRY; r++) {
+    const g = v.guesses[r];
+    let cls = "row", inner;
+    if (g) { cls += " done" + (g.b === len ? " win" : ""); inner = g.g.map(c => pegHtml(c)).join(""); }
+    else if (r === cur) { cls += " now"; inner = slotsHtml(len); }
+    else inner = Array.from({ length: len }, holeHtml).join("");
+    rows.push(`<div class="${cls}" style="--i:${r}"><span class="nr">${r + 1}</span><div class="pegs">${inner}</div>${fbHtml(len, g)}</div>`);
+  }
+  const vaultLabel = o.input === "make" ? "Dein Geheimcode" : o.show && v.code ? "Code" : "Geheimer Code";
+  return `<div class="board len${len}${o.fresh ? " fresh" : ""}">${o.head ? `<div class="board-head"><b>${o.head}</b><small>${o.sub || ""}</small></div>` : ""}
+    <div class="vault" aria-label="${vaultLabel}"><span class="lbl">Code</span>${vault}</div>
+    <div class="rows">${rows.join("")}</div></div>`;
+}
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), mine = myTurn(), over = S.phase === "over";
+  $("bench").hidden = lobby;
+  const solo = kit.solo();
+  const key = `${S.round}:${S.phase}:${S.guesses.length}:${mi}:${S.len}:${S.done.length}`;
+  if (UI.key !== key) { UI.key = key; UI.draft = Array(S.len).fill(null); UI.sel = 0; }
+  if (S.done.length < UI.seenDone) UI.seenDone = S.done.length;
+  if (S.done.length > UI.seenDone) { UI.freshDone = S.done.length - 1; UI.seenDone = S.done.length; } else if (S.phase !== "over") UI.freshDone = -1;
+
+  // Steckbrett: laufender Durchgang, am Ende der letzte
+  const last = S.done[S.done.length - 1];
+  const name = i => (i >= 0 ? esc(S.players[i].name) : "Computer");
+  if (over && last) {
+    $("board").innerHTML = `${boardHtml(S.len, last, { show: true, head: solo ? "Aufgedeckt" : `Durchgang ${S.done.length} von ${S.rounds}`, sub: last.cracked ? `geknackt in ${last.pts}` : "nicht geknackt" })}`;
+  } else if (!lobby) {
+    const showCode = S.phase === "guess" && S.maker >= 0 && mi === S.maker;
+    const input = mine ? S.phase : null;
+    const head = solo ? `Versuch ${Math.min(MAXTRY, S.guesses.length + 1)} von ${MAXTRY}` : `Durchgang ${S.round + 1} von ${S.rounds}`;
+    const sub = solo ? `${LEVELS[S.level].name} · ${S.len} Stellen, ${S.ncol} Farben` : `${name(S.maker)} legt, ${name(S.breaker)} rät`;
+    $("board").innerHTML = `${boardHtml(S.len, { code: S.code, guesses: S.guesses }, { show: showCode, input, head, sub })}`;
+  }
+
+  // Farbauswahl und Knöpfe
+  $("palette").hidden = $("actions").hidden = over || lobby || !mine;
+  $("palette").innerHTML = Array.from({ length: S.ncol }, (_, c) =>
+    `<button type="button" class="peg c${c}" data-c="${c}" aria-label="${COLORS[c].name} stecken"><svg viewBox="0 0 24 24" aria-hidden="true">${COLORS[c].sym}</svg><span class="key" aria-hidden="true">${c + 1}</span></button>`).join("");
+  const missing = UI.draft.filter(v => v == null).length;
+  $("btn-ok").disabled = !mine || missing > 0;
+  $("btn-ok").textContent = S.phase === "make" ? "Code festlegen" : "Raten";
+  $("btn-back").disabled = !mine || missing === S.len;
+
+  // Statuszeile
+  let st = "";
+  const lastMsg = () => {
+    if (!last || S.guesses.length || S.phase === "over" || solo) return "";
+    return `${name(last.breaker)} hat ${last.cracked ? `den Code in ${last.pts} ${last.pts === 1 ? "Versuch" : "Versuchen"} geknackt` : "den Code nicht geknackt"}, ${name(last.maker)} bekommt ${last.pts} ${last.pts === 1 ? "Punkt" : "Punkte"}. `;
+  };
+  if (S.phase === "make") {
+    st = lastMsg() + (mine ? `<strong>${name(S.maker)}</strong>, lege deinen Geheimcode. ${kit.online() ? `${name(S.breaker)} sieht ihn erst, wenn der Durchgang vorbei ist.` : `${name(S.breaker)} darf nicht zuschauen.`}`
+      : mi < 0 ? `Du schaust zu. ${name(S.maker)} legt den Code.` : `Warte auf <strong>${name(S.maker)}</strong>, der Code wird gelegt.`);
+  } else if (S.phase === "guess") {
+    const n = S.guesses.length + 1;
+    if (mine) st = lastMsg() + (solo ? `Versuch ${n} von ${MAXTRY}. ` : `<strong>${name(S.breaker)}</strong>, du bist dran: Versuch ${n} von ${MAXTRY}. `)
+      + (missing ? `Stecke noch ${missing} ${missing === 1 ? "Stecker" : "Stecker"}.` : "Mit „Raten“ abschicken.");
+    else st = (mi === S.maker ? "Dein Code steht. " : mi < 0 ? "Du schaust zu. " : "") + `Warte auf <strong>${name(S.breaker)}</strong> (Versuch ${n} von ${MAXTRY}).`;
+  }
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("status").hidden = over || lobby;
+
+  // Punkte
+  $("score-panel").hidden = solo;
+  if (!solo) {
+    $("players").innerHTML = S.players.map((p, i) => {
+      const role = S.phase === "make" || S.phase === "guess" ? (i === S.maker ? "legt den Code" : "rät") : "";
+      return `<div class="prow${whoActs().includes(i) ? " on" : ""}"><span>${esc(p.name)}${p.ai ? ' <span class="sk-muted">(Computer)</span>' : ""}<span class="role">${role}</span></span><span class="pts">${p.score}</span></div>`;
+    }).join("");
+    $("score-hint").textContent = `${LEVELS[S.level].name}: ${S.len} Stellen, ${S.ncol} Farben, ${S.rounds} Durchgänge. Wer den Code legt, bekommt die Versuche des anderen als Punkte (nicht geknackt: ${FAIL}).`;
+  }
+
+  // Durchgänge (abgeschlossen, Code aufgedeckt)
+  $("rounds-panel").hidden = !S.done.length || (solo && over);
+  $("rounds").innerHTML = S.done.map((r, k) => `<details${k === S.done.length - 1 && !over ? " open" : ""}><summary>
+      <span>${solo ? "" : `<b>${k + 1}.</b> ${name(r.maker)} legt: `}${r.cracked ? `geknackt in ${r.pts}` : "nicht geknackt"}${solo ? "" : ` · ${r.pts} ${r.pts === 1 ? "Punkt" : "Punkte"}`}</span>
+      <span class="code">${r.code.map(c => pegHtml(c)).join("")}</span></summary>
+      ${boardHtml(S.len, r, { show: true, fresh: k === UI.freshDone })}</details>`).reverse().join("");
+
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+
+  // Ergebnis
+  const res = $("result");
+  if (over) {
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neue Runde im selben Raum" : "Noch eine Runde"}</button>`;
+    if (solo) {
+      const r = S.done[0], best = S.prevBest || 0;
+      let h, txt;
+      if (r.cracked) {
+        const [, rate, line] = RATING.find(([max]) => r.pts <= max);
+        h = `Geknackt in ${r.pts} ${r.pts === 1 ? "Versuch" : "Versuchen"} · ${rate}`;
+        txt = `${line} ${!best ? "Dein erster Bestwert." : r.pts < best ? `Neuer Bestwert, bisher ${best}.` : `Dein Bestwert (${LEVELS[S.level].name}): ${best}.`}`;
+      } else {
+        h = "Nicht geknackt";
+        txt = `Der Code war ${miniHtml(r.code)}. ${best ? `Dein Bestwert (${LEVELS[S.level].name}): ${best}.` : ""}`;
+      }
+      res.innerHTML = `<h2>${h}</h2><p>${txt}</p>${again}`;
+    } else {
+      const rank = S.players.slice().sort((a, b) => b.score - a.score);
+      const tie = rank[0].score === rank[1].score;
+      res.innerHTML = `<h2>${tie ? `Gleichstand: ${rank.map(p => esc(p.name)).join(" und ")}` : `${esc(rank[0].name)} ${rank[0].name === "Du" ? "gewinnst" : "gewinnt"}`}</h2>
+        <ol class="rank">${rank.map((p, k) => `<li><span>${k + 1}. ${esc(p.name)}</span><span>${p.score} Punkte</span></li>`).join("")}</ol>
+        <p class="sk-muted">${S.done.map((r, k) => `Durchgang ${k + 1}: ${name(r.breaker)} ${r.cracked ? `brauchte ${r.pts}` : "scheiterte"}`).join(" · ")}</p>${again}`;
+    }
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellungen im Dialog ----------
+const setup = {
+  html: `<div class="sk-field"><div class="sk-label">Schwierigkeit</div>
+      <div class="sk-seg" role="radiogroup" aria-label="Schwierigkeit">
+        <label><input type="radio" name="ck-level" id="ck-level-klassisch" value="klassisch" checked>Klassisch<small>4 Stellen, 6 Farben</small></label>
+        <label><input type="radio" name="ck-level" id="ck-level-knifflig" value="knifflig">Knifflig<small>5 Stellen, 8 Farben</small></label>
+      </div></div>
+    <div class="sk-field" id="ck-rounds-field"><div class="sk-label">Durchgänge</div>
+      <div class="sk-seg" role="radiogroup" aria-label="Durchgänge">
+        <label><input type="radio" name="ck-rounds" id="ck-rounds-2" value="2" checked>2 Durchgänge<small>jeder legt einmal</small></label>
+        <label><input type="radio" name="ck-rounds" id="ck-rounds-4" value="4">4 Durchgänge<small>jeder legt zweimal</small></label>
+      </div></div>`,
+  init() {
+    let d = {};
+    try { d = JSON.parse(kit.store.get("optionen")) || {}; } catch (e) { /* neu */ }
+    if (d.level === "knifflig") $("ck-level-knifflig").checked = true;
+    if (d.rounds === 4) $("ck-rounds-4").checked = true;
+  },
+  sync(root, mode) { $("ck-rounds-field").hidden = mode === "solo"; },
+  read() {
+    const o = { level: $("ck-level-knifflig").checked ? "knifflig" : "klassisch", rounds: $("ck-rounds-4").checked ? 4 : 2 };
+    kit.store.set("optionen", JSON.stringify(o));
+    return o;
+  },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "codeknacker", version: 1, minPlayers: 2, maxPlayers: 2, bots: true, defaultBots: 1, privateHands: true,
+  solo: { label: "Allein", small: "Computer-Code knacken" },
+  setup,
+  defaultOptions: () => ({ level: "klassisch", rounds: 2 }),
+  newPlayer,
+  newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.done) && Array.isArray(s.guesses) && !!s.len,
+  roomStatus: s => `läuft · Durchgang ${Math.min(s.round + 1, s.rounds)} von ${s.rounds} · ${s.players.map(p => p.score).join(":")}`,
+  handoverText: (s, i) => s.phase === "make"
+    ? `Durchgang ${s.round + 1} von ${s.rounds}. Lege deinen Geheimcode, ${s.players[1 - i].name} schaut weg.`
+    : `Durchgang ${s.round + 1} von ${s.rounds}. Knacke den Code von ${s.players[s.maker].name}.`,
+});
+kit.start();
+})();
+</script>
