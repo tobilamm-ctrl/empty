@@ -25,7 +25,7 @@
     }, cfg);
 
     let S = null;
-    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null };
+    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, toastT: 0 };
     const suffix = P ? "-" + P.user : "";
     const store = {
       get(k) { try { return localStorage.getItem(`${cfg.id}-${k}${suffix}`); } catch (e) { return null; } },
@@ -34,6 +34,80 @@
     const stateKey = "spiel-v" + cfg.version;
     const q = sel => document.querySelector(sel);
     const setS = s => { S = s; if (cfg.onState) cfg.onState(s); };
+
+    // ---------- Neuigkeiten: was die anderen (Mitspieler, Computer) gemacht haben ----------
+    // Der Verlauf S.log hat die neuesten Einträge vorn. Gemerkt werden die ersten Einträge, die jemand
+    // zuletzt gesehen hat; neu ist alles, was davor dazugekommen ist.
+    const SNAP = 6;
+    const snap = () => S.log.slice(0, SNAP);
+    function newSince(old) {
+      if (!old) return [];
+      if (!old.length) return S.log.slice(0, 12);
+      for (let k = 0; k < S.log.length; k++) {
+        const m = Math.min(old.length, S.log.length - k);
+        let ok = true;
+        for (let j = 0; j < m && ok; j++) ok = S.log[k + j] === old[j];
+        if (ok) return S.log.slice(0, k);
+      }
+      return S.log.slice(0, 12);   // nicht gefunden (neues Spiel): die letzten Einträge zeigen
+    }
+    // Nach einer eigenen Aktion: alles, was sie in den Verlauf geschrieben hat, gilt als gesehen. Was danach
+    // die Computer-Gegner (im selben Schritt) gemacht haben, bleibt neu. Ihr Teil beginnt mit dem ersten
+    // Eintrag, der mit dem Namen eines Computers anfängt.
+    function markOwn(before, mi) {
+      const added = newSince(before).reverse();      // in zeitlicher Reihenfolge
+      const bots = S.players.filter(p => p.ai).map(p => `<b>${esc(p.name)}</b>`);
+      let j = added.findIndex(h => bots.some(tag => h.startsWith(tag)));
+      if (j < 0) j = added.length;
+      const after = S.log.slice(added.length - j, added.length - j + SNAP);
+      const key = viewerKey(mi);
+      if (key) ui.seen[key] = after;
+      ui.prevLog = after;
+      saveSeen();
+    }
+    const viewerKey = mi => (S.players[mi] ? S.players[mi].id : null);
+    const seenScope = () => (S.mode === "online" ? "raum-" + (ui.room ? ui.room.id : "") : "lokal");
+    function saveSeen() { store.set("gesehen", JSON.stringify({ scope: seenScope(), seen: ui.seen })); }
+    function loadSeen() {
+      try { const d = JSON.parse(store.get("gesehen")); ui.seen = d && d.scope === seenScope() ? d.seen || {} : {}; } catch (e) { ui.seen = {}; }
+    }
+    // Bei einem neuen Spiel hat jeder Mensch den Anfang gesehen
+    function resetSeen() {
+      ui.seen = {};
+      S.players.forEach(p => { if (!p.ai) ui.seen[p.id] = snap(); });
+      ui.prevLog = snap();
+      saveSeen();
+    }
+    const recapList = (list, max) => {
+      const shown = list.slice(0, max).reverse();
+      return `${list.length > max ? `<li class="sk-muted">… und ${list.length - max} frühere</li>` : ""}${shown.map(h => `<li>${h}</li>`).join("")}`;
+    };
+    function renderNews(mi) {
+      if (!S.log) return;
+      const key = viewerKey(mi);
+      if (key && !ui.seen[key]) { ui.seen[key] = snap(); saveSeen(); }
+      // Kasten „Seit deinem letzten Zug“
+      const box = q("[data-sk-recap]");
+      const since = key && S.phase !== "lobby" ? newSince(ui.seen[key]) : [];
+      if (box) {
+        box.hidden = !since.length;
+        if (since.length) box.innerHTML = `<div class="sk-label">Seit deinem letzten Zug</div><ol class="sk-news">${recapList(since, 5)}</ol>`;
+      }
+      // kurzer Hinweis unten, wenn gerade etwas von anderen dazugekommen ist
+      const fresh = ui.prevLog ? newSince(ui.prevLog) : [];
+      ui.prevLog = snap();
+      const toast = q("#sk-toast");
+      // nur nötig, wenn der Kasten gerade nicht im Bild ist
+      const r = box && !box.hidden ? box.getBoundingClientRect() : null;
+      const boxSeen = r && r.bottom > 0 && r.top < window.innerHeight - 40;
+      if (fresh.length && !boxSeen && S.phase !== "lobby" && q("#sk-dlg").hidden) {
+        toast.querySelector("ol").innerHTML = recapList(fresh, 3);
+        toast.hidden = false;
+        clearTimeout(ui.toastT);
+        ui.toastT = setTimeout(() => { toast.hidden = true; }, 3500 + 1200 * Math.min(fresh.length, 3));
+      }
+      return since;
+    }
 
     const kit = {
       platform: P, esc, rnd, store, error: "",
@@ -94,7 +168,13 @@
 
     // ---------- Änderungen (lokal sofort, online mit Versionsabgleich) ----------
     // fn verändert kit.S; gibt sie false zurück, wird nichts gespeichert.
-    async function act(fn) {
+    async function act(fn0) {
+      const mi = kit.me();
+      const fn = () => {
+        const before = snap(), r = fn0();
+        if (r !== false && S.phase !== "lobby") markOwn(before, mi);
+        return r;
+      };
       if (S.mode !== "online") {
         if (fn() !== false) { kit.error = ""; render(); }
         return;
@@ -139,6 +219,7 @@
     function forgetRoom(msg) {
       ui.room = null; store.set("raum", "");
       setS(load() || defaultGame());
+      loadSeen(); ui.prevLog = snap();
       ui.banner = msg || "";
       render();
     }
@@ -147,6 +228,7 @@
       if (!r.ok) { ui.banner = r.data.error || "Raum nicht erreichbar."; render(); return false; }
       setS(r.data.state); ui.room = { id, version: r.data.version };
       store.set("raum", id);
+      loadSeen(); ui.prevLog = snap();
       ui.banner = ""; kit.error = "";
       if (kit.me() < 0 && S.phase === "lobby" && S.players.length < cfg.maxPlayers) {
         await act(() => {
@@ -166,6 +248,7 @@
       if (!r.ok) { setS(prev); ui.banner = r.data.error || "Raum konnte nicht eröffnet werden."; render(); return; }
       ui.room = { id: r.data.id, version: r.data.version };
       store.set("raum", r.data.id);
+      resetSeen();
       ui.banner = ""; render();
     }
     function leave() {
@@ -248,7 +331,12 @@
       if (tb) tb.innerHTML = `<a class="sk-home" id="sk-home" href="index.php" hidden>← Alle Spiele</a>
         <button class="btn small" id="sk-leave" type="button" hidden>Raum verlassen</button>
         <button class="btn" id="sk-new" type="button">Neues Spiel</button>`;
+      if (!q("[data-sk-recap]")) {
+        const bn = q("[data-sk-banner]");
+        if (bn) bn.insertAdjacentHTML("afterend", `<section class="sk-recap" data-sk-recap hidden aria-live="polite"></section>`);
+      }
       document.body.insertAdjacentHTML("beforeend", `
+<div class="sk-toast" id="sk-toast" role="status" aria-live="polite" hidden><ol class="sk-news"></ol><button type="button" class="sk-toast-x" aria-label="Hinweis schließen">×</button></div>
 <div class="sk-overlay" id="sk-dlg" hidden>
   <form class="sk-dialog" id="sk-form">
     <h2>Neues Spiel</h2>
@@ -278,12 +366,13 @@
     <div class="sk-label" id="sk-ho-label">Gerät weitergeben an</div>
     <div class="sk-big" id="sk-ho-name"></div>
     <p class="sk-muted" id="sk-ho-text"></p>
+    <div class="sk-ho-news" id="sk-ho-news" hidden></div>
     <button class="btn primary big" type="button" id="sk-ho-btn">Los geht's</button>
   </div>
 </div>`);
     }
 
-    function renderChrome(mi) {
+    function renderChrome(mi, since) {
       const online = S.mode === "online";
       const home = q("#sk-home");
       if (home) { home.hidden = !P; if (P) home.href = P.home; }
@@ -298,12 +387,16 @@
       }
       const show = kit.hotSeat() && S.phase !== "lobby" && S.phase !== "over" && mi !== ui.ackHuman && q("#sk-dlg").hidden;
       q("#sk-handover").hidden = !show;
+      if (show) q("#sk-toast").hidden = true;
       if (show) {
         const p = S.players[mi];
         q("#sk-ho-label").textContent = ui.ackHuman == null ? "Es beginnt" : "Gerät weitergeben an";
         q("#sk-ho-name").textContent = p.name;
         q("#sk-ho-text").textContent = cfg.handoverText ? cfg.handoverText(S, mi) : "Du bist dran.";
         q("#sk-ho-btn").textContent = `Los geht's, ${p.name}`;
+        const ho = q("#sk-ho-news");
+        ho.hidden = !since || !since.length;
+        if (since && since.length) ho.innerHTML = `<div class="sk-label">Seit deinem letzten Zug</div><ol class="sk-news">${recapList(since, 6)}</ol>`;
       }
     }
     function lobbyHtml() {
@@ -327,7 +420,8 @@
       const mi = kit.me();
       if (S.mode === "local") ui.lastHuman = mi;
       cfg.render(S);
-      renderChrome(mi);
+      const since = renderNews(mi);
+      renderChrome(mi, since);
       save();
     }
 
@@ -383,6 +477,7 @@
         if (b && await openRoom(b.dataset.room)) q("#sk-dlg").hidden = true;
       });
       q("#sk-ho-btn").addEventListener("click", () => { ui.ackHuman = kit.me(); render(); });
+      q("#sk-toast .sk-toast-x").addEventListener("click", () => { q("#sk-toast").hidden = true; });
       document.addEventListener("click", e => {
         const b = e.target.closest("[data-sk-lobby-act]");
         if (b) lobbyAction(b.dataset.skLobbyAct, b.dataset.arg);
@@ -397,6 +492,7 @@
         store.set("einstellung", JSON.stringify(DLG));
         ui.room = null; store.set("raum", "");
         setS(newLocalGame(mode, DLG.humans, DLG.bots, options));
+        resetSeen();
         q("#sk-dlg").hidden = true;
         render();
       });
@@ -409,6 +505,7 @@
         injectDom(); wireDom();
         const hot = !P && data && data.v === cfg.version && Array.isArray(data.players) ? data : null;
         setS(hot || load() || defaultGame());
+        loadSeen(); ui.prevLog = snap();
         if (!P && window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => S);
         render();
         if (P) {

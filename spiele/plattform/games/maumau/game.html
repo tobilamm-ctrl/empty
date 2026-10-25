@@ -86,6 +86,8 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 button.stack { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 9px; }
 button.stack:disabled { cursor: default; }
 button.stack.can { box-shadow: 0 0 0 3px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pile .lbl.by { color: var(--accent); }
+.stack.from { box-shadow: 0 0 0 3px var(--accent), 0 0 16px color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 9px; }
 .stack .empty { position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,.3); border-radius: 9px; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; }
 .info { display: grid; gap: 8px; justify-items: center; min-width: 150px; }
 .wish {
@@ -215,7 +217,7 @@ table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabu
         <div class="center">
           <div class="piles">
             <div class="pile"><button type="button" class="stack" id="drawpile" aria-label="Karte ziehen"></button><span class="lbl" id="drawcount">Stapel</span></div>
-            <div class="pile"><div class="stack" id="discard" aria-live="polite"></div><span class="lbl">Ablage</span></div>
+            <div class="pile"><div class="stack" id="discard" aria-live="polite"></div><span class="lbl" id="discard-lbl">Ablage</span></div>
           </div>
           <div class="info" id="info"></div>
         </div>
@@ -334,7 +336,7 @@ function startRound() {
   const c = S.deck.splice(S.deck.findIndex(x => !badStart(x, o)), 1)[0];
   S.players.forEach(p => { p.hand = []; });
   for (let k = 0; k < size; k++) S.players.forEach(p => p.hand.push(S.deck.pop()));
-  S.discard = [c];
+  S.discard = [c]; S.by = null;
   S.wish = null; S.pending = 0; S.drawn = null; S.passStreak = 0; S.last = null;
   S.active = S.starter; S.phase = "play"; S.seq++;
   log(`<b>Runde ${S.roundNo}</b>: ${size} Karten für jeden${size < o.hand ? ` (bei ${n} Spielern nicht mehr, damit genug zum Ziehen bleibt)` : ""}, Startkarte ${cardName(c)}. ${pname(S.active)} beginnt.`);
@@ -362,7 +364,7 @@ function endRound(winner) {
 function playCard(c, wish) {
   const i = S.active, p = S.players[i], o = O(), r = rankOf(c);
   p.hand.splice(p.hand.indexOf(c), 1);
-  S.discard.push(c);
+  S.discard.push(c); S.by = i;
   S.wish = null; S.drawn = null; S.passStreak = 0; S.seq++;
   let txt = `${pname(i)} legt ${cardName(c)}`;
   if (needsWish(c)) { S.wish = wish; txt += ` und wünscht sich <b>${SUIT_NAME[wish]}</b>`; }
@@ -500,7 +502,7 @@ $("hand").addEventListener("click", e => {
   const b = e.target.closest(".card[data-c]");
   if (!b || b.disabled) return;
   const c = b.dataset.c;
-  if (needsWish(c)) { UI.wishFor = c; render(); $("suits").querySelector("button").focus(); return; }
+  if (needsWish(c)) { UI.wishFor = c; render(); const fb = $("suits").querySelector("button"); if (fb) fb.focus(); return; }
   doPlay(c, null);
 });
 $("suits").addEventListener("click", e => { const b = e.target.closest("[data-wish]"); if (b && UI.wishFor) doPlay(UI.wishFor, b.dataset.wish); });
@@ -601,6 +603,11 @@ function render() {
     return cardSvg(c).replace("<svg ", `<svg style="transform:rotate(${rot}deg)" `);
   }).join("");
   $("discard").setAttribute("aria-label", S.discard.length ? `Oben liegt ${cardName(top())}` : "Ablage leer");
+  // wer die oberste Karte gelegt hat (andere hervorgehoben)
+  const by = S.by != null && S.players[S.by] ? S.by : -1;
+  $("discard-lbl").innerHTML = by >= 0 ? `von ${esc(S.players[by].name)}` : "Ablage";
+  $("discard-lbl").classList.toggle("by", by >= 0 && by !== mi);
+  $("discard").classList.toggle("from", by >= 0 && by !== mi && S.phase === "play");
 
   let info = "";
   if (playing && S.wish) info += `<div class="wish" role="status">${suitSvg(S.wish)}<div><small>Gewünscht</small><b>${SUIT_NAME[S.wish]}</b></div></div>`;

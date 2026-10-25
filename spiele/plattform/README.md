@@ -94,6 +94,11 @@ Es übernimmt:
   Abgleich zwischen den Geräten
 - den Bildschirm „Gerät weitergeben an …“, wenn mehrere Menschen an einem Gerät spielen
 - Speichern des laufenden Spiels auf dem Gerät und den Rückweg zur Spieleübersicht
+- **Neuigkeiten:** Der Kasten „Seit deinem letzten Zug“ zeigt, was Mitspieler und Computer seitdem gemacht
+  haben (aus dem Verlauf `S.log`). Kommt etwas Neues dazu, während der Kasten nicht im Bild ist, erscheint oben
+  kurz ein Hinweis. Beim Weitergeben des Geräts steht die Liste auf dem Weitergeben-Bildschirm. Der Kasten
+  sitzt unter `data-sk-banner`; ein Spiel kann ihn mit einem eigenen Element `data-sk-recap` woanders platzieren.
+  Damit das klappt, beginnt jeder Verlaufseintrag eines Zugs mit `<b>Name</b>` des Handelnden.
 
 Das Spiel liefert nur Regeln und Darstellung. Ein vollständiges, kommentiertes Beispiel ist
 `games/vorlage/game.html` (das Würfelspiel „Schweinchen“). So geht's:

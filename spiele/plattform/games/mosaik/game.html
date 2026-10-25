@@ -89,6 +89,7 @@ button.lrow:disabled { cursor: default; }
 .wall { grid-template-columns: repeat(5, var(--t)); grid-auto-rows: var(--rowh); align-items: center; padding: 0 2px; }
 .wcell { width: var(--t); height: var(--t); border-radius: 6px; position: relative; }
 .wcell .ghost { opacity: .22; }
+.lrow.mark, .floor.mark { box-shadow: 0 0 0 2px #fff; background: rgba(255,255,255,.12); }
 .wcell.fresh { box-shadow: 0 0 0 2px #fff; border-radius: 6px; }
 .floor { display: flex; gap: var(--gap); justify-content: center; align-items: flex-start; border: 0; padding: 4px; border-radius: 10px; background: none; flex-wrap: wrap; }
 button.floor { cursor: pointer; }
@@ -266,7 +267,7 @@ function take(src, c, r) {
   let over = got.length;
   if (r >= 0) { const L = p.lines[r], room = r + 1 - L.n, put = Math.min(room, got.length); L.c = c; L.n += put; over = got.length - put; }
   toFloor(p, got.slice(0, over));
-  S.seq++; S.fresh = null;
+  S.seq++; S.fresh = null; S.lastMove = { p: i, r, over };
   log(`${pname(i)} ${vb(p.name, "nimmst", "nimmt")} ${got.length}× ${NAME[c]} ${src === "c" ? "aus der Mitte" : `aus Werkstatt ${src + 1}`}${r >= 0 ? ` für Reihe ${r + 1}` : " auf den Boden"}${over && r >= 0 ? `, ${over} auf den Boden` : ""}.`);
   if (S.facs.every(f => !f.length) && !S.center.length) endRound();
   else S.active = (i + 1) % S.players.length;
@@ -282,7 +283,7 @@ function placePoints(wall, r, col) {
 }
 const floorPenalty = n => FLOOR.slice(0, Math.min(n, 7)).reduce((a, b) => a + b, 0);
 function endRound() {
-  S.fresh = {};
+  S.fresh = {}; S.lastMove = null;
   S.players.forEach((p, i) => {
     let gain = 0; const at = [];
     for (let r = 0; r < 5; r++) {
@@ -409,12 +410,13 @@ const tileSvg = (c, ghost = false) => c === "F"
     <use href="#sy-${c}" x="1.4" y="1.4" width="7.2" height="7.2" style="color:${INK[c]}"/></svg>`;
 function boardHtml(p, pi, opt = {}) {
   const sel = opt.sel, fresh = S.fresh && S.fresh[pi] || [];
+  const lm = opt.mark && S.lastMove && S.lastMove.p === pi ? S.lastMove : null;
   const lines = p.lines.map((L, r) => {
     const can = sel && lineOk(p, r, sel.c);
     const cellsH = Array.from({ length: r + 1 }, (_, k) => `<span class="cell">${k >= r + 1 - L.n ? tileSvg(L.c) : ""}</span>`).join("");
     return opt.interactive
       ? `<button type="button" class="lrow${can ? " can" : ""}" data-r="${r}"${can ? "" : " disabled"} aria-label="Reihe ${r + 1}: ${L.n} von ${r + 1}${L.c ? " " + NAME[L.c] : ""}">${cellsH}</button>`
-      : `<div class="lrow">${cellsH}</div>`;
+      : `<div class="lrow${lm && lm.r === r ? " mark" : ""}">${cellsH}</div>`;
   }).join("");
   const wall = Array.from({ length: 25 }, (_, k) => {
     const r = Math.floor(k / 5), col = k % 5, c = p.wall[k];
@@ -423,7 +425,7 @@ function boardHtml(p, pi, opt = {}) {
   const fl = Array.from({ length: 7 }, (_, k) => `<span class="fslot"><span class="cell">${p.floor[k] ? tileSvg(p.floor[k]) : ""}</span><small>${FLOOR[k]}</small></span>`).join("");
   const floorEl = opt.interactive
     ? `<button type="button" class="floor${sel ? " can" : ""}" data-r="-1"${sel ? "" : " disabled"} aria-label="Boden">${fl}</button>`
-    : `<div class="floor">${fl}</div>`;
+    : `<div class="floor${lm && (lm.r < 0 || lm.over) ? " mark" : ""}">${fl}</div>`;
   return `<div class="boardx"><div class="lines">${lines}</div><div class="wall">${wall}</div></div>${opt.interactive ? `<div class="flbl">Boden</div>` : ""}${floorEl}`;
 }
 
@@ -484,7 +486,7 @@ function render() {
 
   // andere Tafeln
   $("others").innerHTML = S.players.map((p, i) => i === vi ? "" : `<div class="other${S.phase === "play" && i === S.active ? " on" : ""}">
-    <div class="nm"><span>${esc(p.name)}${p.ai ? " · Computer" : ""}</span><span>${pts(p.score)}</span></div>${boardHtml(p, i)}</div>`).join("");
+    <div class="nm"><span>${esc(p.name)}${p.ai ? " · Computer" : ""}</span><span>${pts(p.score)}</span></div>${boardHtml(p, i, { mark: true })}</div>`).join("");
 
   // Wertung
   $("score").innerHTML = `<thead><tr><th>Spieler</th><th>Letzte Runde</th><th>Reihen</th><th>Punkte</th></tr></thead><tbody>${S.players.map((p, i) =>

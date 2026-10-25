@@ -76,6 +76,8 @@ svg text { font-family: var(--font-display); }
 button.stack { cursor: pointer; }
 button.stack:disabled { cursor: default; }
 button.stack.can { box-shadow: 0 0 0 3px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pile .lbl.by { color: var(--accent); }
+.stack.from:not(.can) { box-shadow: 0 0 0 3px #fff; }
 .stack .empty { position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,.3); border-radius: 7px; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; }
 .melds { display: flex; flex-wrap: wrap; gap: 8px 10px; justify-content: center; min-height: 40px; }
 .meld { border: 0; background: rgba(0,0,0,.22); border-radius: 9px; padding: 5px 6px 5px calc(6px + var(--mw) * .55); display: flex; min-height: 44px; align-items: center; }
@@ -178,7 +180,7 @@ table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabu
         <div class="seats" id="seats"></div>
         <div class="mid">
           <div class="pile"><button type="button" class="stack" id="drawpile" aria-label="Vom Stapel ziehen"></button><span class="lbl" id="drawcount">Stapel</span></div>
-          <div class="pile"><button type="button" class="stack" id="discard" aria-label="Von der Ablage nehmen"></button><span class="lbl">Ablage</span></div>
+          <div class="pile"><button type="button" class="stack" id="discard" aria-label="Von der Ablage nehmen"></button><span class="lbl" id="discard-lbl">Ablage</span></div>
         </div>
         <div class="melds" id="melds"></div>
         <p class="status" id="status" aria-live="polite"></p>
@@ -295,7 +297,7 @@ function startRound() {
   S.roundNo++;
   S.deck = shuffle(fullDeck());
   S.players.forEach(p => { p.hand = S.deck.splice(0, 13); p.out = false; });
-  S.discard = [S.deck.pop()];
+  S.discard = [S.deck.pop()]; S.by = null;
   S.melds = []; S.active = S.starter; S.phase = "draw"; S.took = null; S.fresh = null; S.last = null; S.seq++;
   log(`<b>Runde ${S.roundNo}</b>: 13 Karten für jeden. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
 }
@@ -313,7 +315,7 @@ function drawFrom(src) {
     const c = S.deck.pop(); p.hand.push(c); S.took = { src, c };
     log(`${pname(i)} ${vb(p.name, "ziehst", "zieht")} vom Stapel.`);
   } else {
-    const c = S.discard.pop(); p.hand.push(c); S.took = { src, c };
+    const c = S.discard.pop(); p.hand.push(c); S.took = { src, c }; S.by = null;
     log(`${pname(i)} ${vb(p.name, "nimmst", "nimmt")} ${cardName(c)} von der Ablage.`);
   }
   S.phase = "play"; S.seq++;
@@ -377,7 +379,7 @@ function discardCheck(p, c) {
 }
 function discardCard(c) {
   const i = S.active, p = S.players[i];
-  removeFromHand(p, [c]); S.discard.push(c); S.seq++; S.took = null;
+  removeFromHand(p, [c]); S.discard.push(c); S.by = i; S.seq++; S.took = null;
   log(`${pname(i)} ${vb(p.name, "wirfst", "wirft")} ${cardName(c)} ab.`);
   if (!p.hand.length) { log(`${pname(i)} ${vb(p.name, "hast", "hat")} keine Karten mehr und ${vb(p.name, "gewinnst", "gewinnt")} Runde ${S.roundNo}.`); endRound(i); return; }
   S.active = (i + 1) % S.players.length; S.phase = "draw";
@@ -625,6 +627,11 @@ function render() {
   $("discard").innerHTML = t ? cardSvg(t) : `<span class="empty">leer</span>`;
   $("discard").disabled = !(canDraw && canTakeDiscard()); $("discard").classList.toggle("can", canDraw && canTakeDiscard());
   $("discard").setAttribute("aria-label", t ? `Ablage: ${cardName(t)}` : "Ablage leer");
+  // wer die oberste Karte abgeworfen hat (andere hervorgehoben)
+  const by = t && S.by != null && S.players[S.by] ? S.by : -1;
+  $("discard-lbl").innerHTML = by >= 0 ? `von ${esc(S.players[by].name)}` : "Ablage";
+  $("discard-lbl").classList.toggle("by", by >= 0 && by !== mi);
+  $("discard").classList.toggle("from", by >= 0 && by !== mi);
 
   // Kombinationen auf dem Tisch
   const meP = S.players[mi];

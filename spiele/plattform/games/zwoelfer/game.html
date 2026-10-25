@@ -76,6 +76,8 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .card.pick:hover, .card.pick:focus-visible { transform: translateY(-2px); }
 .card.dim { opacity: .45; }
 .card.fresh { animation: pop .3s ease-out; }
+.card.mark { outline: 3px solid #fff; outline-offset: 1px; animation: pop .3s ease-out; }
+.pile .lbl.by { color: var(--accent); }
 @keyframes pop { from { transform: scale(.85); } to { transform: scale(1); } }
 
 /* ---------- Mitspieler ---------- */
@@ -237,7 +239,7 @@ function deal(s) {
   for (const p of s.players) p.grid = Array.from({ length: CELLS }, () => ({ v: s.deck.pop(), up: false }));
   s.discard = [s.deck.pop()];
   s.drawn = null; s.drawnFrom = null; s.mustFlip = false; s.ender = null; s.finalLeft = 0; s.phase = "flip"; s.seq++;
-  s.fresh = [];
+  s.fresh = []; s.lastAct = null; s.by = null;
 }
 function newState({ mode, roster, options }) {
   const s = { players: roster.map(newPlayer), active: 0, round: 1, seq: 0, goal: (options && options.goal) || 100, log: [], nextStarter: null };
@@ -281,7 +283,7 @@ function flipStart(pi, i) {
   p.grid[i].up = true;
   if (S.players.every(q => flippedCount(q) >= 2)) startPlay();
 }
-function takeDiscard() { S.drawn = S.discard.pop(); S.drawnFrom = "discard"; S.seq++; }
+function takeDiscard() { S.drawn = S.discard.pop(); S.drawnFrom = "discard"; S.by = null; S.seq++; }
 function drawPile() {
   if (!S.deck.length) { const top = S.discard.pop(); S.deck = shuffle(S.discard); S.discard = [top]; kit.addLog("Der Stapel ist leer, die Ablage wird gemischt."); }
   S.drawn = S.deck.pop(); S.drawnFrom = "pile"; S.seq++;
@@ -291,18 +293,18 @@ function swapAt(i) {
   p.grid[i] = { v: S.drawn, up: true };
   S.discard.push(old.v);
   kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "legst", "legt")} ${S.drawn} ${S.drawnFrom === "discard" ? "von der Ablage" : "vom Stapel"} ein und ${vb(p.name, "wirfst", "wirft")} ${old.up ? "" : "die verdeckte "}${old.v} ab.`);
-  S.fresh = [i]; S.drawn = null; S.drawnFrom = null;
+  S.fresh = [i]; S.lastAct = { p: S.active, i }; S.by = S.active; S.drawn = null; S.drawnFrom = null;
   endTurn();
 }
 function discardDrawn() {
   const p = S.players[S.active];
   S.discard.push(S.drawn);
   kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "wirfst", "wirft")} die gezogene ${S.drawn} ab.`);
-  S.drawn = null; S.drawnFrom = null; S.mustFlip = true; S.seq++;
+  S.drawn = null; S.drawnFrom = null; S.mustFlip = true; S.by = S.active; S.seq++;
 }
 function flipAt(i) {
   const p = S.players[S.active];
-  p.grid[i].up = true; S.mustFlip = false; S.fresh = [i];
+  p.grid[i].up = true; S.mustFlip = false; S.fresh = [i]; S.lastAct = { p: S.active, i };
   kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "deckst", "deckt")} eine ${p.grid[i].v} auf.`);
   endTurn();
 }
@@ -438,7 +440,7 @@ function cardHtml(x, opts = {}) {
   if (!x) return `<div class="card gone" aria-label="abgeräumt"></div>`;
   const tag = opts.button ? "button" : "div";
   const attrs = opts.button ? ` type="button" data-i="${opts.i}"` : "";
-  const cls = `card ${x.up ? band(x.v) : "back"}${opts.pick ? " pick" : ""}${opts.dim ? " dim" : ""}${opts.fresh ? " fresh" : ""}`;
+  const cls = `card ${x.up ? band(x.v) : "back"}${opts.pick ? " pick" : ""}${opts.dim ? " dim" : ""}${opts.fresh ? " fresh" : ""}${opts.mark ? " mark" : ""}`;
   const label = x.up ? `Karte ${x.v}` : "verdeckte Karte";
   const inner = x.up ? `<span class="c1">${x.v}</span><span class="v">${x.v}</span><span class="c2">${x.v}</span>` : "";
   return `<${tag} class="${cls}"${attrs} aria-label="${label}${opts.pick ? ", antippen" : ""}"${opts.pick ? "" : opts.button ? " disabled" : ""}>${inner}</${tag}>`;
@@ -455,14 +457,14 @@ function render() {
   // Mitspieler
   $("opps").innerHTML = S.players.map((p, i) => [p, i]).filter(([, i]) => i !== vi).map(([p, i]) => `<div class="opp${S.phase === "play" && i === S.active ? " on" : ""}">
       <div class="hd"><b>${esc(p.name)}</b><span>${visibleSum(p.grid)}${p.grid.some(x => x && !x.up) ? "+?" : ""} · ${p.total}</span></div>
-      <div class="mini">${p.grid.map(x => cardHtml(x)).join("")}</div></div>`).join("");
+      <div class="mini">${p.grid.map((x, k) => cardHtml(x, { mark: S.lastAct && S.lastAct.p === i && S.lastAct.i === k })).join("")}</div></div>`).join("");
 
   // Mitte
   const top = S.discard[S.discard.length - 1];
   const canTake = mine && S.drawn == null && !S.mustFlip;
   $("center").innerHTML = `
     <div class="pile"><span class="lbl">Stapel · ${S.deck.length}</span>${cardHtml({ v: 0, up: false })}</div>
-    <div class="pile"><span class="lbl">Ablage</span>${top != null ? cardHtml({ v: top, up: true }) : `<div class="card gone"></div>`}</div>
+    <div class="pile"><span class="lbl${S.by != null && S.by !== mi && S.players[S.by] ? " by" : ""}">${S.by != null && S.players[S.by] ? `von ${esc(S.players[S.by].name)}` : "Ablage"}</span>${top != null ? cardHtml({ v: top, up: true }) : `<div class="card gone"></div>`}</div>
     ${S.drawn != null ? `<div class="pile drawn"><span class="lbl">${S.drawnFrom === "discard" ? "Von der Ablage" : "Gezogen"}</span>${cardHtml({ v: S.drawn, up: true })}</div>` : ""}`;
 
   // Status und Knöpfe

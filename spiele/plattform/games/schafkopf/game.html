@@ -91,7 +91,9 @@ main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .seat-top { grid-area: top; } .seat-left { grid-area: left; justify-self: stretch; } .seat-right { grid-area: right; justify-self: stretch; } .seat-bottom { grid-area: bottom; }
 .mid { grid-area: mid; position: relative; }
 .trick { display: grid; grid-template-columns: repeat(3, var(--tw)); grid-template-rows: repeat(3, calc(var(--tw) * .9)); }
-.trick .slot { width: var(--tw); }
+.trick .slot { width: var(--tw); position: relative; }
+.trick .slot .tn { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: #fff; background: rgba(0,0,0,.65); padding: 0 6px; border-radius: 6px; white-space: nowrap; max-width: calc(var(--tw) + 10px); overflow: hidden; text-overflow: ellipsis; z-index: 1; }
+.trick .slot.new .card { box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0,0,0,.4); }
 .trick .p0 { grid-area: 3 / 2; align-self: end; }
 .trick .p1 { grid-area: 2 / 1; align-self: center; transform: rotate(-6deg); }
 .trick .p2 { grid-area: 1 / 2; align-self: start; }
@@ -902,7 +904,8 @@ function render() {
     const cards = UI.showLast || !S.trick.length ? (showOld ? S.lastTrick.cards : []) : S.trick;
     const old = cards !== S.trick;
     const win = old && S.lastTrick ? S.lastTrick.winner : -1;
-    mid = `<div class="trick${old ? " old" : ""}">${cards.map(t => `<div class="slot p${rel(t.p)}${t.p === win ? " win" : ""}">${cardEl(t.c)}</div>`).join("")}</div>`;
+    // jede Karte mit Namen; die zuletzt von jemand anderem gelegte Karte ist umrandet
+    mid = `<div class="trick${old ? " old" : ""}">${cards.map((t, k) => `<div class="slot p${rel(t.p)}${t.p === win ? " win" : ""}${!old && k === cards.length - 1 && t.p !== mi ? " new" : ""}">${cardEl(t.c)}<span class="tn">${esc(S.players[t.p].name)}</span></div>`).join("")}</div>`;
     if (old && S.lastTrick) mid += `<div class="trick-note">Letzter Stich: ${esc(S.players[S.lastTrick.winner].name)}, ${S.lastTrick.pts} Augen</div>`;
   }
   $("tisch").innerHTML = seats + `<div class="mid">${mid}</div>`;

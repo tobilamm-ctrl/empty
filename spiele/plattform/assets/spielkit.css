@@ -51,3 +51,23 @@
 .sk-ho { text-align: center; }
 .sk-ho p { margin: 0; }
 .sk-big { font-family: var(--font-display, sans-serif); font-size: 34px; color: var(--accent, #f4cb4d); line-height: 1.1; }
+
+/* Neuigkeiten: was Mitspieler und Computer seit dem eigenen letzten Zug gemacht haben */
+.sk-news { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; }
+.sk-news li { padding-left: 14px; position: relative; }
+.sk-news li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #f4cb4d); }
+.sk-news li.sk-muted::before { display: none; }
+.sk-news li:last-child { font-weight: 700; }
+.sk-news b { color: var(--accent, #f4cb4d); }
+.sk-recap { background: var(--sheet, #1e1d24); border-radius: 12px; padding: 10px 14px; box-shadow: inset 4px 0 0 var(--accent, #f4cb4d); font-size: 14.5px; }
+.sk-toast {
+  position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 25; pointer-events: none;
+  width: min(520px, calc(100% - 24px)); background: var(--sheet-2, #2a2932); color: var(--ink, #f6f5f8); border-radius: 14px;
+  padding: 10px 40px 10px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.55), inset 4px 0 0 var(--accent, #f4cb4d); font-size: 15px;
+  animation: sk-toast-in .25s ease-out;
+}
+.sk-toast .sk-news { margin: 0; }
+.sk-toast-x { pointer-events: auto; position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: var(--muted, #a3a1b0); font-size: 22px; cursor: pointer; }
+@keyframes sk-toast-in { from { opacity: 0; transform: translate(-50%, -12px); } }
+.sk-ho-news { text-align: left; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .sk-toast { animation: none; } }

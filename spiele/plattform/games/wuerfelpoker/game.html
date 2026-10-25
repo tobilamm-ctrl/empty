@@ -132,6 +132,7 @@ table.score { border-collapse: collapse; width: 100%; min-width: 300px; font-var
   .score thead th { font-size: 13px; padding-inline: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+td.v.just { box-shadow: inset 0 0 0 3px var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 800; }
 </style>
 
 <div class="wrap">
@@ -265,7 +266,7 @@ function roll() {
 }
 function write(cat) {
   const p = S.players[S.active], pts = scoreCat(cat, S.dice);
-  p.sheet[cat] = pts;
+  p.sheet[cat] = pts; p.lastCat = cat;
   kit.addLog(`<b>${esc(p.name)}</b>: ${INFO[cat][0]} ${pts ? pts : "gestrichen"} <span class="muted">(${S.dice.join(" ")})</span>`);
   S.dice = [null, null, null, null, null]; S.held = [false, false, false, false, false]; S.rollsLeft = 3;
   if (S.players.every(q => filled(q) === ROUNDS)) {
@@ -410,7 +411,8 @@ function render() {
     `<th scope="col" class="${i === S.active && S.phase === "play" ? "on" : ""}" title="${esc(p.name)}${p.ai ? " (Computer)" : ""}">${esc(p.name)}${p.ai ? `<small class="who-ai">Computer</small>` : ""}</th>`).join("")}</tr></thead>`;
   const cell = (p, i, k) => {
     const v = p.sheet[k], on = i === S.active && S.phase === "play" ? " col-on" : "";
-    if (v != null) return `<td class="v${v === 0 ? " zero" : ""}${on}">${v === 0 ? "–" : v}</td>`;
+    const just = p.lastCat === k && i !== kit.me() ? " just" : "";   // zuletzt eingetragen (bei den anderen)
+    if (v != null) return `<td class="v${v === 0 ? " zero" : ""}${on}${just}">${v === 0 ? "–" : v}</td>`;
     if (showOpts && i === S.active) {
       const pts = scoreCat(k, S.dice);
       return `<td class="v${on}"><button type="button" class="opt${pts ? "" : " nil"}${UI.pick === k ? " pick" : ""}" data-cat="${k}" aria-label="${INFO[k][0]}: ${pts} Punkte">${pts || "0"}</button></td>`;
