@@ -144,6 +144,11 @@ table.sheet { border-collapse: collapse; width: 100%; font-variant-numeric: tabu
 .phases { font-size: 13px; color: var(--muted); margin: 0; padding-left: 20px; }
 .st .sub2 { font-size: 12px; color: var(--accent); font-weight: 800; }
 .st.out { opacity: .5; }
+.teams .btn.on { background: var(--accent); color: var(--tile-ink); }
+.prow.tt { grid-template-columns: 1fr; }
+.ttrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ttf { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.ttf input { width: 100%; min-height: 44px; border: 0; border-radius: 10px; background: var(--sheet); color: var(--ink); font: inherit; font-family: var(--font-display); font-size: 20px; text-align: center; }
 </style>
 
 <div class="wrap">
@@ -200,7 +205,15 @@ const MODES = {
   wizard: { title: "Wizard", small: "Ansagen und Stiche, 3–6 Spieler" },
   phase10: { title: "Phase 10", small: "Phasen und Minuspunkte" },
   kniffel: { title: "Kniffel", small: "Wertungsblock für echte Würfel" },
+  uno: { title: "UNO", small: "Sieger sammelt die Kartenpunkte, bis 500" },
+  unominus: { title: "UNO (Minuspunkte)", small: "jeder schreibt seine Karten, bei 500 Schluss" },
+  scrabble: { title: "Scrabble", small: "Wortpunkte, Bingo +50, Restbuchstaben" },
+  takethat: { title: "Take That", small: "Plus-, Minus- und Krötenkarten" },
 };
+const TURNS = ["qwirkle", "frei", "moelkky", "scrabble"];   // Blöcke mit einem Eintrag je Zug
+const isTurns = a => TURNS.includes(a);
+const bonusV = () => (art() === "scrabble" ? 50 : QW);      // Qwirkle +6, Scrabble-Bingo +50
+const UNO = 500;
 const QW = 6, MOELKKY = 50, BOULE = 13, CORNHOLE = 21;
 const PHASES = ["2 Drillinge", "1 Drilling + 1 Viererfolge", "1 Vierling + 1 Viererfolge", "1 Siebenerfolge", "1 Achterfolge",
   "1 Neunerfolge", "2 Vierlinge", "7 Karten einer Farbe", "1 Fünfling + 1 Zwilling", "1 Fünfling + 1 Drilling"];
@@ -212,7 +225,7 @@ const KN_UP = KN.slice(0, 6).map(k => k[0]);
 
 let S, kit;
 // Eingaben auf diesem Gerät (gehen erst mit dem Bestätigen in den Spielstand)
-const UI = { num: "", qw: 0, neg: false, edit: null, pickEnd: false, team: null, ch: null, wz: null, p10: null, kcell: null, key: "" };
+const UI = { num: "", qw: 0, neg: false, edit: null, pickEnd: false, team: null, ch: null, wz: null, p10: null, kcell: null, uw: null, un: null, tt: null, rest: null, key: "" };
 const art = () => (S.options && MODES[S.options.art] ? S.options.art : "qwirkle");
 const D = () => S.d;   // Daten des Blocks
 const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 150); };
@@ -223,7 +236,8 @@ const N = () => S.players.length;
 // ---------- Spielstand ----------
 const newPlayer = r => ({ id: r.id, name: r.name, ai: false });
 function emptyData(a, n) {
-  if (a === "qwirkle" || a === "frei" || a === "moelkky") return { turns: [], active: 0, ended: false };
+  if (isTurns(a)) return { turns: [], active: 0, ended: false, final: null };
+  if (a === "uno" || a === "unominus" || a === "takethat") return { rounds: [], ended: false };
   if (a === "boule") return { ends: [] };
   if (a === "cornhole") return { rounds: [] };
   if (a === "wizard") return { rounds: [], bids: null };
@@ -244,13 +258,25 @@ const canEdit = () => !kit.online() || kit.me() >= 0;
 function calc() {
   const a = art(), d = D(), n = N(), tot = Array(n).fill(0), meta = Array(n).fill("");
   let active = -1, over = false, win = [], low = false;
-  if (a === "qwirkle" || a === "frei") {
+  if (a === "qwirkle" || a === "frei" || a === "scrabble") {
     d.turns.forEach(t => { tot[t.p] += t.pts; });
+    if (d.final) finalAdj(d.final).forEach((x, i) => { tot[i] += x; });
     for (let i = 0; i < n; i++) {
       const z = d.turns.filter(t => t.p === i && !t.bonus).length, q = d.turns.filter(t => t.p === i).reduce((s, t) => s + (t.q || 0), 0);
-      meta[i] = `${z} ${z === 1 ? "Zug" : "Züge"}${a === "qwirkle" && q ? ` · ${q}× Qwirkle` : ""}`;
+      meta[i] = `${z} ${z === 1 ? "Zug" : "Züge"}${q && a !== "frei" ? ` · ${q}× ${a === "qwirkle" ? "Qwirkle" : "Bingo"}` : ""}`;
     }
     active = d.active; over = d.ended;
+  } else if (a === "uno" || a === "unominus") {
+    d.rounds.forEach(r => {
+      if (a === "uno") { if (r.w >= 0) tot[r.w] += r.pts.reduce((s, x, i) => s + (i === r.w ? 0 : x), 0); }
+      else r.pts.forEach((x, i) => { tot[i] += i === r.w ? 0 : x; });
+    });
+    for (let i = 0; i < n; i++) meta[i] = `${d.rounds.filter(r => r.w === i).length}× gewonnen${a === "uno" ? ` · noch ${Math.max(0, UNO - tot[i])}` : ""}`;
+    over = tot.some(x => x >= UNO); low = a === "unominus";
+  } else if (a === "takethat") {
+    d.rounds.forEach(r => r.plus.forEach((x, i) => { tot[i] += x - r.minus[i] - 5 * r.kr[i]; }));
+    for (let i = 0; i < n; i++) meta[i] = `${d.rounds.length} ${d.rounds.length === 1 ? "Runde" : "Runden"}`;
+    over = d.ended;
   } else if (a === "moelkky") {
     const miss = Array(n).fill(0), out = Array(n).fill(false);
     let winner = -1, last = -1;
@@ -309,6 +335,11 @@ function calc() {
   }
   return { tot, meta, active, over, win, low };
 }
+// Scrabble am Ende: jeder verliert seine Restbuchstaben; wer alle Steine gelegt hat, bekommt die Summe der anderen
+function finalAdj(f) {
+  const sum = f.rest.reduce((s, x) => s + x, 0);
+  return f.rest.map((x, i) => (i === f.out ? sum - x : -x));
+}
 const wizRounds = () => (N() >= 3 && N() <= 6 ? 60 / N() : 0);
 // nach jeder Änderung: Spielende prüfen (Rückgängig kann es wieder aufheben)
 function settle() {
@@ -327,7 +358,7 @@ function turnEnter(value, qws, note) {
     const t = d.turns[d.turns.length - 1];
     log(`${nm(i)}: ${value ? pts(value) : "daneben"}${t.reset ? ", über 50, zurück auf 25" : ""}. Stand ${c.tot[i]}.${calc.out[i] && value === 0 ? " Dritter Fehlwurf, raus." : ""}`);
   } else {
-    log(`${nm(i)}: ${pts(value)}${qws ? ` (mit ${qws > 1 ? qws + " " : ""}Qwirkle)` : ""}${note ? `, ${note}` : ""}. Stand ${c.tot[i]}.`);
+    log(`${nm(i)}: ${pts(value)}${qws ? ` (mit ${qws > 1 ? qws + " " : ""}${art() === "scrabble" ? "Bingo" : "Qwirkle"})` : ""}${note ? `, ${note}` : ""}. Stand ${c.tot[i]}.`);
     d.active = (i + 1) % N();
   }
   settle();
@@ -341,13 +372,17 @@ function turnChange(k, value, qws) {
 }
 function undo() {
   const a = art(), d = D();
-  if (a === "qwirkle" || a === "frei" || a === "moelkky") {
+  if (isTurns(a) && d.final) { d.final = null; d.ended = false; log("Rückgängig: Schlussabrechnung gestrichen."); }
+  else if (isTurns(a)) {
     const t = d.turns.pop(); if (!t) return false;
     if (t.bonus) d.ended = false; else d.active = t.p;
     if (a !== "moelkky" && !t.bonus && d.ended) d.ended = false;
     log(`Rückgängig: ${nm(t.p)} ${t.bonus ? "Schlussbonus" : pts(t.pts)} gestrichen.`);
   } else if (a === "boule") { const e = d.ends.pop(); if (!e) return false; log(`Rückgängig: Aufnahme ${d.ends.length + 1} (${nm(e.t)} +${e.pts}) gestrichen.`); }
-  else if (a === "cornhole" || a === "phase10") { if (!d.rounds.pop()) return false; log(`Rückgängig: Runde ${d.rounds.length + 1} gestrichen.`); }
+  else if (a === "cornhole" || a === "phase10" || a === "uno" || a === "unominus" || a === "takethat") {
+    if (a === "takethat" && d.ended) { d.ended = false; log("Rückgängig: Spielende aufgehoben."); }
+    else { if (!d.rounds.pop()) return false; log(`Rückgängig: Runde ${d.rounds.length + 1} gestrichen.`); }
+  }
   else if (a === "wizard") {
     if (d.bids) { d.bids = null; log(`Rückgängig: Ansagen von Runde ${d.rounds.length + 1} gestrichen.`); }
     else { const r = d.rounds.pop(); if (!r) return false; d.bids = r.bids; log(`Rückgängig: Stiche von Runde ${d.rounds.length + 1} gestrichen.`); }
@@ -371,8 +406,8 @@ function act(fn) {
   const seq = S.seq;
   kit.act(() => { if (!canEdit() || S.seq !== seq) return false; return fn(); });
 }
-function resetEntry() { Object.assign(UI, { num: "", qw: 0, neg: false, edit: null, pickEnd: false, team: null, ch: null, wz: null, p10: null, kcell: null }); }
-const valueOf = () => (UI.num === "" ? 0 : +UI.num) * (UI.neg ? -1 : 1) + UI.qw * QW;
+function resetEntry() { Object.assign(UI, { num: "", qw: 0, neg: false, edit: null, pickEnd: false, team: null, ch: null, wz: null, p10: null, kcell: null, uw: null, un: null, tt: null, rest: null }); }
+const valueOf = () => (UI.num === "" ? 0 : +UI.num) * (UI.neg ? -1 : 1) + UI.qw * bonusV();
 $("entry").addEventListener("click", e => {
   const b = e.target.closest("[data-k]");
   if (!b || b.disabled) return;
@@ -392,7 +427,7 @@ $("entry").addEventListener("click", e => {
     else act(() => { if (S.phase !== "play") return false; turnEnter(val, q); });
     return;
   }
-  else if (k === "swap") { resetEntry(); act(() => { if (S.phase !== "play") return false; turnEnter(0, 0, "Steine getauscht"); }); return; }
+  else if (k === "swap") { resetEntry(); act(() => { if (S.phase !== "play") return false; turnEnter(0, 0, art() === "scrabble" ? "gepasst oder getauscht" : "Steine getauscht"); }); return; }
   else if (k === "next") { resetEntry(); act(() => { if (S.phase !== "play") return false; D().active = (D().active + 1) % N(); log(`Weiter mit ${nm(D().active)}.`); settle(); }); return; }
   else if (k === "end") UI.pickEnd = !UI.pickEnd;
   else if (k === "ender") { const i = +b.dataset.i; resetEntry(); act(() => { if (S.phase !== "play") return false; finishTurns(i); }); return; }
@@ -456,6 +491,47 @@ $("entry").addEventListener("click", e => {
     });
     return;
   }
+  // UNO: Sieger wählen, Kartenpunkte der anderen (+20 Aktion, +50 Schwarz)
+  else if (k === "uw") UI.uw = UI.uw === v ? null : v;
+  else if (k === "unoadd") { const i = +b.dataset.i; UI.un = UI.un || S.players.map(() => ""); UI.un[i] = String((+UI.un[i] || 0) + v); }
+  else if (k === "unook") {
+    const w = UI.uw, vals = (UI.un || S.players.map(() => "")).map(x => Math.max(0, +x || 0)); resetEntry();
+    act(() => {
+      if (S.phase !== "play" || (art() === "uno" && w == null)) return false;
+      D().rounds.push({ w: w == null ? -1 : w, pts: vals.map((x, i) => (i === w ? 0 : x)) });
+      const c = calc();
+      log(art() === "uno"
+        ? `Runde ${D().rounds.length}: ${nm(w)} ist fertig und bekommt ${vals.reduce((s, x, i) => s + (i === w ? 0 : x), 0)}. Stand ${c.tot[w]}.`
+        : `Runde ${D().rounds.length}: ${S.players.map((p, i) => `${esc(p.name)} ${i === w ? 0 : vals[i]}`).join(", ")}.`);
+      settle();
+    });
+    return;
+  }
+  // Take That: Plus-, Minus- und Krötenkarten je Spieler
+  else if (k === "ttok") {
+    const rows = (UI.tt || S.players.map(() => ({ p: "", m: "", k: "" }))).map(x => ({ p: Math.max(0, +x.p || 0), m: Math.max(0, +x.m || 0), k: Math.max(0, +x.k || 0) })); resetEntry();
+    act(() => {
+      if (S.phase !== "play") return false;
+      D().rounds.push({ plus: rows.map(x => x.p), minus: rows.map(x => x.m), kr: rows.map(x => x.k) });
+      log(`Runde ${D().rounds.length}: ${S.players.map((p, i) => { const s = rows[i].p - rows[i].m - 5 * rows[i].k; return `${esc(p.name)} ${s > 0 ? "+" : ""}${s}`; }).join(", ")}.`);
+      settle();
+    });
+    return;
+  }
+  else if (k === "ttend") { resetEntry(); act(() => { if (S.phase !== "play" || !D().rounds.length) return false; D().ended = true; settle(); }); return; }
+  // Scrabble am Ende: wer hat alle Steine gelegt, Restbuchstaben je Spieler
+  else if (k === "sout") { UI.rest = UI.rest || { out: -1, v: S.players.map(() => "") }; UI.rest.out = UI.rest.out === v ? -1 : v; }
+  else if (k === "send") {
+    const r = UI.rest || { out: -1, v: S.players.map(() => "") }, f = { out: r.out, rest: r.v.map((x, i) => (i === r.out ? 0 : Math.max(0, +x || 0))) }; resetEntry();
+    act(() => {
+      if (S.phase !== "play") return false;
+      D().final = f; D().ended = true;
+      const adj = finalAdj(f);
+      log(`Schlussabrechnung: ${S.players.map((p, i) => `${esc(p.name)} ${adj[i] > 0 ? "+" : ""}${adj[i]}`).join(", ")}.`);
+      settle();
+    });
+    return;
+  }
   // Kniffel: Wert für das gewählte Feld
   else if (k === "kv") {
     const cell = UI.kcell, val = v; resetEntry();
@@ -466,10 +542,12 @@ $("entry").addEventListener("click", e => {
   render();
 });
 $("entry").addEventListener("input", e => {
-  const inp = e.target.closest("[data-p10pen]");
+  const inp = e.target.closest("[data-p10pen], [data-uno], [data-tt], [data-rest]");
   if (!inp) return;
-  UI.p10 = UI.p10 || S.players.map(() => ({ ok: false, pen: "" }));
-  UI.p10[+inp.dataset.p10pen].pen = inp.value;
+  if (inp.dataset.p10pen != null) { UI.p10 = UI.p10 || S.players.map(() => ({ ok: false, pen: "" })); UI.p10[+inp.dataset.p10pen].pen = inp.value; }
+  if (inp.dataset.uno != null) { UI.un = UI.un || S.players.map(() => ""); UI.un[+inp.dataset.uno] = inp.value; }
+  if (inp.dataset.tt != null) { const [i, f] = inp.dataset.tt.split(":"); UI.tt = UI.tt || S.players.map(() => ({ p: "", m: "", k: "" })); UI.tt[+i][f] = inp.value; }
+  if (inp.dataset.rest != null) { UI.rest = UI.rest || { out: -1, v: S.players.map(() => "") }; UI.rest.v[+inp.dataset.rest] = inp.value; }
 });
 function setKniffel(cell, val) {
   if (!cell) return false;
@@ -493,7 +571,7 @@ $("sheet").addEventListener("click", e => {
   const t = D().turns[+b.dataset.t];
   if (!t || t.bonus) return;
   resetEntry();
-  const base = t.pts - (t.q || 0) * QW;
+  const base = t.pts - (t.q || 0) * bonusV();
   UI.edit = +b.dataset.t; UI.num = String(Math.abs(base)); UI.neg = base < 0; UI.qw = t.q || 0;
   render();
   $("entry").scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -504,8 +582,17 @@ document.addEventListener("click", e => { if (e.target.closest("[data-again]")) 
 const keyBtn = (k, label, cls = "", extra = "") => `<button class="key${cls ? " " + cls : ""}" type="button" data-k="${k}"${extra}>${label}</button>`;
 const undoBtn = (c = "Rückgängig") => `<button class="btn" type="button" data-k="undo">${c}</button>`;
 function entryTurns(c) {
-  const a = art(), d = D(), ed = UI.edit != null ? d.turns[UI.edit] : null, q = a === "qwirkle";
+  const a = art(), d = D(), ed = UI.edit != null ? d.turns[UI.edit] : null, q = a === "qwirkle" || a === "scrabble", bl = a === "scrabble" ? "Bingo" : "Qwirkle";
   if (!ed && S.phase !== "play") return `<p class="empty-note">Das Spiel ist beendet. Einzelne Züge lassen sich in der Tabelle noch antippen und ändern.</p><div class="actions">${undoBtn("Letzten Eintrag zurücknehmen")}</div>`;
+  if (UI.pickEnd && a === "scrabble") {
+    const r = UI.rest || { out: -1, v: S.players.map(() => "") };
+    return `<div class="pickend"><div class="who"><span>Spielende: Wer hat <b style="font-size:18px">alle Steine</b> gelegt?</span></div>
+      <div class="teams">${S.players.map((p, i) => `<button class="btn${r.out === i ? " on" : ""}" type="button" data-k="sout" data-v="${i}">${esc(p.name)}</button>`).join("")}</div>
+      <div class="sk-label">Punkte der Buchstaben, die noch auf der Hand sind</div>
+      <div class="plist">${S.players.map((p, i) => `<div class="prow"><span class="pn">${esc(p.name)}${r.out === i ? "<small>hat alle Steine gelegt</small>" : ""}</span>
+        ${r.out === i ? "<span></span>" : `<input type="number" inputmode="numeric" min="0" placeholder="0" value="${esc(r.v[i])}" data-rest="${i}" aria-label="Restbuchstaben ${esc(p.name)}">`}</div>`).join("")}</div>
+      <div class="actions"><button class="btn primary big" type="button" data-k="send">Abrechnen und beenden</button><button class="btn" type="button" data-k="end">Abbrechen</button></div></div>`;
+  }
   if (UI.pickEnd) return `<div class="pickend"><div class="who"><span>${q ? `Wer hat die <b style="font-size:18px">letzten Steine</b> gelegt? (+${QW})` : "Block beenden?"}</span></div>
     <div class="opts">${q ? S.players.map((p, i) => `<button class="btn primary" type="button" data-k="ender" data-i="${i}">${esc(p.name)}</button>`).join("") : ""}
     <button class="btn${q ? "" : " primary"}" type="button" data-k="ender" data-i="-1">${q ? "Ohne Bonus beenden" : "Jetzt beenden"}</button><button class="btn" type="button" data-k="end">Abbrechen</button></div></div>`;
@@ -513,13 +600,13 @@ function entryTurns(c) {
   return `${ed ? `<div class="editnote"><span>Ändern: <b>${esc(S.players[ed.p].name)}</b> (bisher ${ed.pts})</span><button class="btn small" type="button" data-k="cancel">Abbrechen</button></div>`
       : `<div class="who"><span>Dran: <b>${esc(S.players[i].name)}</b></span><span class="sk-muted">${pts(c.tot[i])} bisher</span></div>`}
     <div class="display" aria-live="polite"><span class="num${has ? "" : " empty"}">${has ? v : "0"}</span>
-      <span class="extra">${UI.qw ? `${UI.num === "" ? 0 : (UI.neg ? "−" : "") + UI.num} + ${UI.qw}× Qwirkle (${UI.qw * QW})` : ""}</span></div>
+      <span class="extra">${UI.qw ? `${UI.num === "" ? 0 : (UI.neg ? "−" : "") + UI.num} + ${UI.qw}× ${bl} (${UI.qw * bonusV()})` : ""}</span></div>
     <div class="keys">
       ${[7, 8, 9].map(n => keyBtn(n, n)).join("")}${keyBtn("del", "⌫", "soft", ' aria-label="Ziffer löschen"')}
-      ${[4, 5, 6].map(n => keyBtn(n, n)).join("")}${q ? keyBtn("qw", `Qwirkle<br>+${QW}`, "qw") : keyBtn("neg", "±", "soft")}
+      ${[4, 5, 6].map(n => keyBtn(n, n)).join("")}${q ? keyBtn("qw", `${bl}<br>+${bonusV()}`, "qw") : keyBtn("neg", "±", "soft")}
       ${[1, 2, 3].map(n => keyBtn(n, n)).join("")}${keyBtn(q && UI.qw ? "qw0" : "cancel", q && UI.qw ? "ohne Q." : "C", "soft")}
       ${keyBtn(0, 0)}${keyBtn("ok", ed ? "Speichern" : "Eintragen", "ok wide", has ? "" : " disabled")}
-      ${q ? keyBtn("swap", "Tausch", "soft", ` title="Steine getauscht, 0 Punkte"${ed ? " disabled" : ""}`) : keyBtn("next", "Weiter", "soft", ed ? " disabled" : "")}
+      ${q ? keyBtn("swap", a === "scrabble" ? "Passen" : "Tausch", "soft", ` title="getauscht oder gepasst, 0 Punkte"${ed ? " disabled" : ""}`) : keyBtn("next", "Weiter", "soft", ed ? " disabled" : "")}
     </div>
     ${ed ? "" : `<div class="actions">${undoBtn()}${q ? `<button class="btn" type="button" data-k="next">Überspringen</button>` : ""}
       <button class="btn" type="button" data-k="end"${d.turns.length ? "" : " disabled"}>Spielende…</button></div>`}`;
@@ -576,6 +663,27 @@ function entryPhase10(c) {
     <div class="actions"><button class="btn primary big" type="button" data-k="p10ok">Runde eintragen</button>${undoBtn()}</div>
     <details><summary class="sk-muted">Die 10 Phasen</summary><ol class="phases">${PHASES.map(x => `<li>${x}</li>`).join("")}</ol></details>`;
 }
+function entryUno(c) {
+  if (S.phase !== "play") return `<p class="empty-note">Das Spiel ist beendet.</p><div class="actions">${undoBtn("Letzte Runde zurücknehmen")}</div>`;
+  const off = art() === "uno", vals = UI.un || S.players.map(() => ""), w = UI.uw;
+  const sum = vals.reduce((s, x, i) => s + (i === w ? 0 : +x || 0), 0);
+  return `<div class="who"><span>Runde ${D().rounds.length + 1}: Wer ist zuerst fertig?</span></div>
+    <div class="teams">${S.players.map((p, i) => `<button class="btn${w === i ? " on" : ""}" type="button" data-k="uw" data-v="${i}">${esc(p.name)}</button>`).join("")}</div>
+    <div class="sk-label">Kartenpunkte auf der Hand${off ? " (gehen an den Sieger)" : ""}: Zahl = Wert, Aktion 20, Schwarz 50</div>
+    <div class="plist">${S.players.map((p, i) => i === w ? `<div class="prow"><span class="pn">${esc(p.name)}<small>fertig, 0 Punkte</small></span><span></span></div>`
+      : `<div class="prow"><span class="pn">${esc(p.name)}</span><span class="step"><input type="number" inputmode="numeric" min="0" placeholder="0" value="${esc(vals[i])}" data-uno="${i}" aria-label="Kartenpunkte ${esc(p.name)}">
+        <button type="button" data-k="unoadd" data-i="${i}" data-v="20" style="width:auto;padding:0 8px;font-size:16px">+20</button><button type="button" data-k="unoadd" data-i="${i}" data-v="50" style="width:auto;padding:0 8px;font-size:16px">+50</button></span></div>`).join("")}</div>
+    <div class="sumline"><span>${off ? (w != null ? `<b>${esc(S.players[w].name)}</b> bekommt <b>${sum}</b>.` : "Zuerst den Sieger der Runde antippen.") : `Zusammen <b>${sum}</b> Minuspunkte.`}</span></div>
+    <div class="actions"><button class="btn primary big" type="button" data-k="unook"${off && w == null ? " disabled" : ""}>Runde eintragen</button>${undoBtn()}</div>`;
+}
+function entryTakeThat(c) {
+  if (S.phase !== "play") return `<p class="empty-note">Das Spiel ist beendet.</p><div class="actions">${undoBtn("Spielende zurücknehmen")}</div>`;
+  const rows = UI.tt || S.players.map(() => ({ p: "", m: "", k: "" }));
+  const inp = (i, f, l) => `<label class="ttf"><small>${l}</small><input type="number" inputmode="numeric" min="0" placeholder="0" value="${esc(rows[i][f])}" data-tt="${i}:${f}" aria-label="${l} ${esc(S.players[i].name)}"></label>`;
+  return `<div class="who"><span>Runde ${D().rounds.length + 1}: Karten zählen</span><span class="sk-muted">Plus +1 · Minus −1 · Kröte −5</span></div>
+    <div class="plist">${S.players.map((p, i) => `<div class="prow tt"><span class="pn">${esc(p.name)}</span><span class="ttrow">${inp(i, "p", "Plus")}${inp(i, "m", "Minus")}${inp(i, "k", "Kröten")}</span></div>`).join("")}</div>
+    <div class="actions"><button class="btn primary big" type="button" data-k="ttok">Runde eintragen</button>${undoBtn()}<button class="btn" type="button" data-k="ttend"${D().rounds.length ? "" : " disabled"}>Spielende</button></div>`;
+}
 function entryKniffel(c) {
   if (S.phase !== "play" && !UI.kcell) return `<p class="empty-note">Alle Felder sind ausgefüllt.</p><div class="actions">${undoBtn("Letzten Eintrag zurücknehmen")}</div>`;
   const cell = UI.kcell;
@@ -604,8 +712,9 @@ function tableTurns() {
       const t = col[r];
       if (!t) return "<td></td>";
       const cls = [t.bonus ? "bonus" : "", t.k === lastK ? "last" : "", t.pts === 0 ? "zero" : "", t.reset ? "reset" : ""].join(" ").trim();
-      return `<td${cls ? ` class="${cls}"` : ""}><button type="button" data-t="${t.k}" aria-label="${esc(S.players[t.p].name)}: ${t.pts}">${t.bonus ? "+" : ""}${t.pts === 0 && art() === "moelkky" ? "–" : t.pts}${t.q ? `<span class="q">Q${t.q > 1 ? "×" + t.q : ""}</span>` : ""}${t.reset ? "<small>→ 25</small>" : ""}</button></td>`;
-    }).join("")}</tr>`).join("")}</tbody>
+      return `<td${cls ? ` class="${cls}"` : ""}><button type="button" data-t="${t.k}" aria-label="${esc(S.players[t.p].name)}: ${t.pts}">${t.bonus ? "+" : ""}${t.pts === 0 && art() === "moelkky" ? "–" : t.pts}${t.q ? `<span class="q">${art() === "scrabble" ? "B" : "Q"}${t.q > 1 ? "×" + t.q : ""}</span>` : ""}${t.reset ? "<small>→ 25</small>" : ""}</button></td>`;
+    }).join("")}</tr>`).join("")}
+    ${d.final ? `<tr><th class="rn">Ende</th>${finalAdj(d.final).map(x => `<td class="${x < 0 ? "zero" : "bonus"}"><button type="button" disabled>${x > 0 ? "+" : ""}${x}</button></td>`).join("")}</tr>` : ""}</tbody>
     <tfoot><tr><td></td>${S.players.map((p, i) => `<td>${c.tot[i]}</td>`).join("")}</tr></tfoot></table>`;
 }
 function tableSimple(heads, rows, foot) {
@@ -630,7 +739,11 @@ function tableKniffel(c) {
 function sheetHtml(c) {
   const a = art(), d = D(), P = S.players.map(p => esc(p.name));
   let h = "";
-  if (a === "qwirkle" || a === "frei" || a === "moelkky") h = tableTurns();
+  if (isTurns(a)) h = tableTurns();
+  else if (a === "uno" || a === "unominus") h = tableSimple(P, d.rounds.map(r => r.pts.map((x, i) => (a === "uno"
+    ? (i === r.w ? `<b>+${r.pts.reduce((s, y, j) => s + (j === r.w ? 0 : y), 0)}</b><small>fertig</small>` : `<small>${x}</small>`)
+    : (i === r.w ? `0<small>fertig</small>` : `${x}`)))), c.tot);
+  else if (a === "takethat") h = tableSimple(P, d.rounds.map(r => r.plus.map((x, i) => { const s = x - r.minus[i] - 5 * r.kr[i]; return `${s > 0 ? "+" : ""}${s}<small>${x} / ${r.minus[i]} / ${r.kr[i]}</small>`; })), c.tot);
   else if (a === "boule") h = tableSimple(P, d.ends.map(e => S.players.map((p, i) => (i === e.t ? `+${e.pts}` : ""))), c.tot);
   else if (a === "cornhole") h = tableSimple(P.slice(0, 2), d.rounds.map(r => [0, 1].map(i => { const s = i ? r.b : r.a; return `${s.b + 3 * s.h}${r.res[i] ? `<small>+${r.res[i]}</small>` : ""}`; })), c.tot.slice(0, 2));
   else if (a === "wizard") {
@@ -663,9 +776,9 @@ function render() {
   // Eingabe
   let h;
   if (!canEdit()) h = `<p class="empty-note">Du schaust zu. Eintragen können die Mitspieler.</p>`;
-  else h = { qwirkle: entryTurns, frei: entryTurns, moelkky: entryMoelkky, boule: entryBoule, cornhole: entryCornhole, wizard: entryWizard, phase10: entryPhase10, kniffel: entryKniffel }[a](c);
+  else h = { qwirkle: entryTurns, frei: entryTurns, scrabble: entryTurns, uno: entryUno, unominus: entryUno, takethat: entryTakeThat, moelkky: entryMoelkky, boule: entryBoule, cornhole: entryCornhole, wizard: entryWizard, phase10: entryPhase10, kniffel: entryKniffel }[a](c);
   // Eingabefeld bei Phase 10 nicht neu aufbauen, solange jemand tippt
-  const typing = document.activeElement && document.activeElement.matches && document.activeElement.matches("[data-p10pen]");
+  const typing = document.activeElement && document.activeElement.matches && document.activeElement.matches("[data-p10pen], [data-uno], [data-tt], [data-rest]");
   if (!typing) $("entry").innerHTML = h;
   $("sheet").innerHTML = sheetHtml(c);
 
@@ -692,6 +805,10 @@ function rulesHtml() {
     cornhole: `<li>Zwei Teams, je 4 Säckchen pro Runde. Auf dem Brett zählt 1, im Loch 3.</li><li>Die Punkte heben sich auf: Nur das Team mit mehr Punkten bekommt den Unterschied.</li><li>Gewonnen hat, wer zuerst <b>${CORNHOLE} Punkte</b> hat.</li>${undoTxt}`,
     wizard: `<li>3 bis 6 Spieler, 60 Karten: Runde 1 mit einer Karte, dann jede Runde eine mehr, bis die Karten aufgebraucht sind.</li><li>Vor der Runde für jeden die <b>Ansage</b> eintragen, nach der Runde die gemachten <b>Stiche</b>.</li><li>Richtig angesagt: <b>20 Punkte + 10 je Stich</b>. Daneben: <b>−10 je Stich</b> Unterschied.</li>${undoTxt}`,
     phase10: `<li>Nach jeder Runde: für jeden antippen, ob die Phase geschafft ist, und die Minuspunkte der restlichen Handkarten eintragen.</li><li>Wer die Phase schafft, macht in der nächsten Runde die nächste.</li><li>Das Spiel endet nach der Runde, in der jemand Phase 10 schafft. Unter denen gewinnt, wer am wenigsten Minuspunkte hat.</li>${undoTxt}`,
+    uno: `<li>Nach jeder Runde: den Sieger antippen und für die anderen die Kartenpunkte auf der Hand eintragen (Zahlenkarten nach Wert, Aussetzen, Richtungswechsel und +2 je 20, schwarze Karten je 50; +20 und +50 zählen dazu).</li><li>Der Sieger bekommt die Summe. Gewonnen hat, wer zuerst <b>${UNO} Punkte</b> hat.</li>${undoTxt}`,
+    unominus: `<li>Nach jeder Runde trägt jeder seine eigenen Kartenpunkte als Minuspunkte ein (Zahl = Wert, Aktion 20, Schwarz 50). Wer fertig ist, hat 0.</li><li>Sobald jemand <b>${UNO}</b> erreicht, ist Schluss. Gewonnen hat, wer am wenigsten hat.</li>${undoTxt}`,
+    scrabble: `<li>Nach jedem Zug die Punkte des Wortes eintippen (mit Buchstaben- und Wortfeldern) und <b>Eintragen</b>. Wer alle 7 Steine auf einmal legt: <b>Bingo +50</b>.</li><li><b>Passen</b> trägt 0 ein. <b>Spielende…</b>: Jeder verliert die Punkte seiner Restbuchstaben; wer alle Steine gelegt hat, bekommt die Summe der anderen dazu.</li>${undoTxt}<li>Jede Zahl in der Tabelle lässt sich antippen und ändern.</li>`,
+    takethat: `<li>Nach jeder Runde für jeden zählen: <b>Plus</b>-Karten (verdreht gespielt) je +1, <b>Minus</b>-Karten aus genommenen Reihen je −1, <b>Kröten</b> (Schnapszahlen) je −5.</li><li>So viele Runden, wie ihr mögt; dann <b>Spielende</b>. Die meisten Punkte gewinnen.</li>${undoTxt}`,
     kniffel: `<li>Gewürfelt wird mit echten Würfeln. In der Tabelle das Feld des Spielers antippen und den Wert wählen oder eintippen.</li><li>Bonus: <b>+35</b>, wenn oben mindestens 63 Punkte stehen.</li>${undoTxt}`,
   }[a];
 }
@@ -703,7 +820,7 @@ const setup = {
     <small class="sk-muted" id="pb-hint"></small></div>`,
   init(root) {
     const sel = root.querySelector("#pb-art"), hint = root.querySelector("#pb-hint");
-    const show = () => { const m = sel.value; hint.textContent = MODES[m].teams ? "Trag unten die Teams als Spieler ein (z. B. „Tobi & Anna“)." : m === "wizard" ? "Wizard braucht 3 bis 6 Spieler." : ""; };
+    const show = () => { const m = sel.value; hint.textContent = MODES[m].teams ? "Trag unten die Teams als Spieler ein (z. B. „Tobi & Anna“)." : m === "wizard" ? "Wizard braucht 3 bis 6 Spieler." : m === "takethat" ? "Take That: 2 bis 4 Spieler." : ""; };
     sel.addEventListener("change", show); show();
   },
   read(root) { const s = root.querySelector("#pb-art"); return { art: s ? s.value : "qwirkle" }; },

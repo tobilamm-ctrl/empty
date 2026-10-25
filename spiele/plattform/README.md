@@ -25,7 +25,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Kunterbunt** | 2–8 | Ablegespiel im Stil von „Uno“: Aussetzen, Richtungswechsel, +2, Farbwahl, +4; Weitergeben als Hausregel |
 | **Rommé** | 2–6 | zwei Blätter mit 6 Jokern, erstes Auslegen ab 30/40 Punkten, Joker tauschen, vierfarbiges Blatt |
 | **Schafkopf** | 4 | Sauspiel, Wenz, Farbsolo, Abrechnung über die Sitzung; fehlende Spieler übernimmt der Computer |
-| **Punkteblock** | 2–8 | kein Spiel, sondern ein Zettel für Spiele auf dem Tisch und draußen: Qwirkle, Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel oder allgemein; ein Gerät für alle |
+| **Punkteblock** | 2–8 | kein Spiel, sondern ein Zettel für Spiele auf dem Tisch und draußen: Qwirkle, Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel, UNO (zwei Zählweisen), Scrabble, Take That oder allgemein; ein Gerät für alle |
 
 Voraussetzungen: PHP 8.1 oder neuer, Apache mit `.htaccess` (bei Hetzner Webhosting gegeben).
 Keine Datenbank nötig. Die Daten liegen als Dateien im Ordner `data/`.
