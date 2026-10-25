@@ -59,32 +59,32 @@
 .sk-news li.sk-muted::before { display: none; }
 .sk-news li:last-child { font-weight: 700; }
 .sk-news b { color: var(--accent, #f4cb4d); }
-.sk-recap { background: var(--sheet, #1e1d24); border-radius: 12px; padding: 10px 14px; box-shadow: inset 4px 0 0 var(--accent, #f4cb4d); font-size: 14.5px; }
-.sk-toast {
-  position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 25; pointer-events: none;
-  width: min(520px, calc(100% - 24px)); background: var(--sheet-2, #2a2932); color: var(--ink, #f6f5f8); border-radius: 14px;
-  padding: 10px 40px 10px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.55), inset 4px 0 0 var(--accent, #f4cb4d); font-size: 15px;
-  animation: sk-toast-in .25s ease-out;
-}
-.sk-toast .sk-news { margin: 0; }
-.sk-toast-x { pointer-events: auto; position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: var(--muted, #a3a1b0); font-size: 22px; cursor: pointer; }
-@keyframes sk-toast-in { from { opacity: 0; transform: translate(-50%, -12px); } }
 .sk-ho-news { text-align: left; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { .sk-toast { animation: none; } }
 
 /* Zugleiste: wer ist dran, wer als Nächstes (bleibt beim Scrollen oben) */
 .sk-turns {
-  position: sticky; top: 0; z-index: 15; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 15; display: grid; gap: 5px;
   background: color-mix(in srgb, var(--sheet, #1e1d24) 92%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   border-radius: 0 0 14px 14px; padding: 8px 12px; margin: -6px 0 0; box-shadow: 0 6px 16px rgba(0,0,0,.35);
 }
 .sk-turns.sk-mine { box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 -3px 0 var(--accent, #f4cb4d); }
-.sk-turn-head { font-size: 15px; white-space: nowrap; }
+.sk-row { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; min-width: 0; }
+.sk-turn-head { font-size: 15px; white-space: nowrap; min-height: 1.45em; overflow: hidden; text-overflow: ellipsis; }
+/* zweite Zeile: immer genau eine Zeile hoch, damit nichts springt */
+.sk-last { display: flex; align-items: center; gap: 6px; height: 26px; font-size: 13.5px; min-width: 0; border-top: 1px solid rgba(255,255,255,.08); padding-top: 4px; }
+.sk-lab { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--accent, #f4cb4d); white-space: nowrap; flex: none; }
+.sk-txt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-txt b { color: var(--accent, #f4cb4d); }
+.sk-txt.sk-old { color: var(--muted, #a3a1b0); }
+.sk-txt.sk-old b { color: inherit; }
+.sk-last.sk-new .sk-txt { font-weight: 700; }
+.sk-more { flex: none; border: 0; border-radius: 999px; background: var(--sheet-2, #2a2932); color: var(--ink, #f6f5f8); font: inherit; font-size: 12px; font-weight: 800; padding: 3px 10px; min-height: 26px; cursor: pointer; }
+.sk-drop { position: absolute; left: 8px; right: 8px; top: calc(100% + 4px); background: var(--sheet-2, #2a2932); border-radius: 12px; padding: 10px 14px; box-shadow: 0 12px 30px rgba(0,0,0,.55), inset 4px 0 0 var(--accent, #f4cb4d); font-size: 14px; max-height: 60vh; overflow-y: auto; }
 .sk-turn-head b { color: var(--accent, #f4cb4d); }
 .sk-turns.sk-mine .sk-turn-head { animation: sk-pulse 1.4s ease-in-out 2; }
 .sk-order { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
 .sk-order::-webkit-scrollbar { display: none; }
-.sk-p { flex: none; display: grid; justify-items: center; line-height: 1.1; padding: 4px 9px; border-radius: 10px; background: var(--sheet-2, #2a2932); font-size: 13px; color: var(--muted, #a3a1b0); position: relative; }
+.sk-p { flex: none; display: grid; justify-items: center; align-content: center; min-height: 36px; box-sizing: border-box; line-height: 1.1; padding: 4px 9px; border-radius: 10px; background: var(--sheet-2, #2a2932); font-size: 13px; color: var(--muted, #a3a1b0); position: relative; }
 .sk-p + .sk-p::before { content: "›"; position: absolute; left: -5px; top: 50%; transform: translateY(-50%); color: var(--muted, #a3a1b0); font-size: 12px; }
 .sk-p small { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .sk-p.sk-self .sk-pn { text-decoration: underline; text-underline-offset: 3px; }

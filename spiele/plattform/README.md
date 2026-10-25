@@ -97,16 +97,15 @@ Es übernimmt:
 - **Computer-Gegner mit Pause:** Das Spielkit ruft `botStep` einzeln auf, mit etwa 0,75 s Pause davor, damit man
   jeden Zug sieht. Online zieht das Gerät des Gastgebers die Computer (ist es weg, nach 5 s ein anderes Gerät).
   `playBots()` im Spiel tut deshalb nur noch etwas, wenn `kit.paced()` falsch ist (in Tests mit `window.SPIELKIT_SOFORT`).
-- **Zugleiste:** oben angeheftet, alle Spieler in Sitzreihenfolge; wer dran ist, ist gefüllt, wer als Nächstes
+- **Zugleiste:** oben angeheftet (Platzhalter `data-sk-turns`, sonst über `data-sk-banner`), alle Spieler in Sitzreihenfolge; wer dran ist, ist gefüllt, wer als Nächstes
   kommt, umrandet. Bei „Du bist dran“ zusätzlich eine farbige Linie und ein kurzer Ton.
 - **Töne:** im Browser erzeugt (keine Dateien), Knopf „Ton an/aus“ oben. Klick beim Antippen, Ton bei Zügen der
   anderen, Gong bei „Du bist dran“, Melodie am Spielende. Spiele können mit `kit.sound("stone")` usw. eigene Töne
   auslösen (Vier in einer Reihe beim Aufschlagen des Steins).
-- **Neuigkeiten:** Der Kasten „Seit deinem letzten Zug“ zeigt, was Mitspieler und Computer seitdem gemacht
-  haben (aus dem Verlauf `S.log`). Kommt etwas Neues dazu, während der Kasten nicht im Bild ist, erscheint oben
-  kurz ein Hinweis. Beim Weitergeben des Geräts steht die Liste auf dem Weitergeben-Bildschirm. Der Kasten
-  sitzt unter `data-sk-banner`; ein Spiel kann ihn mit einem eigenen Element `data-sk-recap` woanders platzieren.
-  Damit das klappt, beginnt jeder Verlaufseintrag eines Zugs mit `<b>Name</b>` des Handelnden.
+- **Neuigkeiten:** Die zweite Zeile der Zugleiste zeigt, was Mitspieler und Computer seit dem eigenen letzten
+  Zug gemacht haben (aus dem Verlauf `S.log`, Neuestes zuerst); „Alle“ klappt die Liste über dem Spielfeld auf.
+  Die Leiste hat immer dieselbe Höhe, damit das Spielfeld nicht springt. Beim Weitergeben des Geräts steht die
+  Liste auf dem Weitergeben-Bildschirm. Jeder Verlaufseintrag eines Zugs beginnt mit `<b>Name</b>` des Handelnden.
 
 Das Spiel liefert nur Regeln und Darstellung. Ein vollständiges, kommentiertes Beispiel ist
 `games/vorlage/game.html` (das Würfelspiel „Schweinchen“). So geht's:

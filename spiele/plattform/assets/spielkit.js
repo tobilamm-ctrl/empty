@@ -90,7 +90,7 @@
     }, cfg);
 
     let S = null;
-    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, toastT: 0,
+    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, newsOpen: false,
       botT: 0, botAt: 0, changedAt: Date.now(), lastPoll: 0, wasMine: null, lastPhase: null };
     const suffix = P ? "-" + P.user : "";
     const store = {
@@ -148,31 +148,15 @@
       const shown = list.slice(0, max).reverse();
       return `${list.length > max ? `<li class="sk-muted">… und ${list.length - max} frühere</li>` : ""}${shown.map(h => `<li>${h}</li>`).join("")}`;
     };
+    // Neuigkeiten berechnen (angezeigt in der Zugleiste und beim Weitergeben); Ton, wenn gerade etwas dazukam
     function renderNews(mi) {
-      if (!S.log) return;
+      if (!S.log) return [];
       const key = viewerKey(mi);
       if (key && !ui.seen[key]) { ui.seen[key] = snap(); saveSeen(); }
-      // Kasten „Seit deinem letzten Zug“
-      const box = q("[data-sk-recap]");
       const since = key && S.phase !== "lobby" ? newSince(ui.seen[key]) : [];
-      if (box) {
-        box.hidden = !since.length;
-        if (since.length) box.innerHTML = `<div class="sk-label">Seit deinem letzten Zug</div><ol class="sk-news">${recapList(since, 5)}</ol>`;
-      }
-      // kurzer Hinweis unten, wenn gerade etwas von anderen dazugekommen ist
       const fresh = ui.prevLog ? newSince(ui.prevLog) : [];
       ui.prevLog = snap();
-      const toast = q("#sk-toast");
-      // nur nötig, wenn der Kasten gerade nicht im Bild ist
-      const r = box && !box.hidden ? box.getBoundingClientRect() : null;
-      const boxSeen = r && r.bottom > 0 && r.top < window.innerHeight - 40;
       if (fresh.length && S.phase !== "lobby") Sound.play(cfg.moveSound);
-      if (fresh.length && !boxSeen && S.phase !== "lobby" && q("#sk-dlg").hidden) {
-        toast.querySelector("ol").innerHTML = recapList(fresh, 3);
-        toast.hidden = false;
-        clearTimeout(ui.toastT);
-        ui.toastT = setTimeout(() => { toast.hidden = true; }, 3500 + 1200 * Math.min(fresh.length, 3));
-      }
       return since;
     }
 
@@ -412,23 +396,33 @@
       const a = acts[0], n = S.players.length;
       return { active: a, next: cfg.nextUp ? cfg.nextUp(S, a) : (a + 1) % n, also: [] };
     }
-    function renderTurns(mi) {
+    // Die Leiste hat immer dieselbe Höhe, damit das Spielfeld darunter nicht springt.
+    function renderTurns(mi, since) {
       const bar = q("[data-sk-turns]");
       if (!bar) return;
-      const show = S.players.length > 1 && S.phase !== "lobby" && S.phase !== "over";
+      const show = S.players.length > 1 && S.phase !== "lobby";
       bar.hidden = !show;
       if (!show) return;
-      const ti = turnInfo() || { active: -1, next: -1, also: [] }, also = ti.also || [];
+      const over = S.phase === "over";
+      const ti = over ? { active: -1, next: -1, also: [] } : turnInfo() || { active: -1, next: -1, also: [] }, also = ti.also || [];
       const me = i => i === mi && !S.players[i].ai;
       bar.classList.toggle("sk-mine", me(ti.active) || also.includes(mi));
       const head = ti.active >= 0
         ? (me(ti.active) ? `<b>Du bist dran${S.players.filter(p => !p.ai).length > 1 ? `, ${esc(S.players[mi].name)}` : ""}!</b>` : `<b>${esc(S.players[ti.active].name)}</b> ist dran${S.players[ti.active].ai ? " (Computer)" : ""}`)
-        : also.length ? `Gleichzeitig dran: ${also.map(i => `<b>${esc(S.players[i].name)}</b>`).join(", ")}` : "";
-      bar.innerHTML = `<div class="sk-turn-head">${head}</div><ol class="sk-order" aria-label="Reihenfolge">${S.players.map((p, i) => {
+        : also.length ? `Gleichzeitig dran: ${also.map(i => `<b>${esc(S.players[i].name)}</b>`).join(", ")}` : over ? "<b>Spiel vorbei</b>" : "";
+      // zweite Zeile: was die anderen seit dem eigenen letzten Zug gemacht haben (Neuestes zuerst)
+      const news = since && since.length ? since : [];
+      const line = news.length
+        ? `<span class="sk-lab">Seit deinem Zug:</span><span class="sk-txt">${news.slice(0, 6).join(" · ")}</span>`
+        : `<span class="sk-lab sk-muted">Zuletzt:</span><span class="sk-txt sk-old">${S.log[0] || "–"}</span>`;
+      const list = (news.length ? news : S.log).slice(0, 8);
+      bar.innerHTML = `<div class="sk-row"><div class="sk-turn-head">${head}</div><ol class="sk-order" aria-label="Reihenfolge">${S.players.map((p, i) => {
         const cls = i === ti.active ? " sk-now" : also.includes(i) ? " sk-also" : i === ti.next ? " sk-next" : "";
         const tag = i === ti.active ? "am Zug" : also.includes(i) ? "dran" : i === ti.next ? "als Nächstes" : "";
         return `<li class="sk-p${cls}${i === mi ? " sk-self" : ""}"><span class="sk-pn">${esc(p.name)}${p.ai ? " 🤖" : ""}</span>${tag ? `<small>${tag}</small>` : ""}</li>`;
-      }).join("")}</ol>`;
+      }).join("")}</ol></div>
+        <div class="sk-last${news.length ? " sk-new" : ""}">${line}<button type="button" class="sk-more" aria-expanded="${ui.newsOpen}">${ui.newsOpen ? "Zu" : "Alle"}</button></div>
+        <div class="sk-drop"${ui.newsOpen ? "" : " hidden"}><div class="sk-label">${news.length ? "Seit deinem letzten Zug" : "Zuletzt"}</div><ol class="sk-news">${recapList(list, 8)}</ol></div>`;
       const now = bar.querySelector(".sk-now");
       if (now && now.scrollIntoView && bar.scrollWidth > bar.clientWidth) { const ol = bar.querySelector(".sk-order"); ol.scrollLeft = now.offsetLeft - ol.clientWidth / 2 + now.clientWidth / 2; }
     }
@@ -463,12 +457,7 @@
         const bn = q("[data-sk-banner]");
         if (bn) bn.insertAdjacentHTML("beforebegin", `<div class="sk-turns" data-sk-turns hidden aria-live="polite"></div>`);
       }
-      if (!q("[data-sk-recap]")) {
-        const bn = q("[data-sk-banner]");
-        if (bn) bn.insertAdjacentHTML("afterend", `<section class="sk-recap" data-sk-recap hidden aria-live="polite"></section>`);
-      }
       document.body.insertAdjacentHTML("beforeend", `
-<div class="sk-toast" id="sk-toast" role="status" aria-live="polite" hidden><ol class="sk-news"></ol><button type="button" class="sk-toast-x" aria-label="Hinweis schließen">×</button></div>
 <div class="sk-overlay" id="sk-dlg" hidden>
   <form class="sk-dialog" id="sk-form">
     <h2>Neues Spiel</h2>
@@ -519,7 +508,6 @@
       }
       const show = kit.hotSeat() && S.phase !== "lobby" && S.phase !== "over" && mi !== ui.ackHuman && q("#sk-dlg").hidden;
       q("#sk-handover").hidden = !show;
-      if (show) q("#sk-toast").hidden = true;
       if (show) {
         const p = S.players[mi];
         q("#sk-ho-label").textContent = ui.ackHuman == null ? "Es beginnt" : "Gerät weitergeben an";
@@ -554,7 +542,7 @@
       cfg.render(S);
       const since = renderNews(mi);
       renderChrome(mi, since);
-      renderTurns(mi);
+      renderTurns(mi, since);
       soundCues(mi);
       save();
       scheduleBots();
@@ -612,7 +600,11 @@
         if (b && await openRoom(b.dataset.room)) q("#sk-dlg").hidden = true;
       });
       q("#sk-ho-btn").addEventListener("click", () => { ui.ackHuman = kit.me(); render(); });
-      q("#sk-toast .sk-toast-x").addEventListener("click", () => { q("#sk-toast").hidden = true; });
+      // Liste „Alle“ in der Zugleiste auf- und zuklappen (liegt über dem Spielfeld, verschiebt nichts)
+      document.addEventListener("click", e => {
+        if (e.target.closest(".sk-more")) { ui.newsOpen = !ui.newsOpen; render(); return; }
+        if (ui.newsOpen && !e.target.closest(".sk-drop")) { ui.newsOpen = false; render(); }
+      });
       const snd = q("#sk-sound");
       const showSnd = () => { snd.textContent = Sound.on() ? "🔊 Ton an" : "🔇 Ton aus"; snd.setAttribute("aria-pressed", Sound.on()); };
       if (snd) { showSnd(); snd.addEventListener("click", () => { Sound.toggle(); showSnd(); Sound.play("tap"); }); }
