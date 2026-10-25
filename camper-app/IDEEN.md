@@ -2,7 +2,7 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
-## Vorgemerkt (Stand: Lieferung 27)
+## Vorgemerkt (Stand: Lieferung 28)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
 - ~~**Höhenprofil für Touren** mit Höhen-Stempeln im Reisepass.~~ Erledigt in Lieferung 26.
@@ -11,6 +11,8 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - ~~Tier-Sammelbuch, Malen im Tagebuch, Foto-Rallye, Sprachnotizen, Gezeiten, Solarstrom-Prognose,
   Sternenhimmel, Notfall-Orte offline, Zuladungs-Rechner, Lieblingsplätze weitergeben.~~ Erledigt in Lieferung 27.
   (Die Postkarte gab es schon seit einer früheren Lieferung.)
+- ~~Wasserwaage, Feiertage im Reiseland, Familien-Abstimmung, Urlaubsgeld, Vorfreude-Countdown, Frage des Tages,
+  Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu, Flaggen-Quiz, Reise-Memory, Sudoku.~~ Erledigt in Lieferung 28.
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
@@ -26,3 +28,8 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Durchfahrtshöhe und -breite des Campers bei Brücken und Gassen beachten
 - Schatzsuche für Kinder am Stellplatz
 - Stellplatz-Notizbuch (Strom, Wasser, Entsorgung, Tipps für das nächste Mal)
+- Landstrom-Rechner (welche Geräte gleichzeitig an 6, 10 oder 16 A)
+- Gas und Müll je Land (Gasadapter, Flaschentausch, Mülltrennung, Pfand)
+- Zeitkapsel (Brief an euch selbst, öffnet sich nach einem Jahr)
+- Witze und Rätsel für die Rückbank
+- Ich sehe was, was du nicht siehst; Kennzeichen-Rechnen; Ich packe meinen Koffer; Teekesselchen; Wortkette; Tierstimmen raten

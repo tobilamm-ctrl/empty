@@ -21,11 +21,14 @@ import installAbenteuer from './abenteuer.js';
 import installWeitergeben from './weitergeben.js';
 import installDraussen from './draussen.js';
 import installZuladung from './zuladung.js';
+import installStellplatz from './stellplatz.js';
+import installFamilienrat from './familienrat.js';
+import installFahrspiele from './fahrspiele.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 27;
+const APP_VERSION = 28;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -347,7 +350,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -2195,5 +2198,8 @@ installAbenteuer(APP);
 installWeitergeben(APP);
 installDraussen(APP);
 installZuladung(APP);
+installStellplatz(APP);
+installFamilienrat(APP);
+installFahrspiele(APP);
 
 start();

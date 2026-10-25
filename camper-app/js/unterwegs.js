@@ -178,6 +178,8 @@ export default function installUnterwegs(app) {
     } catch { /* ohne Netz gelten die gespeicherten oder die Richtwerte */ } finally { fxLoading = false; }
   }
   const rate = code => (fx() && fx().rates[code]) || CUR[code][2];
+  // Für das Urlaubsgeld der Kinder (familienrat.js)
+  app.CUR = CUR; app.fxRate = rate; app.loadFx = loadFx;
 
   function fxSheet(pre) {
     const t = currentTrip();

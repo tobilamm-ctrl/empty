@@ -56,7 +56,7 @@ export default function installSpiele(app) {
       const [, title] = GAMES.find(x => x[0] === g);
       return `${pageHead('spiele', title)}
         <button class="link back" data-action="game-open" data-g="">Zurück zu allen Spielen</button>
-        ${g === 'sticker' || g === 'brettspiele' ? '' : playerBar()}${GAME_VIEWS[g]()}`;
+        ${g === 'sticker' || g === 'brettspiele' || (app.noPlayerBar || []).includes(g) ? '' : playerBar()}${GAME_VIEWS[g]()}`;
     }
     // Brettspiele öffnet Spieleabend direkt in einem eigenen Fenster
     const p = portal();

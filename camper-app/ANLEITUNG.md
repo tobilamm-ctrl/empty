@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-27'` hochzählen (z. B. auf `lammping-28`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-28'` hochzählen (z. B. auf `lammping-29`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -239,11 +239,26 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     Stellplatz werden automatisch gesucht (OpenStreetMap) und für alle offline gespeichert.
   - *Lieblingsplätze weitergeben* (Orte → Lieblingsplätze): Auswahl als GPX-Datei oder als geheimer Link für
     befreundete Familien (Verwalter), mit Karte, Sternen, Ausstattung und auf Wunsch euren Notizen.
+  - *Wasserwaage:* Handy flach in den Camper legen (Oberkante nach vorn). Die App zeigt, welches Rad wie viele
+    Zentimeter auf den Keil muss. Radstand, Spurweite und Keilstufen lassen sich einstellen.
+  - *Feiertage im Reiseland:* Die Heute-Karte warnt vor Feiertagen (heute bis übermorgen) und vor Sonntagen,
+    an denen Supermärkte zu sind. Die Länderinfos zeigen die Feiertage der nächsten 60 Tage. Berechnet ohne Internet.
+  - *Abstimmung:* Frage stellen (Vorlagen: Wohin morgen? Was machen wir heute? Was essen wir?), jeder stimmt am
+    eigenen Handy ab. Offene Abstimmungen stehen in der Heute-Karte und auf der Kinder-Startseite.
+  - *Urlaubsgeld:* Geldbeutel für jedes Kind. Verwalter geben Geld, die Kinder tragen ihre Ausgaben ein, auf
+    Wunsch in Landeswährung (Franken, Kronen …).
+  - *Vorfreude-Countdown:* Bei einer Reise, die noch kommt, zählt die Planung die Tage herunter, mit einer kleinen
+    Aufgabe pro Tag zum Abhaken.
+  - *Frage des Tages:* Ab 16 Uhr steht in der Heute-Karte eine Frage für den Abend. Die Antworten erscheinen im
+    Tagebuch und im Reiseheft.
   - *Rubbelkarte:* Weltkarte, auf der sich alle bereisten Länder golden färben, je Person. Umschalten auf
     „Regionen“ zeigt Bundesländer, Kantone, Provinzen usw. (Europa, USA, Kanada, Australien, Neuseeland) mit
     „x von y“. Die Grenzen stammen von Natural Earth (gemeinfrei) und liegen in `vendor/welt`.
   - *Tier-Sammelbuch und Foto-Rallye* (in Spiele & Co): Tiere abhaken (häufig 1, besonders 2, selten 3 Punkte),
     mit Wertung und Reisepass-Stempeln. Die Foto-Rallye stellt acht Aufgaben; die Fotos ergeben eine Collage.
+  - *Spiele für die Fahrt:* Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu (mit Bildern, für Größere
+    mit verbotenen Wörtern), Flaggen-Quiz (Europa oder Welt), Reise-Memory mit euren Fotos und Sudoku
+    (4 × 4 oder 9 × 9, mit Zahlen oder Tieren, drei Schwierigkeitsstufen).
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
