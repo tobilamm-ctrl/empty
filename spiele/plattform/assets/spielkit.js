@@ -29,11 +29,13 @@
       g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .02);
     }
-    function noise(c, t0, dur, freq, vol = .2, q = 1.2) {
+    // Rauschen mit Filter; type lowpass/bandpass, freq2 = Filter gleitet dorthin
+    function noise(c, t0, dur, freq, vol = .2, q = 1.2, type = "bandpass", freq2) {
       const n = Math.floor(c.sampleRate * dur), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
-      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
       const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-      s.buffer = b; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q; g.gain.value = vol;
+      s.buffer = b; f.type = type; f.frequency.setValueAtTime(freq, t0); f.Q.value = q; g.gain.value = vol;
+      if (freq2) f.frequency.exponentialRampToValueAtTime(freq2, t0 + dur);
       s.connect(f).connect(g).connect(c.destination); s.start(t0);
     }
     const SOUNDS = {
@@ -44,12 +46,22 @@
       dice: (c, t) => { for (let k = 0; k < 5; k++) noise(c, t + k * .045 + Math.random() * .02, .035, 1800 + Math.random() * 1500, .3, 3); },
       tile: (c, t) => { tone(c, 1200, t, .05, "triangle", .12); tone(c, 1650, t + .035, .07, "triangle", .08); },
       turn: (c, t) => { tone(c, 660, t, .16, "sine", .14); tone(c, 990, t + .13, .24, "sine", .13); },
+      // Schiffe versenken: Wasser, Treffer, versenkt
+      splash: (c, t) => { noise(c, t, .5, 1400, .45, .9, "bandpass", 300); tone(c, 420, t + .03, .18, "sine", .12, 140); tone(c, 300, t + .16, .14, "sine", .08, 110); },
+      hit: (c, t) => { noise(c, t, .45, 1800, .7, .7, "lowpass", 200); tone(c, 130, t, .3, "sine", .4, 45); },
+      sunk: (c, t) => {
+        noise(c, t, .5, 2200, .75, .7, "lowpass", 180); tone(c, 120, t, .35, "sine", .45, 40);
+        noise(c, t + .25, 1.1, 500, .45, .6, "lowpass", 60);                       // Grollen
+        tone(c, 440, t + .35, .9, "triangle", .1, 70);                           // sinkt
+        for (let k = 0; k < 4; k++) tone(c, 500 + k * 120, t + .7 + k * .12, .06, "sine", .05, 900); // Blasen
+      },
       win: (c, t) => [523, 659, 784, 1047].forEach((f, k) => tone(c, f, t + k * .11, .28, "triangle", .13)),
     };
     return {
       on: () => on,
       toggle() { on = !on; try { localStorage.setItem("spieleabend-ton", on ? "an" : "aus"); } catch (e) { /* egal */ } },
       play(name) {
+        try { window.dispatchEvent(new CustomEvent("spielkit:ton", { detail: name })); } catch (e) { /* alt */ }   // für Tests
         if (!on || !SOUNDS[name]) return;
         const c = ac(); if (!c || c.state !== "running") return;
         try { SOUNDS[name](c, c.currentTime + .01); } catch (e) { /* kein Ton */ }

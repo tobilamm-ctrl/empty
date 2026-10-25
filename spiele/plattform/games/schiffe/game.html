@@ -570,7 +570,14 @@ function lastText(me) {
   return `${du ? "Dein Schuss" : `Schuss von ${esc(who)}`} auf ${coord(L.i)}: ${res}.`;
 }
 
+// Ton zu jedem neuen Schuss, auf allen Geräten (nicht beim ersten Laden)
+function shotSound() {
+  const k = S.last ? `${S.gid}:${S.last.n}` : "";
+  if (UI.shotKey !== undefined && k && k !== UI.shotKey) kit.sound(S.last.res === "water" ? "splash" : S.last.res === "hit" ? "hit" : "sunk");
+  UI.shotKey = k;
+}
 function render() {
+  shotSound();
   const lobby = S.phase === "lobby", me = kit.me(), over = S.phase === "over";
   $("play").hidden = lobby;
   if (lobby || S.players.length < 2) { // Wartebereich: es fehlt evtl. noch der Gegner
@@ -687,7 +694,7 @@ kit = Spielkit.create({
   id: "schiffe", version: 1, minPlayers: 2, maxPlayers: 2, bots: true, defaultBots: 1, privateHands: true,
   setup, defaultOptions: () => ({ again: true }),
   newPlayer, newState, onStart, whoActs, render,
-  botPending, botStep, moveSound: "move",
+  botPending, botStep, moveSound: "none",   // eigene Töne je Schuss (Wasser, Treffer, versenkt)
   onState: s => { S = s; },
   validState: s => s.players.length === 2 && s.players.every(p => Array.isArray(p.fleet) && typeof p.shots === "string"),
   roomStatus: s => (s.phase === "place" ? "Flotten werden aufgestellt" : `läuft · ${s.players.map(p => hitsCount(p.shots)).join(":")} Treffer`),
