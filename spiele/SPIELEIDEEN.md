@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Schafkopf.
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Schafkopf.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
@@ -16,13 +16,12 @@ oder Kartenbild 1:1 kopieren.
 |---|---|---|---|---|---|---|
 | ✓ | **Reversi** | 2 | fertig | sehr gut (8×8) | drei Stärken | „Othello“ ist ein Markenname |
 | ✓ | **Skyjo** → Zwölfer | 2–8 | fertig | gut (eigenes 3×4-Raster) | ja | „Skyjo“ ist ein Markenname |
-| 3 | **Mau-Mau im Uno-Stil** | 2–6 | gering–mittel | gut | Mau-Mau-Computer erweitern | Zahlen 0–9 in 4 Farben, Richtungswechsel, +2, +4, Farbwahl; eigener Name und eigenes Kartendesign (kein „UNO“, kein Oval) |
-| 4 | **Kingdomino** | 2–4 | mittel | sehr gut (5×5) | mittel | 48 Dominos selbst gestalten; Wertung Fläche × Kronen |
-| 5 | **Azul** | 2–4 | mittel | gut | mittel | Fliesen zusätzlich mit Muster unterscheidbar |
-| 6 | **Rommé** | 2–4 | mittel–hoch | gut mit sortierter Hand, Sätze untereinander | mittel | Hausregeln als Einstellungen (40 Punkte zum Auslegen, Joker tauschen); kein Rummikub (freies Umbauen am Handy unpraktisch) |
-| 7 | **Watten / Waddeln** | 4 (2 Teams), auch 2 | mittel–hoch | sehr gut (5 Karten) | aufwendig (Bieten, Bluffen) | Deuten über Zeichen zum Antippen; **eure Hausregeln nötig** (Kritische ja/nein, bis wie viele Punkte, „Gehen“) |
-| 8 | **Patchwork** | 2 | mittel–hoch | gut, Drehen/Spiegeln braucht gute Bedienung | mittel | 33 Flicken selbst gestalten |
-| 9 | **Sagrada** | 2–4 | hoch | sehr gut (4×5) | mittel | erst Grundspiel, die 12 Werkzeugkarten danach; Fenstermuster selbst gestalten |
+| ✓ | **Mau-Mau im Uno-Stil** → Kunterbunt | 2–8 | fertig | gut | ja | eigenes Kartendesign (Raute statt Oval, Farbe plus Zeichen); „UNO“ ist ein Markenname |
+| 3 | **Kingdomino** | 2–4 | mittel | sehr gut (5×5) | mittel | 48 Dominos selbst gestalten; Wertung Fläche × Kronen |
+| 4 | **Azul** | 2–4 | mittel | gut | mittel | Fliesen zusätzlich mit Muster unterscheidbar |
+| 5 | **Rommé** | 2–4 | mittel–hoch | gut mit sortierter Hand, Sätze untereinander | mittel | Hausregeln als Einstellungen (40 Punkte zum Auslegen, Joker tauschen); kein Rummikub (freies Umbauen am Handy unpraktisch) |
+| 6 | **Patchwork** | 2 | mittel–hoch | gut, Drehen/Spiegeln braucht gute Bedienung | mittel | 33 Flicken selbst gestalten |
+| 7 | **Sagrada** | 2–4 | hoch | sehr gut (4×5) | mittel | erst Grundspiel, die 12 Werkzeugkarten danach; Fenstermuster selbst gestalten |
 
 ## Weitere Ideen
 

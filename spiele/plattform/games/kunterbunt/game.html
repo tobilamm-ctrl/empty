@@ -1,0 +1,750 @@
+<title>Kunterbunt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: violetter Spieltisch (Mitspieler, Stapel, aktuelle Farbe, Statuszeile), darunter die eigene Hand;
+   rechts bzw. schmal darunter Wertung, Verlauf und Regeln */
+:root {
+  color-scheme: dark;
+  --table: #100c1c;
+  --sheet: #1d1730;
+  --sheet-2: #2b2345;
+  --ink: #f5f2fb;
+  --muted: #aaa2c2;
+  --accent: #ffd23f;
+  --tile-ink: #1d1730;
+  --red: #ef5b5b;
+  --green: #5fc27a;
+  --c-r: #e2463c;
+  --c-y: #f4c22b;
+  --c-g: #2fa35a;
+  --c-b: #2f78d6;
+  --c-w: #1c1a26;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --cw: 76px;   /* Kartenbreite in der Hand */
+  --ov: 28px;   /* Überlappung in der Hand */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 .k1 { color: var(--c-r); } .brand h1 .k2 { color: var(--c-y); } .brand h1 .k3 { color: var(--c-g); } .brand h1 .k4 { color: #5c9cf0; }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+
+/* ---------- Spieltisch ---------- */
+.felt {
+  background: radial-gradient(ellipse at 50% 35%, #3b2a6e 0%, #1f1640 70%, #170f31 100%);
+  border-radius: 26px; padding: 16px; display: grid; gap: 16px; min-width: 0;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.45);
+}
+.seats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.seat {
+  background: rgba(0,0,0,.25); border-radius: 12px; padding: 8px 10px; min-width: 112px; flex: 0 1 auto;
+  display: grid; gap: 4px; justify-items: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.seat.on { box-shadow: 0 0 0 3px var(--accent); }
+.seat .nm { font-weight: 800; font-size: 14px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .nm small { font-weight: 600; color: var(--muted); }
+.seat .meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mini { display: flex; height: 34px; padding-left: 14px; }
+.mini svg { width: 24px; height: 34px; margin-left: -14px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.seats.compact { gap: 6px; }
+.seats.compact .seat { min-width: 0; padding: 5px 9px; gap: 2px; }
+.seats.compact .mini { display: none; }
+.seats.compact .meta b { font-family: var(--font-display); font-weight: 400; font-size: 17px; color: var(--ink); }
+.chip { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--tile-ink); }
+
+.center { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: center; padding: 6px 0; }
+.piles { display: flex; gap: 26px; align-items: flex-end; }
+.pile { display: grid; gap: 6px; justify-items: center; }
+.pile .lbl { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.stack { position: relative; width: 96px; height: 134px; }
+.stack svg { position: absolute; inset: 0; width: 96px; height: 134px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
+button.stack { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 10px; }
+button.stack:disabled { cursor: default; }
+button.stack.can { box-shadow: 0 0 0 3px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 60%, transparent); }
+.stack .empty { position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,.3); border-radius: 10px; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; }
+.info { display: grid; gap: 8px; justify-items: center; min-width: 150px; }
+.curcol { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 8px 14px 8px 10px; color: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
+.curcol svg { width: 34px; height: 34px; }
+.curcol b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 22px; line-height: 1; }
+.curcol small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.curcol.y { color: #2c2200; }
+.dir { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.dir svg { width: 26px; height: 26px; }
+.pending { background: var(--red); color: #fff; border-radius: 12px; padding: 6px 14px; font-family: var(--font-display); font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,.35); }
+
+.status { text-align: center; min-height: 1.5em; margin: 0; font-size: 16px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn { min-height: 44px; }
+
+/* Farbe wählen */
+.pickbox { background: rgba(0,0,0,.3); border-radius: 14px; padding: 12px; display: grid; gap: 10px; justify-items: center; }
+.pickbox p { margin: 0; font-weight: 800; }
+.colors { display: grid; grid-template-columns: repeat(2, minmax(0, 150px)); gap: 8px; }
+.colbtn { border: 0; border-radius: 12px; color: #fff; padding: 8px 12px 8px 8px; min-height: 52px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 800; text-align: left; }
+.colbtn.y { color: #2c2200; }
+.colbtn svg { width: 30px; height: 30px; flex: none; }
+.colbtn em { display: block; font-style: normal; font-size: 11px; font-weight: 600; opacity: .85; }
+.colbtn:hover, .colbtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* ---------- eigene Hand ---------- */
+.handzone { background: linear-gradient(#1f1640, #160f2d); border-radius: 18px; padding: 12px 12px 14px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.05); min-width: 0; }
+.handzone h2 { font-family: var(--font-display); font-weight: 400; font-size: 18px; margin: 0; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.handzone h2 small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
+.hand { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; align-content: flex-start; row-gap: 18px; padding: 18px 0 4px var(--ov); min-height: 140px; }
+.card {
+  width: var(--cw); aspect-ratio: 100 / 140; border: 0; padding: 0; background: none; border-radius: 9px; margin-left: calc(-1 * var(--ov));
+  position: relative; transition: transform .15s ease, filter .15s ease; filter: drop-shadow(-2px 2px 3px rgba(0,0,0,.45));
+}
+.card svg { width: 100%; height: 100%; display: block; }
+.card.ok { cursor: pointer; transform: translateY(-12px); }
+.card.ok svg { border-radius: 9px; box-shadow: 0 0 0 3px var(--accent); }
+.card.ok:hover, .card.ok:focus-visible { transform: translateY(-20px); outline: none; z-index: 2; }
+.card.dim svg { filter: brightness(.6) saturate(.55); }
+.card.new::after { content: "neu"; position: absolute; top: -18px; left: 4px; font-size: 11px; font-weight: 800; color: var(--accent); }
+.card:disabled { cursor: default; }
+.handnote { text-align: center; color: var(--muted); margin: 18px 0; }
+svg text { font-family: var(--font-display); }
+
+/* ---------- Seitenleiste ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 10px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+.rest { display: grid; gap: 8px; margin: 0 0 12px; }
+.rest .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--sheet-2); border-radius: 10px; padding: 6px 10px; }
+.rest .who { min-width: 90px; font-weight: 800; }
+.rest .pts { margin-left: auto; font-family: var(--font-display); font-size: 18px; font-variant-numeric: tabular-nums; }
+.rest .cards { display: flex; padding-left: 16px; flex-wrap: wrap; }
+.rest .cards svg { width: 34px; height: 48px; margin-left: -16px; filter: drop-shadow(-1px 1px 2px rgba(0,0,0,.4)); }
+.score-wrap { overflow-x: auto; }
+table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.score th, .score td { padding: 5px 6px; text-align: center; border-bottom: 1px solid var(--sheet-2); white-space: nowrap; }
+.score th:first-child, .score td:first-child { text-align: left; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.score td.r { color: var(--muted); }
+.score td.r.win { color: var(--green); font-weight: 800; }
+.score td.tot { font-family: var(--font-display); font-size: 18px; }
+.score tr.on td:first-child { color: var(--accent); }
+.score-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.log .last { color: var(--accent); font-weight: 800; }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  :root { --cw: 62px; --ov: 22px; }
+  .felt { padding: 12px 10px; border-radius: 20px; }
+  .seat { min-width: 0; padding: 6px 8px; }
+  .seat .nm { max-width: 104px; }
+  .center { gap: 14px; }
+  .piles { gap: 16px; }
+  .stack, .stack svg { width: 78px; height: 109px; }
+  .handzone { padding: 10px 8px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Zeichen der vier Farben (zusätzlich zur Farbe, damit man sie auch ohne Farbsehen unterscheidet) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="sy-r" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></symbol>
+    <symbol id="sy-y" viewBox="0 0 100 100"><path d="M50 4 61 36 95 37 68 57 78 90 50 70 22 90 32 57 5 37 39 36Z"/></symbol>
+    <symbol id="sy-g" viewBox="0 0 100 100"><path d="M50 8 94 88H6Z"/></symbol>
+    <symbol id="sy-b" viewBox="0 0 100 100"><path d="M50 4C66 30 86 48 86 66a36 36 0 0 1-72 0C14 48 34 30 50 4Z"/></symbol>
+    <pattern id="kb-back" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <rect width="20" height="20" fill="#2a1f52"/><rect width="10" height="10" fill="#33266a"/><rect x="10" y="10" width="10" height="10" fill="#33266a"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span class="k1">Kun</span><span class="k2">ter</span><span class="k3">bu</span><span class="k4">nt</span></h1>
+      <div class="sub">Farbe, Zahl oder Zeichen – und weg mit den Karten</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="felt" id="felt" aria-label="Spieltisch">
+        <div class="seats" id="seats"></div>
+        <div class="center">
+          <div class="piles">
+            <div class="pile"><button type="button" class="stack" id="drawpile" aria-label="Karte ziehen"></button><span class="lbl" id="drawcount">Stapel</span></div>
+            <div class="pile"><div class="stack" id="discard" aria-live="polite"></div><span class="lbl">Ablage</span></div>
+          </div>
+          <div class="info" id="info"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="pickbox" id="pickbox" hidden>
+          <p>Welche Farbe soll gelten?</p>
+          <div class="colors" id="colors"></div>
+          <button class="btn small" type="button" id="btn-nopick">Doch nicht</button>
+        </div>
+        <div class="actions" id="actions">
+          <button class="btn primary big" id="btn-draw" type="button">Karte ziehen</button>
+          <button class="btn big" id="btn-pass" type="button" hidden>Behalten, weiter</button>
+        </div>
+      </section>
+      <section class="handzone" id="handzone" aria-label="Deine Karten">
+        <h2><span id="hand-title">Deine Karten</span><small id="hand-sub"></small></h2>
+        <div class="hand" id="hand"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel" id="round-panel" hidden></section>
+      <section class="panel">
+        <h2>Punkte</h2>
+        <div class="score-wrap"><table class="score" id="score"></table></div>
+        <p class="score-note" id="score-note"></p>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul id="rules-list"></ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Karten ----------
+// Eine Karte ist ein Text aus Farbe und Wert: Farbe r, y, g, b (rot, gelb, grün, blau) oder w (schwarz, Farbwahl),
+// Wert 0–9, S (Aussetzen), R (Richtungswechsel), D (+2), W (Farbwahl), 4 (Farbwahl +4). Beispiele: "r7", "gS", "w4".
+const COLORS = ["r", "y", "g", "b"];
+const COLOR_NAME = { r: "Rot", y: "Gelb", g: "Grün", b: "Blau" };
+const SYMBOL_NAME = { r: "Kreis", y: "Stern", g: "Dreieck", b: "Tropfen" };
+const VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "S", "R", "D"];
+const colorOf = c => c[0];
+const valOf = c => c.slice(1);
+const isWild = c => c[0] === "w";
+const points = c => isWild(c) ? 50 : /\d/.test(valOf(c)) ? +valOf(c) : 20;
+const handPoints = h => h.reduce((a, c) => a + points(c), 0);
+function cardName(c) {
+  if (c === "wW") return "Farbwahl";
+  if (c === "w4") return "Farbwahl +4";
+  const v = valOf(c), n = v === "S" ? "Aussetzen" : v === "R" ? "Richtungswechsel" : v === "D" ? "+2" : v;
+  return `${COLOR_NAME[colorOf(c)]} ${n}`;
+}
+// 108 Karten: je Farbe eine 0, je zwei 1–9, Aussetzen, Richtungswechsel, +2; dazu je vier Farbwahl und Farbwahl +4
+function fullDeck() {
+  const d = [];
+  for (const f of COLORS) for (const v of VALUES) { d.push(f + v); if (v !== "0") d.push(f + v); }
+  for (let k = 0; k < 4; k++) d.push("wW", "w4");
+  return d;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const ORDER = ["r", "y", "g", "b", "w"];
+const sortHand = h => h.slice().sort((a, b) => ORDER.indexOf(colorOf(a)) - ORDER.indexOf(colorOf(b)) || "0123456789SRDW4".indexOf(valOf(a)) - "0123456789SRDW4".indexOf(valOf(b)));
+
+const DEFAULTS = { ende: "p200", stapeln: false, streng: true };
+const ENDE = { r1: "eine Runde", p200: "200 Punkte", p500: "500 Punkte" };
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi", "Lena", "Max"];
+
+let S, kit;
+const UI = { pickFor: null, key: "" };
+const O = () => Object.assign({}, DEFAULTS, S.options || {});
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 80); };
+const pname = i => `<b>${esc(S.players[i].name)}</b>`;
+const vb = (name, du, er) => (name === "Du" ? du : er);
+const top = () => S.discard[S.discard.length - 1];
+const nextIdx = (i, k = 1) => { const n = S.players.length; return ((i + S.dir * k) % n + n) % n; };
+
+// ---------- Regeln (verändern nur S, laufen über kit.act) ----------
+function canPlay(c) {
+  const o = O(), p = S.players[S.active];
+  if (S.pending > 0) {                                   // offene Ziehstrafe: nur weitergeben, wenn erlaubt
+    if (!o.stapeln) return false;
+    return c === "w4" || (valOf(c) === "D" && valOf(top()) === "D");
+  }
+  if (S.drawn && c !== S.drawn) return false;            // nach dem Ziehen nur die gezogene Karte
+  if (c === "wW") return true;
+  if (c === "w4") return !o.streng || !p.hand.some(x => colorOf(x) === S.color);
+  return colorOf(c) === S.color || (!isWild(top()) && valOf(c) === valOf(top()));
+}
+const legalCards = i => S.players[i].hand.filter(canPlay);
+
+function reshuffle() {
+  if (S.discard.length < 2) return false;
+  const keep = S.discard.pop();
+  S.deck = shuffle(S.discard);
+  S.discard = [keep];
+  log("Der Stapel ist leer. Die Ablage wird gemischt und zum neuen Stapel.");
+  return true;
+}
+function drawCards(i, n) {
+  const got = [];
+  for (let k = 0; k < n; k++) {
+    if (!S.deck.length && !reshuffle()) break;
+    const c = S.deck.pop();
+    S.players[i].hand.push(c);
+    got.push(c);
+  }
+  return got;
+}
+
+function startRound() {
+  S.roundNo++;
+  S.deck = shuffle(fullDeck());
+  // Startkarte: immer eine Zahlkarte
+  const c = S.deck.splice(S.deck.findIndex(x => /\d/.test(valOf(x)) && !isWild(x)), 1)[0];
+  S.players.forEach(p => { p.hand = []; });
+  for (let k = 0; k < 7; k++) S.players.forEach(p => p.hand.push(S.deck.pop()));
+  S.discard = [c]; S.color = colorOf(c); S.dir = 1;
+  S.pending = 0; S.drawn = null; S.passStreak = 0; S.last = null;
+  S.active = S.starter; S.phase = "play"; S.seq++;
+  log(`<b>Runde ${S.roundNo}</b>: 7 Karten für jeden, Startkarte ${cardName(c)}. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
+}
+
+function endRound(winner) {
+  const gain = winner >= 0 ? S.players.reduce((t, p, i) => t + (i === winner ? 0 : handPoints(p.hand)), 0) : 0;
+  S.players.forEach((p, i) => { p.rounds.push(i === winner ? gain : 0); if (i === winner) { p.total += gain; p.wins++; } });
+  S.last = { winner, gain, hands: S.players.map(p => p.hand.slice()) };
+  S.drawn = null; S.pending = 0; S.seq++;
+  const o = O();
+  const done = o.ende === "r1" || S.players.some(p => p.total >= +o.ende.slice(1));
+  S.phase = done ? "over" : "roundover";
+  if (winner >= 0) log(`${pname(winner)} ${vb(S.players[winner].name, "bekommst", "bekommt")} ${gain} Punkte für die Karten der anderen.`);
+  if (done) {
+    const best = Math.max(...S.players.map(p => p.total));
+    log(`<b>Spielende.</b> Die meisten Punkte (${best}): ${S.players.filter(p => p.total === best).map(p => `<b>${esc(p.name)}</b>`).join(" und ")}.`);
+  }
+}
+
+function playCard(c, color) {
+  const i = S.active, p = S.players[i], v = valOf(c), n = S.players.length;
+  p.hand.splice(p.hand.indexOf(c), 1);
+  S.discard.push(c);
+  S.color = isWild(c) ? color : colorOf(c);
+  S.drawn = null; S.passStreak = 0; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "legst", "legt")} ${cardName(c)}${isWild(c) ? ` und ${vb(p.name, "wählst", "wählt")} <b>${COLOR_NAME[color]}</b>` : ""}.`);
+  if (v === "D") S.pending += 2;
+  if (c === "w4") S.pending += 4;
+  if (!p.hand.length) {
+    log(`<span class="last">Kunterbunt!</span> ${pname(i)} ${vb(p.name, "hast", "hat")} keine Karten mehr und ${vb(p.name, "gewinnst", "gewinnt")} Runde ${S.roundNo}.`);
+    if (S.pending) {                                    // die letzte Karte war eine Ziehkarte: der Nächste zieht trotzdem
+      const t = nextIdx(i), got = drawCards(t, S.pending);
+      log(`${pname(t)} ${vb(S.players[t].name, "musst", "muss")} noch ${got.length} Karten ziehen.`);
+    }
+    endRound(i); return;
+  }
+  if (p.hand.length === 1) log(`<span class="last">Letzte Karte!</span> ${pname(i)} ${vb(p.name, "hast", "hat")} nur noch eine.`);
+  if (v === "S" || (v === "R" && n === 2)) {
+    log(`${pname(nextIdx(i))} setzt aus.`);
+    S.active = nextIdx(i, 2); return;
+  }
+  if (v === "R") { S.dir *= -1; log(`Die Richtung wechselt.`); }
+  S.active = nextIdx(i);
+}
+
+// Ziehen: offene Strafe (danach aussetzen) oder eine Karte
+function drawAction() {
+  const i = S.active, nm = S.players[i].name; S.seq++;
+  if (S.pending > 0) {
+    const want = S.pending, got = drawCards(i, want);
+    log(`${pname(i)} ${vb(nm, "ziehst", "zieht")} ${got.length} Karten${got.length < want ? " (mehr sind nicht da)" : ""} und setzt aus.`);
+    S.pending = 0; S.active = nextIdx(i);
+    return;
+  }
+  const got = drawCards(i, 1);
+  if (!got.length) {
+    log(`${pname(i)} ${vb(nm, "kannst", "kann")} nicht legen, und es gibt keine Karte mehr zum Ziehen.`);
+    S.passStreak++;
+    if (S.passStreak >= 2 * S.players.length) { log("Keiner kann mehr legen. Die Runde endet ohne Sieger."); endRound(-1); return; }
+    S.active = nextIdx(i); return;
+  }
+  log(`${pname(i)} ${vb(nm, "ziehst", "zieht")} eine Karte.`);
+  if (canPlay(got[0])) S.drawn = got[0];
+  else S.active = nextIdx(i);
+}
+function passTurn() {
+  S.drawn = null; S.seq++;
+  log(`${pname(S.active)} ${vb(S.players[S.active].name, "behältst", "behält")} die gezogene Karte.`);
+  S.active = nextIdx(S.active);
+}
+function nextRound() {
+  S.starter = (S.starter + 1) % S.players.length;
+  startRound();
+  playBots();
+}
+
+// ---------- Computer-Gegner ----------
+function favColor(hand) {
+  let best = COLORS[rnd(4)], bv = -1;
+  for (const f of COLORS) {
+    const cs = hand.filter(c => colorOf(c) === f);
+    const v = cs.length * 100 + handPoints(cs);
+    if (cs.length && v > bv) { bv = v; best = f; }
+  }
+  return best;
+}
+function botChoose(i, legal) {
+  const p = S.players[i], n = S.players.length;
+  const nextFew = S.players[nextIdx(i)].hand.length <= 2;
+  let best = null, bv = -Infinity;
+  for (const c of legal) {
+    const v0 = valOf(c), rest = p.hand.filter((x, k) => k !== p.hand.indexOf(c));
+    let v;
+    if (!rest.length) v = 1000;                                          // letzte Karte: sofort
+    else if (isWild(c)) {
+      v = rest.length <= 2 ? 25 : -40;                                   // Farbwahl als Joker aufheben
+      if (c === "w4") v += nextFew ? 45 : -10;
+      if (S.pending) v += 60;                                            // lieber weitergeben als ziehen
+    } else {
+      v = points(c) / 2 + 2 * rest.filter(x => colorOf(x) === colorOf(c)).length;
+      if (v0 === "D") v += nextFew ? 22 : 5;
+      if (v0 === "S") v += nextFew ? 16 : 4;
+      if (v0 === "R") v += n > 2 && nextFew ? 12 : 3;
+      if (S.pending) v += 60;
+    }
+    v += Math.random() * 0.5;
+    if (v > bv) { bv = v; best = c; }
+  }
+  return best;
+}
+function botStep() {
+  const i = S.active, p = S.players[i];
+  if (S.drawn) {
+    const c = S.drawn;
+    if (isWild(c) && p.hand.length > 3) passTurn();                     // gezogene Farbwahl lieber behalten
+    else playCard(c, isWild(c) ? favColor(p.hand.filter(x => x !== c)) : null);
+    return;
+  }
+  const legal = legalCards(i);
+  if (!legal.length) { drawAction(); return; }
+  const c = botChoose(i, legal);
+  const rest = p.hand.slice(); rest.splice(rest.indexOf(c), 1);
+  playCard(c, isWild(c) ? favColor(rest) : null);
+}
+function playBots() {
+  let guard = 0;
+  while (S.phase === "play" && S.players[S.active].ai && guard++ < 3000) botStep();
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, hand: [], total: 0, rounds: [], wins: 0 });
+function newState({ roster, mode, options }) {
+  const s = { players: roster.map(newPlayer), deck: [], discard: [], color: "r", dir: 1, active: 0, starter: 0, pending: 0, drawn: null,
+    passStreak: 0, roundNo: 0, last: null, phase: "play", seq: 0, log: [], options: Object.assign({}, DEFAULTS, options) };
+  if (mode !== "online") {
+    const nh = roster.filter(r => !r.ai).length;
+    s.starter = nh > 1 ? rnd(nh) : 0;   // lokal beginnt ein Mensch (die Menschen stehen vorn)
+    S = s; startRound();
+  }
+  return s;
+}
+function onStart(s) {
+  S = s;
+  S.starter = rnd(S.players.length);
+  startRound();
+  playBots();
+}
+const whoActs = () => (S.phase === "play" ? [S.active] : []);
+
+// ---------- Eingaben ----------
+const mine = () => S.phase === "play" && kit.me() === S.active;
+function doPlay(c, color) {
+  const seq = S.seq;
+  UI.pickFor = null;
+  kit.act(() => {
+    if (!mine() || S.seq !== seq) return false;
+    if (!S.players[S.active].hand.includes(c) || !canPlay(c)) return false;
+    if (isWild(c) && !COLORS.includes(color)) return false;
+    playCard(c, isWild(c) ? color : null);
+    playBots();
+  });
+}
+function doDraw() {
+  const seq = S.seq;
+  UI.pickFor = null;
+  kit.act(() => { if (!mine() || S.seq !== seq || S.drawn) return false; drawAction(); playBots(); });
+}
+$("hand").addEventListener("click", e => {
+  const b = e.target.closest(".card[data-c]");
+  if (!b || b.disabled) return;
+  const c = b.dataset.c;
+  if (isWild(c)) { UI.pickFor = c; render(); $("colors").querySelector("button").focus(); return; }
+  doPlay(c, null);
+});
+$("colors").addEventListener("click", e => { const b = e.target.closest("[data-col]"); if (b && UI.pickFor) doPlay(UI.pickFor, b.dataset.col); });
+$("btn-nopick").addEventListener("click", () => { UI.pickFor = null; render(); });
+$("btn-draw").addEventListener("click", doDraw);
+$("drawpile").addEventListener("click", doDraw);
+$("btn-pass").addEventListener("click", () => {
+  const seq = S.seq;
+  kit.act(() => { if (!mine() || S.seq !== seq || !S.drawn) return false; passTurn(); playBots(); });
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-next]")) {
+    const seq = S.seq;
+    kit.act(() => { if (S.phase !== "roundover" || S.seq !== seq || kit.me() < 0) return false; nextRound(); });
+  }
+  if (e.target.closest("[data-again]")) kit.rematch();
+});
+
+// ---------- Kartengrafik ----------
+const FILL = { r: "var(--c-r)", y: "var(--c-y)", g: "var(--c-g)", b: "var(--c-b)", w: "var(--c-w)" };
+const INK = { r: "#fff", y: "#2c2200", g: "#fff", b: "#fff", w: "#fff" };
+const sym = (f, x, y, w, fill) => `<use href="#sy-${f}" x="${x}" y="${y}" width="${w}" height="${w}" fill="${fill}"/>`;
+// Bildzeichen für Aussetzen und Richtungswechsel, in einem Feld 100 × 100
+function glyph(v, col, sw = 9) {
+  if (v === "S") return `<circle cx="50" cy="50" r="32" fill="none" stroke="${col}" stroke-width="${sw}"/><path d="M28 72 72 28" stroke="${col}" stroke-width="${sw}"/>`;
+  return `<g fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="M22 38H74M60 24 74 38 60 52"/><path d="M78 64H26M40 50 26 64 40 78"/></g>`;
+}
+// vier farbige Dreiecke in einer Raute (Farbwahl)
+const fourColors = (cx, cy, r) => `<path d="M${cx} ${cy - r}L${cx + r} ${cy}L${cx} ${cy}Z" fill="var(--c-r)"/><path d="M${cx + r} ${cy}L${cx} ${cy + r}L${cx} ${cy}Z" fill="var(--c-b)"/>
+  <path d="M${cx} ${cy + r}L${cx - r} ${cy}L${cx} ${cy}Z" fill="var(--c-g)"/><path d="M${cx - r} ${cy}L${cx} ${cy - r}L${cx} ${cy}Z" fill="var(--c-y)"/>`;
+function cornerLabel(c, ink) {
+  const v = valOf(c);
+  if (v === "S" || v === "R") return `<g transform="translate(3 4) scale(.2)">${glyph(v, ink, 12)}</g>`;
+  const t = v === "D" ? "+2" : v;
+  return `<text x="12" y="21" text-anchor="middle" font-size="${t.length > 1 ? 15 : 19}" fill="${ink}">${t}</text>`;
+}
+function cardSvg(c) {
+  const f = colorOf(c), v = valOf(c), ink = INK[f];
+  const corner = isWild(c) ? `<g>${fourColors(12, 14, 8)}</g>${v === "4" ? `<text x="12" y="38" text-anchor="middle" font-size="13" fill="#fff">+4</text>` : ""}`
+    : `${cornerLabel(c, ink)}${sym(f, 5, 25, 14, ink)}`;
+  let mid;
+  if (isWild(c)) mid = `${fourColors(50, 70, 36)}<path d="M50 34 86 70 50 106 14 70Z" fill="none" stroke="#fff" stroke-width="3"/>${v === "4" ? `<text x="50" y="82" text-anchor="middle" font-size="34" fill="#fff" stroke="#1c1a26" stroke-width="5" paint-order="stroke">+4</text>` : ""}`;
+  else {
+    const col = FILL[f];
+    let inner;
+    if (v === "S" || v === "R") inner = `<g transform="translate(26 46) scale(.48)">${glyph(v, col, 11)}</g>`;
+    else {
+      const t = v === "D" ? "+2" : v;
+      inner = `<text x="50" y="${v === "D" ? 82 : 86}" text-anchor="middle" font-size="${v === "D" ? 34 : 46}" fill="${col}" stroke="#1c1a26" stroke-width="2" paint-order="stroke">${t}</text>${v === "6" || v === "9" ? `<rect x="40" y="90" width="20" height="4" rx="2" fill="${col}"/>` : ""}`;
+    }
+    mid = `<path d="M50 30 88 70 50 110 12 70Z" fill="#fff" stroke="rgba(0,0,0,.18)" stroke-width="2" stroke-linejoin="round"/>${inner}`;
+  }
+  return `<svg viewBox="0 0 100 140" aria-hidden="true"><rect x="1" y="1" width="98" height="138" rx="10" fill="#fff"/>
+    <rect x="5" y="5" width="90" height="130" rx="7" fill="${FILL[f]}"/>${mid}
+    ${corner}<g transform="rotate(180 50 70)">${corner}</g></svg>`;
+}
+const backSvg = () => `<svg viewBox="0 0 100 140" aria-hidden="true"><rect x="1" y="1" width="98" height="138" rx="10" fill="#fff"/>
+  <rect x="5" y="5" width="90" height="130" rx="7" fill="url(#kb-back)"/>${fourColors(50, 70, 26)}<path d="M50 44 76 70 50 96 24 70Z" fill="none" stroke="#fff" stroke-width="3"/></svg>`;
+const colorSvg = (f, fill = "currentColor") => `<svg viewBox="0 0 100 100" aria-hidden="true">${sym(f, 0, 0, 100, fill)}</svg>`;
+const dirSvg = d => `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"
+  ${d < 0 ? 'transform="matrix(-1 0 0 1 100 0)"' : ""}><path d="M78 50A28 28 0 1 1 64 26"/><path d="M62 10 66 27 49 31"/></g></svg>`;
+
+// ---------- Darstellung ----------
+function rulesHtml() {
+  const o = O();
+  return `<li>108 Karten in vier Farben, jede Farbe hat zusätzlich ein eigenes Zeichen: Rot ● Kreis, Gelb ★ Stern, Grün ▲ Dreieck, Blau 💧 Tropfen. Je Farbe gibt es eine 0, je zwei 1 bis 9, zwei Aussetzen, zwei Richtungswechsel und zwei +2. Dazu kommen je vier schwarze Karten Farbwahl und Farbwahl +4.</li>
+    <li>Jeder bekommt 7 Karten. Wer dran ist, legt eine Karte, die in <b>Farbe, Zahl oder Zeichen</b> zur obersten Karte passt. Farbwahl passt immer.</li>
+    <li>Wer nicht legen kann oder will, zieht eine Karte. Passt sie, darf man sie gleich legen, sonst ist der Nächste dran.</li>
+    <li><b>Aussetzen:</b> Der Nächste ist übersprungen. <b>Richtungswechsel:</b> Die Reihenfolge dreht sich um, zu zweit wirkt er wie Aussetzen.</li>
+    <li><b>+2:</b> Der Nächste zieht 2 Karten und setzt aus. <b>Farbwahl:</b> Du bestimmst die Farbe, die jetzt gilt.
+      <b>Farbwahl +4:</b> Du bestimmst die Farbe, der Nächste zieht 4 Karten und setzt aus.${o.streng ? " Die +4 darfst du nur legen, wenn du keine Karte in der geltenden Farbe hast." : ""}</li>
+    ${o.stapeln ? "<li><b>Weitergeben ist an:</b> Auf eine +2 darfst du eine +2 oder +4 legen, auf eine +4 eine weitere +4. Wer nicht weitergibt, zieht die ganze Summe.</li>" : ""}
+    <li>Hat jemand nur noch eine Karte, meldet der Verlauf „Letzte Karte!“. Wer seine letzte Karte legt, gewinnt die Runde und bekommt die Kartenwerte der anderen als Punkte: Zahlen nach Wert, Aussetzen, Richtungswechsel und +2 je 20, Farbwahl-Karten je 50.</li>
+    <li>Gespielt wird ${o.ende === "r1" ? "<b>eine Runde</b>" : `bis jemand <b>${ENDE[o.ende]}</b> erreicht`}. Es gewinnt, wer die meisten Punkte hat.</li>
+    <li>Die Startkarte ist immer eine Zahlkarte. Ist der Stapel leer, wird die Ablage bis auf die oberste Karte gemischt.</li>`;
+}
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine(), o = O();
+  const playing = S.phase === "play";
+  $("felt").hidden = $("handzone").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = rulesHtml();
+  if (lobby) { $("result").hidden = $("round-panel").hidden = true; $("score").innerHTML = ""; $("score-note").textContent = ""; return; }
+  const key = `${S.seq}:${mi}`;
+  if (UI.key !== key) { UI.key = key; UI.pickFor = null; }
+  const a = S.players[S.active];
+
+  // Mitspieler (alle außer dem, der das Gerät bedient), in Spielrichtung ab dem Gerät
+  const order = S.players.map((p, i) => i);
+  const compact = S.players.length > 4;
+  $("seats").classList.toggle("compact", compact);
+  $("seats").innerHTML = order.map(i => {
+    const p = S.players[i];
+    if (i === mi) return "";
+    const n = p.hand.length;
+    const backs = Array.from({ length: Math.min(n, 8) }, backSvg).join("");
+    return `<div class="seat${playing && i === S.active ? " on" : ""}">
+      <div class="nm">${esc(p.name)}${p.ai ? " <small>Computer</small>" : ""}</div>
+      <div class="mini" aria-hidden="true">${backs}</div>
+      <div class="meta">${compact ? `<b>${n}</b> Karte${n === 1 ? "" : "n"} · ${p.total} P.` : `${n} Karte${n === 1 ? "" : "n"} · ${p.total} Punkte`}</div>
+      ${playing && n === 1 ? '<span class="chip">Letzte Karte</span>' : ""}</div>`;
+  }).join("");
+
+  // Stapel und Ablage
+  const canDraw = me && !S.drawn;
+  $("drawpile").innerHTML = S.deck.length ? backSvg() : `<span class="empty">leer</span>`;
+  $("drawpile").disabled = !canDraw;
+  $("drawpile").classList.toggle("can", canDraw && !legalCards(S.active).length);
+  $("drawcount").textContent = `Stapel · ${S.deck.length}`;
+  const under = S.discard.slice(-3);
+  $("discard").innerHTML = under.map((c, k) => {
+    const rot = k === under.length - 1 ? 0 : ((c.charCodeAt(0) * 7 + c.charCodeAt(c.length - 1) * 13 + k * 5) % 17) - 8;
+    return cardSvg(c).replace("<svg ", `<svg style="transform:rotate(${rot}deg)" `);
+  }).join("");
+  $("discard").setAttribute("aria-label", S.discard.length ? `Oben liegt ${cardName(top())}` : "Ablage leer");
+
+  let info = "";
+  if (playing) {
+    info += `<div class="curcol ${S.color}" style="background:${FILL[S.color]}" role="status">${colorSvg(S.color)}<div><small>Es gilt</small><b>${COLOR_NAME[S.color]}</b></div></div>`;
+    info += `<div class="dir">${dirSvg(S.dir)}${S.dir > 0 ? "im Uhrzeigersinn" : "gegen den Uhrzeigersinn"}</div>`;
+    if (S.pending) info += `<div class="pending">+${S.pending} ziehen</div>`;
+  }
+  $("info").innerHTML = info;
+
+  // Statuszeile
+  let st = "";
+  if (playing) {
+    if (!me) st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>.`;
+    else if (S.pending) st = legalCards(S.active).length ? `Du musst <strong>${S.pending} Karten</strong> ziehen oder gibst weiter.` : `Du musst <strong>${S.pending} Karten</strong> ziehen und setzt aus.`;
+    else if (S.drawn) st = `Die gezogene Karte <strong>${cardName(S.drawn)}</strong> passt. Legen oder behalten?`;
+    else if (UI.pickFor) st = `Du legst <strong>${cardName(UI.pickFor)}</strong>.`;
+    else st = `<strong>Du bist dran.</strong> ` + (legalCards(S.active).length ? "Lege eine hervorgehobene Karte oder ziehe eine." : "Keine Karte passt, du musst ziehen.");
+  } else if (S.phase === "roundover") st = `Runde ${S.roundNo} ist vorbei.`;
+  else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+
+  // Knöpfe
+  $("actions").hidden = !me || !!UI.pickFor;
+  $("btn-draw").hidden = !!S.drawn;
+  $("btn-draw").textContent = S.pending ? `${S.pending} Karten ziehen` : "Karte ziehen";
+  $("btn-pass").hidden = !S.drawn;
+  $("pickbox").hidden = !(me && UI.pickFor);
+  if (me && UI.pickFor) {
+    const rest = a.hand.slice(); rest.splice(rest.indexOf(UI.pickFor), 1);
+    $("colors").innerHTML = COLORS.map(f => {
+      const k = rest.filter(c => colorOf(c) === f).length;
+      return `<button type="button" class="colbtn ${f}" style="background:${FILL[f]}" data-col="${f}">${colorSvg(f)}<span>${COLOR_NAME[f]}<em>${k} auf der Hand</em></span></button>`;
+    }).join("");
+  }
+
+  // eigene Hand: nur die Karten dessen, der das Gerät bedient
+  const meP = S.players[mi];
+  if (!meP) {
+    $("hand-title").textContent = "Zuschauer";
+    $("hand-sub").textContent = "";
+    $("hand").innerHTML = `<p class="handnote">Du spielst in diesem Raum nicht mit.</p>`;
+  } else {
+    $("hand-title").textContent = kit.hotSeat() ? `Karten von ${meP.name}` : "Deine Karten";
+    $("hand-sub").textContent = `${meP.hand.length} Karte${meP.hand.length === 1 ? "" : "n"} · ${meP.total} Punkte`;
+    const hand = sortHand(meP.hand);
+    let newShown = false;
+    $("hand").innerHTML = hand.length ? hand.map(c => {
+      const ok = me && !UI.pickFor && canPlay(c);
+      const cls = ok ? " ok" : me ? " dim" : "";
+      const isNew = c === S.drawn && !newShown; if (isNew) newShown = true;
+      return `<button type="button" class="card${cls}${isNew ? " new" : ""}" data-c="${c}" aria-label="${cardName(c)}${ok ? ", spielbar" : ""}"${ok ? "" : " disabled"}>${cardSvg(c)}</button>`;
+    }).join("") : `<p class="handnote">Keine Karten mehr.</p>`;
+  }
+
+  // Runde vorbei
+  const rp = $("round-panel");
+  if ((S.phase === "roundover" || S.phase === "over") && S.last) {
+    const w = S.last.winner;
+    const head = w >= 0 ? `${esc(S.players[w].name)} ${vb(S.players[w].name, "bekommst", "bekommt")} ${S.last.gain} Punkte` : "Runde ohne Sieger";
+    rp.innerHTML = `<h2>Runde ${S.roundNo}: ${head}</h2>
+      <div class="rest">${S.players.map((p, i) => i === w ? "" : `<div class="row"><span class="who">${esc(p.name)}</span>
+        <span class="cards">${sortHand(S.last.hands[i]).map(cardSvg).join("")}</span>
+        <span class="pts">${handPoints(S.last.hands[i])}</span></div>`).join("")}</div>
+      ${S.phase === "roundover" ? (mi >= 0 ? `<button class="btn primary" type="button" data-next>Nächste Runde</button>` : `<p class="sk-muted">Gleich geht es weiter.</p>`) : ""}`;
+    rp.hidden = false;
+  } else rp.hidden = true;
+
+  // Wertung
+  const nR = Math.max(0, ...S.players.map(p => p.rounds.length));
+  const from = Math.max(0, nR - 5);
+  $("score").innerHTML = `<thead><tr><th>Spieler</th>${Array.from({ length: nR - from }, (_, k) => `<th>R${from + k + 1}</th>`).join("")}<th>Summe</th></tr></thead><tbody>${S.players.map((p, i) =>
+    `<tr class="${playing && i === S.active ? "on" : ""}"><td title="${esc(p.name)}">${esc(p.name)}</td>${p.rounds.slice(from).map(v => `<td class="r${v > 0 ? " win" : ""}">${v > 0 ? v : "–"}</td>`).join("")}<td class="tot">${p.total}</td></tr>`).join("")}</tbody>`;
+  $("score-note").textContent = `Runde ${Math.max(1, S.roundNo)} · ${o.ende === "r1" ? "nur eine Runde" : `Ziel ${ENDE[o.ende]}`}${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const rank = S.players.slice().sort((x, y) => y.total - x.total || y.wins - x.wins);
+    const best = rank[0].total, win = rank.filter(p => p.total === best).map(p => p.name);
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(esc).join(" und ")}` : `${esc(win[0])} ${vb(win[0], "gewinnst", "gewinnt")}`}</h2>
+      <p>${S.roundNo} Runde${S.roundNo === 1 ? "" : "n"} gespielt. Viele Punkte sind gut.</p>
+      <ol class="rank">${rank.map((p, k) => `<li><span>${k + 1}. ${esc(p.name)}</span><span>${p.total} Punkte · ${p.wins}× gewonnen</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellungen im Dialog „Neues Spiel“ ----------
+const seg = (name, label, items, def) => `<div class="sk-field"><div class="sk-label">${label}</div><div class="sk-seg" role="radiogroup" aria-label="${label}">
+  ${items.map(([v, t, sm]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}"${v === def ? " checked" : ""}>${t}${sm ? `<small>${sm}</small>` : ""}</label>`).join("")}</div></div>`;
+const chk = (id, t, sm, on) => `<label><input type="checkbox" id="${id}"${on ? " checked" : ""}>${t}<small>${sm}</small></label>`;
+const setup = {
+  html: seg("kb-ende", "Spieldauer", [["r1", "Eine Runde"], ["p200", "Bis 200", "Punkte"], ["p500", "Bis 500", "Punkte, lang"]], "p200")
+    + `<div class="sk-field"><div class="sk-label">Hausregeln</div><div class="sk-seg">
+      ${chk("kb-stapeln", "Weitergeben", "+2 und +4 auf +2 legen", false)}${chk("kb-streng", "+4 streng", "nur ohne passende Farbe", true)}</div></div>`,
+  read(root) {
+    const v = n => (root.querySelector(`input[name="${n}"]:checked`) || {}).value;
+    const c = id => !!(root.querySelector("#" + id) || {}).checked;
+    return { ende: v("kb-ende") || "p200", stapeln: c("kb-stapeln"), streng: c("kb-streng") };
+  },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "kunterbunt", version: 1, minPlayers: 2, maxPlayers: 8, bots: true, defaultBots: 2, privateHands: true, botNames: BOT_NAMES,
+  setup,
+  defaultOptions: () => Object.assign({}, DEFAULTS),
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.deck) && Array.isArray(s.discard) && s.players.every(p => Array.isArray(p.hand)),
+  roomStatus: s => `läuft · Runde ${s.roundNo}`,
+  handoverText: s => s.phase !== "play" ? "Weiter geht's." : s.pending ? `Du musst ${s.pending} Karten ziehen${s.options && s.options.stapeln ? " oder weitergeben" : ""}.`
+    : `Es gilt ${COLOR_NAME[s.color]}. Deine Karten siehst du gleich.`,
+  // nur für automatische Tests der Regeln
+  test: { canPlay, playCard, drawAction, passTurn, nextRound, startRound, playBots, botStep, endRound, handPoints, points, fullDeck, cardSvg, get S() { return S; } },
+});
+kit.start();
+})();
+</script>
