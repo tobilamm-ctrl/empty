@@ -412,13 +412,17 @@ function finish() {
     : `<b>Spielende:</b> ${esc((a.score > b.score ? a : b).name)} gewinnt mit ${Math.max(a.score, b.score)} zu ${Math.min(a.score, b.score)} Punkten.`);
 }
 // Computer: als Codemacher zufällig, als Ratender mit der Strategie oben – alles im selben Zug
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => (S.phase === "make" && S.players[S.maker].ai) || (S.phase === "guess" && S.players[S.breaker].ai);
+function botStep() {
+  if (S.phase === "make" && S.players[S.maker].ai) setCode(randomCode(S.len, S.ncol));
+  else if (S.phase === "guess" && S.players[S.breaker].ai) submitGuess(botGuess(S.len, S.ncol, S.guesses));
+}
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (guard++ < 100) {
-    if (S.phase === "make" && S.players[S.maker].ai) setCode(randomCode(S.len, S.ncol));
-    else if (S.phase === "guess" && S.players[S.breaker].ai) submitGuess(botGuess(S.len, S.ncol, S.guesses));
-    else break;
-  }
+  while (botPending() && guard++ < 100) botStep();
 }
 
 // ---------- Eingaben ----------
@@ -639,6 +643,7 @@ kit = Spielkit.create({
   defaultOptions: () => ({ level: "klassisch", rounds: 2 }),
   newPlayer,
   newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "tile",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.done) && Array.isArray(s.guesses) && !!s.len,
   roomStatus: s => `läuft · Durchgang ${Math.min(s.round + 1, s.rounds)} von ${s.rounds} · ${s.players.map(p => p.score).join(":")}`,

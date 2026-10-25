@@ -350,9 +350,13 @@ function botStep() {
   }
   take(best.src, best.c, best.r);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < 500) botStep();
+  while (botPending() && guard++ < 500) botStep();
 }
 
 // ---------- Spielstand ----------
@@ -510,6 +514,7 @@ function render() {
 kit = Spielkit.create({
   id: "mosaik", version: 1, minPlayers: 2, maxPlayers: 4, bots: true, defaultBots: 1, botNames: BOT_NAMES,
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botStep(), moveSound: "tile",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.facs) && Array.isArray(s.center) && s.players.every(p => Array.isArray(p.wall) && Array.isArray(p.lines)),
   roomStatus: s => `läuft · Runde ${s.round}`,

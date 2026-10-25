@@ -394,9 +394,13 @@ function botTurn() {
   if (pairCol != null) pick = pairCol;
   flipAt(pick);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < 50) botTurn();
+  while (botPending() && guard++ < 50) botTurn();
 }
 
 // ---------- Eingaben ----------
@@ -464,7 +468,7 @@ function render() {
   const canTake = mine && S.drawn == null && !S.mustFlip;
   $("center").innerHTML = `
     <div class="pile"><span class="lbl">Stapel · ${S.deck.length}</span>${cardHtml({ v: 0, up: false })}</div>
-    <div class="pile"><span class="lbl${S.by != null && S.by !== mi && S.players[S.by] ? " by" : ""}">${S.by != null && S.players[S.by] ? `von ${esc(S.players[S.by].name)}` : "Ablage"}</span>${top != null ? cardHtml({ v: top, up: true }) : `<div class="card gone"></div>`}</div>
+    <div class="pile"><span class="lbl${S.by != null && S.by !== mi && S.players[S.by] ? " by" : ""}">${S.by != null && S.players[S.by] ? `von ${S.players[S.by].name === "Du" ? "dir" : esc(S.players[S.by].name)}` : "Ablage"}</span>${top != null ? cardHtml({ v: top, up: true }) : `<div class="card gone"></div>`}</div>
     ${S.drawn != null ? `<div class="pile drawn"><span class="lbl">${S.drawnFrom === "discard" ? "Von der Ablage" : "Gezogen"}</span>${cardHtml({ v: S.drawn, up: true })}</div>` : ""}`;
 
   // Status und Knöpfe
@@ -539,6 +543,7 @@ kit = Spielkit.create({
   setup: goalSetup,
   defaultOptions: () => ({ goal: 100 }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botTurn(), moveSound: "card",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.players) && s.players.every(p => Array.isArray(p.grid)) && Array.isArray(s.discard),
   roomStatus: s => `läuft · Runde ${s.round}`,

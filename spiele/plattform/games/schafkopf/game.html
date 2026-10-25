@@ -675,19 +675,21 @@ function botCard(s, p) {
   }
   return low();
 }
+// ein Schritt eines Computers: ansagen oder eine Karte spielen
+const botPending = s => (s.phase === "bid" && s.players[s.bidTurn].ai) || (s.phase === "play" && s.players[s.turn].ai);
+function botStep(s) {
+  if (s.phase === "bid" && s.players[s.bidTurn].ai) doBid(s, s.bidTurn, botBid(s, s.bidTurn));
+  else if (s.phase === "play" && s.players[s.turn].ai) playCard(s, s.turn, botCard(s, s.turn));
+}
 function runBots(s) {
   let guard = 0;
-  while (guard++ < 200) {
-    if (s.phase === "bid" && s.players[s.bidTurn].ai) doBid(s, s.bidTurn, botBid(s, s.bidTurn));
-    else if (s.phase === "play" && s.players[s.turn].ai) playCard(s, s.turn, botCard(s, s.turn));
-    else break;
-  }
+  while (botPending(s) && guard++ < 200) botStep(s);
 }
 
 return { esc, SUITS, RANKS, SUIT_NAME, RANK_NAME, RANK_LABEL, LEVEL, deck, pts, cardName, cc, trumpRank, isTrump, eff, power,
   trickWinner, trumpOrder, laufende, sortHand, gameName, bidName, trumpText, callable, legalBids, isLegalBid, sameBid,
   defaults, startSession, deal, doBid, nextGame, legalCards, illegalReason, playCard, scoreGame, scoreRamsch, settle,
-  botBid, botCard, runBots, friend, evalNormal, evalWenz };
+  botBid, botCard, runBots, botPending, botStep, friend, evalNormal, evalWenz };
 })();
 </script>
 
@@ -740,17 +742,19 @@ const cardEl = (c, cls = "", attrs = "") => `<span class="card ${cls}" ${attrs} 
 
 // ---------- Spielkit-Anbindung ----------
 const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, konto: 0 });
+// Computer-Gegner zieht das Spielkit einzeln mit kurzer Pause; nur in Tests laufen sie sofort
+const runBotsNow = s => { if (!kit.paced()) R.runBots(s); };
 function newState({ roster, mode, options }) {
   const s = { players: roster.map(newPlayer), phase: "bid", log: [], cfg: R.defaults(options), history: [], gameNo: 1, dealer: 0, seq: 0, notice: "",
     hands: [[], [], [], []], hands0: [[], [], [], []], bids: [null, null, null, null], best: -1, bidTurn: 1, game: null, trick: [], lastTrick: null,
     played: [], ledSuits: [], tricksWon: [0, 0, 0, 0], ptsWon: [0, 0, 0, 0], trickNo: 0, turn: 0, searched: false, revealed: false, result: null };
-  if (mode !== "online") { R.startSession(s); R.runBots(s); }
+  if (mode !== "online") { R.startSession(s); runBotsNow(s); }
   return s;
 }
 function onStart(s) {
   s.cfg = R.defaults(s.options || s.cfg);
   R.startSession(s);
-  R.runBots(s);
+  runBotsNow(s);
 }
 const whoActs = () => (S.phase === "bid" ? [S.bidTurn] : S.phase === "play" ? [S.turn] : []);
 
@@ -792,7 +796,7 @@ function onBid(b) {
     const p = me();
     if (S.seq !== seq || p < 0 || !R.isLegalBid(S, p, b)) return false;
     R.doBid(S, p, b);
-    R.runBots(S);
+    runBotsNow(S);
   });
 }
 function onPlay(c) {
@@ -802,7 +806,7 @@ function onPlay(c) {
     const p = me();
     if (S.seq !== seq || S.phase !== "play" || S.turn !== p || !R.legalCards(S, p).includes(c)) return false;
     R.playCard(S, p, c);
-    R.runBots(S);
+    runBotsNow(S);
   });
 }
 function onNext() {
@@ -810,7 +814,7 @@ function onNext() {
   kit.act(() => {
     if (S.seq !== seq || S.phase !== "score" || me() < 0) return false;
     R.nextGame(S);
-    R.runBots(S);
+    runBotsNow(S);
   });
 }
 $("hand").addEventListener("click", e => {
@@ -1026,6 +1030,7 @@ kit = Spielkit.create({
   setup: setupOpts,
   defaultOptions: () => R.defaults(JSON.parse(kit ? kit.store.get("optionen") || "{}" : "{}")),
   newPlayer, newState, onStart, whoActs, render,
+  botPending: s => R.botPending(s), botStep: s => R.botStep(s), moveSound: "card",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.hands) && !!s.cfg && Array.isArray(s.history),
   roomStatus: s => `Spiel ${s.gameNo} von ${s.cfg.games}`,

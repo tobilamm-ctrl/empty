@@ -489,9 +489,13 @@ function botTurn() {
   const c = choices.slice().sort((a, b) => keepValue(p, a) - keepValue(p, b))[0];
   discardCard(c);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => (S.phase === "draw" || S.phase === "play") && S.players[S.active].ai;
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while ((S.phase === "draw" || S.phase === "play") && S.players[S.active].ai && guard++ < 4000) botTurn();
+  while (botPending() && guard++ < 4000) botTurn();
 }
 
 // ---------- Spielstand ----------
@@ -629,7 +633,7 @@ function render() {
   $("discard").setAttribute("aria-label", t ? `Ablage: ${cardName(t)}` : "Ablage leer");
   // wer die oberste Karte abgeworfen hat (andere hervorgehoben)
   const by = t && S.by != null && S.players[S.by] ? S.by : -1;
-  $("discard-lbl").innerHTML = by >= 0 ? `von ${esc(S.players[by].name)}` : "Ablage";
+  $("discard-lbl").innerHTML = by >= 0 ? `von ${S.players[by].name === "Du" ? "dir" : esc(S.players[by].name)}` : "Ablage";
   $("discard-lbl").classList.toggle("by", by >= 0 && by !== mi);
   $("discard").classList.toggle("from", by >= 0 && by !== mi);
 
@@ -741,6 +745,7 @@ kit = Spielkit.create({
   setup,
   defaultOptions: () => Object.assign({}, DEFAULTS),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botTurn(), moveSound: "card",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.deck) && Array.isArray(s.melds) && s.players.every(p => Array.isArray(p.hand)),
   roomStatus: s => `läuft · Runde ${s.roundNo}`,

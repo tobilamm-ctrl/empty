@@ -506,14 +506,19 @@ function endGame(s, w) {
   s.phase = s.players[w].pts >= s.target ? "over" : "gameover";
   if (s.phase === "over") log(s, `<b>Partie entschieden.</b> ${nm(s, w)} erreicht ${s.players[w].pts} Punkt${s.players[w].pts > 1 ? "e" : ""}.`);
 }
-// Computer zieht synchron, bis ein Mensch dran ist oder das Spiel vorbei ist
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = s => s.phase === "play" && s.players[s.turn.p].ai;
+// ein Schritt: würfeln oder (mit Würfeln) den ganzen Zug ausführen
+function botStep(s) {
+  if (!s.turn.dice) { roll(s); return; }
+  for (const m of botChoose(s.board, s.turn.p, s.turn.rest)) turnMove(s, m);
+  commitTurn(s);
+}
 function playBots(s) {
+  if (kit.paced()) return;
   let guard = 0;
-  while (s.phase === "play" && s.players[s.turn.p].ai && guard++ < 3000) {
-    if (!s.turn.dice) roll(s);
-    for (const m of botChoose(s.board, s.turn.p, s.turn.rest)) turnMove(s, m);
-    commitTurn(s);
-  }
+  while (botPending(s) && guard++ < 3000) botStep(s);
 }
 
 // ---------- Sicht und Hilfen für die Oberfläche ----------
@@ -802,6 +807,7 @@ kit = Spielkit.create({
   setup: zielSetup,
   defaultOptions: () => ({ ziel: 1 }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending: s => botPending(s), botStep: s => botStep(s), moveSound: "dice",
   onState: s => { S = s; },
   validState: s => !!s.board && Array.isArray(s.board.pts) && !!s.turn,
   roomStatus: s => `läuft · Spiel ${s.game} · ${s.players.map(p => p.pts).join(":")}`,

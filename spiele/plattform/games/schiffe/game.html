@@ -420,9 +420,14 @@ function botShot(k) {
   const lens = o.fleet.filter((_, j) => !flags[j]).map(sh => sh.len);
   return botPick(p.shots, sunkCells, lens);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "shoot" && !S.hold && S.players[S.active].ai;
+const botStep = () => shoot(botShot(S.active));
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "shoot" && !S.hold && S.players[S.active].ai && guard++ < 250) shoot(botShot(S.active));
+  while (botPending() && guard++ < 250) botStep();
 }
 
 // ---------- Aufstellen (Entwurf bleibt auf dem Gerät, bis „Fertig“) ----------
@@ -682,6 +687,7 @@ kit = Spielkit.create({
   id: "schiffe", version: 1, minPlayers: 2, maxPlayers: 2, bots: true, defaultBots: 1, privateHands: true,
   setup, defaultOptions: () => ({ again: true }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "move",
   onState: s => { S = s; },
   validState: s => s.players.length === 2 && s.players.every(p => Array.isArray(p.fleet) && typeof p.shots === "string"),
   roomStatus: s => (s.phase === "place" ? "Flotten werden aufgestellt" : `läuft · ${s.players.map(p => hitsCount(p.shots)).join(":")} Treffer`),

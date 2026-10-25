@@ -327,19 +327,22 @@ function bestHold(p, d, rollsLeft) {
   }
   return best.mask;
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
+// ein Schritt: erster Wurf, weiterer Wurf (mit gehaltenen Würfeln) oder Eintragen
+function botStep() {
+  const p = S.players[S.active];
+  if (S.rollsLeft === 3) { roll(); return; }
+  const mask = S.rollsLeft > 0 ? bestHold(p, S.dice, S.rollsLeft) : 31;
+  if (mask === 31) { write(bestCat(p, S.dice).cat); return; }
+  S.held = S.held.map((_, i) => !!(mask & (1 << i)));
+  roll();
+}
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < 20) {
-    const p = S.players[S.active];
-    roll();
-    while (S.rollsLeft > 0) {
-      const mask = bestHold(p, S.dice, S.rollsLeft);
-      if (mask === 31) break;
-      S.held = S.held.map((_, i) => !!(mask & (1 << i)));
-      roll();
-    }
-    write(bestCat(p, S.dice).cat);
-  }
+  while (botPending() && guard++ < 100) botStep();
 }
 
 // ---------- Eingaben ----------
@@ -457,6 +460,7 @@ kit = Spielkit.create({
   id: "wuerfelpoker", version: 1, minPlayers: 2, maxPlayers: 6, bots: true, defaultBots: 1,
   solo: { label: "Allein", small: "13 Runden, Bestwert schlagen" },
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "dice",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.dice) && s.players.every(p => p.sheet),
   roomStatus: s => `läuft · Runde ${Math.min(ROUNDS, Math.min(...s.players.map(filled)) + 1)}`,

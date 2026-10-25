@@ -382,9 +382,14 @@ function drop(c) {
     kit.addLog(`Runde ${S.round}: Das Brett ist voll, unentschieden.`);
   } else S.active = 1 - p;
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
+const botStep = () => drop(chooseMove(S.board, S.active, levelOf()));
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < CELLS) drop(chooseMove(S.board, S.active, levelOf()));
+  while (botPending() && guard++ < CELLS) botStep();
 }
 // Noch eine Runde an diesem Gerät: Spieler und Spielstand bleiben, der andere fängt an
 function newRound() {
@@ -439,6 +444,8 @@ function render() {
     });
   }
   UI.prev = S.hist.slice(); UI.prevKey = key;
+  // Ton, wenn ein Stein unten aufschlägt (eigene und fremde Züge)
+  fresh.forEach(f => setTimeout(() => kit.sound("stone"), (f.delay + f.dur) * 1000));
 
   // Brett: sieben Spalten als große Tippziele
   const lastIdx = S.hist.length ? (() => { const c = S.hist[S.hist.length - 1]; return at(c, heightOf(S.board, c) - 1); })() : -1;
@@ -532,6 +539,7 @@ kit = Spielkit.create({
   setup: levelSetup,
   defaultOptions: () => ({ level: kit && kit.store.get("stufe") || "mittel" }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "none",   // Ton kommt beim Aufschlagen des Steins
   onState: s => { S = s; },
   validState: s => Array.isArray(s.board) && s.board.length === CELLS && !!s.tally && Array.isArray(s.hist),
   roomStatus: s => `läuft · Runde ${s.round} · ${s.tally.wins.join(":")}`,

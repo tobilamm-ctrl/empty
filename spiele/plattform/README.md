@@ -94,6 +94,14 @@ Es übernimmt:
   Abgleich zwischen den Geräten
 - den Bildschirm „Gerät weitergeben an …“, wenn mehrere Menschen an einem Gerät spielen
 - Speichern des laufenden Spiels auf dem Gerät und den Rückweg zur Spieleübersicht
+- **Computer-Gegner mit Pause:** Das Spielkit ruft `botStep` einzeln auf, mit etwa 0,75 s Pause davor, damit man
+  jeden Zug sieht. Online zieht das Gerät des Gastgebers die Computer (ist es weg, nach 5 s ein anderes Gerät).
+  `playBots()` im Spiel tut deshalb nur noch etwas, wenn `kit.paced()` falsch ist (in Tests mit `window.SPIELKIT_SOFORT`).
+- **Zugleiste:** oben angeheftet, alle Spieler in Sitzreihenfolge; wer dran ist, ist gefüllt, wer als Nächstes
+  kommt, umrandet. Bei „Du bist dran“ zusätzlich eine farbige Linie und ein kurzer Ton.
+- **Töne:** im Browser erzeugt (keine Dateien), Knopf „Ton an/aus“ oben. Klick beim Antippen, Ton bei Zügen der
+  anderen, Gong bei „Du bist dran“, Melodie am Spielende. Spiele können mit `kit.sound("stone")` usw. eigene Töne
+  auslösen (Vier in einer Reihe beim Aufschlagen des Steins).
 - **Neuigkeiten:** Der Kasten „Seit deinem letzten Zug“ zeigt, was Mitspieler und Computer seitdem gemacht
   haben (aus dem Verlauf `S.log`). Kommt etwas Neues dazu, während der Kasten nicht im Bild ist, erscheint oben
   kurz ein Hinweis. Beim Weitergeben des Geräts steht die Liste auf dem Weitergeben-Bildschirm. Der Kasten
@@ -129,6 +137,10 @@ const kit = Spielkit.create({
   render,                     // Spielstand anzeigen
   roomStatus: s => "…",       // Text in der Raumliste (optional)
   handoverText: (s, i) => "…",// Text auf dem Weitergeben-Bildschirm (optional)
+  botPending: () => …,        // muss gerade ein Computer-Gegner ziehen?
+  botStep: () => { … },       // einen einzelnen Computer-Schritt ausführen (das Spielkit macht davor eine kurze Pause)
+  nextUp: (s, aktiv) => …,    // wer als Nächstes dran ist, falls nicht einfach der nächste Sitz (optional)
+  moveSound: "card",          // Ton für Züge der anderen: move, card, stone, dice, tile oder none
 });
 kit.start();
 ```

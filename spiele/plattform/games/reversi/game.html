@@ -333,9 +333,14 @@ function finish() {
     kit.addLog(`<b>${esc(w)}</b> ${vb(w, "gewinnst", "gewinnt")} Runde ${S.round} mit ${Math.max(c0, c1)} zu ${Math.min(c0, c1)}.`);
   }
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[playerOf(S.active)].ai;
+const botStep = () => place(chooseMove(S.board, S.active, levelOf()));
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[playerOf(S.active)].ai && guard++ < 70) place(chooseMove(S.board, S.active, levelOf()));
+  while (botPending() && guard++ < 70) botStep();
 }
 function newRound() {
   S.board = startBoard(); S.last = -1; S.flipped = []; S.winner = null; S.seq++;
@@ -441,6 +446,7 @@ kit = Spielkit.create({
   setup: levelSetup,
   defaultOptions: () => ({ level: (kit && kit.store.get("stufe")) || "mittel" }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "stone",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.board) && s.board.length === CELLS && !!s.tally && Array.isArray(s.seat),
   roomStatus: s => `läuft · Runde ${s.round} · ${s.tally.wins.join(":")}`,

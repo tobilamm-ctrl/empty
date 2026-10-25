@@ -71,3 +71,27 @@
 @keyframes sk-toast-in { from { opacity: 0; transform: translate(-50%, -12px); } }
 .sk-ho-news { text-align: left; background: var(--sheet-2, #2a2932); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .sk-toast { animation: none; } }
+
+/* Zugleiste: wer ist dran, wer als Nächstes (bleibt beim Scrollen oben) */
+.sk-turns {
+  position: sticky; top: 0; z-index: 15; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
+  background: color-mix(in srgb, var(--sheet, #1e1d24) 92%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border-radius: 0 0 14px 14px; padding: 8px 12px; margin: -6px 0 0; box-shadow: 0 6px 16px rgba(0,0,0,.35);
+}
+.sk-turns.sk-mine { box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 -3px 0 var(--accent, #f4cb4d); }
+.sk-turn-head { font-size: 15px; white-space: nowrap; }
+.sk-turn-head b { color: var(--accent, #f4cb4d); }
+.sk-turns.sk-mine .sk-turn-head { animation: sk-pulse 1.4s ease-in-out 2; }
+.sk-order { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
+.sk-order::-webkit-scrollbar { display: none; }
+.sk-p { flex: none; display: grid; justify-items: center; line-height: 1.1; padding: 4px 9px; border-radius: 10px; background: var(--sheet-2, #2a2932); font-size: 13px; color: var(--muted, #a3a1b0); position: relative; }
+.sk-p + .sk-p::before { content: "›"; position: absolute; left: -5px; top: 50%; transform: translateY(-50%); color: var(--muted, #a3a1b0); font-size: 12px; }
+.sk-p small { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.sk-p.sk-self .sk-pn { text-decoration: underline; text-underline-offset: 3px; }
+.sk-p.sk-now { background: var(--accent, #f4cb4d); color: var(--tile-ink, #1e1d24); font-weight: 800; transform: scale(1.06); }
+.sk-p.sk-also { background: color-mix(in srgb, var(--accent, #f4cb4d) 60%, var(--sheet-2, #2a2932)); color: var(--tile-ink, #1e1d24); font-weight: 800; }
+.sk-p.sk-next { box-shadow: inset 0 0 0 2px var(--accent, #f4cb4d); color: var(--ink, #f6f5f8); }
+@keyframes sk-pulse { 50% { opacity: .55; } }
+.sk-snd { white-space: nowrap; }
+@media (max-width: 560px) { .sk-turns { padding: 6px 8px; } .sk-turn-head { font-size: 14px; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .sk-turns.sk-mine .sk-turn-head { animation: none; } .sk-p.sk-now { transform: none; } }

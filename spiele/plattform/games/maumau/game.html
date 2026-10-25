@@ -455,9 +455,13 @@ function botStep() {
   const c = botChoose(i, legal);
   playCard(c, needsWish(c) ? favSuit(p.hand.filter(x => x !== c)) : null);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < 3000) botStep();
+  while (botPending() && guard++ < 3000) botStep();
 }
 
 // ---------- Spielstand ----------
@@ -605,7 +609,7 @@ function render() {
   $("discard").setAttribute("aria-label", S.discard.length ? `Oben liegt ${cardName(top())}` : "Ablage leer");
   // wer die oberste Karte gelegt hat (andere hervorgehoben)
   const by = S.by != null && S.players[S.by] ? S.by : -1;
-  $("discard-lbl").innerHTML = by >= 0 ? `von ${esc(S.players[by].name)}` : "Ablage";
+  $("discard-lbl").innerHTML = by >= 0 ? `von ${S.players[by].name === "Du" ? "dir" : esc(S.players[by].name)}` : "Ablage";
   $("discard-lbl").classList.toggle("by", by >= 0 && by !== mi);
   $("discard").classList.toggle("from", by >= 0 && by !== mi && S.phase === "play");
 
@@ -720,6 +724,7 @@ kit = Spielkit.create({
   setup,
   defaultOptions: () => Object.assign({}, DEFAULTS),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botStep(), moveSound: "card",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.deck) && Array.isArray(s.discard) && s.players.every(p => Array.isArray(p.hand)),
   roomStatus: s => `läuft · Runde ${s.roundNo}`,

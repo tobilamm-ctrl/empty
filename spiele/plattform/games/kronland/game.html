@@ -287,6 +287,13 @@ function drawLine() {
   return S.deck.splice(0, m).sort((a, b) => a - b).map(n => ({ n, p: null, done: false }));
 }
 const actor = () => S.phase === "pick0" ? S.order[S.k] : S.phase === "play" ? S.cur[S.k].p : -1;
+// wer nach dem aktuellen Spieler dran ist (für die Zugleiste)
+function nextActor() {
+  if (S.phase === "pick0") return S.k + 1 < S.order.length ? S.order[S.k + 1] : S.next[0] && S.next[0].p !== null ? S.next[0].p : -1;
+  if (S.phase !== "play") return -1;
+  if (S.cur[S.k + 1]) return S.cur[S.k + 1].p;
+  return S.next[0] && S.next[0].p !== null ? S.next[0].p : -1;
+}
 
 function pickDomino(n) {
   const i = actor(), d = S.next.find(x => x.n === n && x.p === null);
@@ -377,9 +384,13 @@ function botStep() {
   }
   pickDomino(best);
 }
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => (S.phase === "pick0" || S.phase === "play") && S.players[actor()].ai;
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while ((S.phase === "pick0" || S.phase === "play") && S.players[actor()].ai && guard++ < 500) botStep();
+  while (botPending() && guard++ < 500) botStep();
 }
 
 // ---------- Spielstand ----------
@@ -595,6 +606,7 @@ kit = Spielkit.create({
   setup,
   defaultOptions: () => Object.assign({}, DEFAULTS),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botStep(), nextUp: () => nextActor(), moveSound: "tile",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.cur) && Array.isArray(s.next) && s.players.every(p => p.board && typeof p.board === "object"),
   roomStatus: s => `läuft · noch ${s.deck.length} Dominos`,

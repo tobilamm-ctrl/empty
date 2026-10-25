@@ -874,6 +874,9 @@ kit = Spielkit.create({
   setup: boardSetup,
   defaultOptions: () => ({ boardKind: "original" }),
   newPlayer, newState, onStart, whoActs,
+  moveSound: "dice",
+  // aktiv ist, wer würfelt; die anderen wählen gleichzeitig mit
+  turnInfo: s => s.phase === "choose" || s.phase === "idle" ? { active: s.active, next: (s.active + 1) % s.players.length, also: whoActs().filter(i => i !== s.active) } : null,
   onState: s => { S = s; },
   validState: s => Array.isArray(s.board) && !!s.dice,
   roomStatus: s => `läuft · Wurf ${s.throw}`,

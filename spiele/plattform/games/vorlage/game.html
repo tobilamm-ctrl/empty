@@ -106,13 +106,18 @@ function nextPlayer() {
   playBots();
 }
 // Computer-Gegner: würfelt, bis 15 Punkte im Zug liegen oder das Ziel erreicht ist
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.active].ai;
+function botStep() {
+  const p = S.players[S.active], startActive = S.active;
+  rollOnce();
+  if (S.active === startActive && (S.turn >= 15 || p.score + S.turn >= GOAL)) hold();
+}
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.active].ai && guard++ < 500) {
-    const p = S.players[S.active], startActive = S.active;
-    rollOnce();
-    if (S.active === startActive && (S.turn >= 15 || p.score + S.turn >= GOAL)) hold();
-  }
+  while (botPending() && guard++ < 500) botStep();
 }
 
 // ---------- Eingaben ----------
@@ -145,6 +150,7 @@ function render() {
 kit = Spielkit.create({
   id: "schweinchen", version: 1, minPlayers: 2, maxPlayers: 6, bots: true, defaultBots: 1,
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "dice",
   onState: s => { S = s; },
   roomStatus: s => `läuft · ${s.players.map(p => p.score).join(":")}`,
   handoverText: () => "Du bist dran.",

@@ -420,16 +420,20 @@ function end(winner, reason) {
     kit.addLog(`<b>Unentschieden.</b> ${reason}`);
   }
 }
-// Computer-Gegner: ziehen synchron, solange sie dran sind
+// Computer-Gegner: online und an einem Gerät zieht das Spielkit sie einzeln mit kurzer Pause (botPending/botStep);
+// nur in Tests (ohne Pause) laufen alle Computerzüge sofort hintereinander
+const botPending = () => S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai;
+function botStep() {
+  if (S.awaitRemove) { removeStone(bestRemoval()); return; }
+  const mv = R.bestMove(pos(), level());
+  if (!mv) return;
+  step(mv.f, mv.t);
+  if (S.awaitRemove) removeStone(mv.x >= 0 && R.removable(S.b, 1 - S.turn).includes(mv.x) ? mv.x : bestRemoval());
+}
 function playBots() {
+  if (kit.paced()) return;
   let guard = 0;
-  while (S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai && guard++ < 4) {
-    if (S.awaitRemove) { removeStone(bestRemoval()); continue; }
-    const mv = R.bestMove(pos(), level());
-    if (!mv) break;
-    step(mv.f, mv.t);
-    if (S.awaitRemove) removeStone(mv.x >= 0 && R.removable(S.b, 1 - S.turn).includes(mv.x) ? mv.x : bestRemoval());
-  }
+  while (botPending() && guard++ < 4) botStep();
 }
 function bestRemoval() {
   const c = S.turn, xs = R.removable(S.b, 1 - c);
@@ -634,8 +638,8 @@ function render() {
     res.hidden = false;
   } else res.hidden = true;
 
-  // an diesem Gerät beginnt der Computer: seinen ersten Zug nachholen
-  if (!kit.online() && S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai) {
+  // an diesem Gerät beginnt der Computer: seinen ersten Zug nachholen (ohne Pausensteuerung des Spielkits)
+  if (!kit.paced() && !kit.online() && S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai) {
     const seq = S.seq;
     setTimeout(() => kit.act(() => {
       if (kit.online() || S.phase !== "play" || S.seq !== seq || !S.players[S.turn].ai) return false;
@@ -662,6 +666,7 @@ kit = Spielkit.create({
   setup: levelSetup,
   defaultOptions: () => ({ level: "mittel" }),
   newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "stone",
   onState: s => { S = s; },
   validState: s => Array.isArray(s.b) && s.b.length === 24 && Array.isArray(s.hand) && Array.isArray(s.wins),
   roomStatus: s => `läuft · Runde ${s.round}`,

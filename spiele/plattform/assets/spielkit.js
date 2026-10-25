@@ -10,6 +10,53 @@
   const rnd = n => Math.floor(Math.random() * n);
   const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi"];
 
+  // ---------- Töne (im Browser erzeugt, keine Dateien) ----------
+  const Sound = (() => {
+    let ctx = null, on = true;
+    try { on = localStorage.getItem("spieleabend-ton") !== "aus"; } catch (e) { /* egal */ }
+    const ac = () => {
+      if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    };
+    // Ton erst nach der ersten Berührung erlauben (Vorgabe der Browser)
+    const unlock = () => { if (on) ac(); };
+    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
+    function tone(c, f, t0, dur, type = "sine", vol = .15, f2) {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t0);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .02);
+    }
+    function noise(c, t0, dur, freq, vol = .2, q = 1.2) {
+      const n = Math.floor(c.sampleRate * dur), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+      s.buffer = b; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q; g.gain.value = vol;
+      s.connect(f).connect(g).connect(c.destination); s.start(t0);
+    }
+    const SOUNDS = {
+      tap: (c, t) => tone(c, 720, t, .045, "sine", .06),
+      move: (c, t) => { tone(c, 520, t, .09, "triangle", .12); tone(c, 780, t + .07, .12, "triangle", .1); },
+      card: (c, t) => { noise(c, t, .12, 2600, .35, .8); tone(c, 340, t + .02, .05, "sine", .05); },
+      stone: (c, t) => { tone(c, 190, t, .16, "sine", .35, 70); noise(c, t, .05, 900, .25, 2); },
+      dice: (c, t) => { for (let k = 0; k < 5; k++) noise(c, t + k * .045 + Math.random() * .02, .035, 1800 + Math.random() * 1500, .3, 3); },
+      tile: (c, t) => { tone(c, 1200, t, .05, "triangle", .12); tone(c, 1650, t + .035, .07, "triangle", .08); },
+      turn: (c, t) => { tone(c, 660, t, .16, "sine", .14); tone(c, 990, t + .13, .24, "sine", .13); },
+      win: (c, t) => [523, 659, 784, 1047].forEach((f, k) => tone(c, f, t + k * .11, .28, "triangle", .13)),
+    };
+    return {
+      on: () => on,
+      toggle() { on = !on; try { localStorage.setItem("spieleabend-ton", on ? "an" : "aus"); } catch (e) { /* egal */ } },
+      play(name) {
+        if (!on || !SOUNDS[name]) return;
+        const c = ac(); if (!c || c.state !== "running") return;
+        try { SOUNDS[name](c, c.currentTime + .01); } catch (e) { /* kein Ton */ }
+      },
+    };
+  })();
+
   function create(cfg) {
     cfg = Object.assign({
       version: 1,          // bei inkompatiblen Änderungen am Spielstand erhöhen
@@ -22,10 +69,17 @@
       setup: null,         // { html, init(root, kit), sync(root, mode), read(root, mode) }
       privateHands: false, // true: verdeckte Infos (Karten, Schiffe) – Weitergeben-Bildschirm deckt alles ab
       pollMs: 1500,
+      botDelay: 750,       // Pause vor jedem Zug eines Computer-Gegners (ms)
+      botPending: null,    // () => true, wenn gerade ein Computer-Gegner ziehen muss
+      botStep: null,       // () => einen einzelnen Schritt des Computers ausführen
+      nextUp: null,        // (S, aktiv) => wer als Nächstes dran ist (sonst der Sitz danach)
+      turnInfo: null,      // (S) => { active, next, also } für Spiele mit besonderer Reihenfolge
+      moveSound: "move",   // Ton, wenn ein anderer zieht: move, card, stone, dice, tile
     }, cfg);
 
     let S = null;
-    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, toastT: 0 };
+    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, toastT: 0,
+      botT: 0, botAt: 0, changedAt: Date.now(), lastPoll: 0, wasMine: null, lastPhase: null };
     const suffix = P ? "-" + P.user : "";
     const store = {
       get(k) { try { return localStorage.getItem(`${cfg.id}-${k}${suffix}`); } catch (e) { return null; } },
@@ -33,7 +87,7 @@
     };
     const stateKey = "spiel-v" + cfg.version;
     const q = sel => document.querySelector(sel);
-    const setS = s => { S = s; if (cfg.onState) cfg.onState(s); };
+    const setS = s => { S = s; ui.changedAt = Date.now(); if (cfg.onState) cfg.onState(s); };
 
     // ---------- Neuigkeiten: was die anderen (Mitspieler, Computer) gemacht haben ----------
     // Der Verlauf S.log hat die neuesten Einträge vorn. Gemerkt werden die ersten Einträge, die jemand
@@ -100,6 +154,7 @@
       // nur nötig, wenn der Kasten gerade nicht im Bild ist
       const r = box && !box.hidden ? box.getBoundingClientRect() : null;
       const boxSeen = r && r.bottom > 0 && r.top < window.innerHeight - 40;
+      if (fresh.length && S.phase !== "lobby") Sound.play(cfg.moveSound);
       if (fresh.length && !boxSeen && S.phase !== "lobby" && q("#sk-dlg").hidden) {
         toast.querySelector("ol").innerHTML = recapList(fresh, 3);
         toast.hidden = false;
@@ -131,6 +186,10 @@
         return hs.includes(ui.lastHuman) ? ui.lastHuman : hs[0];
       },
       act, render, openSetup, rematch, leave, start, newPlayer: r => cfg.newPlayer(r),
+      // Computer-Gegner ziehen mit kurzer Pause einzeln (das Spielkit treibt sie an). Für Tests:
+      // window.SPIELKIT_SOFORT = true lässt die Spiele wie früher alle Computerzüge sofort ausführen.
+      paced: () => !!(cfg.botStep && cfg.botPending) && !window.SPIELKIT_SOFORT,
+      sound: name => Sound.play(name),
     };
 
     // ---------- Spielstand anlegen ----------
@@ -168,9 +227,9 @@
 
     // ---------- Änderungen (lokal sofort, online mit Versionsabgleich) ----------
     // fn verändert kit.S; gibt sie false zurück, wird nichts gespeichert.
-    async function act(fn0) {
+    async function act(fn0, opt = {}) {
       const mi = kit.me();
-      const fn = () => {
+      const fn = opt.bot ? fn0 : () => {
         const before = snap(), r = fn0();
         if (r !== false && S.phase !== "lobby") markOwn(before, mi);
         return r;
@@ -315,6 +374,62 @@
       });
     }
 
+    // ---------- Computer-Gegner einzeln mit Pause ----------
+    function botsWaiting() {
+      try { return !!(kit.paced() && S && S.phase !== "lobby" && S.phase !== "over" && cfg.botPending(S)); } catch (e) { return false; }
+    }
+    function scheduleBots() {
+      if (!botsWaiting() || !q("#sk-dlg").hidden) { clearTimeout(ui.botT); ui.botT = 0; return; }
+      // online zieht das Gerät des Gastgebers die Computer; ist es weg, übernimmt nach 5 s ein anderes
+      const delay = S.mode !== "online" || kit.isHost() ? cfg.botDelay + (S.mode === "online" ? 250 : 0) : 5000;
+      const at = (S.mode === "online" && !kit.isHost() ? ui.changedAt : Date.now()) + delay;
+      if (ui.botT && Math.abs(ui.botAt - at) < 50) return;
+      clearTimeout(ui.botT); ui.botAt = at;
+      ui.botT = setTimeout(() => {
+        ui.botT = 0;
+        if (!botsWaiting() || ui.busy) { scheduleBots(); return; }
+        act(() => { if (!cfg.botPending(S)) return false; cfg.botStep(S); }, { bot: true });
+      }, Math.max(60, at - Date.now()));
+    }
+
+    // ---------- Zugleiste: wer ist dran, wer als Nächstes ----------
+    function turnInfo() {
+      if (cfg.turnInfo) return cfg.turnInfo(S);
+      const acts = cfg.whoActs ? cfg.whoActs(S) : [];
+      if (acts.length !== 1) return { active: -1, next: -1, also: acts };
+      const a = acts[0], n = S.players.length;
+      return { active: a, next: cfg.nextUp ? cfg.nextUp(S, a) : (a + 1) % n, also: [] };
+    }
+    function renderTurns(mi) {
+      const bar = q("[data-sk-turns]");
+      if (!bar) return;
+      const show = S.players.length > 1 && S.phase !== "lobby" && S.phase !== "over";
+      bar.hidden = !show;
+      if (!show) return;
+      const ti = turnInfo() || { active: -1, next: -1, also: [] }, also = ti.also || [];
+      const me = i => i === mi && !S.players[i].ai;
+      bar.classList.toggle("sk-mine", me(ti.active) || also.includes(mi));
+      const head = ti.active >= 0
+        ? (me(ti.active) ? `<b>Du bist dran${S.players.filter(p => !p.ai).length > 1 ? `, ${esc(S.players[mi].name)}` : ""}!</b>` : `<b>${esc(S.players[ti.active].name)}</b> ist dran${S.players[ti.active].ai ? " (Computer)" : ""}`)
+        : also.length ? `Gleichzeitig dran: ${also.map(i => `<b>${esc(S.players[i].name)}</b>`).join(", ")}` : "";
+      bar.innerHTML = `<div class="sk-turn-head">${head}</div><ol class="sk-order" aria-label="Reihenfolge">${S.players.map((p, i) => {
+        const cls = i === ti.active ? " sk-now" : also.includes(i) ? " sk-also" : i === ti.next ? " sk-next" : "";
+        const tag = i === ti.active ? "am Zug" : also.includes(i) ? "dran" : i === ti.next ? "als Nächstes" : "";
+        return `<li class="sk-p${cls}${i === mi ? " sk-self" : ""}"><span class="sk-pn">${esc(p.name)}${p.ai ? " 🤖" : ""}</span>${tag ? `<small>${tag}</small>` : ""}</li>`;
+      }).join("")}</ol>`;
+      const now = bar.querySelector(".sk-now");
+      if (now && now.scrollIntoView && bar.scrollWidth > bar.clientWidth) { const ol = bar.querySelector(".sk-order"); ol.scrollLeft = now.offsetLeft - ol.clientWidth / 2 + now.clientWidth / 2; }
+    }
+    // Töne: eigener Zug beginnt, Spielende
+    function soundCues(mi) {
+      const ti = turnInfo() || { active: -1, also: [] };
+      const mine = S.phase !== "lobby" && S.phase !== "over" && mi >= 0 && !S.players[mi].ai && (ti.active === mi || (ti.also || []).includes(mi));
+      if (ui.wasMine === false && mine && S.players.length > 1) Sound.play("turn");
+      ui.wasMine = mine;
+      if (ui.lastPhase && ui.lastPhase !== "over" && S.phase === "over") Sound.play("win");
+      ui.lastPhase = S.phase;
+    }
+
     // ---------- Speichern auf dem Gerät ----------
     function save() { if (S && S.mode !== "online") store.set(stateKey, JSON.stringify(S)); }
     function load() {
@@ -330,7 +445,12 @@
       const tb = q("[data-sk-toolbar]");
       if (tb) tb.innerHTML = `<a class="sk-home" id="sk-home" href="index.php" hidden>← Alle Spiele</a>
         <button class="btn small" id="sk-leave" type="button" hidden>Raum verlassen</button>
+        <button class="btn small sk-snd" id="sk-sound" type="button" aria-pressed="true"></button>
         <button class="btn" id="sk-new" type="button">Neues Spiel</button>`;
+      if (!q("[data-sk-turns]")) {
+        const bn = q("[data-sk-banner]");
+        if (bn) bn.insertAdjacentHTML("beforebegin", `<div class="sk-turns" data-sk-turns hidden aria-live="polite"></div>`);
+      }
       if (!q("[data-sk-recap]")) {
         const bn = q("[data-sk-banner]");
         if (bn) bn.insertAdjacentHTML("afterend", `<section class="sk-recap" data-sk-recap hidden aria-live="polite"></section>`);
@@ -422,7 +542,10 @@
       cfg.render(S);
       const since = renderNews(mi);
       renderChrome(mi, since);
+      renderTurns(mi);
+      soundCues(mi);
       save();
+      scheduleBots();
     }
 
     // ---------- Dialog „Neues Spiel“ ----------
@@ -478,6 +601,15 @@
       });
       q("#sk-ho-btn").addEventListener("click", () => { ui.ackHuman = kit.me(); render(); });
       q("#sk-toast .sk-toast-x").addEventListener("click", () => { q("#sk-toast").hidden = true; });
+      const snd = q("#sk-sound");
+      const showSnd = () => { snd.textContent = Sound.on() ? "🔊 Ton an" : "🔇 Ton aus"; snd.setAttribute("aria-pressed", Sound.on()); };
+      if (snd) { showSnd(); snd.addEventListener("click", () => { Sound.toggle(); showSnd(); Sound.play("tap"); }); }
+      // Klick beim Antippen von allem, was man im Spiel bedienen kann
+      document.addEventListener("pointerdown", e => {
+        if (e.target.closest("#sk-sound")) return;
+        const el = e.target.closest("button, [role=button], .can, .ok, .pick, [data-x], [data-p], [data-c], [data-col], [data-i], [data-n]");
+        if (el && !el.disabled && !el.closest("[disabled]")) Sound.play("tap");
+      }, { passive: true });
       document.addEventListener("click", e => {
         const b = e.target.closest("[data-sk-lobby-act]");
         if (b) lobbyAction(b.dataset.skLobbyAct, b.dataset.arg);
@@ -499,6 +631,8 @@
       if (cfg.setup && cfg.setup.init) cfg.setup.init(q("#sk-extra"), kit);
     }
 
+    function safeBot() { try { return !!cfg.botPending(S); } catch (e) { return false; } }
+
     // ---------- Start ----------
     function start() {
       const boot = data => {
@@ -511,7 +645,10 @@
         if (P) {
           const last = store.get("raum");
           if (last) openRoom(last).then(ok => { if (!ok) { store.set("raum", ""); ui.banner = ""; render(); } });
-          setInterval(poll, cfg.pollMs);
+          setInterval(() => {
+            const every = S && S.mode === "online" && (botsWaiting() || (cfg.botPending && S.phase !== "lobby" && safeBot())) ? 450 : cfg.pollMs;
+            if (Date.now() - ui.lastPoll >= every - 20) { ui.lastPoll = Date.now(); poll(); }
+          }, 150);
           document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
         }
       };
@@ -522,5 +659,5 @@
     return kit;
   }
 
-  window.Spielkit = { create, esc, rnd };
+  window.Spielkit = { create, esc, rnd, sound: n => Sound.play(n) };
 })();
