@@ -11,6 +11,8 @@ import installTeilen from './teilen.js';
 import installFotos from './fotos.js';
 import installReisepass from './reisepass.js';
 import installPackhilfe from './packhilfe.js';
+import installFamilie from './familie.js';
+import installFilm from './film.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -36,6 +38,7 @@ const ICONS = {
   card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M13 5v14M15.5 9h3M15.5 12h3M6 9h4M6 12h4"/><rect x="16" y="14" width="3" height="3"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
   coin: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9.5a3.5 3.5 0 1 0 0 5M8 11h5M8 13h5"/>',
+  play: '<path d="M8 5v14l11-7z"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
   mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
@@ -315,7 +318,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -342,6 +345,11 @@ function draw() {
   document.body.classList.toggle('no-cash', !canCash());
   if (CASH_ROUTES.includes(ui.route) && !canCash()) ui.route = 'mehr';
   $('#syncDot').className = 'sync-dot ' + syncClass();
+  // Freigaben je Konto (familie.js): nicht erlaubte Bereiche führen zur Startseite
+  if (APP.routeGuard) {
+    const r = APP.routeGuard(ui.route);
+    if (r !== ui.route) { ui.route = r; history.replaceState(null, '', '#/' + r); }
+  }
 
   $('#tripChip').innerHTML = t
     ? `<span class="dot"></span><span class="name">${esc(t.name)}</span>${t.archived ? '<span class="tag">Archiv</span>' : ''}`
@@ -349,6 +357,7 @@ function draw() {
   $('#routeBand').innerHTML = routeBand(t);
   const tab = MORE_ROUTES.includes(ui.route) ? 'mehr' : ui.route;
   document.querySelectorAll('.tabbar a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
+  chromeHooks.forEach(h => h(tab));
 
   const onMap = ui.route === 'karte';
   $('#mapview').hidden = !onMap;
@@ -377,6 +386,7 @@ function draw() {
 }
 
 const afterDraw = [];
+const chromeHooks = [];   // nach Kopf- und Reiterleiste, vor dem Inhalt (z. B. Freigaben, Einführung)
 
 // Große Fotos im Tagebuch: erst das Vorschaubild, sichtbar gewordene in voller Größe nachladen
 const fullPhotos = new Map();
@@ -578,8 +588,10 @@ VIEWS.tagebuch = () => {
   if (!t) return emptyTrip();
   const st = tripStats(t);
   // Kommende Reisen und Reisen ohne Einträge öffnen in der Planung
-  const mode = ui.diaryMode[t.id] || (st.es.length && !(t.start > today()) ? 'tagebuch' : 'planung');
-  const modeSeg = `<div class="seg tabs">
+  // Kinderkonten ohne Freigabe „Reiseplanung“ sehen nur das Tagebuch
+  const canPlan = !APP.allowed || APP.allowed('planung');
+  const mode = !canPlan ? 'tagebuch' : ui.diaryMode[t.id] || (st.es.length && !(t.start > today()) ? 'tagebuch' : 'planung');
+  const modeSeg = !canPlan ? '' : `<div class="seg tabs">
     <button class="${mode === 'planung' ? 'on' : ''}" data-action="diary-mode" data-mode="planung">Planung</button>
     <button class="${mode === 'tagebuch' ? 'on' : ''}" data-action="diary-mode" data-mode="tagebuch">Tagebuch</button>
   </div>`;
@@ -1440,6 +1452,7 @@ function userForm(id) {
     <label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Verwalter (darf Konten und Crews verwalten)</span></label>
     <label class="check cash-check"><input type="checkbox" name="canCash"${u.isAdmin || u.canCash ? ' checked' : ''}><span>Darf die Kasse sehen</span></label>
     <p class="sub admin-note">Verwalter sehen die Kasse immer.</p>
+    ${APP.areaFields ? APP.areaFields(u) : ''}
     ${u.id ? '' : `<label class="check"><input type="checkbox" name="joinCrew" checked><span>Gleich in die Crew „${esc(crew.name)}“ aufnehmen</span></label>`}
     <div class="sheet-foot">
       ${u.id && !self ? `<button type="button" class="ghost danger" data-action="del-user" data-id="${u.id}">Löschen</button>` : ''}
@@ -1926,6 +1939,7 @@ const FORMS = {
       const res = await api('user-save', {
         id, name: form.name.value.trim(), login: form.login.value.trim(),
         password: form.newPw ? form.newPw.value : '', isAdmin: form.isAdmin.checked || (id === session.user.id), canCash: form.canCash.checked,
+        ...(APP.readAreas ? APP.readAreas(form) : {}),
       });
       if (!id && form.joinCrew && form.joinCrew.checked) {
         const c = admin.crews.find(x => x.id === crew.id);
@@ -2081,7 +2095,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
-  crewId: () => crew.id, crewName: () => crew.name, nextColor, setTrip, tripHead, afterDraw, openEntry,
+  crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
@@ -2099,5 +2113,7 @@ installTeilen(APP);
 installFotos(APP);
 installReisepass(APP);
 installPackhilfe(APP);
+installFilm(APP);
+installFamilie(APP);
 
 start();

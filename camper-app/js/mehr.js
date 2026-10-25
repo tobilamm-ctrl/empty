@@ -39,10 +39,11 @@ export default function installMore(app) {
     { route: 'einstellungen', art: 'einstellungen', title: 'Einstellungen', text: 'Crew, Abgleich, Darstellung' },
   ];
 
+  app.TILES = TILES;
   VIEWS.mehr = () => {
     const due = dueCount();
     return `${pageHead('mehr', 'Mehr')}
-      <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => !t.cash || canCash()).map(t => `<a class="tile" href="#/${t.route}">
+      <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => (!t.cash || canCash()) && (!app.allowed || app.allowed(t.route))).map(t => `<a class="tile" href="#/${t.route}">
         ${art(t.art)}<b>${t.alt && !(app.session().user.isAdmin) ? t.alt : t.title}</b><small>${t.text}</small>
         ${t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>` : ''}
         ${t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>` : ''}

@@ -61,6 +61,10 @@ function db(): PDO {
     $cols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM users')->fetchAll(), 'Field')
                    : array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name');
     if (!in_array('can_cash', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN can_cash INT NOT NULL DEFAULT 1');
+    // Kinderkonten: sichtbare Bereiche (JSON, leer = alles), einfache Ansicht, eigene Startseite
+    if (!in_array('areas', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN areas TEXT');
+    if (!in_array('simple', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN simple INT NOT NULL DEFAULT 0');
+    if (!in_array('start', $cols, true)) $pdo->exec("ALTER TABLE users ADD COLUMN start VARCHAR(32) NOT NULL DEFAULT ''");
     $pdo->exec("INSERT INTO counter (name, value) SELECT 'rev', 0 WHERE NOT EXISTS (SELECT 1 FROM counter WHERE name = 'rev')");
     return $pdo;
 }
@@ -165,9 +169,55 @@ function sessionInfo(array $u): array {
             all('SELECT u.id, u.name, m.shares FROM members m JOIN users u ON u.id = m.user_id WHERE m.crew_id = ? ORDER BY u.name', [$c['id']]));
     }
     return [
-        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'isAdmin' => (bool) (int) $u['is_admin'], 'canCash' => canCash($u)],
+        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'isAdmin' => (bool) (int) $u['is_admin'], 'canCash' => canCash($u)]
+            + userView($u),
         'crews' => $crews,
     ];
+}
+
+// Was ein Konto sieht: Bereiche (null = alles), einfache Kinder-Ansicht, Startseite
+function userView(array $u): array {
+    $areas = isset($u['areas']) && $u['areas'] !== null && $u['areas'] !== '' ? json_decode($u['areas'], true) : null;
+    return ['areas' => (int) $u['is_admin'] ? null : (is_array($areas) ? array_values($areas) : null),
+        'simple' => !(int) $u['is_admin'] && !empty($u['simple']), 'start' => (string) ($u['start'] ?? '')];
+}
+function cleanAreas($a): ?string {
+    if (!is_array($a)) return null;
+    return json_encode(array_values(array_filter($a, fn($x) => is_string($x) && preg_match('/^[a-z:]{2,32}$/', $x))));
+}
+
+/* ---------- Automatische Sicherung (einmal pro Woche, die letzten vier bleiben) ---------- */
+
+function backupDir(): string { global $CFG; return dirname(rtrim($CFG['photos'], '/')) . '/sicherungen'; }
+function trashDir(): string { global $CFG; return dirname(rtrim($CFG['photos'], '/')) . '/papierkorb'; }
+
+function makeBackup(): string {
+    $dir = backupDir();
+    if (!is_dir($dir)) mkdir($dir, 0750, true);
+    $pdo = db();
+    $stamp = date('Y-m-d-His');
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+        // Vollständige, in sich stimmige Kopie der Datenbank; lässt sich direkt als lammping.sqlite einsetzen
+        $file = "$dir/lammping-$stamp.sqlite";
+        $pdo->exec('VACUUM INTO ' . $pdo->quote($file));
+    } else {
+        $dump = [];
+        foreach (['users', 'crews', 'members', 'docs', 'shares'] as $t) $dump[$t] = all("SELECT * FROM $t");
+        $file = "$dir/lammping-$stamp.json.gz";
+        file_put_contents($file, gzencode(json_encode($dump, JSON_UNESCAPED_UNICODE), 6));
+    }
+    $all = glob("$dir/lammping-*") ?: [];
+    rsort($all);
+    foreach (array_slice($all, 4) as $old) @unlink($old);
+    // Gelöschte Fotos liegen 30 Tage im Papierkorb, dann endgültig weg
+    foreach (glob(trashDir() . '/*/*.jpg') ?: [] as $f) if (filemtime($f) < time() - 30 * 86400) @unlink($f);
+    return basename($file);
+}
+function autoBackup(): void {
+    $all = glob(backupDir() . '/lammping-*') ?: [];
+    rsort($all);
+    if ($all && filemtime($all[0]) > time() - 7 * 86400) return;
+    try { makeBackup(); } catch (Throwable $e) { /* Sicherung darf den Abgleich nie stören */ }
 }
 
 /* ---------- Aktionen ---------- */
@@ -221,6 +271,30 @@ case 'logout':
     setCookieToken('', 1);
     out(['ok' => true]);
 
+case 'prefs':
+    // Eigene Startseite festlegen
+    $u = requireUser();
+    q('UPDATE users SET start = ? WHERE id = ?', [preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? '')), $u['id']]);
+    out(['ok' => true]);
+
+case 'backups':
+    requireAdmin();
+    if ($method === 'POST') { makeBackup(); }
+    $list = glob(backupDir() . '/lammping-*') ?: [];
+    rsort($list);
+    out(['backups' => array_map(fn($f) => ['name' => basename($f), 'size' => filesize($f), 'time' => filemtime($f) * 1000], $list)]);
+
+case 'backup-get':
+    requireAdmin();
+    $name = basename((string) ($_GET['name'] ?? ''));
+    $file = backupDir() . '/' . $name;
+    if (!preg_match('/^lammping-[0-9-]+\.(sqlite|json\.gz)$/', $name) || !is_file($file)) fail('Sicherung nicht gefunden', 404);
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . $name . '"');
+    header('Content-Length: ' . filesize($file));
+    readfile($file);
+    exit;
+
 case 'password':
     $u = requireUser();
     if (!password_verify((string) ($body['old'] ?? ''), $u['pass'])) fail('Das bisherige Passwort stimmt nicht.', 403);
@@ -241,6 +315,7 @@ case 'sync':
         'data' => (int) $r['deleted'] ? null : json_decode($r['data'], true),
     ], $rows);
     $rev = $docs ? end($docs)['rev'] : $since;
+    if (!$since || !$docs) autoBackup();
     out(['docs' => $docs, 'rev' => $rev, 'more' => count($docs) === 2000]);
 
 case 'push':
@@ -267,7 +342,13 @@ case 'push':
                 $data === null ? null : json_encode($data, JSON_UNESCAPED_UNICODE),
                 $data === null ? 1 : 0, $rev, $u['id'],
             ]);
-            if ($c['coll'] === 'photos' && $data === null) @unlink(photoPath($crew, $c['id']));
+            if ($c['coll'] === 'photos' && $data === null && is_file(photoPath($crew, $c['id']))) {
+                // Nicht sofort löschen: 30 Tage Papierkorb (siehe makeBackup)
+                $t = trashDir() . '/' . $crew;
+                if (!is_dir($t)) mkdir($t, 0750, true);
+                @rename(photoPath($crew, $c['id']), "$t/{$c['id']}.jpg");
+                @touch("$t/{$c['id']}.jpg");
+            }
         }
         $mysql ? $pdo->commit() : $pdo->exec('COMMIT');
     } catch (Throwable $e) {
@@ -373,7 +454,7 @@ case 'blogphoto':
 
 case 'admin':
     requireAdmin();
-    $users = array_map(fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin'], 'canCash' => (bool) (int) $r['can_cash']],
+    $users = array_map(fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin'], 'canCash' => (bool) (int) $r['can_cash']] + userView($r),
         all('SELECT * FROM users ORDER BY name'));
     $crews = all('SELECT id, name FROM crews ORDER BY name');
     foreach ($crews as &$c) {
@@ -394,15 +475,17 @@ case 'user-save':
     if ($id) {
         if (!one('SELECT id FROM users WHERE id = ?', [$id])) fail('Konto nicht gefunden', 404);
         if ($id === $admin['id'] && !$isAdmin) fail('Du kannst dir die Verwaltung nicht selbst entziehen.');
-        q('UPDATE users SET name = ?, login = ?, is_admin = ?, can_cash = ? WHERE id = ?', [$name, $login, $isAdmin, $cash, $id]);
+        q('UPDATE users SET name = ?, login = ?, is_admin = ?, can_cash = ?, areas = ?, simple = ?, start = ? WHERE id = ?',
+            [$name, $login, $isAdmin, $cash, $isAdmin ? null : cleanAreas($body['areas'] ?? null), !$isAdmin && !empty($body['simple']) ? 1 : 0, preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? '')), $id]);
         if (!empty($body['password'])) {
             q('UPDATE users SET pass = ? WHERE id = ?', [checkPassword($body['password']), $id]);
             q('DELETE FROM tokens WHERE user_id = ?', [$id]);
         }
     } else {
         $id = newId();
-        q('INSERT INTO users (id, name, login, pass, is_admin, can_cash, created) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, $cash, now()]);
+        q('INSERT INTO users (id, name, login, pass, is_admin, can_cash, areas, simple, start, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, $cash, $isAdmin ? null : cleanAreas($body['areas'] ?? null),
+             !$isAdmin && !empty($body['simple']) ? 1 : 0, preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? '')), now()]);
     }
     out(['id' => $id]);
 

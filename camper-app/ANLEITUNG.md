@@ -56,6 +56,18 @@ Sie startet dann ohne Browserleiste und funktioniert auch offline.
 - **iPhone (Safari):** Teilen-Symbol → „Zum Home-Bildschirm“. Die App zeigt diesen Hinweis
   einmal im Tagebuch an.
 
+## Kinderkonten
+
+In der Verwaltung bei einer Person unter **„Was sieht …?“** festlegen, welche Reiter, Bereiche und Spiele
+sie sieht. „Kinder-Vorschlag“ setzt eine sinnvolle Auswahl. Mit **„Einfache Ansicht“** startet das Konto auf
+einer eigenen Seite mit großen Kacheln statt „Mehr“. Auch die Startseite lässt sich hier vorgeben. Jede
+Person kann ihre Startseite selbst unter Einstellungen → Startseite ändern.
+
+Die Freigaben sorgen für Übersicht, sie sind keine Sperre: Kasse, Tankbuch und Dokumente schützt zusätzlich
+der Server, alles andere liegt als Kopie der Crew-Daten auf dem Handy.
+
+Beim ersten Start zeigt LAMMping jeder Person eine kurze Einführung (wieder abrufbar in den Einstellungen).
+
 ## Crews
 
 Eine Crew ist eine gemeinsame Datensammlung mit eigenen Reisen, Listen, Boxen und eigener
@@ -78,10 +90,15 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-18'` hochzählen (z. B. auf `lammping-19`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-19'` hochzählen (z. B. auf `lammping-20`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
+
+- **Automatisch:** Der Server legt einmal pro Woche selbst eine Sicherung der Datenbank in
+  `api/data/sicherungen` an und hebt die letzten vier auf (Einstellungen → Automatische Sicherung, dort auch
+  zum Herunterladen und „Jetzt sichern“). Gelöschte Fotos bleiben 30 Tage in `api/data/papierkorb`.
+  Wiederherstellen: die Sicherungsdatei als `api/data/lammping.sqlite` einsetzen.
 
 - **In der App:** Einstellungen → „Sicherung herunterladen“ speichert die Daten der
   geöffneten Crew samt Fotos in einer Datei.
@@ -140,6 +157,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Packliste auswerten** (nach „Reise beenden“): festhalten, was gefehlt hat und was nie gebraucht wurde.
   Beim Packen der nächsten Reise erscheinen die Hinweise; „Einpacken“ setzt Fehlendes direkt als Extra auf
   die Packliste.
+- **Rückblick** (Knopf über dem Tagebuch): Die Strecke zeichnet sich Tag für Tag auf der Karte nach, an den
+  Orten erscheinen Titel und Fotos. Pause und Tempo 1×, 2×, 4× unten.
 - **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
   kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
   Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.

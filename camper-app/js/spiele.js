@@ -41,10 +41,14 @@ export default function installSpiele(app) {
     brettspiele: '<rect x="8" y="14" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(-10 19 25)"/><rect x="34" y="10" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(10 45 21)"/><g fill="currentColor" stroke="none"><circle cx="15" cy="20" r="2"/><circle cx="19" cy="25" r="2"/><circle cx="23" cy="30" r="2"/><circle cx="40" cy="16" r="2"/><circle cx="50" cy="16" r="2"/><circle cx="40" cy="26" r="2"/><circle cx="50" cy="26" r="2"/></g>',
   };
   const gameArt = k => `<svg class="game-art" viewBox="0 0 64 48" aria-hidden="true">${ART[k] || ''}</svg>`;
+  // Kinderkonten sehen nur freigegebene Spiele (familie.js)
+  const ok = k => !app.allowed || app.allowed('spiel:' + k);
+  app.GAMES = GAMES;
+  app.gameArt = gameArt;
 
   VIEWS.spiele = () => {
     const g = game();
-    if (g && GAME_VIEWS[g]) {
+    if (g && GAME_VIEWS[g] && ok(g)) {
       const [, title] = GAMES.find(x => x[0] === g);
       return `${pageHead('spiele', title)}
         <button class="link back" data-action="game-open" data-g="">Zurück zu allen Spielen</button>
@@ -55,13 +59,13 @@ export default function installSpiele(app) {
     const tile = (k, t, s, extra = '') => `${gameArt(k)}<b>${t}</b><small>${s}</small>${extra}`;
     return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
       <nav class="game-tiles">
-        <a class="game-tile wide" href="#/nochweit">${tile('nochweit', 'Wie lange noch?', 'Restzeit bis zum Ziel, groß für die Rückbank')}</a>
-        <a class="game-tile wide pass" href="#/reisepass">${tile('reisepass', 'Reisepass', 'Stempel für eure Camper-Erlebnisse', app.stampCount ? `<span class="score">${app.stampCount()}</span>` : '')}</a>
-        ${GAMES.map(([k, t, s]) => k === 'brettspiele' && p.url
+        ${ok('nochweit') ? `<a class="game-tile wide" href="#/nochweit">${tile('nochweit', 'Wie lange noch?', 'Restzeit bis zum Ziel, groß für die Rückbank')}</a>` : ''}
+        ${ok('reisepass') ? `<a class="game-tile wide pass" href="#/reisepass">${tile('reisepass', 'Reisepass', 'Stempel für eure Camper-Erlebnisse', app.stampCount ? `<span class="score">${app.stampCount()}</span>` : '')}</a>` : ''}
+        ${GAMES.filter(([k]) => ok(k)).map(([k, t, s]) => k === 'brettspiele' && p.url
           ? `<a class="game-tile" href="${esc(p.url)}" target="_blank" rel="noopener">${tile(k, t, `${esc(p.name)}, online`, `<span class="open-ic">${icon('open')}</span>`)}</a>`
           : `<button class="game-tile" data-action="game-open" data-g="${k}">${tile(k, t, s, scoreHint(k))}</button>`).join('')}
       </nav>
-      <button class="link" data-action="portal-form">Spieleportal einstellen</button>`;
+      ${app.session().user.isAdmin ? '<button class="link" data-action="portal-form">Spieleportal einstellen</button>' : ''}`;
   };
   ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; render(); window.scrollTo(0, 0); };
 

@@ -1029,3 +1029,68 @@ body.blog-page { padding: 0; }
 .stamp-sheet .st-ring { width: 130px; height: 130px; }
 .stamp-sheet .st-ring b { font-size: 15px; }
 .game-tile.pass { background: color-mix(in srgb, #2E5FA8 8%, var(--surface)); border-color: color-mix(in srgb, #2E5FA8 30%, transparent); }
+
+/* Reiterleiste: so viele Spalten wie sichtbare Reiter (Kinderkonten können weniger haben) */
+.tabbar { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+
+/* ---------- Freigaben in der Verwaltung ---------- */
+.areas { margin: 4px 0 16px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 14px; }
+.areas summary { font-weight: 700; cursor: pointer; }
+.areas .chips .chip { font-size: 14px; }
+
+/* ---------- Kinder-Start ---------- */
+.kids-hello { display: flex; align-items: center; gap: 14px; margin: 6px 0 10px; }
+.kids-sheep { width: 96px; height: 76px; color: var(--wood); flex: none; }
+.kids-hello h1 { font-size: clamp(30px, 9vw, 42px); }
+.kids-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.kids-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 140px; padding: 14px 10px;
+  border-radius: 20px; background: var(--surface); border: 2px solid var(--line); color: var(--ink); text-decoration: none; text-align: center;
+  box-shadow: 0 3px 0 var(--line);
+}
+.kids-tile:active { transform: translateY(2px); box-shadow: none; }
+.kids-tile b { font: 600 18px/1.15 var(--head); }
+.kids-tile .game-art { width: 86px; height: 64px; margin: 0; }
+.kids-tile .art { height: 64px; width: auto; }
+.kids-tiles .kids-tile:nth-child(4n+1) { border-color: color-mix(in srgb, #2E7FB8 45%, var(--line)); }
+.kids-tiles .kids-tile:nth-child(4n+2) { border-color: color-mix(in srgb, #E4572E 45%, var(--line)); }
+.kids-tiles .kids-tile:nth-child(4n+3) { border-color: color-mix(in srgb, #4F8A3C 45%, var(--line)); }
+.kids-tiles .kids-tile:nth-child(4n) { border-color: color-mix(in srgb, #C9961A 45%, var(--line)); }
+.kids-foot { text-align: center; margin: 10px 0 30px; }
+
+/* ---------- Einführung ---------- */
+.intro { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 16px; background: rgba(43, 27, 16, .55); }
+.intro-card { width: min(420px, 100%); padding: 22px 20px 16px; border-radius: 22px; background: var(--paper); box-shadow: 0 12px 40px rgba(0, 0, 0, .3); text-align: center; }
+.intro-art { display: flex; justify-content: center; color: var(--wood); margin-bottom: 8px; }
+.intro-art .art { height: 110px; width: auto; }
+.intro-card h2 { font-size: 26px; margin-bottom: 8px; }
+.intro-card p { color: var(--ink); min-height: 96px; }
+.intro-dots { display: flex; justify-content: center; gap: 6px; margin: 6px 0 14px; }
+.intro-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.intro-dots span.on { background: var(--trip); width: 22px; border-radius: 4px; }
+.intro-foot { display: flex; justify-content: space-between; align-items: center; }
+
+/* ---------- Sicherungen ---------- */
+.backup-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.backup-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.backup-list span { display: flex; flex-direction: column; }
+.backup-list small { color: var(--muted); }
+.backup-list .ic { width: 16px; height: 16px; margin-right: 4px; }
+
+/* ---------- Reise-Rückblick (Film) ---------- */
+.film { position: fixed; inset: 0; z-index: 3000; background: #111; }
+.film-map { position: absolute; inset: 0; }
+.film-top { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
+.film-day { padding: 6px 14px; border-radius: 999px; background: rgba(251, 246, 236, .92); font: 700 17px var(--head); color: #3A2617; }
+.film-top .icon-btn { background: rgba(251, 246, 236, .92); color: #3A2617; }
+.film-photo { position: absolute; z-index: 1000; left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(-2deg); margin: 0; padding: 10px 10px 12px; background: #fff; border-radius: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); animation: film-in .5s ease; }
+.film-photo img { display: block; width: min(78vw, 520px); max-height: 52vh; object-fit: cover; }
+@keyframes film-in { from { opacity: 0; transform: translate(-50%, -46%) rotate(-6deg) scale(.9); } }
+.film-cap { position: absolute; z-index: 1000; left: 12px; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); max-width: 520px; margin: 0 auto; padding: 12px 16px; border-radius: 16px; background: rgba(251, 246, 236, .95); color: #3A2617; display: flex; flex-direction: column; gap: 2px; text-align: center; }
+.film-cap b { font: 600 22px var(--head); }
+.film-cap small { color: #7B6650; }
+.film-cap span { color: #E0A21B; letter-spacing: 1px; }
+.film-cap .btnrow { justify-content: center; margin-top: 8px; }
+.film-ctrl { position: absolute; z-index: 1000; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 10px; }
+.film-van { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.film-van .ic { width: 18px; height: 18px; }

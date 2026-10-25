@@ -1,2 +1,4 @@
 api/data/*.sqlite*
 api/data/photos/
+api/data/sicherungen/
+api/data/papierkorb/
