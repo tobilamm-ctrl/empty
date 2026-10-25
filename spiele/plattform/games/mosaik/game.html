@@ -1,0 +1,520 @@
+<title>Mosaik</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: oben die Werkstätten und die Mitte, darunter die eigene Tafel (Musterreihen links, Wand rechts, Boden unten);
+   die Tafeln der anderen klein; rechts bzw. darunter Wertung, Verlauf und Regeln */
+:root {
+  color-scheme: dark;
+  --table: #0f1418;
+  --sheet: #18222a;
+  --sheet-2: #243341;
+  --ink: #eef3f6;
+  --muted: #9fb0bd;
+  --accent: #ffcd4d;
+  --tile-ink: #18222a;
+  --red: #e5604f;
+  --green: #6cc28a;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --t: 36px;      /* Fliese auf der eigenen Tafel */
+  --gap: 4px;
+  --rowh: max(44px, calc(var(--t) + 6px));  /* Musterreihen sind Tippziele */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: #4fc7bf; }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+.tile { width: 100%; height: 100%; display: block; }
+
+/* ---------- Werkstätten und Mitte ---------- */
+.market { display: grid; gap: 12px; }
+.facs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.fac {
+  aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #34495a, #1f2e3a 70%);
+  box-shadow: inset 0 0 0 3px #3e5568, 0 3px 8px rgba(0,0,0,.4); display: grid; place-items: center; max-width: 120px; justify-self: center; width: 100%;
+}
+.fac .in { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: 66%; }
+.fac.empty { opacity: .35; }
+.pick { border: 0; padding: 0; background: none; aspect-ratio: 1; border-radius: 6px; cursor: pointer; position: relative; min-width: 0; }
+.pick:disabled { cursor: default; }
+.pick.sel { outline: 3px solid #fff; outline-offset: 1px; transform: translateY(-2px); }
+.pick.can:hover { filter: brightness(1.15); }
+.center { background: rgba(0,0,0,.25); border-radius: 14px; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 64px; }
+.center .lbl { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); width: 100%; }
+.grp { display: flex; align-items: center; gap: 6px; border: 0; background: var(--sheet-2); border-radius: 10px; padding: 5px 9px 5px 5px; cursor: pointer; min-height: 48px; }
+.grp:disabled { cursor: default; }
+.grp .sw { width: 36px; height: 36px; }
+.grp b { font-family: var(--font-display); font-weight: 400; font-size: 20px; }
+.grp.sel { outline: 3px solid #fff; }
+.marker { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 6px; background: #f4efe2; color: #18222a; font-family: var(--font-display); font-size: 20px; box-shadow: inset 0 0 0 2px #c9bfa6; }
+
+/* ---------- eigene Tafel ---------- */
+.mine { display: grid; gap: 10px; }
+.mine h2 { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; margin: 0; }
+.mine h2 small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
+.status { text-align: center; min-height: 1.5em; margin: 0; font-size: 16px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+.boardx { display: grid; grid-template-columns: auto auto; gap: 10px; justify-content: center; }
+.lines, .wall { display: grid; gap: 2px var(--gap); }
+.lrow { display: flex; justify-content: flex-end; align-items: center; gap: var(--gap); border: 0; padding: 0 3px; background: none; border-radius: 8px; height: var(--rowh); }
+button.lrow { cursor: pointer; }
+button.lrow.can { box-shadow: 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+button.lrow:disabled { cursor: default; }
+.cell { width: var(--t); height: var(--t); border-radius: 6px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); flex: none; }
+.wall { grid-template-columns: repeat(5, var(--t)); grid-auto-rows: var(--rowh); align-items: center; padding: 0 2px; }
+.wcell { width: var(--t); height: var(--t); border-radius: 6px; position: relative; }
+.wcell .ghost { opacity: .22; }
+.wcell.fresh { box-shadow: 0 0 0 2px #fff; border-radius: 6px; }
+.floor { display: flex; gap: var(--gap); justify-content: center; align-items: flex-start; border: 0; padding: 4px; border-radius: 10px; background: none; flex-wrap: wrap; }
+button.floor { cursor: pointer; }
+button.floor.can { box-shadow: 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.fslot { display: grid; gap: 2px; justify-items: center; }
+.fslot small { font-size: 11px; color: var(--red); font-weight: 800; }
+.flbl { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn { min-height: 44px; }
+
+/* ---------- andere Tafeln ---------- */
+.others { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+.other { background: var(--sheet-2); border-radius: 12px; padding: 8px; display: grid; gap: 6px; --t: 13px; --gap: 2px; --rowh: 13px; }
+.other.on { box-shadow: 0 0 0 3px var(--accent); }
+.other .nm { font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; gap: 6px; }
+.other .nm span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.other .boardx { gap: 6px; }
+.other .lrow { padding: 0; min-height: 0; }
+.other .cell, .other .wcell { border-radius: 3px; }
+.other .floor { padding: 0; justify-content: flex-start; }
+.other .fslot small { display: none; }
+
+/* ---------- Seitenleiste ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; flex-wrap: wrap; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.score th, .score td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--sheet-2); white-space: nowrap; }
+.score th:first-child, .score td:first-child { text-align: left; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.score td.tot { font-family: var(--font-display); font-size: 18px; }
+.score td.d { color: var(--muted); }
+.score tr.on td:first-child { color: var(--accent); }
+.score-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.legend div { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.legend svg { width: 24px; height: 24px; }
+
+@media (max-width: 560px) {
+  :root { --t: min(32px, calc((100vw - 92px) / 10.4)); --gap: 3px; }
+  .panel { padding: 12px; }
+  .facs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .boardx { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Zeichen der fünf Fliesenfarben (zusätzlich zur Farbe) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="sy-b" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.1"/><circle cx="5" cy="5" r=".8" fill="currentColor"/></symbol>
+    <symbol id="sy-y" viewBox="0 0 10 10"><path d="M5 1.6 5.9 4.1 8.5 4.1 6.4 5.7 7.2 8.3 5 6.7 2.8 8.3 3.6 5.7 1.5 4.1 4.1 4.1Z" fill="currentColor"/></symbol>
+    <symbol id="sy-r" viewBox="0 0 10 10"><path d="M5 1.8 8.2 5 5 8.2 1.8 5Z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M5 3.8 6.2 5 5 6.2 3.8 5Z" fill="currentColor"/></symbol>
+    <symbol id="sy-k" viewBox="0 0 10 10"><path d="M2.6 2.6 7.4 7.4M7.4 2.6 2.6 7.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="sy-t" viewBox="0 0 10 10"><path d="M5 2 8 7.6H2Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Mo<span>saik</span></h1>
+      <div class="sub">Fliesen nehmen, Reihen füllen, die Wand gestalten</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="panel market" id="market" aria-label="Werkstätten und Mitte"></section>
+      <section class="panel mine" id="mine">
+        <h2><span id="mine-title">Deine Tafel</span><small id="mine-sub"></small></h2>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div id="myboard"></div>
+        <div class="actions" id="actions"></div>
+      </section>
+      <section class="others" id="others" aria-label="Tafeln der anderen"></section>
+    </div>
+    <div class="col">
+      <section class="panel">
+        <h2>Wertung</h2>
+        <table class="score" id="score"></table>
+        <p class="score-note" id="score-note"></p>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul id="rules-list"></ul>
+          <div class="legend" id="legend"></div>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Fliesen ----------
+// b Blau, y Gelb, r Rot, k Schwarz, t Türkis; F = Startspieler-Stein (nur auf dem Boden)
+const COLS = ["b", "y", "r", "k", "t"];
+const NAME = { b: "Blau", y: "Gelb", r: "Rot", k: "Schwarz", t: "Türkis" };
+const FILL = { b: "#2f6fd0", y: "#f0bd2c", r: "#d6453b", k: "#2b2b35", t: "#35b5ad" };
+const INK = { b: "#fff", y: "#3b2b00", r: "#fff", k: "#e9e9ef", t: "#073b38" };
+const FLOOR = [-1, -1, -2, -2, -2, -3, -3];
+const wallCol = (c, r) => (COLS.indexOf(c) + r) % 5;          // Spalte der Farbe c in Reihe r
+const wallColor = (r, col) => COLS[(col - r + 5) % 5];
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole"];
+
+let S, kit;
+const UI = { sel: null, key: "" };
+const vb = (name, du, er) => (name === "Du" ? du : er);
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 80); };
+const pname = i => `<b>${esc(S.players[i].name)}</b>`;
+const pts = n => `${n} ${Math.abs(n) === 1 ? "Punkt" : "Punkte"}`;
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------- Regeln (verändern nur S, laufen über kit.act) ----------
+const nFac = n => (n === 2 ? 5 : n === 3 ? 7 : 9);
+function drawTile() {
+  if (!S.bag.length) { if (!S.lid.length) return null; S.bag = shuffle(S.lid); S.lid = []; log("Der Beutel ist leer. Die abgelegten Fliesen kommen zurück hinein."); }
+  return S.bag.pop();
+}
+function startRound() {
+  S.round++;
+  S.facs = Array.from({ length: nFac(S.players.length) }, () => { const f = []; for (let k = 0; k < 4; k++) { const t = drawTile(); if (t) f.push(t); } return f; });
+  S.center = []; S.firstInCenter = true;
+  S.active = S.firstNext; S.firstNext = S.firstNext; S.phase = "play"; S.seq++;
+  log(`<b>Runde ${S.round}</b>. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
+}
+// Darf Farbe c in Musterreihe r von Spieler p?
+function lineOk(p, r, c) {
+  const L = p.lines[r];
+  if (L.n >= r + 1) return false;
+  if (L.n && L.c !== c) return false;
+  return !p.wall[r * 5 + wallCol(c, r)];
+}
+function available() {           // [{src, c, n}]
+  const out = [];
+  S.facs.forEach((f, i) => { for (const c of COLS) { const n = f.filter(x => x === c).length; if (n) out.push({ src: i, c, n }); } });
+  for (const c of COLS) { const n = S.center.filter(x => x === c).length; if (n) out.push({ src: "c", c, n }); }
+  return out;
+}
+function toFloor(p, tiles) {
+  for (const t of tiles) { if (p.floor.length < 7) p.floor.push(t); else if (t !== "F") S.lid.push(t); }
+}
+// Zug: alle Fliesen der Farbe c aus Quelle src nehmen und in Reihe r (−1 = Boden) legen
+function take(src, c, r) {
+  const i = S.active, p = S.players[i];
+  let got;
+  if (src === "c") {
+    got = S.center.filter(x => x === c); S.center = S.center.filter(x => x !== c);
+    if (S.firstInCenter) { S.firstInCenter = false; S.firstNext = i; toFloor(p, ["F"]); }
+  } else {
+    const f = S.facs[src]; got = f.filter(x => x === c); S.center.push(...f.filter(x => x !== c)); S.facs[src] = [];
+  }
+  let over = got.length;
+  if (r >= 0) { const L = p.lines[r], room = r + 1 - L.n, put = Math.min(room, got.length); L.c = c; L.n += put; over = got.length - put; }
+  toFloor(p, got.slice(0, over));
+  S.seq++; S.fresh = null;
+  log(`${pname(i)} ${vb(p.name, "nimmst", "nimmt")} ${got.length}× ${NAME[c]} ${src === "c" ? "aus der Mitte" : `aus Werkstatt ${src + 1}`}${r >= 0 ? ` für Reihe ${r + 1}` : " auf den Boden"}${over && r >= 0 ? `, ${over} auf den Boden` : ""}.`);
+  if (S.facs.every(f => !f.length) && !S.center.length) endRound();
+  else S.active = (i + 1) % S.players.length;
+}
+// Wandfliese bei (r, col): Punkte für waagerechte und senkrechte Kette
+function placePoints(wall, r, col) {
+  let h = 1, v = 1;
+  for (let x = col - 1; x >= 0 && wall[r * 5 + x]; x--) h++;
+  for (let x = col + 1; x < 5 && wall[r * 5 + x]; x++) h++;
+  for (let y = r - 1; y >= 0 && wall[y * 5 + col]; y--) v++;
+  for (let y = r + 1; y < 5 && wall[y * 5 + col]; y++) v++;
+  return h === 1 && v === 1 ? 1 : (h > 1 ? h : 0) + (v > 1 ? v : 0);
+}
+const floorPenalty = n => FLOOR.slice(0, Math.min(n, 7)).reduce((a, b) => a + b, 0);
+function endRound() {
+  S.fresh = {};
+  S.players.forEach((p, i) => {
+    let gain = 0; const at = [];
+    for (let r = 0; r < 5; r++) {
+      const L = p.lines[r];
+      if (L.n === r + 1) {
+        const col = wallCol(L.c, r);
+        p.wall[r * 5 + col] = L.c;
+        gain += placePoints(p.wall, r, col); at.push(r * 5 + col);
+        for (let k = 0; k < r; k++) S.lid.push(L.c);
+        p.lines[r] = { c: null, n: 0 };
+      }
+    }
+    const pen = floorPenalty(p.floor.length);
+    S.lid.push(...p.floor.filter(x => x !== "F")); p.floor = [];
+    const before = p.score; p.score = Math.max(0, p.score + gain + pen);
+    p.last = { gain, pen, delta: p.score - before };
+    S.fresh[i] = at;
+    log(`${pname(i)}: Wand +${gain}${pen ? `, Boden ${pen}` : ""} → ${pts(p.score)}.`);
+  });
+  if (S.players.some(p => fullRows(p.wall) > 0)) { endGame(); return; }
+  startRound();
+}
+const fullRows = w => [0, 1, 2, 3, 4].filter(r => [0, 1, 2, 3, 4].every(c => w[r * 5 + c])).length;
+const fullCols = w => [0, 1, 2, 3, 4].filter(c => [0, 1, 2, 3, 4].every(r => w[r * 5 + c])).length;
+const fullColors = w => COLS.filter(c => w.filter(x => x === c).length === 5).length;
+function endGame() {
+  S.players.forEach(p => {
+    const rows = fullRows(p.wall), cols = fullCols(p.wall), colors = fullColors(p.wall);
+    p.bonus = { rows, cols, colors, pts: rows * 2 + cols * 7 + colors * 10 };
+    p.score += p.bonus.pts;
+  });
+  S.phase = "over"; S.seq++;
+  const w = ranking()[0];
+  log(`<b>Spielende.</b> Zusatzpunkte für volle Reihen (+2), Spalten (+7) und Farben (+10). ${pname(S.players.indexOf(w))} ${vb(w.name, "gewinnst", "gewinnt")} mit ${pts(w.score)}.`);
+}
+const ranking = () => S.players.slice().sort((a, b) => b.score - a.score || fullRows(b.wall) - fullRows(a.wall));
+
+// ---------- Computer-Gegner ----------
+function moveValue(p, m, r) {
+  let v = 0, n = m.n, over = n;
+  const floorNow = p.floor.length + (m.src === "c" && S.firstInCenter ? 1 : 0);
+  if (m.src === "c" && S.firstInCenter) v -= 0.6;                       // Startstein kostet einen Bodenplatz
+  if (r >= 0) {
+    const L = p.lines[r], room = r + 1 - L.n, put = Math.min(room, n); over = n - put;
+    if (L.n + put === r + 1) {
+      const w = p.wall.slice(), col = wallCol(m.c, r); w[r * 5 + col] = m.c;
+      v += placePoints(w, r, col) + 1.2;                              // Reihe voll: Wandpunkte
+      if ([0, 1, 2, 3, 4].every(rr => w[rr * 5 + col])) v += 3;        // Spalte fast geschafft
+      if (w.filter(x => x === m.c).length === 5) v += 4;
+      if ([0, 1, 2, 3, 4].every(c => w[r * 5 + c])) v += 1;             // Reihe voll beendet das Spiel
+    } else v += 0.45 * put - 0.15 * (r + 1 - L.n - put);               // Fortschritt, offene Reste kosten etwas
+    v += 0.25 * [0, 1, 2, 3, 4].filter(rr => p.wall[rr * 5 + wallCol(m.c, r)]).length;
+  }
+  v += floorPenalty(floorNow + over) - floorPenalty(floorNow);
+  return v + Math.random() * 0.1;
+}
+function botStep() {
+  const p = S.players[S.active];
+  let best = null, bv = -Infinity;
+  for (const m of available()) for (let r = -1; r < 5; r++) {
+    if (r >= 0 && !lineOk(p, r, m.c)) continue;
+    const v = moveValue(p, m, r);
+    if (v > bv) { bv = v; best = { ...m, r }; }
+  }
+  take(best.src, best.c, best.r);
+}
+function playBots() {
+  let guard = 0;
+  while (S.phase === "play" && S.players[S.active].ai && guard++ < 500) botStep();
+}
+
+// ---------- Spielstand ----------
+const emptyBoard = () => ({ lines: Array.from({ length: 5 }, () => ({ c: null, n: 0 })), wall: Array(25).fill(null), floor: [], score: 0, last: null, bonus: null });
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, ...emptyBoard() });
+function deal(s) {
+  S = s;
+  s.players.forEach(p => Object.assign(p, emptyBoard()));
+  s.bag = shuffle(COLS.flatMap(c => Array(20).fill(c))); s.lid = [];
+  s.round = 0; s.firstNext = rnd(s.players.length); s.fresh = null;
+  startRound();
+}
+function newState({ roster, mode }) {
+  const s = { players: roster.map(newPlayer), bag: [], lid: [], facs: [], center: [], firstInCenter: true, firstNext: 0, active: 0, round: 0, phase: "play", seq: 0, log: [], fresh: null };
+  if (mode !== "online") {
+    // lokal beginnt ein Mensch
+    deal(s); S.active = S.firstNext = 0; S.log[0] = `<b>Runde 1</b>. ${pname(0)} ${vb(S.players[0].name, "beginnst", "beginnt")}.`;
+    playBots();
+  }
+  return s;
+}
+function onStart(s) { deal(s); playBots(); }
+const whoActs = () => (S.phase === "play" ? [S.active] : []);
+
+// ---------- Eingaben ----------
+const mine = () => S.phase === "play" && kit.me() === S.active;
+$("market").addEventListener("click", e => {
+  const b = e.target.closest("[data-src]");
+  if (!b || b.disabled || !mine()) return;
+  const src = b.dataset.src === "c" ? "c" : +b.dataset.src, c = b.dataset.c;
+  UI.sel = UI.sel && UI.sel.src === src && UI.sel.c === c ? null : { src, c };
+  render();
+  if (UI.sel) { const t = document.querySelector("#myboard .can"); if (t && t.scrollIntoView && window.innerWidth < 980) t.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+});
+$("myboard").addEventListener("click", e => {
+  const b = e.target.closest("[data-r]");
+  if (!b || b.disabled || !UI.sel) return;
+  const r = +b.dataset.r, { src, c } = UI.sel, seq = S.seq;
+  UI.sel = null;
+  kit.act(() => {
+    if (!mine() || S.seq !== seq) return false;
+    if (!available().some(m => m.src === src && m.c === c)) return false;
+    if (r >= 0 && !lineOk(S.players[S.active], r, c)) return false;
+    take(src, c, r); playBots();
+  });
+});
+$("actions").addEventListener("click", e => { if (e.target.closest("[data-cancel]")) { UI.sel = null; render(); } });
+document.addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Grafik ----------
+const tileSvg = (c, ghost = false) => c === "F"
+  ? `<span class="marker" style="width:100%;height:100%;font-size:calc(var(--t) * .55)">1</span>`
+  : `<svg class="tile${ghost ? " ghost" : ""}" viewBox="0 0 10 10" aria-hidden="true"><rect x=".3" y=".3" width="9.4" height="9.4" rx="1.6" fill="${FILL[c]}"/>
+    <rect x=".3" y=".3" width="9.4" height="9.4" rx="1.6" fill="none" stroke="rgba(255,255,255,.25)" stroke-width=".5"/>
+    <use href="#sy-${c}" x="1.4" y="1.4" width="7.2" height="7.2" style="color:${INK[c]}"/></svg>`;
+function boardHtml(p, pi, opt = {}) {
+  const sel = opt.sel, fresh = S.fresh && S.fresh[pi] || [];
+  const lines = p.lines.map((L, r) => {
+    const can = sel && lineOk(p, r, sel.c);
+    const cellsH = Array.from({ length: r + 1 }, (_, k) => `<span class="cell">${k >= r + 1 - L.n ? tileSvg(L.c) : ""}</span>`).join("");
+    return opt.interactive
+      ? `<button type="button" class="lrow${can ? " can" : ""}" data-r="${r}"${can ? "" : " disabled"} aria-label="Reihe ${r + 1}: ${L.n} von ${r + 1}${L.c ? " " + NAME[L.c] : ""}">${cellsH}</button>`
+      : `<div class="lrow">${cellsH}</div>`;
+  }).join("");
+  const wall = Array.from({ length: 25 }, (_, k) => {
+    const r = Math.floor(k / 5), col = k % 5, c = p.wall[k];
+    return `<span class="wcell${fresh.includes(k) ? " fresh" : ""}">${c ? tileSvg(c) : tileSvg(wallColor(r, col), true)}</span>`;
+  }).join("");
+  const fl = Array.from({ length: 7 }, (_, k) => `<span class="fslot"><span class="cell">${p.floor[k] ? tileSvg(p.floor[k]) : ""}</span><small>${FLOOR[k]}</small></span>`).join("");
+  const floorEl = opt.interactive
+    ? `<button type="button" class="floor${sel ? " can" : ""}" data-r="-1"${sel ? "" : " disabled"} aria-label="Boden">${fl}</button>`
+    : `<div class="floor">${fl}</div>`;
+  return `<div class="boardx"><div class="lines">${lines}</div><div class="wall">${wall}</div></div>${opt.interactive ? `<div class="flbl">Boden</div>` : ""}${floorEl}`;
+}
+
+// ---------- Darstellung ----------
+function rulesHtml() {
+  return `<li>100 Fliesen in fünf Farben, jede mit eigenem Zeichen. Jede Runde werden ${nFac(S.players.length)} Werkstätten mit je 4 Fliesen aus dem Beutel gefüllt.</li>
+    <li>Wer dran ist, nimmt <b>alle Fliesen einer Farbe</b> aus einer Werkstatt (der Rest wandert in die Mitte) oder alle Fliesen einer Farbe aus der Mitte. Wer zuerst aus der Mitte nimmt, bekommt den Startstein <b>1</b> auf den Boden und beginnt die nächste Runde.</li>
+    <li>Die Fliesen kommen in <b>eine</b> Musterreihe links (Reihe 1 fasst 1 Fliese, Reihe 5 fasst 5). Eine Reihe hat immer nur eine Farbe, und die Farbe darf in dieser Reihe der Wand noch nicht liegen. Was nicht passt, fällt auf den Boden.</li>
+    <li>Sind Werkstätten und Mitte leer, wird gefliest: Jede volle Musterreihe gibt eine Fliese an ihren festen Platz in der Wand, der Rest der Reihe wird abgelegt.</li>
+    <li>Eine neue Wandfliese zählt 1 Punkt, wenn sie allein liegt. Sonst zählt sie so viele Punkte, wie die waagerechte Kette lang ist, plus so viele, wie die senkrechte Kette lang ist (jeweils nur, wenn die Kette mehr als eine Fliese hat).</li>
+    <li>Der Boden kostet Punkte: −1, −1, −2, −2, −2, −3, −3. Weniger als 0 Punkte gibt es nicht.</li>
+    <li>Das Spiel endet nach der Runde, in der jemand eine waagerechte Wandreihe voll hat. Zusatzpunkte: +2 je volle Reihe, +7 je volle Spalte, +10 je Farbe, die fünfmal an der Wand liegt. Bei Gleichstand gewinnt, wer mehr volle Reihen hat.</li>`;
+}
+const legendHtml = () => COLS.map(c => `<div>${tileSvg(c)}${NAME[c]}</div>`).join("");
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine();
+  $("market").hidden = $("mine").hidden = $("others").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = rulesHtml();
+  if (!$("legend").innerHTML) $("legend").innerHTML = legendHtml();
+  if (lobby) { $("result").hidden = true; $("score").innerHTML = ""; $("score-note").textContent = ""; return; }
+  const key = `${S.seq}:${mi}`;
+  if (UI.key !== key) { UI.key = key; UI.sel = null; }
+  const sel = me ? UI.sel : null;
+
+  // Werkstätten
+  const pickBtn = (src, c, k) => {
+    const on = sel && sel.src === src && sel.c === c;
+    return `<button type="button" class="pick${on ? " sel" : ""}${me ? " can" : ""}" data-src="${src}" data-c="${c}"${me ? "" : " disabled"} aria-label="${NAME[c]} aus ${src === "c" ? "der Mitte" : "Werkstatt " + (src + 1)}">${tileSvg(c)}</button>`;
+  };
+  let mk = `<div class="facs">${S.facs.map((f, i) => `<div class="fac${f.length ? "" : " empty"}" aria-label="Werkstatt ${i + 1}"><div class="in">${f.slice().sort((a, b) => COLS.indexOf(a) - COLS.indexOf(b)).map((c, k) => pickBtn(i, c, k)).join("")}</div></div>`).join("")}</div>`;
+  const groups = COLS.map(c => [c, S.center.filter(x => x === c).length]).filter(([, n]) => n);
+  mk += `<div class="center"><span class="lbl">Mitte</span>${S.firstInCenter ? `<span class="marker" title="Startstein">1</span>` : ""}
+    ${groups.map(([c, n]) => { const on = sel && sel.src === "c" && sel.c === c;
+      return `<button type="button" class="grp${on ? " sel" : ""}" data-src="c" data-c="${c}"${me ? "" : " disabled"} aria-label="${n}× ${NAME[c]} aus der Mitte"><span class="sw">${tileSvg(c)}</span><b>×${n}</b></button>`; }).join("")}
+    ${!groups.length && !S.firstInCenter ? `<span class="sk-muted">leer</span>` : ""}</div>`;
+  mk += `<p class="sk-muted" style="margin:0;font-size:13px">Runde ${S.round} · Beutel ${S.bag.length} · abgelegt ${S.lid.length}${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}</p>`;
+  $("market").innerHTML = mk;
+
+  // eigene Tafel
+  const vi = mi >= 0 ? mi : 0, pl = S.players[vi], a = S.players[S.active];
+  $("mine-title").textContent = mi < 0 ? `Tafel von ${pl.name}` : (kit.hotSeat() || pl.name !== "Du") ? `Tafel von ${pl.name}` : "Deine Tafel";
+  $("mine-sub").textContent = `${pts(pl.score)}${pl.last && S.round > 1 ? ` · letzte Runde ${pl.last.delta >= 0 ? "+" : ""}${pl.last.delta}` : ""}`;
+  let st = "";
+  if (S.phase === "play") {
+    if (!me) st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>${a.ai ? " (Computer)" : ""}.`;
+    else if (!sel) st = `<strong>${esc(a.name)}</strong>, tippe eine Fliese in einer Werkstatt oder in der Mitte an.`;
+    else {
+      const m = available().find(x => x.src === sel.src && x.c === sel.c);
+      st = `${m ? m.n : ""}× <strong>${NAME[sel.c]}</strong>: Tippe eine leuchtende Reihe oder den Boden an.`;
+    }
+  } else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("myboard").innerHTML = boardHtml(pl, vi, { interactive: true, sel });
+  $("actions").innerHTML = sel ? `<button class="btn" type="button" data-cancel>Andere Fliese wählen</button>` : "";
+
+  // andere Tafeln
+  $("others").innerHTML = S.players.map((p, i) => i === vi ? "" : `<div class="other${S.phase === "play" && i === S.active ? " on" : ""}">
+    <div class="nm"><span>${esc(p.name)}${p.ai ? " · Computer" : ""}</span><span>${pts(p.score)}</span></div>${boardHtml(p, i)}</div>`).join("");
+
+  // Wertung
+  $("score").innerHTML = `<thead><tr><th>Spieler</th><th>Letzte Runde</th><th>Reihen</th><th>Punkte</th></tr></thead><tbody>${S.players.map((p, i) =>
+    `<tr class="${S.phase === "play" && i === S.active ? "on" : ""}"><td>${esc(p.name)}</td><td class="d">${p.last ? (p.last.delta >= 0 ? "+" : "") + p.last.delta : "–"}</td><td class="d">${fullRows(p.wall)}</td><td class="tot">${p.score}</td></tr>`).join("")}</tbody>`;
+  $("score-note").textContent = "Das Spiel endet nach der Runde, in der jemand eine Wandreihe voll hat.";
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const rk = ranking(), top = rk[0], tie = rk.filter(p => p.score === top.score && fullRows(p.wall) === fullRows(top.wall));
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${tie.length > 1 ? `Gleichstand: ${tie.map(p => esc(p.name)).join(" und ")}` : `${esc(top.name)} ${vb(top.name, "gewinnst", "gewinnt")}`}</h2>
+      <ol class="rank">${rk.map((p, k) => `<li><span>${k + 1}. ${esc(p.name)}</span><span>${pts(p.score)} · Zusatz +${p.bonus.pts} (${p.bonus.rows} ${p.bonus.rows === 1 ? "Reihe" : "Reihen"}, ${p.bonus.cols} ${p.bonus.cols === 1 ? "Spalte" : "Spalten"}, ${p.bonus.colors} ${p.bonus.colors === 1 ? "Farbe" : "Farben"})</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "mosaik", version: 1, minPlayers: 2, maxPlayers: 4, bots: true, defaultBots: 1, botNames: BOT_NAMES,
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.facs) && Array.isArray(s.center) && s.players.every(p => Array.isArray(p.wall) && Array.isArray(p.lines)),
+  roomStatus: s => `läuft · Runde ${s.round}`,
+  handoverText: () => "Du nimmst Fliesen.",
+  // nur für automatische Tests der Regeln
+  test: { take, lineOk, available, placePoints, floorPenalty, endRound, deal, playBots, botStep, fullRows, wallCol, get S() { return S; } },
+});
+kit.start();
+})();
+</script>

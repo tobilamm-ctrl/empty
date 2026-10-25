@@ -49,6 +49,13 @@
     "color": "#8cc94f"
   },
   {
+    "id": "mosaik",
+    "title": "Mosaik",
+    "description": "Fliesen aus Werkstätten nehmen, Musterreihen füllen und eine Wand gestalten. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–4 Spieler · ca. 30 Minuten",
+    "color": "#35b5ad"
+  },
+  {
     "id": "codeknacker",
     "title": "Codeknacker",
     "description": "Den geheimen Farbcode mit möglichst wenigen Versuchen knacken. Allein gegen den Computer, zu zweit an einem Gerät oder online.",
