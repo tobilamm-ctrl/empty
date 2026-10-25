@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Schafkopf.
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Schafkopf.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
@@ -15,7 +15,7 @@ oder Kartenbild 1:1 kopieren.
 | # | Spiel (Prinzip) | Spieler | Aufwand | Handy | Computer-Gegner | Hinweise |
 |---|---|---|---|---|---|---|
 | ✓ | **Reversi** | 2 | fertig | sehr gut (8×8) | drei Stärken | „Othello“ ist ein Markenname |
-| 2 | **Skyjo** | 2–8 | gering–mittel | gut (eigenes 3×4-Raster) | leicht | `maxPlayers` im Spielkit auf 8 anheben |
+| ✓ | **Skyjo** → Zwölfer | 2–8 | fertig | gut (eigenes 3×4-Raster) | ja | „Skyjo“ ist ein Markenname |
 | 3 | **Mau-Mau im Uno-Stil** | 2–6 | gering–mittel | gut | Mau-Mau-Computer erweitern | Zahlen 0–9 in 4 Farben, Richtungswechsel, +2, +4, Farbwahl; eigener Name und eigenes Kartendesign (kein „UNO“, kein Oval) |
 | 4 | **Kingdomino** | 2–4 | mittel | sehr gut (5×5) | mittel | 48 Dominos selbst gestalten; Wertung Fläche × Kronen |
 | 5 | **Azul** | 2–4 | mittel | gut | mittel | Fliesen zusätzlich mit Muster unterscheidbar |

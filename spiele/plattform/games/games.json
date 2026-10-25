@@ -35,6 +35,13 @@
     "color": "#d9b45a"
   },
   {
+    "id": "zwoelfer",
+    "title": "Zwölfer",
+    "description": "Zwölf verdeckte Karten, tauschen und aufdecken, möglichst wenig Punkte sammeln. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–8 Spieler · ca. 20–30 Minuten",
+    "color": "#f2c84b"
+  },
+  {
     "id": "codeknacker",
     "title": "Codeknacker",
     "description": "Den geheimen Farbcode mit möglichst wenigen Versuchen knacken. Allein gegen den Computer, zu zweit an einem Gerät oder online.",

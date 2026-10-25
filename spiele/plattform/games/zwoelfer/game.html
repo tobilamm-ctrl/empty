@@ -1,0 +1,548 @@
+<title>Zwölfer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: oben die Mitspieler als kleine Raster, darunter Stapel und Ablage, unten groß das eigene Raster; am Rechner rechts Wertung und Verlauf */
+:root {
+  color-scheme: dark;
+  --table: #101624;
+  --sheet: #18213a;
+  --sheet-2: #22305a;
+  --ink: #f3f5fb;
+  --muted: #a6b0cc;
+  --accent: #f2c84b;
+  --tile-ink: #141a2c;
+  --red: #e3605a;
+  --green: #5fbf6f;
+  --c-neg: #7b6be0;
+  --c-zero: #5ab6e3;
+  --c-low: #5fbf6f;
+  --c-mid: #f2c84b;
+  --c-high: #e3605a;
+  --back-1: #2b3f7a;
+  --back-2: #3c5bb0;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: radial-gradient(ellipse at 50% 0%, #1b2547, var(--table) 70%) fixed; color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 5vw, 42px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 940px) { main.game { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+.side { display: grid; gap: 18px; min-width: 0; }
+.table { display: grid; gap: 14px; }
+
+/* ---------- Karten ---------- */
+.card {
+  --c: var(--c-low);
+  position: relative; border: 0; padding: 0; border-radius: 10px; aspect-ratio: 5 / 7; width: 100%;
+  background: var(--c); color: var(--tile-ink); display: grid; place-items: center; overflow: hidden;
+  font-family: var(--font-display); box-shadow: 0 2px 0 rgba(0,0,0,.25), inset 0 0 0 3px rgba(255,255,255,.35);
+}
+.card .v { font-size: clamp(22px, 7vw, 40px); line-height: 1; }
+.card .c1, .card .c2 { position: absolute; font-size: clamp(9px, 2.4vw, 13px); line-height: 1; }
+.card .c1 { top: 6%; left: 9%; }
+.card .c2 { bottom: 6%; right: 9%; transform: rotate(180deg); }
+.card.neg { --c: var(--c-neg); color: #fff; }
+.card.zero { --c: var(--c-zero); }
+.card.low { --c: var(--c-low); }
+.card.mid { --c: var(--c-mid); }
+.card.high { --c: var(--c-high); color: #fff; }
+.card.back { background: repeating-linear-gradient(45deg, var(--back-1) 0 8px, var(--back-2) 8px 16px); box-shadow: 0 2px 0 rgba(0,0,0,.3), inset 0 0 0 3px rgba(255,255,255,.25); }
+.card.back::after { content: "12"; font-family: var(--font-display); font-size: clamp(12px, 3.5vw, 18px); color: rgba(255,255,255,.55); width: 46%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.25); }
+.card.gone { background: transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,.12); }
+.card.pick { cursor: pointer; outline: 3px solid var(--accent); outline-offset: 2px; }
+.card.pick:hover, .card.pick:focus-visible { transform: translateY(-2px); }
+.card.dim { opacity: .45; }
+.card.fresh { animation: pop .3s ease-out; }
+@keyframes pop { from { transform: scale(.85); } to { transform: scale(1); } }
+
+/* ---------- Mitspieler ---------- */
+.opps { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+.opp { background: var(--sheet-2); border-radius: 12px; padding: 8px 10px; display: grid; gap: 6px; min-width: 0; }
+.opp.on { box-shadow: 0 0 0 2px var(--accent); }
+.opp .hd { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; }
+.opp .hd b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp .hd span { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.mini .card { border-radius: 5px; box-shadow: none; }
+.mini .card .v { font-size: 15px; }
+.mini .card .c1, .mini .card .c2 { display: none; }
+.mini .card.back::after { content: none; }
+
+/* ---------- Mitte: Stapel und Ablage ---------- */
+.center { display: flex; justify-content: center; gap: clamp(12px, 4vw, 28px); align-items: flex-end; flex-wrap: wrap; }
+.pile { display: grid; gap: 6px; justify-items: center; width: clamp(70px, 20vw, 96px); }
+.pile .lbl { font-size: 11px; font-weight: 800; letter-spacing: .05em; white-space: nowrap; text-transform: uppercase; color: var(--muted); }
+.pile .card { cursor: default; }
+.pile.drawn { width: clamp(84px, 24vw, 112px); }
+.pile.drawn .lbl { color: var(--accent); }
+.status { text-align: center; min-height: 2.9em; }
+.status strong { color: var(--accent); }
+.actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* ---------- Eigenes Raster ---------- */
+.mine { display: grid; gap: 8px; }
+.mine .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mine .hd .who { font-family: var(--font-display); font-size: 20px; }
+.mine .hd .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(6px, 2vw, 12px); max-width: 440px; margin: 0 auto; width: 100%; }
+
+/* ---------- Seite ---------- */
+.scores { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+.scores th, .scores td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--sheet-2); }
+.scores th:first-child, .scores td:first-child { text-align: left; }
+.scores th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 800; }
+.scores td.tot { font-family: var(--font-display); font-size: 17px; color: var(--accent); }
+.scores .dbl { color: var(--red); }
+.goal { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; max-height: 240px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 10px; }
+.result .rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.result .rank li { display: flex; justify-content: space-between; gap: 12px; }
+@media (max-width: 480px) {
+  .table.panel { padding: 12px 10px; }
+  .opps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Zwöl<span>fer</span></h1>
+      <div class="sub">Zwölf Karten, möglichst wenig Punkte</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div>
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="panel table" id="table">
+        <div class="opps" id="opps"></div>
+        <div class="center" id="center"></div>
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="actions" id="actions"></div>
+        <div class="mine">
+          <div class="hd"><span class="who" id="who"></span><span class="meta" id="meta"></span></div>
+          <div class="grid" id="grid"></div>
+        </div>
+      </section>
+    </div>
+    <aside class="side">
+      <section class="panel">
+        <h2>Wertung</h2>
+        <div id="scores"></div>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Es gibt 150 Karten von −2 bis 12. Jeder bekommt <b>12 verdeckte Karten</b> in drei Reihen zu je vier und deckt zu Beginn <b>zwei davon auf</b>. Wer die höhere Summe aufgedeckt hat, beginnt.</li>
+            <li>Wer dran ist, nimmt entweder die <b>oberste Karte der Ablage</b> und tauscht sie gegen eine Karte im eigenen Raster, oder <b>zieht vom Stapel</b>. Die gezogene Karte darf man eintauschen oder abwerfen; wer abwirft, deckt dafür eine eigene verdeckte Karte auf.</li>
+            <li>Die ausgetauschte Karte kommt offen auf die Ablage. Getauscht werden darf gegen offene und verdeckte Karten.</li>
+            <li>Liegen in einer Spalte <b>drei gleiche offene Karten</b>, wird die ganze Spalte abgeräumt und zählt nicht mehr.</li>
+            <li>Hat jemand alle Karten aufgedeckt, kommen alle anderen noch <b>einmal</b> dran. Dann werden alle Karten aufgedeckt und gezählt. Hat derjenige, der die Runde beendet hat, nicht allein die wenigsten Punkte, zählen seine Punkte <b>doppelt</b> (nur wenn sie über null liegen).</li>
+            <li>Wer die Runde beendet hat, beginnt die nächste. Erreicht jemand das Punkteziel (100 oder 50), endet das Spiel: <b>Die wenigsten Punkte gewinnen.</b></li>
+            <li>Beim Aufdecken am Rundenende wird nicht mehr abgeräumt.</li>
+          </ul>
+        </details>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+const CELLS = 12, COLS = 4, ROWS = 3, AVG = 5.07;
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi", "Lena", "Max"];
+const vb = (n, du, er) => (n === "Du" ? du : er);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// ---------- Regeln (reine Funktionen) ----------
+function newDeck() {
+  const d = [];
+  for (let k = 0; k < 5; k++) d.push(-2);
+  for (let k = 0; k < 10; k++) d.push(-1);
+  for (let k = 0; k < 15; k++) d.push(0);
+  for (let v = 1; v <= 12; v++) for (let k = 0; k < 10; k++) d.push(v);
+  return shuffle(d);
+}
+const band = v => (v < 0 ? "neg" : v === 0 ? "zero" : v <= 4 ? "low" : v <= 8 ? "mid" : "high");
+// Spalte c: Indizes c, c+4, c+8
+const colCells = c => [c, c + COLS, c + 2 * COLS];
+// abräumbare Spalten: drei offene, gleiche Karten
+function fullColumns(grid) {
+  const out = [];
+  for (let c = 0; c < COLS; c++) {
+    const cs = colCells(c).map(i => grid[i]);
+    if (cs.every(x => x && x.up) && cs[0].v === cs[1].v && cs[1].v === cs[2].v) out.push(c);
+  }
+  return out;
+}
+const allUp = grid => grid.every(x => !x || x.up);
+const visibleSum = grid => grid.reduce((s, x) => s + (x && x.up ? x.v : 0), 0);
+const fullSum = grid => grid.reduce((s, x) => s + (x ? x.v : 0), 0);
+// Punkte einer Runde inkl. Verdopplung für den, der die Runde beendet hat
+function roundScores(sums, ender) {
+  const out = sums.slice();
+  if (ender != null && out[ender] > 0 && out.some((s, i) => i !== ender && s <= out[ender])) out[ender] *= 2;
+  return out;
+}
+
+// ---------- Spielstand ----------
+let S, kit;
+const UI = { lastSeq: -1 };
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, grid: [], total: 0, rounds: [] });
+function deal(s) {
+  s.deck = newDeck();
+  for (const p of s.players) p.grid = Array.from({ length: CELLS }, () => ({ v: s.deck.pop(), up: false }));
+  s.discard = [s.deck.pop()];
+  s.drawn = null; s.drawnFrom = null; s.mustFlip = false; s.ender = null; s.finalLeft = 0; s.phase = "flip"; s.seq++;
+  s.fresh = [];
+}
+function newState({ mode, roster, options }) {
+  const s = { players: roster.map(newPlayer), active: 0, round: 1, seq: 0, goal: (options && options.goal) || 100, log: [], nextStarter: null };
+  deal(s);
+  botFlips(s);
+  return s;
+}
+function onStart(s) {
+  // online: im Wartebereich Hinzugekommene haben noch kein Raster, darum hier neu austeilen
+  deal(s); botFlips(s);
+  kit.addLog(`Runde ${s.round}: Alle decken zwei Karten auf.`);
+  if (s.players.every(q => flippedCount(q) >= 2)) startPlay();
+}
+function botFlips(s) {
+  for (const p of s.players) if (p.ai && flippedCount(p) < 2) {
+    const idx = shuffle([...Array(CELLS).keys()].filter(i => !p.grid[i].up)).slice(0, 2 - flippedCount(p));
+    idx.forEach(i => { p.grid[i].up = true; });
+  }
+}
+const flippedCount = p => p.grid.filter(x => x && x.up).length;
+function whoActs() {
+  if (S.phase === "flip") return S.players.map((p, i) => i).filter(i => !S.players[i].ai && flippedCount(S.players[i]) < 2);
+  if (S.phase === "play") return [S.active];
+  return [];
+}
+
+// ---------- Züge (verändern nur S, laufen über kit.act) ----------
+function startPlay() {
+  // Runde 1: höchste aufgedeckte Summe beginnt; später der, der die letzte Runde beendet hat
+  let start = S.nextStarter;
+  if (start == null) {
+    let best = -Infinity;
+    S.players.forEach((p, i) => { const v = visibleSum(p.grid); if (v > best) { best = v; start = i; } });
+  }
+  S.active = start; S.phase = "play";
+  kit.addLog(`<b>${esc(S.players[start].name)}</b> ${vb(S.players[start].name, "beginnst", "beginnt")}.`);
+  playBots();
+}
+function flipStart(pi, i) {
+  const p = S.players[pi];
+  p.grid[i].up = true;
+  if (S.players.every(q => flippedCount(q) >= 2)) startPlay();
+}
+function takeDiscard() { S.drawn = S.discard.pop(); S.drawnFrom = "discard"; S.seq++; }
+function drawPile() {
+  if (!S.deck.length) { const top = S.discard.pop(); S.deck = shuffle(S.discard); S.discard = [top]; kit.addLog("Der Stapel ist leer, die Ablage wird gemischt."); }
+  S.drawn = S.deck.pop(); S.drawnFrom = "pile"; S.seq++;
+}
+function swapAt(i) {
+  const p = S.players[S.active], old = p.grid[i];
+  p.grid[i] = { v: S.drawn, up: true };
+  S.discard.push(old.v);
+  kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "legst", "legt")} ${S.drawn} ${S.drawnFrom === "discard" ? "von der Ablage" : "vom Stapel"} ein und ${vb(p.name, "wirfst", "wirft")} ${old.up ? "" : "die verdeckte "}${old.v} ab.`);
+  S.fresh = [i]; S.drawn = null; S.drawnFrom = null;
+  endTurn();
+}
+function discardDrawn() {
+  const p = S.players[S.active];
+  S.discard.push(S.drawn);
+  kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "wirfst", "wirft")} die gezogene ${S.drawn} ab.`);
+  S.drawn = null; S.drawnFrom = null; S.mustFlip = true; S.seq++;
+}
+function flipAt(i) {
+  const p = S.players[S.active];
+  p.grid[i].up = true; S.mustFlip = false; S.fresh = [i];
+  kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "deckst", "deckt")} eine ${p.grid[i].v} auf.`);
+  endTurn();
+}
+function endTurn() {
+  const p = S.players[S.active];
+  for (const c of fullColumns(p.grid)) {
+    const v = p.grid[c].v;
+    colCells(c).forEach(i => { S.discard.push(p.grid[i].v); p.grid[i] = null; });
+    kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "räumst", "räumt")} eine Spalte mit drei ${v}ern ab.`);
+  }
+  S.seq++;
+  if (S.ender != null) {
+    if (--S.finalLeft <= 0) { endRound(); return; }
+  } else if (allUp(p.grid)) {
+    S.ender = S.active; S.finalLeft = S.players.length - 1;
+    kit.addLog(`<b>${esc(p.name)}</b> ${vb(p.name, "hast", "hat")} alle Karten offen. Alle anderen sind noch einmal dran.`);
+    if (S.finalLeft <= 0) { endRound(); return; }
+  }
+  S.active = (S.active + 1) % S.players.length;
+}
+function endRound() {
+  S.players.forEach(p => p.grid.forEach(x => { if (x) x.up = true; }));
+  const sums = S.players.map(p => fullSum(p.grid)), pts = roundScores(sums, S.ender);
+  S.players.forEach((p, i) => { p.rounds.push({ pts: pts[i], doubled: pts[i] !== sums[i] }); p.total += pts[i]; });
+  const e = S.players[S.ender];
+  kit.addLog(`Runde ${S.round} vorbei: ${S.players.map((p, i) => `${esc(p.name)} ${pts[i]}`).join(", ")}${pts[S.ender] !== sums[S.ender] ? ` (bei ${esc(e.name)} verdoppelt)` : ""}.`);
+  S.nextStarter = S.ender;
+  S.phase = S.players.some(p => p.total >= S.goal) ? "over" : "round";
+  if (S.phase === "over") kit.addLog("<b>Spielende.</b>");
+  S.seq++;
+}
+function nextRound() {
+  S.round++; deal(S); botFlips(S);
+  kit.addLog(`Runde ${S.round}: Alle decken zwei Karten auf.`);
+  if (S.players.every(q => flippedCount(q) >= 2)) startPlay();
+}
+
+// ---------- Computer ----------
+const known = x => (x ? (x.up ? x.v : AVG) : 0);
+// Wert, wenn Karte v an Stelle i liegt: Punktersparnis plus Bonus für (fast) volle Spalten
+function placeGain(grid, i, v) {
+  const before = known(grid[i]);
+  let gain = before - v;
+  const c = i % COLS, others = colCells(c).filter(j => j !== i).map(j => grid[j]);
+  if (others.every(x => x && x.up && x.v === v)) gain += 2 * v + v + 4;            // Spalte wird abgeräumt
+  else if (others.some(x => x && x.up && x.v === v)) gain += Math.max(1, v / 3);   // Paar in der Spalte
+  if (grid[i] && !grid[i].up) gain += .5;                                            // verdeckte Karte loswerden bringt Wissen
+  return gain;
+}
+function bestSwap(grid, v) {
+  let best = -Infinity, at = -1;
+  grid.forEach((x, i) => { if (!x) return; const g = placeGain(grid, i, v); if (g > best) { best = g; at = i; } });
+  return { gain: best, at };
+}
+// Würde dieser Zug die Runde beenden, obwohl andere vermutlich weniger haben?
+function riskyFinish(pi, grid) {
+  if (!allUp(grid)) return false;
+  const mine = fullSum(grid);
+  return S.players.some((q, j) => j !== pi && q.grid.reduce((s, x) => s + known(x), 0) <= mine);
+}
+function botTurn() {
+  const pi = S.active, p = S.players[pi], top = S.discard[S.discard.length - 1];
+  const viaDiscard = bestSwap(p.grid, top);
+  if (viaDiscard.gain >= 3 || (top <= 2 && viaDiscard.gain > 0)) {
+    const g = p.grid.slice(); g[viaDiscard.at] = { v: top, up: true };
+    if (!riskyFinish(pi, g)) { takeDiscard(); swapAt(viaDiscard.at); return; }
+  }
+  drawPile();
+  const v = S.drawn, sw = bestSwap(p.grid, v);
+  const g2 = p.grid.slice(); if (sw.at >= 0) g2[sw.at] = { v, up: true };
+  if (sw.gain >= 1.5 && !riskyFinish(pi, g2)) { swapAt(sw.at); return; }
+  const hidden = p.grid.map((x, i) => (x && !x.up ? i : -1)).filter(i => i >= 0);
+  // Letzte verdeckte Karte aufdecken würde die Runde beenden: lieber offen tauschen, wenn es knapp ist
+  if (hidden.length === 1) {
+    const after = p.grid.map((x, i) => (i === hidden[0] ? { v: AVG, up: true } : x));
+    if (riskyFinish(pi, after)) {
+      let best = -Infinity, at = -1;
+      p.grid.forEach((x, i) => { if (x && x.up) { const gg = placeGain(p.grid, i, v); if (gg > best) { best = gg; at = i; } } });
+      if (at >= 0) { swapAt(at); return; }
+    }
+  }
+  discardDrawn();
+  // möglichst nicht die letzte verdeckte Karte aufdecken, wenn es knapp ist
+  let pick = hidden[rnd(hidden.length)];
+  // Spalten mit einem offenen Paar bevorzugen, dort lohnt ein Treffer
+  const pairCol = hidden.find(i => { const o = colCells(i % COLS).filter(j => j !== i).map(j => p.grid[j]); return o.every(x => x && x.up) && o[0].v === o[1].v; });
+  if (pairCol != null) pick = pairCol;
+  flipAt(pick);
+}
+function playBots() {
+  let guard = 0;
+  while (S.phase === "play" && S.players[S.active].ai && guard++ < 50) botTurn();
+}
+
+// ---------- Eingaben ----------
+const myTurn = () => S.phase === "play" && kit.me() === S.active && !S.players[S.active].ai;
+function act(fn) {
+  const seq = S.seq;
+  kit.act(() => { if (S.seq !== seq) return false; if (fn() === false) return false; playBots(); });
+}
+$("grid").addEventListener("click", e => {
+  const b = e.target.closest(".card.pick"); if (!b) return;
+  const i = +b.dataset.i, mi = kit.me();
+  if (S.phase === "flip") {
+    kit.act(() => { const k = kit.me(); if (S.phase !== "flip" || k < 0 || flippedCount(S.players[k]) >= 2 || S.players[k].grid[i].up) return false; flipStart(k, i); });
+    return;
+  }
+  act(() => {
+    if (!myTurn() || mi !== S.active) return false;
+    const x = S.players[S.active].grid[i];
+    if (!x) return false;
+    if (S.drawn != null) swapAt(i);
+    else if (S.mustFlip && !x.up) flipAt(i);
+    else return false;
+  });
+});
+$("actions").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  const a = b.dataset.a;
+  if (a === "next") { kit.act(() => { if (S.phase !== "round" || (kit.online() && kit.me() < 0)) return false; nextRound(); playBots(); }); return; }
+  act(() => {
+    if (!myTurn()) return false;
+    if (a === "pile" && S.drawn == null && !S.mustFlip) drawPile();
+    else if (a === "discard" && S.drawn == null && !S.mustFlip) takeDiscard();
+    else if (a === "throw" && S.drawn != null && S.drawnFrom === "pile") discardDrawn();
+    else return false;
+  });
+});
+$("result").addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Darstellung ----------
+function cardHtml(x, opts = {}) {
+  if (!x) return `<div class="card gone" aria-label="abgeräumt"></div>`;
+  const tag = opts.button ? "button" : "div";
+  const attrs = opts.button ? ` type="button" data-i="${opts.i}"` : "";
+  const cls = `card ${x.up ? band(x.v) : "back"}${opts.pick ? " pick" : ""}${opts.dim ? " dim" : ""}${opts.fresh ? " fresh" : ""}`;
+  const label = x.up ? `Karte ${x.v}` : "verdeckte Karte";
+  const inner = x.up ? `<span class="c1">${x.v}</span><span class="v">${x.v}</span><span class="c2">${x.v}</span>` : "";
+  return `<${tag} class="${cls}"${attrs} aria-label="${label}${opts.pick ? ", antippen" : ""}"${opts.pick ? "" : opts.button ? " disabled" : ""}>${inner}</${tag}>`;
+}
+function render() {
+  const lobby = S.phase === "lobby";
+  $("table").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  if (lobby) { $("result").hidden = true; $("scores").innerHTML = ""; return; }
+  const mi = kit.me(), vi = mi >= 0 ? mi : 0, me = S.players[vi], a = S.players[S.active], mine = myTurn();
+  const fresh = UI.lastSeq !== S.seq ? new Set(S.active === vi ? S.fresh || [] : []) : new Set();
+  UI.lastSeq = S.seq;
+
+  // Mitspieler
+  $("opps").innerHTML = S.players.map((p, i) => [p, i]).filter(([, i]) => i !== vi).map(([p, i]) => `<div class="opp${S.phase === "play" && i === S.active ? " on" : ""}">
+      <div class="hd"><b>${esc(p.name)}</b><span>${visibleSum(p.grid)}${p.grid.some(x => x && !x.up) ? "+?" : ""} · ${p.total}</span></div>
+      <div class="mini">${p.grid.map(x => cardHtml(x)).join("")}</div></div>`).join("");
+
+  // Mitte
+  const top = S.discard[S.discard.length - 1];
+  const canTake = mine && S.drawn == null && !S.mustFlip;
+  $("center").innerHTML = `
+    <div class="pile"><span class="lbl">Stapel · ${S.deck.length}</span>${cardHtml({ v: 0, up: false })}</div>
+    <div class="pile"><span class="lbl">Ablage</span>${top != null ? cardHtml({ v: top, up: true }) : `<div class="card gone"></div>`}</div>
+    ${S.drawn != null ? `<div class="pile drawn"><span class="lbl">${S.drawnFrom === "discard" ? "Von der Ablage" : "Gezogen"}</span>${cardHtml({ v: S.drawn, up: true })}</div>` : ""}`;
+
+  // Status und Knöpfe
+  let st = "", acts = "";
+  if (S.phase === "flip") {
+    const need = mi >= 0 ? 2 - flippedCount(S.players[mi]) : 0;
+    const wait = S.players.filter(p => !p.ai && flippedCount(p) < 2).map(p => p.name);
+    st = need > 0 ? `Decke <strong>${need === 2 ? "zwei Karten" : "noch eine Karte"}</strong> in deinem Raster auf.` : `Warte, bis ${wait.map(n => `<strong>${esc(n)}</strong>`).join(", ")} aufgedeckt ${wait.length === 1 ? "hat" : "haben"}.`;
+  } else if (S.phase === "play") {
+    const last = S.ender != null ? ` Letzte Runde: noch ${S.finalLeft} ${S.finalLeft === 1 ? "Zug" : "Züge"}.` : "";
+    if (mine) {
+      if (S.mustFlip) st = "Decke eine verdeckte Karte in deinem Raster auf.";
+      else if (S.drawn != null) st = S.drawnFrom === "pile" ? `Tippe eine Karte in deinem Raster an, um die <strong>${S.drawn}</strong> einzutauschen, oder wirf sie ab.` : `Tippe eine Karte in deinem Raster an, um die <strong>${S.drawn}</strong> einzutauschen.`;
+      else st = `<strong>${esc(a.name)}</strong>, du bist dran: Ziehe vom Stapel oder nimm die <strong>${top}</strong> von der Ablage.`;
+      if (canTake) acts = `<button class="btn primary big" type="button" data-a="pile">Vom Stapel ziehen</button><button class="btn big" type="button" data-a="discard">Die ${top} nehmen</button>`;
+      if (S.drawn != null && S.drawnFrom === "pile") acts = `<button class="btn big" type="button" data-a="throw">Abwerfen und aufdecken</button>`;
+    } else st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>${a.ai ? " (Computer)" : ""}.`;
+    st += last;
+  } else if (S.phase === "round") {
+    st = `Runde ${S.round} ist vorbei. Alle Karten sind aufgedeckt.`;
+    if (!kit.online() || mi >= 0) acts = `<button class="btn primary big" type="button" data-a="next">Nächste Runde</button>`;
+  } else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (kit.error) st += `<br><span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("actions").innerHTML = acts;
+
+  // Eigenes Raster
+  const flipNeed = S.phase === "flip" && mi >= 0 && flippedCount(me) < 2;
+  $("who").textContent = mi < 0 ? `Raster von ${me.name}` : (kit.hotSeat() || kit.online() || me.name !== "Du") ? `Raster von ${me.name}` : "Dein Raster";
+  $("meta").textContent = `Offen: ${visibleSum(me.grid)} · Gesamt: ${me.total} · Runde ${S.round}${kit.online() ? ` · Raum ${kit.roomId()}` : ""}`;
+  $("grid").innerHTML = me.grid.map((x, i) => {
+    let pick = false;
+    if (x && flipNeed && !x.up) pick = true;
+    if (x && mine && S.drawn != null) pick = true;
+    if (x && mine && S.mustFlip && !x.up) pick = true;
+    return cardHtml(x, { button: true, i, pick, fresh: fresh.has(i) });
+  }).join("");
+
+  // Wertung
+  const rounds = Math.max(0, ...S.players.map(p => p.rounds.length));
+  $("scores").innerHTML = `<table class="scores"><thead><tr><th>Spieler</th>${Array.from({ length: Math.min(rounds, 4) }, (_, k) => `<th>R${rounds - Math.min(rounds, 4) + k + 1}</th>`).join("")}<th>Gesamt</th></tr></thead><tbody>
+    ${S.players.map(p => `<tr><td>${esc(p.name)}</td>${p.rounds.slice(-4).map(r => `<td class="${r.doubled ? "dbl" : ""}">${r.pts}</td>`).join("")}<td class="tot">${p.total}</td></tr>`).join("")}</tbody></table>
+    <div class="goal">Spielende, sobald jemand ${S.goal} Punkte erreicht. Rot: verdoppelt.</div>`;
+
+  const res = $("result");
+  if (S.phase === "over") {
+    const rank = S.players.map(p => p).sort((x, y) => x.total - y.total);
+    const win = rank.filter(p => p.total === rank[0].total).map(p => p.name);
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(esc).join(" und ")}` : `${esc(win[0])} ${vb(win[0], "gewinnst", "gewinnt")}`}</h2>
+      <p>Nach ${S.round} ${S.round === 1 ? "Runde" : "Runden"}. Die wenigsten Punkte gewinnen.</p>
+      <ol class="rank">${rank.map(p => `<li><span>${esc(p.name)}</span><span>${p.total} Punkte</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellung „Punkteziel“ ----------
+const goalSetup = {
+  html: `<div class="sk-field"><div class="sk-label">Spielende</div>
+    <div class="sk-seg" role="radiogroup" aria-label="Punkteziel">
+      <label><input type="radio" name="zw-goal" id="zw-goal-100" value="100" checked>Bei 100 Punkten<small>übliche Länge</small></label>
+      <label><input type="radio" name="zw-goal" id="zw-goal-50" value="50">Bei 50 Punkten<small>kurzes Spiel</small></label>
+    </div></div>`,
+  read(root) { const r = root.querySelector('input[name="zw-goal"]:checked'); return { goal: r ? +r.value : 100 }; },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "zwoelfer", version: 1, minPlayers: 2, maxPlayers: 8, bots: true, defaultBots: 2, botNames: BOT_NAMES,
+  setup: goalSetup,
+  defaultOptions: () => ({ goal: 100 }),
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.players) && s.players.every(p => Array.isArray(p.grid)) && Array.isArray(s.discard),
+  roomStatus: s => `läuft · Runde ${s.round}`,
+  handoverText: s => (s.phase === "flip" ? "Decke zwei deiner Karten auf." : "Du bist dran."),
+  test: { newDeck, fullColumns, roundScores, allUp, fullSum, placeGain },
+});
+kit.start();
+})();
+</script>
