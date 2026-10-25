@@ -8,7 +8,7 @@ const SHELL = [
 ];
 const TILES = 'lammping-tiles';
 const PHOTOS = 'lammping-photos';
-const MAX_TILES = 3000;
+const MAX_TILES = 6000;            // angesehene Kartenteile bleiben für unterwegs ohne Netz erhalten
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
