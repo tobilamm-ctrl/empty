@@ -24,6 +24,8 @@ const ICONS = {
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
   print: '<path d="M7 9V4h10v5M7 17H4v-7h16v7h-3M7 14h10v6H7z"/>',
+  up: '<path d="M6 15l6-6 6 6"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
   open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
@@ -982,7 +984,8 @@ VIEWS.packen = () => {
   const q = ui.packQuery.trim().toLowerCase();
   const match = i => !q || i.name.toLowerCase().includes(q) || (i.note || '').toLowerCase().includes(q);
   const stock = S.items.filter(i => !i.tripId);
-  const boxes = S.boxes.slice().sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
+  const boxes = sortedBoxes();
+  const real = boxes.length;
   if (stock.some(i => !S.boxes.find(b => b.id === i.boxId))) boxes.push(LOOSE);
   const inBox = b => stock.filter(i => (b === LOOSE ? !S.boxes.find(x => x.id === i.boxId) : i.boxId === b.id))
     .filter(match).sort((a, b) => a.name.localeCompare(b.name));
@@ -1001,14 +1004,17 @@ VIEWS.packen = () => {
       <button class="link add-in" data-action="item-form" data-trip="${t.id}">${icon('plus')}Extra für diese Reise</button>
     </section>` : '';
 
-  const sections = boxes.map(b => {
+  const sections = boxes.map((b, k) => {
     const items = inBox(b);
     if (q && !items.length) return '';
     return `<section class="box">
       <header>
         <div><h2>${esc(b.name)}${b === LOOSE ? '' : ` <span class="kind">${boxLabel(b)}</span>`}</h2>${b.where ? `<p class="sub">${esc(b.where)}</p>` : ''}</div>
         ${setup
-          ? (b === LOOSE ? '' : `<button class="icon-btn small" data-action="box-form" data-id="${b.id}" aria-label="${boxLabel(b)} bearbeiten">${icon('edit')}</button>`)
+          ? (b === LOOSE ? '' : `<div class="box-tools">
+              <button class="icon-btn small" data-action="box-move" data-id="${b.id}" data-dir="-1" aria-label="Nach oben"${k === 0 ? ' disabled' : ''}>${icon('up')}</button>
+              <button class="icon-btn small" data-action="box-move" data-id="${b.id}" data-dir="1" aria-label="Nach unten"${k === real - 1 ? ' disabled' : ''}>${icon('down')}</button>
+              <button class="icon-btn small" data-action="box-form" data-id="${b.id}" aria-label="${boxLabel(b)} bearbeiten">${icon('edit')}</button></div>`)
           : `<span class="count">${items.filter(i => isPacked(t, i)).length} / ${items.length}</span>`}
       </header>
       <ul class="${setup ? 'inventory' : 'checklist'}">${items.map(i => packRow(t, i, setup)).join('') || '<li class="none">Leer</li>'}</ul>
@@ -1031,6 +1037,19 @@ VIEWS.packen = () => {
     </div>`;
 };
 
+function sortedBoxes() {
+  return S.boxes.slice().sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
+}
+
+// Pfeile: mit dem Nachbarn tauschen und alle neu durchnummerieren
+function moveBox(id, dir) {
+  const list = sortedBoxes();
+  const i = list.findIndex(b => b.id === id), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  list.forEach((b, n) => { if (b.order !== n + 1) save('boxes', { ...b, order: n + 1 }); });
+}
+
 function boxForm(id) {
   const b = S.boxes.find(x => x.id === id) || { kind: 'box' };
   const kinds = [['box', 'Box'], ['fach', 'Fach']].map(([v, l]) =>
@@ -1040,7 +1059,6 @@ function boxForm(id) {
     <div class="field"><span>Art</span><div class="seg">${kinds}</div></div>
     <label class="field"><span>Name</span><input name="name" value="${esc(b.name)}" required placeholder="z. B. Küchenbox oder Türfach links"></label>
     <label class="field"><span>Wo im Auto?</span><input name="where" value="${esc(b.where)}" placeholder="z. B. hinten links unter dem Bett"></label>
-    <label class="field"><span>Reihenfolge</span><input name="order" type="number" inputmode="numeric" value="${b.order ?? S.boxes.length + 1}"></label>
     <div class="sheet-foot">
       ${b.id ? `<button type="button" class="ghost danger" data-action="del-box" data-id="${b.id}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
@@ -1689,6 +1707,7 @@ const ACTIONS = {
   },
   'box-form': el => boxForm(el.dataset.id),
   'item-form': el => itemForm(el.dataset.id, el.dataset.box, el.dataset.trip),
+  'box-move': el => moveBox(el.dataset.id, +el.dataset.dir),
   'del-box': el => {
     const n = S.items.filter(i => i.boxId === el.dataset.id).length;
     if (!confirm(n ? `Löschen? Die ${n} Gegenstände darin bleiben als „Lose im Auto“ erhalten.` : 'Wirklich löschen?')) return;
@@ -1799,7 +1818,8 @@ const FORMS = {
   },
   box: form => {
     const old = S.boxes.find(b => b.id === form.dataset.id);
-    save('boxes', { ...(old || { id: newId() }), kind: form.kind.value, name: form.name.value.trim(), where: form.where.value.trim(), order: +form.order.value || 0 });
+    save('boxes', { ...(old || { id: newId() }), kind: form.kind.value, name: form.name.value.trim(), where: form.where.value.trim(),
+      order: old ? old.order : Math.max(0, ...S.boxes.map(b => b.order || 0)) + 1 });
     closeSheet();
   },
   item: form => {

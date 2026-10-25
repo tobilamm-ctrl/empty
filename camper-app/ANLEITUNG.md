@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-15'` hochzählen (z. B. auf `lammping-16`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-16'` hochzählen (z. B. auf `lammping-17`), damit die
 Handys die neue Version laden.
 
 ## Sicherung

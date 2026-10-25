@@ -375,6 +375,7 @@ form[data-type=notiz] .not-notiz, form:not([data-type=stellplatz]) .only-stellpl
 .box h2 { font-size: 21px; }
 .box .sub { margin: 2px 0 0; font-size: 14px; }
 .box .count { font: 700 16px var(--head); color: var(--muted); font-variant-numeric: tabular-nums; }
+.box-tools { display: flex; gap: 2px; flex: none; }
 .add-in { margin-top: 6px; }
 .add-in .ic { width: 16px; height: 16px; }
 
