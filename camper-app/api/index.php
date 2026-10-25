@@ -11,6 +11,7 @@ const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
 const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Verwalter vergeben sie
 const TOKEN_DAYS = 400;
+const API_VERSION = 22;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -66,6 +67,10 @@ function db(): PDO {
     if (!in_array('areas', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN areas TEXT');
     if (!in_array('simple', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN simple INT NOT NULL DEFAULT 0');
     if (!in_array('start', $cols, true)) $pdo->exec("ALTER TABLE users ADD COLUMN start VARCHAR(32) NOT NULL DEFAULT ''");
+    // Reiseblog-Einstellungen (Fotos, Texte, Verzögerung …)
+    $scols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM shares')->fetchAll(), 'Field')
+                    : array_column($pdo->query('PRAGMA table_info(shares)')->fetchAll(), 'name');
+    if (!in_array('opts', $scols, true)) $pdo->exec('ALTER TABLE shares ADD COLUMN opts TEXT');
     $pdo->exec("INSERT INTO counter (name, value) SELECT 'rev', 0 WHERE NOT EXISTS (SELECT 1 FROM counter WHERE name = 'rev')");
     return $pdo;
 }
@@ -389,6 +394,9 @@ case 'photo':
 
 /* ----- Reiseblog: geheimer Link zum Lesen (für Großeltern & Co.) ----- */
 
+case 'version':
+    out(['version' => API_VERSION]);
+
 case 'share':
     $u = requireUser();
     if ($method === 'POST') {
@@ -396,15 +404,22 @@ case 'share':
         $crew = requireCrew($u, $body['crew'] ?? '');
         $trip = $body['trip'] ?? '';
         if (!validId($trip)) fail('Ungültige Reise');
+        $old = one('SELECT * FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
+        if (empty($body['on'])) { q('DELETE FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]); out(['token' => null]); }
+        $opts = is_array($body['opts'] ?? null) ? json_encode(array_intersect_key($body['opts'], array_flip(['photos', 'texts', 'highlights', 'map', 'delay', 'greeting'])), JSON_UNESCAPED_UNICODE) : ($old['opts'] ?? null);
+        if ($old && empty($body['renew'])) {
+            q('UPDATE shares SET opts = ? WHERE token = ?', [$opts, $old['token']]);
+            out(['token' => $old['token'], 'opts' => json_decode((string) $opts, true)]);
+        }
         q('DELETE FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
-        if (empty($body['on'])) out(['token' => null]);
         $token = bin2hex(random_bytes(16));
-        q('INSERT INTO shares (token, crew_id, trip_id, created, by_user) VALUES (?, ?, ?, ?, ?)', [$token, $crew, $trip, now(), $u['id']]);
-        out(['token' => $token]);
+        q('INSERT INTO shares (token, crew_id, trip_id, created, by_user, opts) VALUES (?, ?, ?, ?, ?, ?)', [$token, $crew, $trip, now(), $u['id'], $opts]);
+        out(['token' => $token, 'opts' => json_decode((string) $opts, true)]);
     }
     $crew = requireCrew($u, $_GET['crew'] ?? '');
-    $row = one('SELECT token FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, (string) ($_GET['trip'] ?? '')]);
-    out(['token' => $row ? $row['token'] : null]);
+    // Alle Reiseblogs der Crew (für die Übersicht unter „Mehr“)
+    $rows = all('SELECT trip_id, token, opts, created FROM shares WHERE crew_id = ?', [$crew]);
+    out(['shares' => array_map(fn($r) => ['trip' => $r['trip_id'], 'token' => $r['token'], 'created' => (int) $r['created'], 'opts' => json_decode((string) $r['opts'], true) ?: new stdClass()], $rows)]);
 
 case 'blog':
 case 'blogphoto':
@@ -416,16 +431,21 @@ case 'blogphoto':
     $tripRow = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'trips' AND id = ? AND deleted = 0", [$crew, $share['trip_id']]);
     if (!$tripRow) fail('Diese Reise gibt es nicht mehr.', 404);
     $trip = json_decode($tripRow['data'], true);
+    $o = json_decode((string) ($share['opts'] ?? ''), true) ?: [];
+    $opt = fn($k, $def = true) => array_key_exists($k, $o) ? $o[$k] : $def;
+    // Verzögerung: Einträge erst ab dem nächsten Tag zeigen (niemand sieht, wo ihr gerade seid)
+    $until = $opt('delay', false) ? date('Y-m-d') : '9999';
     // Nur was zur Reise gehört und nicht ausgeblendet ist; ohne Kosten und ohne Namen
     $entries = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'entries' AND deleted = 0", [$crew]) as $r) {
         $e = json_decode($r['data'], true);
         if (($e['tripId'] ?? '') !== $share['trip_id'] || !empty($e['blogHide'])) continue;
+        if (substr((string) ($e['date'] ?? ''), 0, 10) >= $until) continue;
         $entries[] = [
             'id' => $e['id'], 'type' => $e['type'] ?? 'notiz', 'title' => $e['title'] ?? '', 'place' => $e['place'] ?? '',
-            'date' => $e['date'] ?? '', 'text' => $e['text'] ?? '', 'rating' => $e['rating'] ?? 0, 'country' => $e['country'] ?? '',
+            'date' => $e['date'] ?? '', 'text' => $opt('texts') ? ($e['text'] ?? '') : '', 'rating' => $e['rating'] ?? 0, 'country' => $e['country'] ?? '',
             'lat' => $e['lat'] ?? null, 'lng' => $e['lng'] ?? null, 'extra' => $e['extra'] ?? new stdClass(),
-            'photos' => array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
+            'photos' => !$opt('photos') ? [] : array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
                 fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
         ];
     }
@@ -444,17 +464,17 @@ case 'blogphoto':
     $tracks = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND deleted = 0", [$crew]) as $r) {
         $k = json_decode($r['data'], true);
-        if (($k['tripId'] ?? '') === $share['trip_id']) $tracks[] = ['kind' => $k['kind'] ?? '', 'name' => $k['name'] ?? '', 'pts' => $k['pts'] ?? ''];
+        if (($k['tripId'] ?? '') === $share['trip_id'] && $opt('map') && (!$opt('delay', false) || !empty($trip['ended']))) $tracks[] = ['kind' => $k['kind'] ?? '', 'name' => $k['name'] ?? '', 'pts' => $k['pts'] ?? ''];
     }
     $highlights = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'games' AND deleted = 0", [$crew]) as $r) {
         $g = json_decode($r['data'], true);
-        if (($g['kind'] ?? '') === 'highlight' && ($g['tripId'] ?? '') === $share['trip_id'] && (($g['text'] ?? '') !== '' || ($g['emoji'] ?? '') !== '')) {
+        if ($opt('highlights') && ($g['kind'] ?? '') === 'highlight' && ($g['tripId'] ?? '') === $share['trip_id'] && ($g['day'] ?? '') < $until && (($g['text'] ?? '') !== '' || ($g['emoji'] ?? '') !== '')) {
             $highlights[] = ['day' => $g['day'] ?? '', 'text' => $g['text'] ?? '', 'emoji' => $g['emoji'] ?? ''];
         }
     }
     out([
-        'highlights' => $highlights,
+        'highlights' => $highlights, 'greeting' => (string) $opt('greeting', ''), 'showMap' => (bool) $opt('map'), 'delayed' => (bool) $opt('delay', false),
         'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
     ]);

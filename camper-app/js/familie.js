@@ -14,7 +14,7 @@ export default function installFamilie(app) {
   /* ====================================================================== */
 
   const TABS = [['karte', 'Karte'], ['tagebuch', 'Tagebuch'], ['planung', 'Reiseplanung'], ['listen', 'Listen'], ['packen', 'Boxen & Fächer']];
-  const tiles = () => (app.TILES || []).filter(t => !t.cash && !['einstellungen', 'spiele'].includes(t.route)).map(t => [t.route, t.title]);
+  const tiles = () => (app.TILES || []).filter(t => !t.cash && !t.admin && !['einstellungen', 'spiele'].includes(t.route)).map(t => [t.route, t.title]);
   const games = () => [['spiel:nochweit', 'Wie lange noch?'], ['spiel:reisepass', 'Reisepass'], ...(app.GAMES || []).map(([k, t]) => ['spiel:' + k, t])];
   const allKeys = () => [...TABS, ...tiles(), ...games()].map(([k]) => k);
   // Vorschlag für Kinder: alles zum Mitmachen und Anschauen, ohne Verwaltung und Organisation

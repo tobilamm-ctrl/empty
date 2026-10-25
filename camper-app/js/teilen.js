@@ -12,54 +12,98 @@ export default function installTeilen(app) {
   /* Reiseblog                                                               */
   /* ====================================================================== */
 
-  // Knopf in der Leiste über dem Tagebuch (nur Verwalter schalten den Blog ein und aus)
-  const bar = app.tripBar;
-  app.tripBar = (t, st) => {
-    const html = bar(t, st);
-    return isAdmin() ? html.replace(/<\/div>\s*$/, `<button class="ghost small-btn" data-action="blog-sheet" data-id="${t.id}">${icon('share')}Reiseblog</button></div>`) : html;
-  };
 
   const blogUrl = token => new URL(`blog.html#${token}`, location.href).href;
+  const DEFAULTS = { photos: true, texts: true, highlights: true, map: true, delay: false, greeting: '' };
+  const optsOf = sh => ({ ...DEFAULTS, ...((sh && sh.opts) || {}) });
+  // Serverfehler verständlich machen: „Unbekannte Aktion“ heißt, die api/index.php auf dem Webspace ist alt
+  const why = e => (e.message === 'Keine Verbindung zum Server.' ? 'Keine Verbindung. Der Reiseblog braucht Internet.'
+    : /Unbekannte Aktion/.test(e.message) ? 'Der Server-Teil ist veraltet: Bitte die neue Datei api/index.php auf den Webspace hochladen.' : e.message);
 
-  ACTIONS['blog-sheet'] = async el => {
-    const t = tripById(el.dataset.id);
-    if (!t) return;
-    openSheet(`<div>${sheetHead('Reiseblog')}<p class="sub">Wird geladen …</p></div>`);
-    try {
-      const { token } = await api('share', undefined, `&crew=${app.crewId()}&trip=${t.id}`);
-      blogSheet(t, token);
-    } catch (e) {
-      openSheet(`<div>${sheetHead('Reiseblog')}<p class="hint">${esc(e.message)} Der Reiseblog braucht Internet.</p></div>`);
-    }
-  };
-
-  function blogSheet(t, token) {
-    const hidden = S.entries.filter(e => e.tripId === t.id && e.blogHide).length;
-    openSheet(`<div class="blog-sheet">${sheetHead('Reiseblog')}
-      <p>Mit einem geheimen Link können Oma, Opa und Freunde die Reise „${esc(t.name)}“ mitverfolgen, ohne Konto und nur zum Lesen.</p>
-      <p class="sub">Zu sehen sind Strecke, Einträge mit Text, Sternen und Fotos. Nicht zu sehen sind Kosten, Kasse, Dokumente, Listen und wer etwas eingetragen hat${hidden ? `, außerdem ${hidden} ${hidden === 1 ? 'Eintrag' : 'Einträge'} mit „Nicht im Reiseblog zeigen“` : ''}.</p>
-      ${token ? `
-        <label class="field"><span>Link</span><input readonly value="${esc(blogUrl(token))}" class="blog-link" onclick="this.select()"></label>
-        <div class="btnrow">
-          <button class="primary" data-action="blog-share" data-token="${token}" data-name="${esc(t.name)}">${icon('share')}Link teilen</button>
-          <button class="ghost" data-action="blog-copy" data-token="${token}">Kopieren</button>
-          <a class="ghost btn" href="${esc(blogUrl(token))}" target="_blank" rel="noopener">Ansehen</a>
-        </div>
-        <div class="sheet-foot"><button class="ghost danger" data-action="blog-toggle" data-id="${t.id}" data-on="">Ausschalten</button></div>
-        <p class="sub">Beim Ausschalten wird der Link ungültig. Schaltet ihr wieder ein, gibt es einen neuen Link.</p>`
-      : `<div class="sheet-foot"><button class="primary" data-action="blog-toggle" data-id="${t.id}" data-on="1">Reiseblog einschalten</button></div>`}
-    </div>`);
+  let shares = null, loading = false, failed = '';
+  async function load() {
+    if (loading) return;
+    loading = true;
+    try { shares = (await api('share', undefined, `&crew=${app.crewId()}`)).shares || []; failed = ''; } catch (e) { failed = why(e); }
+    loading = false;
+    if (app.ui.route === 'reiseblog') app.render();
   }
-  ACTIONS['blog-toggle'] = async el => {
+
+  // Eigene Seite unter „Mehr“ (nur Verwalter)
+  app.VIEWS.reiseblog = () => {
+    if (!isAdmin()) return '<p class="hint">Den Reiseblog verwalten nur Verwalter.</p>';
+    if (!shares && !failed) load();
+    // Eingeschaltete Blogs zuerst, dann alle Reisen wie gewohnt
+    const isOn = t => (shares || []).some(x => x.trip === t.id);
+    const trips = app.sortTrips(S.trips).sort((a, b) => isOn(b) - isOn(a));
+    const row = t => {
+      const sh = (shares || []).find(x => x.trip === t.id);
+      const o = optsOf(sh);
+      const on = [o.photos ? 'Fotos' : '', o.texts ? 'Texte' : '', o.highlights ? 'Highlights' : '', o.map ? 'Karte' : '', o.delay ? 'einen Tag verzögert' : 'sofort'].filter(Boolean).join(', ');
+      return `<li class="blog-row${sh ? ' on' : ''}" style="--c:${tripColor(t)}">
+        <div class="blog-row-head"><span class="dot"></span><span class="txt"><b>${esc(t.name)}</b><small>${esc(app.fmtRange(t))}</small></span>
+          <span class="tag">${sh ? 'öffentlich mit Link' : 'aus'}</span></div>
+        ${sh ? `<input readonly class="blog-link" value="${esc(blogUrl(sh.token))}">
+          <p class="sub">Zeigt: ${on}.</p>
+          <div class="btnrow">
+            <button class="primary small-btn" data-action="blog-share" data-token="${sh.token}" data-name="${esc(t.name)}">${icon('share')}Teilen</button>
+            <button class="ghost small-btn" data-action="blog-copy" data-token="${sh.token}">Kopieren</button>
+            <a class="ghost small-btn btn" href="${esc(blogUrl(sh.token))}" target="_blank" rel="noopener">Ansehen</a>
+            <button class="ghost small-btn" data-action="blog-opts" data-id="${t.id}">Einstellungen</button>
+            <button class="ghost small-btn danger" data-action="blog-toggle" data-id="${t.id}" data-on="">Aus</button>
+          </div>`
+        : `<div class="btnrow"><button class="ghost small-btn" data-action="blog-opts" data-id="${t.id}" data-new="1">Einschalten …</button></div>`}
+      </li>`;
+    };
+    return `${app.pageHead('reiseblog', 'Reiseblog', 'Eure Reise zum Mitlesen für Oma, Opa und Freunde')}
+      <p class="sub">Wer den geheimen Link hat, sieht die Reise ohne Konto und nur zum Lesen. Nie zu sehen sind Kosten, Kasse, Dokumente, Listen und wer etwas eingetragen hat. Einzelne Einträge blendet „Nicht im Reiseblog zeigen“ aus.</p>
+      ${failed ? `<p class="hint">${esc(failed)}</p><button class="ghost" data-action="blog-reload">Nochmal versuchen</button>`
+        : !shares ? '<p class="sub">Wird geladen …</p>'
+        : `<ul class="blog-list">${trips.map(row).join('')}</ul>`}`;
+  };
+  ACTIONS['blog-reload'] = () => { shares = null; failed = ''; app.render(); };
+
+  ACTIONS['blog-opts'] = el => {
     const t = tripById(el.dataset.id);
-    if (!el.dataset.on && !confirm('Reiseblog ausschalten? Der bisherige Link funktioniert dann nicht mehr.')) return;
+    const sh = (shares || []).find(x => x.trip === t.id);
+    const o = optsOf(sh);
+    const chk = (k, label, hint) => `<label class="check"><input type="checkbox" name="${k}"${o[k] ? ' checked' : ''}><span>${label}${hint ? `<small class="sub"> ${hint}</small>` : ''}</span></label>`;
+    openSheet(`<form data-form="blog-opts" data-id="${t.id}">${sheetHead(`Reiseblog: ${esc(t.name)}`)}
+      <label class="field"><span>Begrüßung oben im Blog (optional)</span><textarea name="greeting" rows="2" maxlength="300" placeholder="z. B. Hallo Oma und Opa, hier seht ihr, wo wir gerade sind!">${esc(o.greeting)}</textarea></label>
+      ${chk('photos', 'Fotos zeigen', 'Fotos der Kinder sind dann für alle mit dem Link sichtbar.')}
+      ${chk('texts', 'Texte der Einträge zeigen')}
+      ${chk('highlights', 'Highlights des Tages zeigen')}
+      ${chk('map', 'Karte mit der Strecke zeigen')}
+      ${chk('delay', 'Erst am nächsten Tag zeigen', 'So sieht niemand, wo ihr gerade seid.')}
+      <div class="sheet-foot">${sh ? '<button type="button" class="ghost" data-action="blog-renew" data-id="' + t.id + '">Neuen Link erzeugen</button>' : ''}
+        <button class="primary">${sh ? 'Speichern' : 'Reiseblog einschalten'}</button></div></form>`);
+  };
+  const send = async (t, body) => {
     try {
-      const { token } = await api('share', { crew: app.crewId(), trip: t.id, on: !!el.dataset.on });
-      blogSheet(t, token);
-    } catch (e) { toast(e.message); }
+      const res = await api('share', { crew: app.crewId(), trip: t.id, ...body });
+      shares = (shares || []).filter(x => x.trip !== t.id);
+      if (res.token) shares.push({ trip: t.id, token: res.token, opts: res.opts || {} });
+      closeSheet();
+      app.render();
+      return res;
+    } catch (e) { toast(why(e)); }
+  };
+  FORMS['blog-opts'] = form => {
+    const t = tripById(form.dataset.id);
+    const opts = { greeting: form.greeting.value.trim() };
+    ['photos', 'texts', 'highlights', 'map', 'delay'].forEach(k => { opts[k] = form[k].checked; });
+    send(t, { on: true, opts }).then(r => r && toast('Reiseblog gespeichert'));
+  };
+  ACTIONS['blog-renew'] = el => {
+    if (!confirm('Neuen Link erzeugen? Der bisherige Link funktioniert dann nicht mehr.')) return;
+    send(tripById(el.dataset.id), { on: true, renew: true }).then(r => r && toast('Neuer Link erzeugt'));
+  };
+  ACTIONS['blog-toggle'] = el => {
+    if (!confirm('Reiseblog ausschalten? Der Link funktioniert dann nicht mehr.')) return;
+    send(tripById(el.dataset.id), { on: false });
   };
   ACTIONS['blog-copy'] = async el => {
-    try { await navigator.clipboard.writeText(blogUrl(el.dataset.token)); toast('Link kopiert'); } catch { toast('Bitte den Link oben markieren und kopieren.'); }
+    try { await navigator.clipboard.writeText(blogUrl(el.dataset.token)); toast('Link kopiert'); } catch { toast('Bitte den Link markieren und kopieren.'); }
   };
   ACTIONS['blog-share'] = async el => {
     const url = blogUrl(el.dataset.token);
@@ -67,6 +111,16 @@ export default function installTeilen(app) {
       try { await navigator.share({ title: el.dataset.name, text: `Unsere Reise „${el.dataset.name}“ zum Mitlesen:`, url }); } catch { /* abgebrochen */ }
     } else ACTIONS['blog-copy'](el);
   };
+
+  // Server-Teil prüfen: Verwalter bekommen einen Hinweis, wenn api/index.php nicht zur App passt
+  const NEED = 22;
+  let checked = false;
+  app.chromeHooks.push(() => {
+    if (checked || !isAdmin()) return;
+    checked = true;
+    api('version').then(r => { if ((r.version || 0) < NEED) throw new Error('alt'); })
+      .catch(e => { if (e.message !== 'Keine Verbindung zum Server.') toast('Hinweis: Der Server-Teil ist veraltet. Bitte die neue api/index.php hochladen.'); });
+  });
 
   /* ====================================================================== */
   /* Postkarte                                                               */

@@ -5,11 +5,7 @@ export default function installFilm(app) {
   const { S, ACTIONS, esc, icon, fmtDay, fmtKm, km, tripStats, tripColor, TYPES } = app;
 
   // Knopf in der Leiste über dem Tagebuch, sobald es mindestens zwei Orte gibt
-  const bar = app.tripBar;
-  app.tripBar = (t, st) => {
-    const html = bar(t, st);
-    return st.stops.length > 1 ? html.replace(/<\/div>\s*$/, `<button class="ghost small-btn" data-action="film" data-id="${t.id}">${icon('play')}Rückblick</button></div>`) : html;
-  };
+  app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 4, action: 'film', icon: 'film', label: 'Rückblick', title: 'Reise-Rückblick als Film' } : null));
 
   let film = null;
   ACTIONS.film = el => {

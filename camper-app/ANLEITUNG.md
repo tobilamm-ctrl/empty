@@ -89,8 +89,12 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 
 ## Updates einspielen
 
+**Wichtig:** Immer auch `api/index.php` mit hochladen. Ist sie veraltet, meldet die App Verwaltern
+„Der Server-Teil ist veraltet“, und neue Funktionen wie Reiseblog, Sicherungen oder Kinder-Freigaben
+antworten mit „Unbekannte Aktion“.
+
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-21'` hochzählen (z. B. auf `lammping-22`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-22'` hochzählen (z. B. auf `lammping-23`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -137,9 +141,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Dusche, Supermarkt, Bäcker, Tankstelle, Waschsalon, Werkstatt, Spielplatz, Baden, Stell- und Campingplätze
   sowie Apotheke, Arzt und Krankenhaus aus OpenStreetMap im Umkreis
   von 2, 5 oder 15 km. Treffer lassen sich ansteuern oder in die Wunschliste übernehmen.
-- **Reiseblog** (Knopf über dem Tagebuch, nur Verwalter): erzeugt einen geheimen Link zum Lesen, z. B. für
-  die Großeltern. Zu sehen sind Strecke, Einträge und Fotos, nicht Kosten, Listen, Dokumente oder Namen.
-  Einzelne Einträge blendet „Nicht im Reiseblog zeigen“ aus. Ausschalten macht den Link ungültig.
+- **Reiseblog** (Kachel unter „Mehr“, nur Verwalter): je Reise ein geheimer Link zum Lesen, z. B. für die
+  Großeltern. Einstellbar: Begrüßungstext, Fotos, Texte, Highlights, Karte und „erst am nächsten Tag zeigen“
+  (damit niemand sieht, wo ihr gerade seid). Nie zu sehen sind Kosten, Listen, Dokumente oder Namen. Einzelne
+  Einträge blendet „Nicht im Reiseblog zeigen“ aus. „Aus“ oder „Neuen Link erzeugen“ machen den alten Link ungültig.
+- **Leiste über dem Tagebuch:** Starten bzw. Beenden, Fotos einsortieren, Rückblick, Export und nach der
+  Reise Packliste und Archiv – als Symbole, die sich die Breite teilen. „Starten“ setzt den Reisebeginn auf heute.
 - **Postkarte** (in einem Eintrag mit Foto): Foto, Gruß, Text und Mini-Karte der Strecke als Bild zum
   Teilen, z. B. per WhatsApp.
 - **Planung:** Zwischen den geplanten Orten stehen Kilometer und Fahrzeit (über den freien Routendienst

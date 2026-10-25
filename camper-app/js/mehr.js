@@ -36,6 +36,7 @@ export default function installMore(app) {
     { route: 'dienste', art: 'check', title: 'Camper-Dienste', text: 'Wer ist heute dran?' },
     { route: 'spiele', art: 'spiele', title: 'Spiele & Co', text: 'Kennzeichen, Bingo, Quiz' },
     { route: 'ideen', art: 'ideen', title: 'Reiseideen', text: 'Wohin als Nächstes?' },
+    { route: 'reiseblog', art: 'reiseblog', title: 'Reiseblog', text: 'Zum Mitlesen für Oma und Opa', admin: true },
     { route: 'reisen', art: 'reisen', title: 'Reisen', text: 'Alle Reisen und Archiv' },
     { route: 'einstellungen', art: 'einstellungen', title: 'Einstellungen', text: 'Crew, Abgleich, Darstellung' },
   ];
@@ -44,7 +45,7 @@ export default function installMore(app) {
   VIEWS.mehr = () => {
     const due = dueCount();
     return `${pageHead('mehr', 'Mehr')}
-      <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => (!t.cash || canCash()) && (!app.allowed || app.allowed(t.route))).map(t => `<a class="tile" href="#/${t.route}">
+      <nav class="tiles" aria-label="Weitere Bereiche">${TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route))).map(t => `<a class="tile" href="#/${t.route}">
         ${art(t.art)}<b>${t.alt && !(app.session().user.isAdmin) ? t.alt : t.title}</b><small>${t.text}</small>
         ${t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>` : ''}
         ${t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>` : ''}

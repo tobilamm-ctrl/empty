@@ -8,11 +8,7 @@ export default function installPackhilfe(app) {
   const tripById = id => S.trips.find(t => t.id === id);
 
   // Knopf in der Leiste einer beendeten Reise
-  const bar = app.tripBar;
-  app.tripBar = (t, st) => {
-    const html = bar(t, st);
-    return t.ended ? html.replace(/<\/div>\s*$/, `<button class="ghost small-btn" data-action="pack-review" data-id="${t.id}">${icon('check')}Packliste auswerten</button></div>`) : html;
-  };
+  app.tripTools.push(t => (t.ended ? { order: 6, action: 'pack-review', icon: 'check', label: 'Packliste', title: 'Packliste auswerten' } : null));
 
   ACTIONS['pack-review'] = el => {
     const t = tripById(el.dataset.id);

@@ -10,8 +10,7 @@ export default function installFotos(app) {
   const tripById = id => S.trips.find(t => t.id === id);
 
   // Knopf in der Leiste über dem Tagebuch
-  const bar = app.tripBar;
-  app.tripBar = (t, st) => bar(t, st).replace(/<\/div>\s*$/, `<button class="ghost small-btn" data-action="photo-import" data-id="${t.id}">${icon('camera')}Fotos einsortieren</button></div>`);
+  app.tripTools.push(() => ({ order: 3, action: 'photo-import', icon: 'camera', label: 'Fotos', title: 'Fotos aus der Galerie einsortieren' }));
 
   /* ---------- EXIF lesen (nur JPEG; Aufnahmezeit und GPS) ---------- */
 

@@ -34,7 +34,7 @@ async function load() {
 }
 function fail(msg) { $('#blog').innerHTML = `<section class="empty"><h1>Schade</h1><p>${esc(msg)}</p></section>`; }
 
-function show({ trip, entries, tracks, at, highlights = [] }) {
+function show({ trip, entries, tracks, at, highlights = [], greeting = '', showMap = true, delayed = false }) {
   document.title = `${trip.name} · Reiseblog`;
   document.documentElement.style.setProperty('--trip', trip.color);
   const es = entries.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
@@ -74,11 +74,13 @@ function show({ trip, entries, tracks, at, highlights = [] }) {
         ${dist >= 1 ? `<div><b>${Math.round(dist).toLocaleString('de-DE')} km</b><span>${drive.length ? 'gefahren' : 'Luftlinie'}</span></div>` : ''}
         ${countries.length ? `<div><b>${countries.map(flag).join(' ')}</b><span>${countries.length === 1 ? 'Land' : 'Länder'}</span></div>` : ''}
       </div></header>
-    ${stops.length ? '<div id="blogMap" class="blog-map"></div>' : ''}
+    ${greeting ? `<p class="blog-greeting">${esc(greeting).replace(/\n/g, '<br>')}</p>` : ''}
+    ${delayed && !trip.ended ? '<p class="sub">Neue Einträge erscheinen hier jeweils am nächsten Tag.</p>' : ''}
+    ${showMap && stops.length ? '<div id="blogMap" class="blog-map"></div>' : ''}
     ${timeline ? `<ol class="timeline">${timeline}</ol>` : '<p class="hint">Noch keine Einträge. Schaut bald wieder vorbei!</p>'}
     <p class="sub blog-foot">Stand: ${new Date(at).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })} · Karte © OpenStreetMap-Mitwirkende</p>`;
 
-  if (stops.length) drawMap(trip, stops, tracks);
+  if (showMap && stops.length) drawMap(trip, stops, tracks);
   document.querySelectorAll('.blog-photos img').forEach(img => img.addEventListener('click', () => {
     const v = $('#viewer');
     v.querySelector('img').src = img.src;

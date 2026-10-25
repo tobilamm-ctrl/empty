@@ -13,14 +13,32 @@ export default function installExport(app) {
 
   /* ---------- Leiste im Tagebuch: beenden und exportieren ---------- */
 
-  app.tripBar = (t, st) => t.ended
-    ? `<div class="trip-bar ended"><span>Reise beendet${t.end ? ` am ${fmtShort(t.end)}` : ''}.</span>
-        <button class="link" data-action="trip-resume" data-id="${t.id}">Wieder aufnehmen</button>
-        <button class="ghost small-btn" data-action="export-form" data-id="${t.id}">${icon('download')}Exportieren</button>
-        ${t.archived ? '' : `<button class="ghost small-btn" data-action="trip-archive" data-id="${t.id}">Ins Archiv</button>`}</div>`
-    : `<div class="trip-bar">
-        ${started(t, st) ? `<button class="ghost small-btn" data-action="trip-end" data-id="${t.id}">${icon('flag')}Reise beenden</button>` : ''}
-        <button class="ghost small-btn" data-action="export-form" data-id="${t.id}">${icon('download')}Exportieren</button></div>`;
+  // Werkzeugleiste über dem Tagebuch: Module melden ihre Knöpfe an (Reihenfolge über „order“).
+  // Nur Symbole mit kurzem Wort darunter, die Knöpfe teilen sich die Breite.
+  app.tripTools = [];
+  app.tripBar = (t, st) => {
+    const tools = app.tripTools.map(f => f(t, st)).filter(Boolean).sort((a, b) => a.order - b.order);
+    return `${t.ended ? `<p class="trip-ended">${icon('flag')}Reise beendet${t.end ? ` am ${fmtShort(t.end)}` : ''}${t.archived ? ', im Archiv' : ''}.</p>` : ''}
+      <div class="trip-tools">${tools.map(x => `<button class="tool${x.main ? ' main' : ''}" data-action="${x.action}" data-id="${t.id}" title="${x.title || x.label}" aria-label="${x.title || x.label}">
+        ${icon(x.icon)}<small>${x.label}</small></button>`).join('')}</div>`;
+  };
+  app.tripTools.push(
+    (t, st) => (!t.ended && !started(t, st) ? { order: 1, action: 'trip-start', icon: 'play', label: 'Starten', title: 'Reise starten', main: true } : null),
+    (t, st) => (!t.ended && started(t, st) ? { order: 1, action: 'trip-end', icon: 'flag', label: 'Beenden', title: 'Reise beenden' } : null),
+    t => (t.ended ? { order: 1, action: 'trip-resume', icon: 'undo', label: 'Weiter', title: 'Reise fortsetzen (wieder aufnehmen)' } : null),
+    () => ({ order: 5, action: 'export-form', icon: 'download', label: 'Export', title: 'Als GPX oder Reiseheft (PDF) exportieren' }),
+    t => (t.ended && !t.archived ? { order: 7, action: 'trip-archive', icon: 'archive', label: 'Archiv', title: 'Ins Archiv legen' } : null),
+  );
+
+  ACTIONS['trip-start'] = el => {
+    const t = tripById(el.dataset.id);
+    if (!t) return;
+    const start = !t.start || t.start > today() ? today() : t.start;
+    save('trips', { ...t, start, end: t.end && t.end < start ? '' : t.end, ended: false });
+    app.setTrip(t.id);
+    app.ui.diaryMode[t.id] = 'tagebuch';
+    toast(`Gute Fahrt! „${t.name}“ läuft ab heute.`);
+  };
 
   ACTIONS['trip-end'] = el => {
     const t = tripById(el.dataset.id);

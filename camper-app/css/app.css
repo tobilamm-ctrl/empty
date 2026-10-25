@@ -1191,3 +1191,33 @@ body.blog-page { padding: 0; }
 .kids-tile.wide .ic { width: 32px; height: 32px; flex: none; }
 .kids-tile.wide b { text-align: left; }
 .fb-link { text-align: center; margin: 18px 0 8px; }
+
+/* ---------- Werkzeugleiste über dem Tagebuch: Symbole teilen sich die Breite ---------- */
+.trip-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 5px; margin: 0 0 14px; }
+.trip-tools .tool {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 58px; padding: 6px 2px;
+  border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--petrol);
+}
+.trip-tools .tool .ic { width: 22px; height: 22px; }
+.trip-tools .tool small { font: 600 11px/1.1 var(--body); color: var(--ink); white-space: nowrap; }
+@media (min-width: 600px) { .trip-tools { gap: 8px; } .trip-tools .tool small { font-size: 12.5px; } }
+.trip-tools .tool:hover { border-color: var(--trip); }
+.trip-tools .tool.main { background: color-mix(in srgb, var(--trip) 88%, #000); border-color: transparent; color: #fff; }
+.trip-tools .tool.main small { color: #fff; }
+.trip-ended { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-weight: 700; color: var(--wood); }
+.trip-ended .ic { width: 18px; height: 18px; }
+
+/* ---------- Reiseblog-Seite ---------- */
+.blog-list { list-style: none; margin: 14px 0; padding: 0; }
+.blog-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.blog-row-head { display: flex; align-items: center; gap: 10px; }
+.blog-row-head .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+.blog-row-head .txt { flex: 1; display: flex; flex-direction: column; }
+.blog-row-head small { color: var(--muted); }
+.blog-row .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.blog-row.on .tag { background: color-mix(in srgb, #4F8A3C 15%, var(--surface)); border-color: #4F8A3C; color: #2F6B2A; }
+.blog-row .blog-link { width: 100%; margin: 10px 0 4px; font-size: 13px; }
+.blog-row .btnrow { margin-top: 8px; gap: 6px; flex-wrap: wrap; }
+.blog-row .ic { width: 16px; height: 16px; margin-right: 4px; }
+.check small.sub { display: block; font-size: 13px; }
+.blog-greeting { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--trip) 10%, var(--surface)); font-size: 17px; }
