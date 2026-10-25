@@ -13,3 +13,4 @@ Welche Lieferung auf dem Server liegt, steht unten auf der Spieleübersicht („
 | 1 | 25.10.2026 | f031468 | Alle Spiele bis dahin; Zugleiste mit Neuigkeiten, Computer mit Pause, Töne (letzte Lieferung ohne Nummer) |
 | 2 | 25.10.2026 | e0e00cc | Sprachausgabe (Knopf „🗣“: aus, wer dran ist, mit Zügen, mit Anweisungen); Verlaufstexte mit „du“-Formen in Mau-Mau, Backgammon, Codeknacker; Stand-Anzeige auf der Spieleübersicht |
 | 3 | 25.10.2026 | b8e00a8 | Neu: Punkteblock (Qwirkle oder allgemein, ein Gerät für alle) und Farbreihen (Prinzip „Qwixx“); Spielkit: Einstellung für ein gemeinsames Gerät |
+| 4 | 25.10.2026 | (dieser Stand) | Punkteblock mit weiteren Voreinstellungen: Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel (ein angefangener Qwirkle-Block aus Lieferung 3 beginnt neu) |
