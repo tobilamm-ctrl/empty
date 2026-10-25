@@ -1311,3 +1311,111 @@ body.blog-page { padding: 0; }
 .pp-print .visa { width: 100%; padding: 6px 6px; }
 .pp-print .visa b { font-size: 10pt; overflow-wrap: anywhere; }
 .pp-print .visa small { font-size: 8pt; }
+
+/* ---------- Tier-Sammelbuch ---------- */
+.animals { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.animal { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px 8px; border-radius: 14px; border: 1.5px dashed var(--line); background: var(--surface); color: var(--muted); text-align: center; }
+.animal .an-sym { font-size: 34px; line-height: 1.1; filter: grayscale(1); opacity: .45; }
+.animal b { font: 600 14px/1.15 var(--head); color: var(--muted); }
+.animal small { font-size: 12px; }
+.animal.seen { border-style: solid; border-color: color-mix(in srgb, #2F7A4A 45%, var(--line)); background: color-mix(in srgb, #2F7A4A 7%, var(--surface)); }
+.animal.seen .an-sym { filter: none; opacity: 1; }
+.animal.seen b { color: var(--ink); }
+.animal.seen.r3 { border-color: #E0A21B; background: color-mix(in srgb, #E0A21B 12%, var(--surface)); }
+.animal:active { transform: scale(.96); }
+
+/* ---------- Foto-Rallye ---------- */
+.rallye { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+.rallye li { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); }
+.rallye li.done { border-color: color-mix(in srgb, #2F7A4A 45%, var(--line)); }
+.rallye img, .rl-no { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; }
+.rl-no { display: grid; place-items: center; background: var(--mist); font: 700 24px var(--head); color: var(--muted); }
+.rallye b { font: 600 16px/1.2 var(--head); }
+.rallye li.done b { text-decoration: line-through; text-decoration-color: color-mix(in srgb, #2F7A4A 60%, transparent); }
+.rallye .file { white-space: nowrap; }
+.win { font: 700 20px var(--head); color: #2F7A4A; text-align: center; }
+
+/* ---------- Malen ---------- */
+.photo-btns { align-items: center; }
+dialog.draw { width: 100%; max-width: 900px; height: 100%; max-height: 100dvh; margin: auto; padding: 0; border: 0; background: var(--paper); display: flex; flex-direction: column; }
+dialog.draw:not([open]) { display: none; }
+dialog.draw::backdrop { background: rgba(43, 27, 16, .6); }
+.draw-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; }
+.draw-top b { font: 600 18px var(--head); }
+.draw canvas { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #fff; touch-action: none; aspect-ratio: 4 / 3; max-height: calc(100dvh - 190px); align-self: center; box-shadow: 0 0 0 1px var(--line); }
+.draw-tools { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+.draw-colors { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.draw-colors button { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: var(--c); }
+.draw-colors button.on { outline: 3px solid var(--trip); outline-offset: 2px; }
+.draw-row { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.draw-row .size { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.draw-row .size i { display: block; border-radius: 50%; background: var(--ink); }
+.draw-row .size.on { border-color: var(--trip); box-shadow: 0 0 0 2px var(--trip); }
+
+/* ---------- Sprachnotizen ---------- */
+.rec-btn.on { background: #B3261E; color: #fff; border-color: #B3261E; animation: rec-pulse 1.2s infinite; }
+@keyframes rec-pulse { 50% { box-shadow: 0 0 0 6px rgba(179, 38, 30, .2); } }
+.sound-list { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; }
+.sound-list:empty { display: none; }
+.sound-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.sound-list audio { flex: 1; min-width: 0; height: 40px; }
+.sound-list small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.sounds { margin: 12px 0; }
+.sounds h3 .ic { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }
+
+/* ---------- Lieblingsplätze weitergeben ---------- */
+.share-pick { list-style: none; margin: 0 0 12px; padding: 0; max-height: 40vh; overflow-y: auto; border: 1.5px solid var(--line); border-radius: 12px; }
+.share-pick li { padding: 4px 10px; border-bottom: 1px solid var(--line); }
+.share-pick li:last-child { border-bottom: 0; }
+.share-pick .check span { display: flex; flex-direction: column; }
+.share-pick small { color: var(--muted); }
+.stars-txt { color: #E0A21B; letter-spacing: 1px; }
+.share-link { margin: 6px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--mist); }
+.share-link p { margin: 0 0 6px; }
+.share-link input { width: 100%; font-size: 14px; }
+.fav-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.fav-list li { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.fav-list small { color: var(--muted); }
+.fav-list .text { white-space: pre-line; }
+.fav-list .link { align-self: flex-start; }
+
+/* ---------- Gezeiten, Sternenhimmel, Heute-Karte ---------- */
+.tide-days { list-style: none; margin: 8px 0; padding: 0; }
+.tide-days li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.tide-days .wx-day { width: 56px; font-weight: 700; }
+.tide-x.hi { color: #2E5FA8; }
+.tide-x.lo { color: #7B6650; }
+.star-chance { font-size: 17px; }
+.star-chance.sehr-gut b, .star-chance.gut b { color: #2F7A4A; }
+.star-chance.schlecht b { color: #B3261E; }
+.today-sky { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; }
+.today-sky a { color: var(--ink); text-decoration: none; font-size: 15px; }
+
+/* ---------- Solarstrom ---------- */
+.solar-days { list-style: none; margin: 4px 0 10px; padding: 0; }
+.solar-days li { display: grid; grid-template-columns: 54px 1fr auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 5px 0; }
+.solar-days .yb-bar i { background: #E0A21B; }
+.solar-days small { grid-column: 2 / 4; color: var(--muted); font-size: 13px; }
+
+/* ---------- Notfall-Orte ---------- */
+.sos-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.sos-item .txt { display: flex; flex-direction: column; min-width: 0; }
+.sos-item small { color: var(--muted); }
+.sos-item .er { font-style: normal; font-size: 12px; font-weight: 700; color: #B3261E; }
+.sos-acts { display: flex; gap: 6px; flex: none; }
+
+/* ---------- Zuladung ---------- */
+.payload .pl-bar { position: relative; height: 22px; border-radius: 11px; background: var(--mist); overflow: hidden; margin: 4px 0 10px; }
+.payload .pl-bar span { display: block; height: 100%; background: #2F7A4A; border-radius: 11px; }
+.payload .pl-bar i { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, .8); }
+.payload.tight .pl-bar span { background: #E0A21B; }
+.payload.over .pl-bar span { background: #B3261E; }
+.pl-big { font: 600 22px var(--head); margin: 0; }
+.payload.over .pl-big { color: #B3261E; }
+.warn { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, #B3261E 10%, var(--surface)); color: #8C1D17; }
+.warn.soft { background: color-mix(in srgb, #E0A21B 14%, var(--surface)); color: #7A5300; }
+.pl-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.pl-list li { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.pl-list li > span, .pl-list li > label { flex: 1; min-width: 0; }
+.pl-list .kg { width: 80px; text-align: right; }
+.pl-list small { width: 20px; color: var(--muted); }

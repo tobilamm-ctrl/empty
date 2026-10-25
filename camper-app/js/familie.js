@@ -19,7 +19,7 @@ export default function installFamilie(app) {
   const allKeys = () => [...TABS, ...tiles(), ...games()].map(([k]) => k);
   // Vorschlag für Kinder: alles zum Mitmachen und Anschauen, ohne Verwaltung und Organisation
   const KIDS = ['karte', 'tagebuch', 'album', 'wetter', 'laender', 'statistik', 'kochen', 'ideen', 'spiel:nochweit', 'spiel:reisepass',
-    'spiel:kennzeichen', 'spiel:laenderkz', 'spiel:bingo', 'spiel:slf', 'spiel:quiz', 'spiel:sticker', 'spiel:brettspiele'];
+    'spiel:kennzeichen', 'spiel:laenderkz', 'spiel:bingo', 'spiel:slf', 'spiel:quiz', 'spiel:sticker', 'spiel:brettspiele', 'spiel:tiere', 'spiel:rallye'];
 
   app.allowed = key => {
     const a = user().areas;

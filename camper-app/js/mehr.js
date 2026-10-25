@@ -26,6 +26,7 @@ export default function installMore(app) {
     { route: 'orte', art: 'orte', title: 'Orte', text: 'Lieblingsplätze und Wunschliste' },
     { route: 'checklisten', art: 'check', title: 'Checklisten', text: 'Abfahrt und Ankunft' },
     { route: 'fahrzeug', art: 'fahrzeug', title: 'Fahrzeug', text: 'Steckbrief und Fristen' },
+    { route: 'zuladung', art: 'fahrzeug', title: 'Zuladung', text: 'Wie viel darf noch rein?' },
     { route: 'statistik', art: 'statistik', title: 'Statistik', text: 'Eure Reisen in Zahlen' },
     { route: 'wetter', art: 'wetter', title: 'Wetter', text: 'Vorhersage für Standort und Ziele' },
     { route: 'rubbelkarte', art: 'rubbelkarte', title: 'Rubbelkarte', text: 'Wo wart ihr schon überall?' },

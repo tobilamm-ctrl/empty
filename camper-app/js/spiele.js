@@ -45,6 +45,10 @@ export default function installSpiele(app) {
   const ok = k => !app.allowed || app.allowed('spiel:' + k);
   app.GAMES = GAMES;
   app.gameArt = gameArt;
+  // Weitere Spiele (abenteuer.js) tragen sich hier ein: Kachel, Bild, Ansicht und Punktestand
+  app.GAME_ART = ART;
+  app.gameScores = {};
+  app.player = player;
 
   VIEWS.spiele = () => {
     const g = game();
@@ -72,6 +76,7 @@ export default function installSpiele(app) {
   function scoreHint(k) {
     if (k === 'kennzeichen') return `<span class="score">${platesOf(player(), 'de').length}</span>`;
     if (k === 'laenderkz') return `<span class="score">${platesOf(player(), 'int').length}</span>`;
+    if (app.gameScores[k]) return `<span class="score">${app.gameScores[k]()}</span>`;
     return '';
   }
 
@@ -274,4 +279,5 @@ export default function installSpiele(app) {
     kennzeichen: () => plateView('de'), laenderkz: () => plateView('int'),
     bingo: bingoView, slf: slfView, quiz: quizView, sticker: stickerView, brettspiele: portalView,
   };
+  app.GAME_VIEWS = GAME_VIEWS;
 }

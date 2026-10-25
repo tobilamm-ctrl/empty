@@ -17,11 +17,15 @@ import installAlltag from './alltag.js';
 import installZeitachse from './zeitachse.js';
 import installWelt from './welt.js';
 import installAuswertung from './auswertung.js';
+import installAbenteuer from './abenteuer.js';
+import installWeitergeben from './weitergeben.js';
+import installDraussen from './draussen.js';
+import installZuladung from './zuladung.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 26;
+const APP_VERSION = 27;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -343,7 +347,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -747,7 +751,8 @@ function entryForm(e = {}) {
     <label class="check small"><input type="checkbox" name="blogHide"${e.blogHide ? ' checked' : ''}><span>Nicht im Reiseblog zeigen</span></label>
     <div class="field"><span>Fotos</span>
       <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
-      <label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
+      <div class="btnrow photo-btns"><label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
+      ${APP.entryFormExtra ? APP.entryFormExtra(e) : ''}</div>
     </div>
     <div class="sheet-foot">
       ${isNew ? '' : `<button type="button" class="danger ghost" data-action="del-entry" data-id="${e.id}">Löschen</button>`}
@@ -758,6 +763,12 @@ function entryForm(e = {}) {
 
 const posLabel = p => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}${p.acc ? ` (± ${p.acc} m)` : ''}`;
 
+// Für Malen (abenteuer.js): fertiges Bild wie ein Foto in den Eintrag legen
+function addFormPhoto(p) {
+  formPhotos.add.push(p);
+  const grid = $('#photoGrid');
+  if (grid) grid.innerHTML = photoGrid();
+}
 function photoGrid() {
   return [...formPhotos.keep, ...formPhotos.add].map(p =>
     `<figure><img src="${p.thumb}" alt=""><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
@@ -852,6 +863,7 @@ function submitEntry(form) {
   formPhotos.drop.forEach(id => remove('photos', id));
   formPhotos.add.forEach(p => save('photos', { id: p.id, entryId: e.id, tripId: e.tripId, data: p.data }));
   e.photos = [...formPhotos.keep, ...formPhotos.add].map(({ id, thumb }) => ({ id, thumb }));
+  if (APP.entrySave) APP.entrySave(e, form);
   save('entries', e);
 
   // Kosten ins Kassenbuch
@@ -1744,7 +1756,7 @@ const ACTIONS = {
   'del-entry': el => {
     const e = S.entries.find(x => x.id === el.dataset.id);
     if (!e || !confirm('Diesen Eintrag mit seinen Fotos löschen?')) return;
-    (e.photos || []).forEach(p => remove('photos', p.id));
+    [...(e.photos || []), ...(e.sounds || [])].forEach(p => remove('photos', p.id));
     S.expenses.filter(x => x.entryId === e.id).forEach(x => remove('expenses', x.id));
     S.fuel.filter(f => f.entryId === e.id).forEach(f => {
       S.expenses.filter(x => x.fuelId === f.id).forEach(x => remove('expenses', x.id));
@@ -1841,7 +1853,7 @@ const ACTIONS = {
     const t = S.trips.find(x => x.id === el.dataset.id);
     const n = tripEntries(t).length;
     if (!confirm(`„${t.name}“ endgültig löschen?${n ? ` Auch die ${n} Einträge, Fotos und Ausgaben dieser Reise werden gelöscht.` : ''}`)) return;
-    tripEntries(t).forEach(e => { (e.photos || []).forEach(p => remove('photos', p.id)); remove('entries', e.id); });
+    tripEntries(t).forEach(e => { [...(e.photos || []), ...(e.sounds || [])].forEach(p => remove('photos', p.id)); remove('entries', e.id); });
     S.expenses.filter(x => x.tripId === t.id).forEach(x => remove('expenses', x.id));
     S.packstate.filter(p => p.tripId === t.id).forEach(p => remove('packstate', p.id));
     remove('trips', t.id);
@@ -2157,7 +2169,7 @@ const APP = {
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
-  setSimulator: f => { simulatedPos = f; },
+  setSimulator: f => { simulatedPos = f; }, addFormPhoto,
   get map() { return map; },
   ensureMap,
 };
@@ -2179,5 +2191,9 @@ installAlltag(APP);
 installZeitachse(APP);
 installWelt(APP);
 installAuswertung(APP);
+installAbenteuer(APP);
+installWeitergeben(APP);
+installDraussen(APP);
+installZuladung(APP);
 
 start();

@@ -11,7 +11,7 @@ const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
 const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Verwalter vergeben sie
 const TOKEN_DAYS = 400;
-const API_VERSION = 22;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 23;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -374,9 +374,10 @@ case 'photo':
         $crew = requireCrew($u, $body['crew'] ?? '');
         $id = $body['id'] ?? '';
         if (!validId($id)) fail('Ungültiges Foto');
-        if (!preg_match('#^data:image/jpeg;base64,(.+)$#', (string) ($body['data'] ?? ''), $m)) fail('Nur JPEG-Fotos');
-        $bin = base64_decode($m[1], true);
-        if ($bin === false || strlen($bin) > 4 * 1024 * 1024 || substr($bin, 0, 3) !== "\xFF\xD8\xFF") fail('Ungültiges Foto');
+        // Fotos (JPEG) und Sprachnotizen (webm, mp4, ogg); beide liegen im Fotoordner, die Art steckt in den ersten Bytes
+        if (!preg_match('#^data:(image/jpeg|audio/[a-z0-9.+-]+)(;[^,]*)?;base64,(.+)$#', (string) ($body['data'] ?? ''), $m)) fail('Nur JPEG-Fotos und Sprachnotizen');
+        $bin = base64_decode($m[3], true);
+        if ($bin === false || strlen($bin) > 4 * 1024 * 1024 || mediaType((string) $bin) === '' || ($m[1] === 'image/jpeg') !== (mediaType((string) $bin) === 'image/jpeg')) fail('Ungültiges Foto');
         $path = photoPath($crew, $id);
         if (!is_dir(dirname($path))) mkdir(dirname($path), 0750, true);
         file_put_contents($path, $bin);
@@ -386,7 +387,7 @@ case 'photo':
     $id = $_GET['id'] ?? '';
     $path = validId($id) ? photoPath($crew, $id) : '';
     if (!$path || !is_file($path)) fail('Foto nicht gefunden', 404);
-    header('Content-Type: image/jpeg');
+    header('Content-Type: ' . (mediaType((string) file_get_contents($path, false, null, 0, 16)) ?: 'image/jpeg'));
     header('Cache-Control: private, max-age=31536000, immutable');
     header('Content-Length: ' . filesize($path));
     readfile($path);
@@ -418,8 +419,41 @@ case 'share':
     }
     $crew = requireCrew($u, $_GET['crew'] ?? '');
     // Alle Reiseblogs der Crew (für die Übersicht unter „Mehr“)
-    $rows = all('SELECT trip_id, token, opts, created FROM shares WHERE crew_id = ?', [$crew]);
+    $rows = all("SELECT trip_id, token, opts, created FROM shares WHERE crew_id = ? AND trip_id <> '~plaetze'", [$crew]);
     out(['shares' => array_map(fn($r) => ['trip' => $r['trip_id'], 'token' => $r['token'], 'created' => (int) $r['created'], 'opts' => json_decode((string) $r['opts'], true) ?: new stdClass()], $rows)]);
+
+/* ----- Lieblingsplätze weitergeben: fester Schnappschuss hinter einem geheimen Link ----- */
+
+case 'placeshare':
+    $u = requireUser();
+    $crew = requireCrew($u, $method === 'POST' ? ($body['crew'] ?? '') : ($_GET['crew'] ?? ''));
+    $old = one("SELECT * FROM shares WHERE crew_id = ? AND trip_id = '~plaetze'", [$crew]);
+    if ($method !== 'POST') out(['token' => $old['token'] ?? null, 'created' => (int) ($old['created'] ?? 0)]);
+    if (!(int) $u['is_admin']) fail('Nur Verwalter können Plätze weitergeben.', 403);
+    if (empty($body['on'])) { q("DELETE FROM shares WHERE crew_id = ? AND trip_id = '~plaetze'", [$crew]); out(['token' => null]); }
+    $list = [];
+    foreach (array_slice(is_array($body['places'] ?? null) ? $body['places'] : [], 0, 300) as $p) {
+        if (!is_array($p) || !is_numeric($p['lat'] ?? null) || !is_numeric($p['lng'] ?? null)) continue;
+        $list[] = [
+            'name' => mb_substr((string) ($p['name'] ?? ''), 0, 120), 'place' => mb_substr((string) ($p['place'] ?? ''), 0, 120),
+            'lat' => (float) $p['lat'], 'lng' => (float) $p['lng'], 'rating' => (int) ($p['rating'] ?? 0),
+            'kind' => mb_substr((string) ($p['kind'] ?? ''), 0, 40), 'country' => mb_substr((string) ($p['country'] ?? ''), 0, 2),
+            'note' => mb_substr((string) ($p['note'] ?? ''), 0, 1000), 'features' => array_slice(array_map('strval', is_array($p['features'] ?? null) ? $p['features'] : []), 0, 20),
+            'date' => mb_substr((string) ($p['date'] ?? ''), 0, 10),
+        ];
+    }
+    $data = json_encode(['title' => mb_substr((string) ($body['title'] ?? ''), 0, 120), 'note' => mb_substr((string) ($body['note'] ?? ''), 0, 1000), 'places' => $list, 'at' => now()], JSON_UNESCAPED_UNICODE);
+    $token = $old && empty($body['renew']) ? $old['token'] : bin2hex(random_bytes(16));
+    q("DELETE FROM shares WHERE crew_id = ? AND trip_id = '~plaetze'", [$crew]);
+    q("INSERT INTO shares (token, crew_id, trip_id, created, by_user, opts) VALUES (?, ?, '~plaetze', ?, ?, ?)", [$token, $crew, now(), $u['id'], $data]);
+    out(['token' => $token, 'count' => count($list)]);
+
+case 'plaetze':
+    header('X-Robots-Tag: noindex, nofollow');
+    $token = (string) ($_GET['t'] ?? '');
+    $share = preg_match('/^[a-f0-9]{32}$/', $token) ? one("SELECT * FROM shares WHERE token = ? AND trip_id = '~plaetze'", [$token]) : null;
+    if (!$share) fail('Diese Liste gibt es nicht (mehr).', 404);
+    out(json_decode((string) $share['opts'], true) ?: ['places' => []]);
 
 case 'blog':
 case 'blogphoto':
@@ -559,5 +593,14 @@ default:
     fail('Unbekannte Aktion', 404);
 }
 
+// Art einer Datei aus den ersten Bytes: JPEG oder eine Sprachnotiz
+function mediaType(string $b): string {
+    if (substr($b, 0, 3) === "\xFF\xD8\xFF") return 'image/jpeg';
+    if (substr($b, 0, 4) === "\x1A\x45\xDF\xA3") return 'audio/webm';
+    if (substr($b, 4, 4) === 'ftyp') return 'audio/mp4';
+    if (substr($b, 0, 4) === 'OggS') return 'audio/ogg';
+    if (substr($b, 0, 3) === 'ID3' || substr($b, 0, 2) === "\xFF\xFB") return 'audio/mpeg';
+    return '';
+}
 function photoDir(string $crew): string { global $CFG; return rtrim($CFG['photos'], '/') . '/' . $crew; }
 function photoPath(string $crew, string $id): string { return photoDir($crew) . '/' . $id . '.jpg'; }

@@ -97,6 +97,8 @@ export default function installReisepass(app) {
   };
   const climbed = e => { const h = heights({ es: [e] })[0]; return h ? h.t.up : num(x(e).up); };
   const continents = (goal, c) => nth(app.continentsOf ? app.continentsOf(c.pid) || [] : [], goal);
+  // Tier-Sammelbuch (abenteuer.js): Funde in der Reihenfolge der Entdeckung
+  const animals = c => (app.animalsOf ? app.animalsOf(c.pid) : []).map(x => ({ ...x, date: new Date(x.at).toISOString(), title: x.a ? x.a[1] : x.name }));
   const time = (from, to) => e => e.date.slice(11, 16) >= from && e.date.slice(11, 16) < to;
 
   // Vorgegebene Stempel: Kennung, Titel, Beschreibung, Symbol, Ziel, Prüfung
@@ -174,6 +176,11 @@ export default function installReisepass(app) {
       .flatMap(x => Object.values(x.done || {}).filter(p => p === c.pid).map(() => ({ date: x.day }))).sort(byDate), g)],
     ['highlight10', 'Glückspilz', 'Zehn Highlights des Tages eingetragen', 'star', 10, (g, c) => nth(S.games.filter(x => x.kind === 'highlight' && x.by === c.pid)
       .map(x => ({ date: x.day, place: x.text })).sort(byDate), g)],
+    ['tiere10', 'Tierforscher', 'Zehn verschiedene Tiere entdeckt', 'heart', 10, (g, c) => nth(animals(c), g)],
+    ['tiere30', 'Tierexperte', 'Dreißig verschiedene Tiere entdeckt', 'heart', 30, (g, c) => nth(animals(c), g)],
+    ['selten', 'Seltener Fund', 'Ein seltenes Tier entdeckt', 'star', 1, (g, c) => nth(animals(c).filter(x => (x.a ? x.a[4] : x.rare) === 3), g)],
+    ['meerestier', 'Meeresforscher', 'Robbe, Delfin oder Wal gesehen', 'baden', 1, (g, c) => nth(animals(c).filter(x => ['robbe', 'delfin', 'wal'].includes(x.key)), g)],
+    ['rallye', 'Fotojäger', 'Eine Foto-Rallye ganz geschafft', 'camera', 1, (g, c) => nth((app.rallyeRounds ? app.rallyeRounds(c.pid) : []).map(r => ({ date: new Date(r.at).toISOString(), place: 'Foto-Rallye' })).sort(byDate), g)],
     ['bingo', 'Bingo!', 'Eine volle Reihe beim Reise-Bingo', 'star', 1, bingo],
     ['quiz10', 'Quiz-Ass', 'Zehn Kennzeichen in Folge richtig', 'badge', 10, quiz],
   ];

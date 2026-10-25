@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-26'` hochzählen (z. B. auf `lammping-27`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-27'` hochzählen (z. B. auf `lammping-28`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -200,7 +200,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Café / Restaurant, Spielplatz & Kinder, Tankstelle, Ver- und Entsorgung, Einkauf, Pause,
   Fähre & Maut, Werkstatt, Wäsche, Notiz. Bei Stellplatz, Baden, Café / Restaurant, Museum,
   Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
-  passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen.
+  passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen. In jedem Eintrag
+  können Kinder ein Bild malen (wird wie ein Foto gespeichert) und Sprachnotizen aufnehmen (bis zwei Minuten).
 - **Mehr:** Unten auf der Seite „Kacheln anordnen“: Reihenfolge mit Pfeilen festlegen und Kacheln ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
   (Steckbrief und Fristen mit Erinnerung), Statistik (mit Jahresvergleich: Kilometer, Nächte, Tage, Länder,
@@ -227,9 +228,22 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     mit einer kleinen Stempel-Animation. Neu: Höhen-Stempel (über 1000, 2000 und 3000 m, aus den GPX-Strecken),
     „Höhenmeter-Sammler“ und Kontinent-Stempel. „Drucken oder als PDF“ macht daraus einen Pass mit Deckblatt,
     Stempelseite, Visa und Traumorten – zum Einkleben ins Fotoalbum.
+  - *Zuladung:* Leergewicht und zulässiges Gesamtgewicht aus dem Fahrzeug-Steckbrief, dazu Personen, Wasser,
+    Gas, Boxen und weitere Posten (Fahrräder, Dachbox …). Zeigt, wie viel noch frei ist, und warnt bei Überladung.
+  - *Autarkie – Solarstrom:* Mit Leistung (Wp) und Akku (Wh) schätzt die App aus der Sonnenvorhersage den Ertrag
+    der nächsten vier Tage und ob der Strom reicht.
+  - *Wetter – Gezeiten und Sternenhimmel:* An der Küste Ebbe und Flut für den Stellplatz (Open-Meteo, ohne Gewähr).
+    Dazu Mondphase, ab wann es richtig dunkel ist, Wolken in der Nacht und Sternschnuppen-Nächte. Beides steht
+    auch kurz in der Heute-Karte.
+  - *Notfall – Hilfe in der Nähe:* Krankenhaus (mit Notaufnahme), Arzt, Apotheke und Tierarzt rund um den
+    Stellplatz werden automatisch gesucht (OpenStreetMap) und für alle offline gespeichert.
+  - *Lieblingsplätze weitergeben* (Orte → Lieblingsplätze): Auswahl als GPX-Datei oder als geheimer Link für
+    befreundete Familien (Verwalter), mit Karte, Sternen, Ausstattung und auf Wunsch euren Notizen.
   - *Rubbelkarte:* Weltkarte, auf der sich alle bereisten Länder golden färben, je Person. Umschalten auf
     „Regionen“ zeigt Bundesländer, Kantone, Provinzen usw. (Europa, USA, Kanada, Australien, Neuseeland) mit
     „x von y“. Die Grenzen stammen von Natural Earth (gemeinfrei) und liegen in `vendor/welt`.
+  - *Tier-Sammelbuch und Foto-Rallye* (in Spiele & Co): Tiere abhaken (häufig 1, besonders 2, selten 3 Punkte),
+    mit Wertung und Reisepass-Stempeln. Die Foto-Rallye stellt acht Aufgaben; die Fotos ergeben eine Collage.
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,

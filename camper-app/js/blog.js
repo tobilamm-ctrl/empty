@@ -23,6 +23,7 @@ const pts = s => (s ? s.split(';').map(p => p.split(',').map(Number)) : []);
 const token = location.hash.slice(1);
 
 async function load() {
+  if (/^p[a-f0-9]{32}$/.test(token)) return loadPlaces(token.slice(1));
   if (!/^[a-f0-9]{32}$/.test(token)) return fail('Dieser Link ist unvollständig. Bitte den ganzen Link öffnen.');
   let data;
   try {
@@ -111,6 +112,40 @@ function drawMap(trip, stops, tracks) {
   const last = stops[stops.length - 1];
   L.circleMarker([last.lat, last.lng], { radius: 12, color: trip.color, weight: 3, fillOpacity: 0 }).bindPopup('Zuletzt hier').addTo(map);
   map.fitBounds([...lines.flat(), ...stops.map(e => [e.lat, e.lng])], { padding: [30, 30], maxZoom: 12 });
+}
+
+/* ---------- Lieblingsplätze einer Familie (blog.html#p<schlüssel>) ---------- */
+
+async function loadPlaces(t) {
+  let data;
+  try {
+    const r = await fetch(`api/?a=plaetze&t=${t}`, { credentials: 'omit', cache: 'no-store' });
+    data = await r.json();
+    if (!r.ok) return fail(data.error || 'Diese Liste ist nicht verfügbar.');
+  } catch { return fail('Keine Verbindung. Bitte später noch einmal versuchen.'); }
+  const ps = data.places || [];
+  const title = data.title || 'Lieblingsplätze';
+  document.title = `${title} · LAMMping`;
+  const nav = p => (/iPhone|iPad|Mac/.test(navigator.userAgent) ? `https://maps.apple.com/?daddr=${p.lat},${p.lng}` : `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`);
+  const byCountry = {};
+  ps.forEach(p => (byCountry[p.country || ''] ||= []).push(p));
+  $('#blog').innerHTML = `<header class="trip-head blog-head"><h1>${esc(title)}</h1>
+      <p class="sub">${ps.length} ${ps.length === 1 ? 'Platz' : 'Plätze'}${data.at ? `, Stand ${long(new Date(data.at).toISOString().slice(0, 10))}` : ''}</p></header>
+    ${data.note ? `<p class="blog-greeting">${esc(data.note).replace(/\n/g, '<br>')}</p>` : ''}
+    ${ps.length ? '<div id="blogMap" class="blog-map"></div>' : ''}
+    ${Object.entries(byCountry).map(([cc, list]) => `<h2 class="date-head">${flag(cc)} ${cc ? esc(new Intl.DisplayNames(['de'], { type: 'region' }).of(cc)) : 'Weitere'}</h2>
+      <ul class="fav-list">${list.map((p, i) => `<li id="pl${ps.indexOf(p)}"><b>${esc(p.name)}</b>${p.rating ? ` <span class="stars-txt">${'★'.repeat(p.rating)}</span>` : ''}
+        <small>${esc([p.kind, p.place].filter(Boolean).join(' · '))}</small>
+        ${p.features && p.features.length ? `<small>${esc(p.features.join(', '))}</small>` : ''}
+        ${p.note ? `<span class="text">${esc(p.note)}</span>` : ''}
+        <a class="link" href="${nav(p)}" target="_blank" rel="noopener">Route dorthin</a></li>`).join('')}</ul>`).join('')}
+    <p class="sub blog-foot">Geteilt mit LAMMping · Karte © OpenStreetMap-Mitwirkende</p>`;
+  if (!ps.length) return;
+  const map = L.map('blogMap', { scrollWheelZoom: false });
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
+  ps.forEach((p, i) => L.circleMarker([p.lat, p.lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#2E7FB8', fillOpacity: 1 })
+    .bindPopup(`<b>${esc(p.name)}</b><br>${p.rating ? '★'.repeat(p.rating) : ''} <a href="#pl${i}" onclick="document.getElementById('pl${i}').scrollIntoView({behavior:'smooth'});return false">Mehr</a>`).addTo(map));
+  map.fitBounds(ps.map(p => [p.lat, p.lng]), { padding: [30, 30], maxZoom: 11 });
 }
 
 $('#viewer').addEventListener('click', () => $('#viewer').close());

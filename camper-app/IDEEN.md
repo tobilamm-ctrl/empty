@@ -2,12 +2,15 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
-## Vorgemerkt (Stand: Lieferung 26)
+## Vorgemerkt (Stand: Lieferung 27)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
 - ~~**Höhenprofil für Touren** mit Höhen-Stempeln im Reisepass.~~ Erledigt in Lieferung 26.
 - ~~**Reisepass zum Ausdrucken** (Stempel, Länder-Visa, Traumorte).~~ Erledigt in Lieferung 26.
 - ~~**Jahresvergleich in der Statistik:** Kilometer, Nächte, Länder und Kosten pro Jahr.~~ Erledigt in Lieferung 26.
+- ~~Tier-Sammelbuch, Malen im Tagebuch, Foto-Rallye, Sprachnotizen, Gezeiten, Solarstrom-Prognose,
+  Sternenhimmel, Notfall-Orte offline, Zuladungs-Rechner, Lieblingsplätze weitergeben.~~ Erledigt in Lieferung 27.
+  (Die Postkarte gab es schon seit einer früheren Lieferung.)
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
