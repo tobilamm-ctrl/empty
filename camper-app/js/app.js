@@ -28,7 +28,7 @@ import installFahrspiele from './fahrspiele.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 28;
+const APP_VERSION = 29;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -364,6 +364,8 @@ function render() {
 const VIEWS = {};
 
 function draw() {
+  // Während etwas gezogen wird (z. B. Mehr-Kacheln), erst danach neu zeichnen
+  if (APP.holdDraw && APP.holdDraw()) { setTimeout(render, 250); return; }
   statsMemo.clear();
   const loggedOut = !!gate;
   document.body.classList.toggle('locked', loggedOut);

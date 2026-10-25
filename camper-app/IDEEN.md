@@ -2,7 +2,7 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
-## Vorgemerkt (Stand: Lieferung 28)
+## Vorgemerkt (Stand: Lieferung 29)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
 - ~~**Höhenprofil für Touren** mit Höhen-Stempeln im Reisepass.~~ Erledigt in Lieferung 26.
@@ -13,6 +13,7 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
   (Die Postkarte gab es schon seit einer früheren Lieferung.)
 - ~~Wasserwaage, Feiertage im Reiseland, Familien-Abstimmung, Urlaubsgeld, Vorfreude-Countdown, Frage des Tages,
   Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu, Flaggen-Quiz, Reise-Memory, Sudoku.~~ Erledigt in Lieferung 28.
+- ~~Montagsmaler, Tic-Tac-Toe, Geschichten-Würfel; Mehr-Kacheln durch Ziehen anordnen.~~ Erledigt in Lieferung 29.
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
@@ -33,3 +34,11 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Zeitkapsel (Brief an euch selbst, öffnet sich nach einem Jahr)
 - Witze und Rätsel für die Rückbank
 - Ich sehe was, was du nicht siehst; Kennzeichen-Rechnen; Ich packe meinen Koffer; Teekesselchen; Wortkette; Tierstimmen raten
+- Karte offline vorab laden (Region oder Route)
+- Essensplan für die Reise (Rezepte pro Tag, Zutaten auf die Einkaufsliste)
+- Bordvorrat mit Ablaufdaten
+- Abreise-Erinnerung in der Heute-Karte (Feld „Abreise bis“ gibt es schon)
+- Platz-Infos am Stellplatz (WLAN, Schrankencode, Mittagsruhe, Brötchenservice)
+- UV-Warnung in der Heute-Karte
+- Bildschirmzeit-Konto für Kinder
+- Reise-Quiz aus dem eigenen Tagebuch; Kennzeichen-Sätze; Schätz-Duell; Kopfrechen-Rennen; Galgenmännchen; Vier gewinnt und Schiffe versenken

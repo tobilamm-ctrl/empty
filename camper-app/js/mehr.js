@@ -62,17 +62,16 @@ export default function installMore(app) {
     const due = dueCount();
     const hidden = tilePrefs().hidden || [];
     if (ui.tileEdit) {
-      const list = ordered();
+      setTimeout(() => dragTiles(document.getElementById('tileGrid')), 0);
       return `${pageHead('mehr', 'Mehr', 'Reihenfolge und Auswahl festlegen')}
-        <p class="sub">Mit den Pfeilen verschieben, mit dem Auge aus- oder einblenden. Das gilt nur für dich, auf allen deinen Geräten.</p>
-        <ul class="tile-order">${list.map((t, i) => `<li class="${hidden.includes(t.route) ? 'off' : ''}">
+        <p class="sub">Kachel kurz gedrückt halten und an die neue Stelle ziehen (mit der Maus einfach ziehen). Mit dem Auge aus- oder einblenden. Das gilt nur für dich, auf allen deinen Geräten.</p>
+        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button><button class="ghost" data-action="tile-reset">Zurücksetzen</button></div>
+        <nav class="tiles editing" id="tileGrid">${ordered().map(t => `<div class="tile${hidden.includes(t.route) ? ' off' : ''}" data-r="${t.route}">
           ${art(t.art)}<b>${esc(label(t))}</b>
-          <button class="icon-btn small" data-action="tile-move" data-r="${t.route}" data-dir="-1" aria-label="Nach oben"${i === 0 ? ' disabled' : ''}>${icon('up')}</button>
-          <button class="icon-btn small" data-action="tile-move" data-r="${t.route}" data-dir="1" aria-label="Nach unten"${i === list.length - 1 ? ' disabled' : ''}>${icon('down')}</button>
-          ${t.route === 'einstellungen' ? '<span class="icon-btn small"></span>'
-            : `<button class="icon-btn small eye" data-action="tile-hide" data-r="${t.route}" aria-pressed="${!hidden.includes(t.route)}" aria-label="${hidden.includes(t.route) ? 'Einblenden' : 'Ausblenden'}">${icon(hidden.includes(t.route) ? 'eyeoff' : 'eye')}</button>`}
-        </li>`).join('')}</ul>
-        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button><button class="ghost" data-action="tile-reset">Zurücksetzen</button></div>`;
+          ${t.route === 'einstellungen' ? '' : `<button class="icon-btn small eye" data-action="tile-hide" data-r="${t.route}" aria-pressed="${!hidden.includes(t.route)}" aria-label="${hidden.includes(t.route) ? 'Einblenden' : 'Ausblenden'}">${icon(hidden.includes(t.route) ? 'eyeoff' : 'eye')}</button>`}
+          <span class="grip" aria-hidden="true">⠿</span>
+        </div>`).join('')}</nav>
+        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button></div>`;
     }
     const shown = ordered().filter(t => !hidden.includes(t.route));
     const nHidden = ordered().length - shown.length;
@@ -86,15 +85,87 @@ export default function installMore(app) {
       <p class="sub tile-edit-link"><button class="link" data-action="tile-edit">Kacheln anordnen${nHidden ? ` (${nHidden} ausgeblendet)` : ''}</button></p>`;
   };
   ACTIONS['tile-edit'] = () => { ui.tileEdit = !ui.tileEdit; render(); window.scrollTo(0, 0); };
-  ACTIONS['tile-move'] = el => {
-    const list = ordered().map(t => t.route);
-    const i = list.indexOf(el.dataset.r), j = i + +el.dataset.dir;
-    if (i < 0 || j < 0 || j >= list.length) return;
-    [list[i], list[j]] = [list[j], list[i]];
+  const saveOrder = list => {
     // Nicht verfügbare Kacheln (z. B. Kasse ohne Freigabe) behalten ihren Platz am Ende
     const rest = (tilePrefs().order || []).filter(r => !list.includes(r));
     save('meta', { ...tilePrefs(), order: [...list, ...rest] });
   };
+
+  // Ziehen zum Anordnen: am Handy nach kurzem Halten (sonst scrollt die Seite), mit der Maus sofort
+  let drag = null, wait = null, scroll = null;
+  const stopWait = () => { if (wait) clearTimeout(wait.t); wait = null; };
+  const place = (x, y) => {
+    const t = drag.tile;
+    t.style.transform = '';
+    const r = t.getBoundingClientRect();
+    t.style.transform = `translate(${x - drag.gx - r.left}px, ${y - drag.gy - r.top}px) scale(1.05)`;
+  };
+  // Hat die App inzwischen neu gezeichnet, mit der neuen Kachel weitermachen
+  const relink = () => {
+    if (drag.tile.isConnected) return true;
+    const grid = document.getElementById('tileGrid');
+    const tile = grid && grid.querySelector(`.tile[data-r="${drag.tile.dataset.r}"]`);
+    if (!tile) return false;
+    tile.classList.add('dragging'); grid.classList.add('is-dragging');
+    Object.assign(drag, { tile, grid });
+    return true;
+  };
+  const moveTo = (x, y) => {
+    if (!relink()) return;
+    drag.x = x; drag.y = y;
+    const over = document.elementFromPoint(x, y);
+    const target = over && over.closest('#tileGrid .tile');
+    if (target && target !== drag.tile && target.parentElement === drag.grid) {
+      const tiles = [...drag.grid.children];
+      drag.grid.insertBefore(drag.tile, tiles.indexOf(target) < tiles.indexOf(drag.tile) ? target : target.nextSibling);
+    }
+    place(x, y);
+  };
+  const begin = (tile, x, y) => {
+    const r = tile.getBoundingClientRect();
+    drag = { tile, grid: tile.parentElement, gx: x - r.left, gy: y - r.top, x, y };
+    tile.classList.add('dragging');
+    drag.grid.classList.add('is-dragging');
+    if (navigator.vibrate) navigator.vibrate(25);
+    // Am Rand des Bildschirms mitscrollen
+    scroll = setInterval(() => {
+      const edge = drag.y < 90 ? -14 : drag.y > innerHeight - 110 ? 14 : 0;
+      if (edge) { window.scrollBy(0, edge); moveTo(drag.x, drag.y); }
+    }, 30);
+  };
+  const endDrag = () => {
+    stopWait();
+    if (!drag) return;
+    clearInterval(scroll);
+    relink();
+    const { tile, grid } = drag;
+    tile.classList.remove('dragging');
+    tile.style.transform = '';
+    grid.classList.remove('is-dragging');
+    drag = null;
+    saveOrder([...grid.children].map(t => t.dataset.r));
+  };
+  window.addEventListener('pointermove', ev => {
+    if (wait && Math.hypot(ev.clientX - wait.x, ev.clientY - wait.y) > 8) stopWait();
+    if (drag) { ev.preventDefault(); moveTo(ev.clientX, ev.clientY); }
+  }, { passive: false });
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  // Während des Ziehens darf die Seite nicht scrollen
+  window.addEventListener('touchmove', ev => { if (drag) ev.preventDefault(); }, { passive: false });
+  app.holdDraw = () => !!drag;
+  function dragTiles(grid) {
+    if (!grid || grid.dataset.drag) return;
+    grid.dataset.drag = '1';
+    grid.addEventListener('pointerdown', ev => {
+      const tile = ev.target.closest('.tile');
+      if (!tile || ev.target.closest('button') || ev.button > 0) return;
+      const x = ev.clientX, y = ev.clientY;
+      if (ev.pointerType === 'mouse') { ev.preventDefault(); begin(tile, x, y); return; }
+      wait = { x, y, t: setTimeout(() => { wait = null; begin(tile, x, y); }, 280) };
+    });
+    grid.addEventListener('contextmenu', ev => ev.preventDefault());
+  }
   ACTIONS['tile-hide'] = el => {
     const p = tilePrefs(), h = p.hidden || [], r = el.dataset.r;
     save('meta', { ...p, hidden: h.includes(r) ? h.filter(x => x !== r) : [...h, r] });

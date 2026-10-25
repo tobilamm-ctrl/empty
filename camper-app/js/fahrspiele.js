@@ -26,10 +26,13 @@ export default function installFahrspiele(app) {
     ['flaggen', 'Flaggen-Quiz', 'Welches Land gehört dazu?'],
     ['memory', 'Reise-Memory', 'Mit euren eigenen Fotos'],
     ['sudoku', 'Sudoku', '4×4 oder 9×9, mit Zahlen oder Tieren'],
+    ['maler', 'Montagsmaler', 'Einer malt, alle raten'],
+    ['ttt', 'Tic-Tac-Toe', 'Zu zweit oder gegen das Handy'],
+    ['story', 'Geschichten-Würfel', 'Bilder würfeln, Geschichte erfinden'],
   ];
   const at = app.GAMES.findIndex(g => g[0] === 'brettspiele');
   app.GAMES.splice(at < 0 ? app.GAMES.length : at, 0, ...NEW);
-  app.noPlayerBar = [...(app.noPlayerBar || []), 'farben', 'abc', 'werbinich', 'tabu', 'memory'];
+  app.noPlayerBar = [...(app.noPlayerBar || []), 'farben', 'abc', 'werbinich', 'tabu', 'memory', 'maler', 'ttt', 'story'];
   Object.assign(app.GAME_ART, {
     farben: '<path d="M8 32v-8q0-4 4-5l6-7h22l8 7q6 1 6 5v8z" fill="#E4572E" stroke="currentColor"/><circle cx="18" cy="33" r="5" fill="var(--paper)"/><circle cx="46" cy="33" r="5" fill="var(--paper)"/><circle cx="56" cy="10" r="4" fill="#2E7FB8" stroke="none"/><circle cx="46" cy="8" r="4" fill="#E0A21B" stroke="none"/>',
     abc: '<rect x="8" y="8" width="48" height="30" rx="4" fill="#F2C94C"/><text x="32" y="30" font-size="18" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial">A B C</text><path d="M32 38v8"/>',
@@ -37,6 +40,9 @@ export default function installFahrspiele(app) {
     tabu: '<rect x="12" y="6" width="40" height="36" rx="4" fill="var(--paper)"/><circle cx="32" cy="20" r="7"/><path d="M20 32h24M24 37h16" stroke="#B3261E"/>',
     flaggen: '<path d="M12 44V6"/><path d="M12 8h14v26H12z" fill="#2E5FA8" stroke="none"/><path d="M26 8h14v26H26z" fill="#fff" stroke="none"/><path d="M40 8h14v26H40z" fill="#B3261E" stroke="none"/><path d="M12 8h42v26H12z"/>',
     memory: '<rect x="6" y="10" width="16" height="22" rx="3" fill="#2E7FB8"/><rect x="24" y="10" width="16" height="22" rx="3" fill="var(--paper)"/><rect x="42" y="10" width="16" height="22" rx="3" fill="var(--paper)"/><circle cx="32" cy="21" r="4"/><circle cx="50" cy="21" r="4"/>',
+    maler: '<rect x="8" y="6" width="38" height="32" rx="3" fill="#fff"/><path d="M14 30q6-14 12-4t12-10" stroke="#2E7FB8"/><path d="M44 42l12-22 4 2-12 22-5 2z" fill="#E0A21B"/>',
+    ttt: '<path d="M26 6v36M40 6v36M12 20h42M12 32h42"/><path d="M15 9l7 7M22 9l-7 7" stroke="#B3261E"/><circle cx="33" cy="26" r="4" stroke="#2E5FA8"/><path d="M43 35l7 7M50 35l-7 7" stroke="#B3261E"/>',
+    story: '<rect x="6" y="14" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(-8 17 25)"/><rect x="34" y="10" width="22" height="22" rx="4" fill="var(--paper)" transform="rotate(8 45 21)"/><text x="17" y="30" font-size="12" text-anchor="middle" stroke="none">🏰</text><text x="45" y="26" font-size="12" text-anchor="middle" stroke="none">🐉</text>',
     sudoku: '<rect x="12" y="6" width="36" height="36" rx="2" fill="var(--paper)"/><path d="M24 6v36M36 6v36M12 18h36M12 30h36"/><g fill="currentColor" stroke="none" font-size="9" font-weight="700" font-family="Arial" text-anchor="middle"><text x="18" y="15">1</text><text x="42" y="27">3</text><text x="30" y="39">2</text></g>',
   });
 
@@ -412,5 +418,194 @@ export default function installFahrspiele(app) {
   };
   ACTIONS['sd-quit'] = () => { const g = sdState(); if (g && !g.end && g.cells.some((v, i) => v && !g.givens[i]) && !confirm('Dieses Sudoku aufgeben?')) return; LS.set('sudoku', null); render(); };
 
+  /* ====================================================================== */
+  /* Montagsmaler                                                            */
+  /* ====================================================================== */
+
+  const PAINT = {
+    leicht: ['Sonne', 'Haus', 'Baum', 'Katze', 'Fisch', 'Auto', 'Ball', 'Blume', 'Mond', 'Eis', 'Apfel', 'Schneemann', 'Herz', 'Stern', 'Regenschirm', 'Brille',
+      'Schaf', 'Boot', 'Banane', 'Schnecke', 'Kuchen', 'Wolke', 'Pilz', 'Zelt', 'Ente', 'Maus', 'Hund', 'Vogel', 'Uhr', 'Tasse'],
+    mittel: ['Wohnmobil', 'Leuchtturm', 'Burg', 'Zahnbürste', 'Fahrrad', 'Giraffe', 'Rakete', 'Regenbogen', 'Kaktus', 'Krone', 'Pirat', 'Drache', 'Gitarre', 'Brücke',
+      'Hubschrauber', 'Spinne', 'Dinosaurier', 'Zug', 'Lagerfeuer', 'Schatzkiste', 'Elefant', 'Igel', 'Tannenzapfen', 'Muschel', 'Sandburg', 'Hängematte', 'Taschenlampe', 'Kompass'],
+    schwer: ['Sonnenbrand', 'Stau', 'Ebbe', 'Gewitter', 'Picknick', 'Wasserfall', 'Seilbahn', 'Wäscheleine', 'Grillwürstchen', 'Tankstelle', 'Mückenstich', 'Sternschnuppe',
+      'Gipfelkreuz', 'Fähre', 'Klettersteig', 'Luftmatratze', 'Wegweiser', 'Ritterrüstung', 'Fußspuren', 'Heißluftballon'],
+  };
+  const ml = () => LS.get('maler', { level: 'leicht', phase: 'start', word: '', until: 0, score: {}, seen: [] });
+  const setMl = v => { LS.set('maler', v); render(); };
+  function malerView() {
+    const g = ml();
+    const board = `<p class="sub">Punkte: ${members().map(m => `${esc(m.name)} ${g.score[m.id] || 0}`).join(' · ')}</p>`;
+    if (g.phase === 'start' || g.phase === 'done') {
+      return `<p>Einer zieht ein Wort und malt es, ohne zu sprechen oder Buchstaben zu schreiben. Wer es errät, bekommt einen Punkt, der Maler auch.</p>
+        <div class="seg">${Object.keys(PAINT).map(l => `<button class="${g.level === l ? 'on' : ''}" data-action="ml-level" data-l="${l}">${l}</button>`).join('')}</div>
+        ${g.phase === 'done' ? `<p class="win">Das Wort war: ${esc(g.word)}</p>` : ''}${board}
+        <div class="field"><span>Wer malt?</span><div class="chips wrap">${members().map(m => `<button class="chip${g.painter === m.id ? ' on' : ''}" data-action="ml-painter" data-id="${m.id}">${esc(m.name)}</button>`).join('')}</div></div>
+        <button class="primary" data-action="ml-word"${g.painter ? '' : ' disabled'}>Wort ziehen (nur ${g.painter ? esc(personName(g.painter)) : 'der Maler'} schaut!)</button>`;
+    }
+    if (g.phase === 'peek') {
+      return `<div class="big-card"><span class="sub">Dein Wort:</span><b>${esc(g.word)}</b></div>
+        <div class="btnrow big-row"><button class="ghost big-btn" data-action="ml-word">Anderes Wort</button><button class="primary big-btn" data-action="ml-go">Gemerkt – malen!</button></div>`;
+    }
+    setTimeout(() => paintPad(document.getElementById('mlPad')), 0);
+    return `<p class="fb-clock">${esc(personName(g.painter))} malt · noch <b data-until="${g.until}" data-onend="ml-timeout">${mmss((g.until - Date.now()) / 1000)}</b></p>
+      <canvas id="mlPad" class="ml-pad" width="900" height="700"></canvas>
+      <div class="ml-tools">${['#222222', '#B3261E', '#2E7FB8', '#2F7A4A', '#E0A21B', '#6B4226', '#FFFFFF'].map((c, i) => `<button class="fb-dot${i ? '' : ' on'}" style="--c:${c}" data-ml-c="${c}" aria-label="Farbe"></button>`).join('')}
+        <button class="ghost small-btn" data-ml-undo="1">Zurück</button></div>
+      <div class="field"><span>Wer hat es erraten?</span><div class="chips wrap">${members().filter(m => m.id !== g.painter).map(m => `<button class="chip" data-action="ml-guess" data-id="${m.id}">${esc(m.name)}</button>`).join('')}</div></div>
+      <div class="btnrow"><button class="ghost" data-action="ml-giveup">Auflösen</button></div>`;
+  }
+  // Malfläche: die Striche liegen außerhalb der Seite, damit Neuzeichnen (z. B. nach dem Abgleich) nichts löscht
+  let strokes = [];
+  function paintPad(cv) {
+    if (!cv || cv.dataset.ready) return;
+    cv.dataset.ready = '1';
+    const ctx = cv.getContext('2d');
+    let color = '#222222', cur = null;
+    const paint = () => {
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const s of strokes) { ctx.strokeStyle = s.c; ctx.lineWidth = s.c === '#FFFFFF' ? 40 : 10; ctx.beginPath(); s.p.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), ctx.lineTo(x + 0.1, y)))); ctx.stroke(); }
+    };
+    paint();
+    const pos = ev => { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * cv.width / r.width, (ev.clientY - r.top) * cv.height / r.height]; };
+    cv.addEventListener('pointerdown', ev => { cv.setPointerCapture(ev.pointerId); cur = { c: color, p: [pos(ev)] }; strokes.push(cur); paint(); });
+    cv.addEventListener('pointermove', ev => { if (cur) { cur.p.push(pos(ev)); paint(); } });
+    cv.addEventListener('pointerup', () => { cur = null; });
+    const tools = cv.nextElementSibling;
+    tools.addEventListener('click', ev => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      if (b.dataset.mlC) { color = b.dataset.mlC; tools.querySelectorAll('[data-ml-c]').forEach(x => x.classList.toggle('on', x === b)); }
+      if (b.dataset.mlUndo) { strokes.pop(); paint(); }
+    });
+  }
+  ACTIONS['ml-level'] = el => setMl({ ...ml(), level: el.dataset.l });
+  ACTIONS['ml-painter'] = el => setMl({ ...ml(), painter: el.dataset.id });
+  ACTIONS['ml-word'] = () => {
+    const g = ml();
+    const pool = PAINT[g.level].filter(w => !g.seen.includes(w));
+    const word = pick(pool.length ? pool : PAINT[g.level]);
+    setMl({ ...g, phase: 'peek', word, seen: pool.length ? [...g.seen, word] : [word] });
+  };
+  ACTIONS['ml-go'] = () => { strokes = []; setMl({ ...ml(), phase: 'paint', until: Date.now() + 90000 }); };
+  ACTIONS['ml-guess'] = el => {
+    const g = ml();
+    const score = { ...g.score, [el.dataset.id]: (g.score[el.dataset.id] || 0) + 1, [g.painter]: (g.score[g.painter] || 0) + 1 };
+    toast(`${personName(el.dataset.id)} hat „${g.word}“ erraten!`);
+    // Wer errät, malt als Nächstes
+    setMl({ ...g, score, phase: 'done', painter: el.dataset.id });
+  };
+  ACTIONS['ml-giveup'] = () => setMl({ ...ml(), phase: 'done' });
+  ACTIONS['ml-timeout'] = () => { if (navigator.vibrate) navigator.vibrate([150, 80, 150]); setMl({ ...ml(), phase: 'done' }); };
+
+  /* ====================================================================== */
+  /* Tic-Tac-Toe                                                             */
+  /* ====================================================================== */
+
+  const PAIRS = [['❌', '⭕'], ['🐑', '🐺'], ['🍦', '🍕'], ['☀️', '🌙']];
+  const LINES3 = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  const ttt = () => LS.get('ttt', { b: Array(9).fill(0), turn: 1, pair: 0, vs: 'zwei', level: 'leicht', score: [0, 0, 0], starter: 1 });
+  const winner = b => { for (const l of LINES3) if (b[l[0]] && l.every(i => b[i] === b[l[0]])) return { p: b[l[0]], line: l }; return b.every(Boolean) ? { p: 0 } : null; };
+  // Handy als Gegner: „leicht“ macht Fehler, „schwer“ verliert nie (Minimax)
+  function best(b, me) {
+    const mm = (bb, turn) => {
+      const w = winner(bb);
+      if (w) return w.p === me ? 1 : w.p === 0 ? 0 : -1;
+      const scores = bb.map((v, i) => (v ? null : (() => { bb[i] = turn; const s = mm(bb, 3 - turn); bb[i] = 0; return s; })())).filter(v => v !== null);
+      return turn === me ? Math.max(...scores) : Math.min(...scores);
+    };
+    const free = b.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
+    let top = -2, moves = [];
+    for (const i of free) { b[i] = me; const s = mm(b, 3 - me); b[i] = 0; if (s > top) { top = s; moves = [i]; } else if (s === top) moves.push(i); }
+    return pick(moves);
+  }
+  function tttView() {
+    const g = ttt();
+    const [a, o] = PAIRS[g.pair];
+    const w = winner(g.b);
+    const name = p => (g.vs === 'handy' ? (p === 1 ? 'Du' : 'Handy') : p === 1 ? `Spieler ${a}` : `Spieler ${o}`);
+    return `<div class="seg"><button class="${g.vs === 'zwei' ? 'on' : ''}" data-action="ttt-opt" data-k="vs" data-v="zwei">Zu zweit</button><button class="${g.vs === 'handy' ? 'on' : ''}" data-action="ttt-opt" data-k="vs" data-v="handy">Gegen das Handy</button></div>
+      ${g.vs === 'handy' ? `<div class="seg"><button class="${g.level === 'leicht' ? 'on' : ''}" data-action="ttt-opt" data-k="level" data-v="leicht">leicht</button><button class="${g.level === 'schwer' ? 'on' : ''}" data-action="ttt-opt" data-k="level" data-v="schwer">unschlagbar</button></div>` : ''}
+      <div class="chips wrap">${PAIRS.map((pp, i) => `<button class="chip${g.pair === i ? ' on' : ''}" data-action="ttt-opt" data-k="pair" data-v="${i}">${pp.join(' ')}</button>`).join('')}</div>
+      <p class="plate-progress">${a} ${esc(name(1))}: <b>${g.score[1]}</b> · ${o} ${esc(name(2))}: <b>${g.score[2]}</b> · Unentschieden: <b>${g.score[0]}</b></p>
+      <div class="ttt">${g.b.map((v, i) => `<button class="ttt-cell${w && w.line && w.line.includes(i) ? ' win' : ''}" data-action="ttt-put" data-i="${i}"${v || w ? ' disabled' : ''}>${v ? (v === 1 ? a : o) : ''}</button>`).join('')}</div>
+      <p class="win">${w ? (w.p ? `${w.p === 1 ? a : o} ${esc(name(w.p))} ${g.vs === 'handy' && w.p === 1 ? 'gewinnst' : 'gewinnt'}!` : 'Unentschieden!') : `${g.turn === 1 ? a : o} ist dran`}</p>
+      ${w ? '<button class="primary" data-action="ttt-new">Nochmal</button>' : ''}`;
+  }
+  const tttSet = g => { LS.set('ttt', g); render(); };
+  function tttMove(g, i) {
+    g.b[i] = g.turn;
+    const w = winner(g.b);
+    if (w) { g.score[w.p]++; return g; }
+    g.turn = 3 - g.turn;
+    if (g.vs === 'handy' && g.turn === 2) {
+      const free = g.b.map((v, k) => (v ? -1 : k)).filter(k => k >= 0);
+      const k = g.level === 'schwer' || Math.random() < 0.45 ? best(g.b.slice(), 2) : pick(free);
+      return tttMove(g, k);
+    }
+    return g;
+  }
+  ACTIONS['ttt-put'] = el => { const g = ttt(); if (g.b[+el.dataset.i] || winner(g.b)) return; tttSet(tttMove(g, +el.dataset.i)); };
+  ACTIONS['ttt-new'] = () => {
+    const g = ttt();
+    // Abwechselnd anfangen
+    const starter = 3 - (g.starter || 1);
+    let n = { ...g, b: Array(9).fill(0), turn: starter, starter };
+    if (n.vs === 'handy' && starter === 2) { n.turn = 2; n = tttMove(n, n.level === 'schwer' ? best(n.b.slice(), 2) : pick([0, 2, 4, 6, 8])); }
+    tttSet(n);
+  };
+  ACTIONS['ttt-opt'] = el => {
+    const v = el.dataset.k === 'pair' ? +el.dataset.v : el.dataset.v;
+    tttSet({ ...ttt(), [el.dataset.k]: v, ...(el.dataset.k === 'pair' ? {} : { b: Array(9).fill(0), turn: 1, starter: 1, score: [0, 0, 0] }) });
+  };
+
+  /* ====================================================================== */
+  /* Geschichten-Würfel                                                      */
+  /* ====================================================================== */
+
+  const STORY = {
+    Figuren: ['👸', '🤴', '🧙', '🧚', '🧜', '🦸', '🧛', '👻', '🤖', '👽', '🧑‍🚀', '🧑‍🚒', '🕵️', '🏴‍☠️', '🧝', '🧞', '🤡', '👵', '🧒', '🎅'],
+    Tiere: ['🐉', '🦄', '🐻', '🦊', '🐑', '🦁', '🐸', '🦉', '🐙', '🦖', '🐢', '🐝', '🦜', '🐴', '🐧', '🦈', '🐌', '🦔', '🐭', '🐬'],
+    Orte: ['🏰', '🏝️', '🌋', '🏔️', '🌲', '🏜️', '🏕️', '🚀', '🏚️', '🎡', '⛪', '🏟️', '🗼', '🌊', '🛸', '🚂', '🏫', '🏥', '🌌', '🕳️'],
+    Dinge: ['🗝️', '🗺️', '💎', '🎁', '📦', '🔦', '🧭', '🎈', '🪄', '📯', '🎻', '🍩', '🧸', '🪁', '🔮', '⏰', '📜', '🍄', '🥚', '👑'],
+    Ereignisse: ['⛈️', '🌈', '🎂', '🔥', '❄️', '🌪️', '💤', '🎉', '💥', '🌙', '☀️', '🌧️', '🏆', '🚨', '💌', '🎭', '😱', '🤝', '🍀', '⭐'],
+  };
+  const st = () => LS.get('story', { n: 3, dice: [], turn: 0 });
+  // Ein neues Bild, das noch nicht auf dem Tisch liegt
+  const roll = (have = []) => { const cats = Object.keys(STORY); let e; do e = pick(STORY[pick(cats)]); while (have.includes(e)); return e; };
+  const rollMany = n => { const out = []; while (out.length < n) out.push(roll(out)); return out; };
+  function storyView() {
+    const g = st();
+    return `<p>Würfelt Bilder und erfindet eine Geschichte dazu. Reihum erzählt jeder einen Satz – mit „Noch ein Bild“ kommt eine neue Wendung dazu.</p>
+      <div class="chips wrap">${[3, 5, 9].map(n => `<button class="chip${g.n === n ? ' on' : ''}" data-action="story-n" data-n="${n}">${n} Bilder</button>`).join('')}</div>
+      ${g.dice.length ? `<div class="story-dice">${g.dice.map((e, i) => `<button class="story-die" data-action="story-one" data-i="${i}" style="--d:${i * 70}ms" aria-label="Neu würfeln">${e}</button>`).join('')}</div>
+        <p class="sub">Tippt auf ein Bild, um nur dieses neu zu würfeln.</p>` : ''}
+      <div class="btnrow"><button class="primary big-btn" data-action="story-roll">🎲 ${g.dice.length ? 'Neu würfeln' : 'Würfeln'}</button>
+        ${g.dice.length ? '<button class="ghost" data-action="story-more">Noch ein Bild</button><button class="ghost" data-action="story-save">Ins Tagebuch</button>' : ''}</div>
+      ${g.dice.length ? `<p class="sub">Erzählt: ${members().map((m, i) => `<span class="${i === g.turn % members().length ? 'mem-turn' : ''}">${esc(m.name)}</span>`).join(' → ')}</p>
+        <button class="link" data-action="story-next">Nächste Person erzählt</button>` : ''}`;
+  }
+  ACTIONS['story-n'] = el => { LS.set('story', { ...st(), n: +el.dataset.n }); render(); };
+  ACTIONS['story-roll'] = () => { const g = st(); LS.set('story', { ...g, dice: rollMany(g.n), turn: 0 }); if (navigator.vibrate) navigator.vibrate(40); render(); };
+  ACTIONS['story-one'] = el => { const g = st(); const dice = g.dice.slice(); dice[+el.dataset.i] = roll(g.dice); LS.set('story', { ...g, dice }); render(); };
+  ACTIONS['story-more'] = () => { const g = st(); LS.set('story', { ...g, dice: [...g.dice, roll(g.dice)].slice(-12) }); render(); };
+  ACTIONS['story-next'] = () => { const g = st(); LS.set('story', { ...g, turn: g.turn + 1 }); render(); };
+  ACTIONS['story-save'] = () => {
+    const t = currentTrip();
+    if (!t) return toast('Legt zuerst eine Reise an.');
+    app.openSheet(`<form data-form="story">${app.sheetHead('Geschichte aufschreiben')}
+      <p class="story-mini">${st().dice.join(' ')}</p>
+      <label class="field voice-field"><span>Eure Geschichte</span>${app.voiceBtn ? app.voiceBtn('text') : ''}<textarea name="text" rows="6" placeholder="Es war einmal …"></textarea></label>
+      <div class="sheet-foot"><button class="primary">Als Notiz speichern</button></div></form>`);
+  };
+  app.FORMS.story = form => {
+    const t = currentTrip();
+    const text = `${st().dice.join(' ')}\n\n${form.text.value.trim()}`.trim();
+    save('entries', { id: app.newId(), tripId: t.id, by: me(), createdAt: Date.now(), type: 'notiz', title: 'Unsere Geschichte', date: app.nowLocal(), place: '', text, photos: [] });
+    app.closeSheet();
+    toast('Geschichte im Tagebuch gespeichert');
+  };
+
+  Object.assign(app.GAME_VIEWS, { maler: malerView, ttt: tttView, story: storyView });
   Object.assign(app.GAME_VIEWS, { farben: farbenView, abc: abcView, werbinich: werbinichView, tabu: tabuView, flaggen: flaggenView, memory: memoryView, sudoku: sudokuView });
 }

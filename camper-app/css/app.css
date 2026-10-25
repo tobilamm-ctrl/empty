@@ -1536,3 +1536,26 @@ dialog.draw::backdrop { background: rgba(43, 27, 16, .6); }
 .sd-pad.n4 { grid-template-columns: repeat(5, 1fr); }
 .sd-pad button { min-height: 52px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); font: 600 24px var(--head); color: var(--ink); }
 .sd-pad button:disabled { opacity: .4; }
+
+/* ---------- Mehr-Kacheln anordnen: Ziehen ---------- */
+.tiles.editing { margin: 12px 0 14px; }
+.tiles.editing .tile { position: relative; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: pan-y; border-style: dashed; }
+.tiles.editing .tile small { display: none; }
+.tiles.editing .tile.off .art, .tiles.editing .tile.off b { opacity: .35; }
+.tiles.editing .tile .eye { position: absolute; top: 4px; right: 4px; }
+.tiles.editing .tile .eye[aria-pressed="false"] { color: var(--muted); }
+.tiles.editing .grip { position: absolute; top: 6px; left: 10px; color: var(--muted); font-size: 18px; line-height: 1; }
+.tiles.editing .tile.dragging { z-index: 20; cursor: grabbing; pointer-events: none; border-style: solid; border-color: var(--trip); box-shadow: 0 12px 28px rgba(58, 38, 23, .28); background: var(--surface); }
+.tiles.is-dragging .tile:not(.dragging) { transition: transform .15s; }
+
+/* ---------- Montagsmaler, Tic-Tac-Toe, Geschichten-Würfel ---------- */
+.ml-pad { display: block; width: 100%; aspect-ratio: 9 / 7; background: #fff; border-radius: 14px; border: 2px solid var(--line); touch-action: none; }
+.ml-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 12px; }
+.ttt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(100%, 330px); margin: 12px auto; }
+.ttt-cell { aspect-ratio: 1; border-radius: 16px; border: 2px solid var(--line); background: var(--surface); font-size: 52px; line-height: 1; display: grid; place-items: center; }
+.ttt-cell:disabled { color: inherit; opacity: 1; }
+.ttt-cell.win { background: #DDF2D4; border-color: #2F7A4A; }
+.story-dice { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0 6px; }
+.story-die { width: 92px; height: 92px; border-radius: 20px; border: 2px solid var(--line); background: var(--surface); box-shadow: 0 4px 0 var(--line); font-size: 54px; line-height: 1; display: grid; place-items: center; animation: die-in .45s both; animation-delay: var(--d); }
+@keyframes die-in { from { transform: rotate(-200deg) scale(.3); opacity: 0; } }
+.story-mini { font-size: 34px; text-align: center; margin: 0 0 8px; }

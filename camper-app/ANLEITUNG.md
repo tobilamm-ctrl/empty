@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-28'` hochzählen (z. B. auf `lammping-29`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-29'` hochzählen (z. B. auf `lammping-30`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -202,7 +202,7 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
   passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen. In jedem Eintrag
   können Kinder ein Bild malen (wird wie ein Foto gespeichert) und Sprachnotizen aufnehmen (bis zwei Minuten).
-- **Mehr:** Unten auf der Seite „Kacheln anordnen“: Reihenfolge mit Pfeilen festlegen und Kacheln ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
+- **Mehr:** Unten auf der Seite „Kacheln anordnen“: Kacheln kurz gedrückt halten und an die neue Stelle ziehen (mit der Maus einfach ziehen), mit dem Auge ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
   (Steckbrief und Fristen mit Erinnerung), Statistik (mit Jahresvergleich: Kilometer, Nächte, Tage, Länder,
   Reisen und Kosten pro Jahr), Reisen und Archiv, Einstellungen, außerdem:
@@ -258,7 +258,9 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     mit Wertung und Reisepass-Stempeln. Die Foto-Rallye stellt acht Aufgaben; die Fotos ergeben eine Collage.
   - *Spiele für die Fahrt:* Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu (mit Bildern, für Größere
     mit verbotenen Wörtern), Flaggen-Quiz (Europa oder Welt), Reise-Memory mit euren Fotos und Sudoku
-    (4 × 4 oder 9 × 9, mit Zahlen oder Tieren, drei Schwierigkeitsstufen).
+    (4 × 4 oder 9 × 9, mit Zahlen oder Tieren, drei Schwierigkeitsstufen), Montagsmaler (einer malt, alle raten),
+    Tic-Tac-Toe (zu zweit oder gegen das Handy) und Geschichten-Würfel (Bilder würfeln, Geschichte erfinden,
+    auf Wunsch als Notiz ins Tagebuch).
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
