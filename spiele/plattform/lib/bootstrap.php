@@ -227,6 +227,13 @@ function send_frame_policy(): void
     header('Content-Security-Policy: frame-ancestors ' . FRAME_ANCESTORS);
 }
 
+// Adresse einer Datei aus assets/ mit Änderungszeit, damit Browser nach einem Update die neue Fassung laden
+function asset_url(string $path): string
+{
+    $file = __DIR__ . '/../' . $path;
+    return is_file($file) ? $path . '?v=' . filemtime($file) : $path;
+}
+
 function page_start(string $title, ?array $user = null): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -235,7 +242,7 @@ function page_start(string $title, ?array $user = null): void
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<meta name="robots" content="noindex, nofollow">';
     echo '<title>' . h($title) . ' · ' . APP_NAME . '</title>';
-    echo '<link rel="stylesheet" href="assets/fonts.css"><link rel="stylesheet" href="assets/style.css">';
+    echo '<link rel="stylesheet" href="' . asset_url('assets/fonts.css') . '"><link rel="stylesheet" href="' . asset_url('assets/style.css') . '">';
     echo '</head><body><div class="page">';
     echo '<header class="bar"><a class="logo" href="index.php">' . h(APP_NAME) . '</a>';
     if ($user) {

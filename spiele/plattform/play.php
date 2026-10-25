@@ -28,9 +28,11 @@ header('Cache-Control: no-store');
 echo '<!doctype html><html lang="de"><head><meta charset="utf-8">';
 echo '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
 echo '<meta name="robots" content="noindex, nofollow">';
-echo '<link rel="stylesheet" href="assets/fonts.css">';
+echo '<link rel="stylesheet" href="' . asset_url('assets/fonts.css') . '">';
 echo '<style>body{margin:0}</style>';
 echo '<script>window.PLATFORM = ' . json_encode($platform, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) . ';</script>';
 echo '</head><body>';
-readfile(GAMES_DIR . '/' . $game['id'] . '/game.html');
+// Verweise auf assets/… mit Versionskennung versehen (sonst bleibt nach einem Update die alte spielkit.js im Browser)
+$html = (string)file_get_contents(GAMES_DIR . '/' . $game['id'] . '/game.html');
+echo preg_replace_callback('~(["\'])(assets/[A-Za-z0-9_./-]+\.(?:js|css))\1~', fn($m) => $m[1] . asset_url($m[2]) . $m[1], $html);
 echo '</body></html>';
