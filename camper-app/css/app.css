@@ -802,7 +802,7 @@ body.locked .backdrop { display: none; }
 #printDoc { display: none; }
 @media print {
   @page { size: A4; margin: 14mm 13mm; }
-  body.printing { background: #fff !important; color: #222; }
+  body.printing { background: #fff !important; color: #222; padding: 0 !important; min-height: 0; }
   body.printing > *:not(#printDoc) { display: none !important; }
   body.printing #printDoc { display: block; }
 }
@@ -812,12 +812,13 @@ body.locked .backdrop { display: none; }
 .pd h1 { font: 600 24pt/1.1 var(--head); margin: 0; color: #6B4226; }
 .pd-head p { margin: 2px 0 0; color: #666; }
 .pd h2 { font: 600 15pt var(--head); color: #6B4226; margin: 18px 0 6px; break-after: avoid; }
-.pd h3 { font: 600 12pt var(--head); margin: 12px 0 4px; break-after: avoid; }
+.pd h3 { font: 600 12pt var(--head); margin: 12px 0 4px; break-after: avoid; color: #6B4226; }
 .pd-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 10px; }
 .pd-facts dt { font-size: 8.5pt; color: #777; text-transform: uppercase; letter-spacing: .04em; }
 .pd-facts dd { margin: 0; font-weight: 700; }
 .pd-map { position: relative; overflow: hidden; border: 1px solid #ccc; border-radius: 6px; max-width: 100%; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.pd-map img { position: absolute; width: 256px; height: 256px; }
+.pd-map .pd-base { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pd-nomap { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; background: #F2EFE9; color: #999; font-size: 9pt; }
 .pd-map svg { position: absolute; inset: 0; }
 .pd-map small { position: absolute; right: 0; bottom: 0; padding: 1px 5px; background: rgba(255,255,255,.85); font-size: 7pt; color: #444; }
 .pd-stages, .pd-cost { width: 100%; border-collapse: collapse; font-size: 10pt; }
@@ -826,6 +827,10 @@ body.locked .backdrop { display: none; }
 .pd-stages tr, .pd-entry, .pd-plan li { break-inside: avoid; }
 .pd-no { display: inline-block; min-width: 16px; height: 16px; margin-right: 5px; border-radius: 50%; background: var(--c); color: #fff; font: 700 8pt/16px var(--body); text-align: center; vertical-align: 1px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .pd-entry { display: grid; grid-template-columns: 42px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px dotted #ddd; }
+.pd-entry:last-child { border-bottom: 0; }
+/* Tage deutlich voneinander trennen */
+.pd-day { border-top: 2.5px solid #6B4226; margin-top: 14px; padding-top: 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pd-day h3 { margin-top: 8px; }
 .pd-time { color: #777; font-size: 9.5pt; padding-top: 1px; }
 .pd-type { display: block; color: #666; font-size: 9.5pt; }
 .pd-entry p { margin: 3px 0 0; }

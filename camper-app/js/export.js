@@ -109,8 +109,9 @@ ${trks}
 
   /* ---------- Reiseheft (Drucken → PDF) ---------- */
 
-  // Streckenkarte aus OpenStreetMap-Kacheln und einer SVG-Linie darüber, ohne Leaflet
-  function staticMap(lines, marks, color, W = 680, H = 400) {
+  // Streckenkarte: OpenStreetMap-Kacheln werden vorab zu einem Bild zusammengesetzt (doppelte Auflösung für den Druck),
+  // darüber liegt die Strecke als SVG. So ist die Karte sicher geladen, bevor das Druckfenster aufgeht.
+  async function staticMap(lines, marks, color, W = 680, H = 400) {
     const all = [...lines.flatMap(l => l.pts), ...marks.map(m => [m.lat, m.lng])];
     if (!all.length) return '';
     const proj = (la, ln, z) => {
@@ -128,14 +129,7 @@ ${trks}
     if (all.length === 1) z = 11;
     const [cx1, cy1] = proj(n, w, z), [cx2, cy2] = proj(s, e, z);
     const left = (cx1 + cx2) / 2 - W / 2, top = (cy1 + cy2) / 2 - H / 2;
-    const max = 2 ** z;
-    let tiles = '';
-    for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W) / 256); tx++) {
-      for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H) / 256); ty++) {
-        if (ty < 0 || ty >= max) continue;
-        tiles += `<img src="https://tile.openstreetmap.org/${z}/${((tx % max) + max) % max}/${ty}.png" style="left:${(tx * 256 - left).toFixed(1)}px;top:${(ty * 256 - top).toFixed(1)}px" alt="">`;
-      }
-    }
+    const base = await baseMap(z, left, top, W, H);
     const xy = (la, ln) => { const [px, py] = proj(la, ln, z); return [(px - left).toFixed(1), (py - top).toFixed(1)]; };
     const poly = (line, style) => `<polyline points="${line.map(p => xy(p[0], p[1]).join(',')).join(' ')}" ${style}/>`;
     const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
@@ -144,7 +138,29 @@ ${trks}
         ? `<circle cx="${mx}" cy="${my}" r="10" fill="${m.plan ? '#fff' : color}" stroke="${m.plan ? color : '#fff'}" stroke-width="2.5"/><text x="${mx}" y="${(+my + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${m.plan ? color : '#fff'}">${m.label}</text>`
         : `<circle cx="${mx}" cy="${my}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/>`; }).join('')}
     </svg>`;
-    return `<div class="pd-map" style="width:${W}px;height:${H}px">${tiles}${svg}<small>Karte © OpenStreetMap-Mitwirkende</small></div>`;
+    return `<div class="pd-map" style="width:${W}px;height:${H}px">${base ? `<img class="pd-base" src="${base}" alt="">` : '<p class="pd-nomap">Kartenhintergrund nicht verfügbar (kein Internet?)</p>'}${svg}<small>Karte © OpenStreetMap-Mitwirkende</small></div>`;
+  }
+
+  async function baseMap(z, left, top, W, H) {
+    const k = z < 18 ? 2 : 1;                // eine Zoomstufe feiner = doppelte Auflösung
+    const zz = z + (k === 2 ? 1 : 0), L = left * k, T = top * k, max = 2 ** zz;
+    const cv = document.createElement('canvas');
+    cv.width = W * k; cv.height = H * k;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#F2EFE9'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const jobs = [];
+    for (let tx = Math.floor(L / 256); tx <= Math.floor((L + W * k) / 256); tx++) {
+      for (let ty = Math.floor(T / 256); ty <= Math.floor((T + H * k) / 256); ty++) {
+        if (ty < 0 || ty >= max) continue;
+        const url = `https://tile.openstreetmap.org/${zz}/${((tx % max) + max) % max}/${ty}.png`;
+        jobs.push(fetch(url, { mode: 'cors' }).then(r => r.ok ? r.blob() : Promise.reject())
+          .then(b => createImageBitmap(b)).then(img => { ctx.drawImage(img, Math.round(tx * 256 - L), Math.round(ty * 256 - T)); return 1; })
+          .catch(() => 0));
+      }
+    }
+    const ok = (await Promise.all(jobs)).reduce((a, b) => a + b, 0);
+    if (!ok) return '';
+    try { return cv.toDataURL('image/jpeg', 0.86); } catch { return ''; }
   }
 
   // Etappen: je Tag die Einträge, Start- und Zielort und die Luftlinie seit dem letzten Ort des Vortags
@@ -168,7 +184,7 @@ ${trks}
   }
   const placeName = e => e && (e.place || e.title) || '';
 
-  function bookHtml(t, opt) {
+  async function bookHtml(t, opt) {
     const st = tripStats(t);
     const color = tripColor(t);
     const { list: sts, no } = stages(t, st);
@@ -210,7 +226,7 @@ ${trks}
         <div><h1>${esc(t.name)}</h1><p>${esc(fmtRange(t))}</p></div>
       </header>
       <dl class="pd-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${typeof v === 'string' && v.includes('<') ? v : esc(v)}</dd></div>`).join('')}</dl>
-      ${staticMap(lines, marks, color)}
+      ${await staticMap(lines, marks, color)}
       ${sts.length ? `<h2>Etappen</h2>
       <table class="pd-stages"><thead><tr><th>Tag</th><th>Datum</th><th>Von</th><th>Nach</th><th>Luftlinie</th></tr></thead><tbody>
         ${sts.map(s => `<tr><td>${s.n > 0 ? s.n : ''}</td><td>${fmtDay(s.day)}</td><td>${esc(placeName(s.from)) || '–'}</td>
@@ -231,12 +247,10 @@ ${trks}
     closeSheet();
     let doc = document.getElementById('printDoc');
     if (!doc) { doc = document.createElement('div'); doc.id = 'printDoc'; document.body.appendChild(doc); }
-    doc.innerHTML = bookHtml(t, opt);
-    document.body.classList.add('printing');
     toast('Reiseheft wird vorbereitet …');
-    // Kartenkacheln müssen geladen sein, bevor das Druckfenster aufgeht
-    await Promise.all([...doc.querySelectorAll('img')].map(img => img.complete ? null
-      : new Promise(r => { img.onload = img.onerror = r; setTimeout(r, 8000); })));
+    doc.innerHTML = await bookHtml(t, opt);
+    document.body.classList.add('printing');
+    await Promise.all([...doc.querySelectorAll('img')].map(img => img.decode().catch(() => {})));
     const done = () => { document.body.classList.remove('printing'); window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
     const old = document.title;

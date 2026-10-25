@@ -1,6 +1,6 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'lammping-14';
+const VERSION = 'lammping-15';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/mehr.js', 'js/kartenedit.js', 'js/testdaten.js', 'js/extras.js', 'js/spiele.js', 'js/kfz.js', 'js/ideen.js', 'js/export.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
@@ -35,9 +35,10 @@ self.addEventListener('fetch', e => {
   if (url.hostname === 'tile.openstreetmap.org') {
     e.respondWith(caches.open(TILES).then(async c => {
       const hit = await c.match(req);
-      if (hit) return hit;
+      // Das Reiseheft lädt Kacheln mit CORS, gespeicherte Kacheln der Karte sind dafür nicht lesbar
+      if (hit && (req.mode !== 'cors' || hit.type !== 'opaque')) return hit;
       const res = await fetch(req);
-      if (res.ok) { c.put(req, res.clone()); trimTiles(); }
+      if (res.ok && req.mode !== 'cors') { c.put(req, res.clone()); trimTiles(); }
       return res;
     }));
     return;
