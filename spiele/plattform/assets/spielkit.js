@@ -20,6 +20,7 @@
       solo: null,          // { label, small } wenn es eine Solo-Variante gibt
       botNames: BOT_NAMES,
       setup: null,         // { html, init(root, kit), sync(root, mode), read(root, mode) }
+      privateHands: false, // true: verdeckte Infos (Karten, Schiffe) – Weitergeben-Bildschirm deckt alles ab
       pollMs: 1500,
     }, cfg);
 
@@ -272,7 +273,7 @@
     </div>
   </form>
 </div>
-<div class="sk-overlay" id="sk-handover" hidden>
+<div class="sk-overlay${cfg.privateHands ? " sk-private" : ""}" id="sk-handover" hidden>
   <div class="sk-dialog sk-ho" role="dialog" aria-labelledby="sk-ho-name">
     <div class="sk-label" id="sk-ho-label">Gerät weitergeben an</div>
     <div class="sk-big" id="sk-ho-name"></div>

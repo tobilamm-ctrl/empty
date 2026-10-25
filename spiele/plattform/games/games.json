@@ -7,6 +7,13 @@
     "color": "#f4cb4d"
   },
   {
+    "id": "farbkreuzplus",
+    "title": "Farbkreuz Plus",
+    "description": "Farbkreuz mit goldenem Sonderwürfel: Bomben, Herzen, Sterne und Zeilenboni. Allein, an einem Gerät, gegen den Computer oder online.",
+    "players": "1–6 Spieler · ca. 25 Minuten",
+    "color": "#e0a83a"
+  },
+  {
     "id": "wuerfelpoker",
     "title": "Würfelpoker",
     "description": "Fünf Würfel, drei Würfe, dreizehn Zeilen. Allein auf Bestwert, zu mehreren an einem Gerät, gegen den Computer oder online.",

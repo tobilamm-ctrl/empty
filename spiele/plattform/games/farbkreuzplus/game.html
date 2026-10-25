@@ -1,0 +1,1213 @@
+<title>Farbkreuz Plus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: ein dunkler Spielblock auf dem Tisch – links das Blatt, rechts Würfelablage, Mitspieler und Protokoll; schmal alles untereinander */
+:root {
+  color-scheme: dark;
+  --table: #121117;
+  --sheet: #1e1d24;
+  --sheet-2: #2a2932;
+  --ink: #f6f5f8;
+  --muted: #a3a1b0;
+  --tile: #f4f4f7;
+  --tile-ink: #1e1d24;
+  --cross: #18171d;
+  --red: #ec5f74;
+  --orange: #f39548;
+  --yellow: #f4cb4d;
+  --green: #78b75e;
+  --blue: #58a8e2;
+  --accent: #f4cb4d;
+  --gold: #e0a83a;
+  --pink: #ec5f74;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --radius: 7px;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--table);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 5vw, 40px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span:nth-child(1) { color: var(--red); } .brand h1 span:nth-child(2) { color: var(--orange); }
+.brand h1 span:nth-child(3) { color: var(--yellow); } .brand h1 span:nth-child(4) { color: var(--green); }
+.brand h1 span:nth-child(5) { color: var(--blue); }
+.brand h1 span:nth-child(n+6) { color: var(--ink); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.btn.go { background: var(--green); color: var(--tile-ink); }
+
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "tray" "sheet" "side"; }
+@media (min-width: 980px) {
+  main.game { grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "sheet tray" "sheet side"; align-items: start; }
+}
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+.label { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; color: var(--muted); }
+
+/* ---------- Blatt ---------- */
+.sheet { grid-area: sheet; padding: 14px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sheet-head .who { font-family: var(--font-display); font-size: 20px; }
+.sheet-head .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grid17 { display: grid; grid-template-columns: .8fr repeat(15, minmax(0, 1fr)) .8fr; gap: clamp(2px, .45vw, 5px); }
+.letters .lt, .pts .pt {
+  background: var(--tile); color: var(--tile-ink); border-radius: 5px; aspect-ratio: 1; display: grid; place-items: center;
+  font-family: var(--font-display); font-size: clamp(11px, 2.2vw, 20px); position: relative; font-variant-numeric: tabular-nums;
+}
+.letters .lt.h { color: var(--red); }
+.letters .lt svg { position: absolute; inset: 8%; width: 84%; height: 84%; pointer-events: none; }
+.letters .lt svg line { stroke: var(--cross); stroke-width: 9; stroke-linecap: round; opacity: .85; }
+.board { margin-block: 8px; }
+.cell {
+  --c: var(--green);
+  aspect-ratio: 1; border: 0; padding: 0; border-radius: var(--radius); position: relative; cursor: pointer;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--c) 72%, white) 0 36%, var(--c) 38%);
+  transition: transform .12s ease, opacity .15s ease, box-shadow .15s ease;
+}
+.cell.c-r { --c: var(--red); } .cell.c-o { --c: var(--orange); } .cell.c-y { --c: var(--yellow); }
+.cell.c-g { --c: var(--green); } .cell.c-b { --c: var(--blue); }
+.cell.h { box-shadow: 0 0 0 2px var(--tile); }
+.cell.star::before {
+  content: ""; position: absolute; inset: 10%;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.6l2.8 6 6.5.7-4.9 4.4 1.4 6.5L12 16.9l-5.8 3.3 1.4-6.5-4.9-4.4 6.5-.7z' fill='rgba(255,255,255,.35)' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.cell.x::after, .cell.sel::after {
+  content: ""; position: absolute; inset: 6%;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5L19 19M19 5L5 19' stroke='%2318171d' stroke-width='3.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.cell.sel::after { opacity: .55; }
+.cell.sel { box-shadow: 0 0 0 3px var(--ink); transform: scale(.92); z-index: 1; }
+.cell.dim { opacity: .32; }
+.cell.hint { box-shadow: 0 0 0 2px var(--ink); }
+.cell.h.hint { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--tile); }
+.cell:hover:not(.x) { transform: scale(1.06); }
+.cell.x { cursor: default; }
+.cell.x:hover { transform: none; }
+.cell.fresh::after { animation: pop .35s ease-out; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.pts { margin-top: 4px; }
+.pts + .pts { margin-top: clamp(2px, .5vw, 5px); }
+.pts .pt.zero, .pts .pt.one { color: var(--red); }
+.pt.won::after { content: ""; position: absolute; inset: 6%; border: 3px solid var(--green); border-radius: 50%; }
+.pt.gone { color: color-mix(in srgb, var(--tile-ink) 30%, var(--tile)); }
+.pt.gone::before { content: ""; position: absolute; left: 12%; right: 12%; top: 50%; height: 3px; background: var(--red); transform: rotate(-35deg); border-radius: 2px; }
+
+.tally { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 22px; margin-top: 16px; align-items: start; }
+@media (max-width: 620px) { .tally { grid-template-columns: minmax(0, 1fr); } }
+.bonus-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.bonus { display: flex; gap: 3px; }
+.bonus .b {
+  width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; position: relative;
+  font-family: var(--font-display); font-size: 17px; color: color-mix(in srgb, var(--c) 45%, black); background: var(--c);
+}
+.bonus.c-r { --c: var(--red); } .bonus.c-o { --c: var(--orange); } .bonus.c-y { --c: var(--yellow); }
+.bonus.c-g { --c: var(--green); } .bonus.c-b { --c: var(--blue); }
+.jokers { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.jk {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 17px; position: relative;
+}
+.jk.used { opacity: .35; }
+@media (max-width: 480px) { .jk { width: 23px; height: 23px; font-size: 14px; } .jokers { gap: 3px; } }
+.jk.used::after { content: ""; position: absolute; inset: -3px; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5L19 19M19 5L5 19' stroke='%23ec5f74' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.sum { display: grid; grid-template-columns: auto auto; gap: 3px 16px; font-variant-numeric: tabular-nums; min-width: 190px; margin: 0; }
+.sum dt { color: var(--muted); }
+.sum dd { margin: 0; text-align: right; font-weight: 800; }
+.sum .total { font-family: var(--font-display); font-size: 22px; color: var(--accent); border-top: 1px dashed var(--muted); padding-top: 4px; }
+
+/* ---------- Würfelablage ---------- */
+.tray { grid-area: tray; }
+.dice-rows { display: grid; gap: 10px; }
+.dice { display: flex; gap: 10px; flex-wrap: wrap; }
+.die {
+  width: 54px; height: 54px; border-radius: 12px; border: 0; cursor: pointer; display: grid; place-items: center; position: relative;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18); transition: transform .12s ease;
+}
+.die.cd { background: var(--tile); }
+.die.nd { background: var(--cross); box-shadow: inset 0 0 0 2px var(--sheet-2), inset 0 -4px 0 rgba(255,255,255,.06); color: var(--ink); font-family: var(--font-display); font-size: 28px; }
+.die svg { width: 70%; height: 70%; }
+.die.blank { opacity: .25; cursor: default; }
+.die.picked { transform: translateY(-4px); outline: 3px solid var(--accent); outline-offset: 3px; }
+.die.taken { opacity: .28; cursor: not-allowed; }
+.die .tag { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--tile-ink); font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 6px; white-space: nowrap; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+.die.rolling { animation: shake .45s ease; }
+@keyframes shake { 0% { transform: rotate(0) } 25% { transform: rotate(-14deg) translateY(-6px) } 55% { transform: rotate(10deg) } 80% { transform: rotate(-4deg) } 100% { transform: rotate(0) } }
+.status { margin: 14px 0 12px; min-height: 2.9em; }
+.status strong { color: var(--accent); }
+.status .err { color: var(--red); font-weight: 700; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+
+/* ---------- Seite ---------- */
+.side { grid-area: side; display: grid; gap: 18px; }
+.opps { display: grid; gap: 12px; }
+.opp { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px; border-radius: 10px; background: var(--sheet-2); }
+.opp.active { box-shadow: 0 0 0 2px var(--accent); }
+.opp .nm { font-weight: 800; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.opp .sc { font-family: var(--font-display); font-size: 20px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.opp .info { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+.mini { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; }
+.mini i { aspect-ratio: 1; border-radius: 2px; background: var(--c); opacity: .9; }
+.mini i.x { background: var(--cross); box-shadow: inset 0 0 0 1px var(--c); }
+.mini i.c-r { --c: var(--red); } .mini i.c-o { --c: var(--orange); } .mini i.c-y { --c: var(--yellow); }
+.mini i.c-g { --c: var(--green); } .mini i.c-b { --c: var(--blue); }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; max-height: 260px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.rules p { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Ende & Dialog ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 12px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.preview { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; margin-top: 4px; }
+.preview i { aspect-ratio: 1; border-radius: 2px; background: var(--c); position: relative; }
+.preview i.s::after { content: ""; position: absolute; inset: 28%; border-radius: 50%; background: var(--tile); }
+.preview i.h { box-shadow: 0 0 0 1px var(--tile); }
+.preview i.c-r { --c: var(--red); } .preview i.c-o { --c: var(--orange); } .preview i.c-y { --c: var(--yellow); }
+.preview i.c-g { --c: var(--green); } .preview i.c-b { --c: var(--blue); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Farbkreuz Plus: Zusätze ---------- */
+.brand h1 em { font-style: normal; color: var(--gold); font-size: .6em; vertical-align: .35em; margin-left: 4px; }
+.lt.blank, .pt.blank { background: transparent !important; }
+.cell.gold::before {
+  content: ""; position: absolute; inset: 18%; border-radius: 26%;
+  background: radial-gradient(circle at 35% 35%, #ffe3a1, var(--gold) 60%, #a86f12);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.55);
+}
+.rb, .rl { display: grid; place-items: center; border-radius: 5px; aspect-ratio: .8 / 1; align-self: center; position: relative; }
+.rb { background: var(--tile); color: var(--cross); }
+.rb svg { width: 72%; height: 72%; }
+.rb.rb-heart { color: var(--red); }
+.rb.won::after { content: ""; position: absolute; inset: 4%; border: 3px solid var(--green); border-radius: 50%; }
+.rb.gone { opacity: .35; }
+.rb.gone::before { content: ""; position: absolute; left: 8%; right: 8%; top: 50%; height: 3px; background: var(--red); transform: rotate(-35deg); }
+.rl { background: var(--tile); color: var(--tile-ink); font-family: var(--font-display); font-size: clamp(10px, 2vw, 18px); }
+.rl.done { background: var(--green); color: var(--tile-ink); }
+.pt.goldpt { background: color-mix(in srgb, var(--gold) 55%, var(--tile)); }
+.hearts-row .hpt { background: color-mix(in srgb, var(--red) 14%, var(--tile)); color: color-mix(in srgb, var(--red) 55%, var(--tile)); }
+.hearts-row .hpt svg { width: 62%; height: 62%; }
+.hearts-row .hpt.filled { color: var(--red); font-family: var(--font-display); }
+.tracks { display: grid; gap: 10px; margin-top: 14px; }
+.track { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.track .label { min-width: 104px; }
+.hearts, .sdice, .jokers { display: flex; gap: 5px; flex-wrap: wrap; margin: 0; }
+.hk { width: 30px; height: 30px; position: relative; color: color-mix(in srgb, var(--red) 30%, var(--sheet)); display: grid; place-items: center; }
+.hk svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hk b { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 13px; color: var(--ink); }
+.hk.on { color: var(--red); }
+.hk.on::after { content: ""; position: absolute; inset: -3px; border: 2px solid var(--ink); border-radius: 50%; }
+.sd { width: 28px; height: 28px; position: relative; display: grid; place-items: center; }
+.sd svg { width: 100%; height: 100%; }
+.sd.free::after { content: ""; position: absolute; inset: -3px; border: 2px solid var(--ink); border-radius: 50%; }
+.sd.locked { opacity: .25; }
+.sd.used { opacity: .45; }
+.sd.used::before { content: ""; position: absolute; inset: -2px; z-index: 1; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5L19 19M19 5L5 19' stroke='%23ec5f74' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.die.sdie { background: radial-gradient(circle at 35% 30%, #ffe7ae, var(--gold) 60%, #9c6610); color: #3d2604; }
+.die.sdie svg { width: 64%; height: 64%; }
+#dice-s { align-items: center; }
+.sname { font-weight: 800; color: var(--gold); }
+.preview i.g::after { content: ""; position: absolute; inset: 22%; border-radius: 30%; background: var(--gold); }
+@media (max-width: 480px) { .track .label { min-width: 0; width: 100%; } .hk { width: 26px; height: 26px; } .sd { width: 24px; height: 24px; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span>F</span><span>a</span><span>r</span><span>b</span><span>k</span><span>reuz</span> <em>Plus</em></h1>
+      <div class="sub">Mit Sonderwürfel, Bomben, Herzen und Zeilenboni</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <section class="panel sheet" aria-label="Spielblatt">
+      <div class="sheet-head">
+        <div class="who" id="who">Dein Blatt</div>
+        <div class="meta"><span id="meta"></span></div>
+      </div>
+      <div class="grid17 letters" id="letters"></div>
+      <div class="grid17 board" id="board"></div>
+      <div class="grid17 pts" id="pts-top"></div>
+      <div class="grid17 pts" id="pts-bot"></div>
+      <div class="grid17 pts hearts-row" id="pts-heart"></div>
+      <div class="tracks">
+        <div class="track"><span class="label">Herzen</span><div class="hearts" id="hearts"></div></div>
+        <div class="track"><span class="label">Sonderwürfel</span><div class="sdice" id="sdice"></div></div>
+        <div class="track"><span class="label">Joker</span><div class="jokers" id="jokers"></div></div>
+      </div>
+      <div class="tally">
+        <div>
+          <div class="label">Farbbonus (alle Felder einer Farbe)</div>
+          <div class="bonus-row" id="bonus"></div>
+        </div>
+        <dl class="sum" id="sum"></dl>
+      </div>
+    </section>
+
+    <section class="panel tray" aria-label="Würfel">
+      <div class="sk-lobby" data-sk-lobby hidden></div>
+      <div id="dice-panel">
+        <h2 id="tray-title">Würfel</h2>
+        <div class="dice-rows">
+          <div class="dice" id="dice-c"></div>
+          <div class="dice" id="dice-n"></div>
+          <div class="dice" id="dice-s"></div>
+        </div>
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="actions">
+          <button class="btn primary big" id="btn-roll" type="button">Würfeln</button>
+          <button class="btn go" id="btn-ok" type="button">Ankreuzen</button>
+          <button class="btn" id="btn-clear" type="button">Auswahl löschen</button>
+          <button class="btn" id="btn-pass" type="button">Passen</button>
+          <button class="btn small" id="btn-force" type="button" hidden>Wartende passen lassen</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel" id="opp-panel">
+        <h2>Mitspieler</h2>
+        <div class="opps" id="opps"></div>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Gewürfelt wird mit 3 Farbwürfeln, 3 Zahlenwürfeln und dem goldenen <b>Sonderwürfel</b>. Wer würfelt, nimmt sich zuerst <b>1 Farb- und 1 Zahlenwürfel</b> oder den Sonderwürfel. Die anderen wählen danach aus dem, was übrig ist. In den ersten 3 Würfen dürfen alle aus allen Würfeln wählen.</li>
+            <li>Ankreuzen wie bei Farbkreuz: genau so viele zusammenhängende Kästchen einer Farbe in einem Farbblock, wie die Zahl zeigt. Beginn in Spalte H, sonst waagerecht oder senkrecht an ein Kreuz anschließen.</li>
+            <li><b>Joker:</b> schwarzes Kreuz = freie Farbe, ? = Zahl 1 bis 5. Jeder Joker kostet ein Ausrufezeichen, es gibt 6.</li>
+            <li><b>Sonderwürfel</b> nutzen kostet einen freigeschalteten Würfel aus deiner Sonderwürfel-Leiste. Einer ist zu Beginn frei. Weitere schaltest du frei über die goldenen Felder auf dem Blatt, über das Fertigstellen von Spalte H und über Zeilenboni.</li>
+            <li><b>Bombe:</b> bis zu 4 Felder in einem 2×2-Quadrat, beliebige Farbe, irgendwo auf dem Blatt. <b>Herz:</b> nächstes Herz einkreisen. <b>Sterne:</b> bis zu 2 Sternfelder, die an Kreuze grenzen oder in Spalte H liegen. <b>Drei in einer Zeile:</b> bis zu 3 Felder einer Zeile, die nicht nebeneinander liegen müssen, aber an Kreuze grenzen. <b>Farbblock:</b> einen ganzen Farbblock fertig ankreuzen, der an ein Kreuz grenzt.</li>
+            <li><b>Herzen:</b> Wer eine Spalte fertigstellt, bekommt zusätzlich so viele Punkte, wie er gerade Herzen eingekreist hat.</li>
+            <li><b>Spalte voll:</b> zuerst der obere, später der untere Wert. <b>Zeile voll:</b> je 5 Punkte am Ende. Wer eine Zeile als Erster füllt, bekommt sofort den Bonus links daneben (Bombe, Sonderwürfel oder Herz).</li>
+            <li><b>Farbe voll:</b> zuerst 5 Punkte, danach 3. <b>Spielende</b>, sobald jemand zwei Farben voll hat. Allein: nach 30 Würfen mit 2 Farb-, 2 Zahlenwürfeln und dem Sonderwürfel. Wer vorher zwei Farben voll hat, bekommt 2 Punkte je gesparten Wurf.</li>
+            <li><b>Wertung:</b> Farbbonus + Spalten + Zeilen + Herzen + 1 je übrigem Joker + 2 je unbenutztem Sonderwürfel − 2 je offenem Stern.</li>
+          </ul>
+          <p>Digitale Umsetzung nach den Regeln des Würfelspiels „Noch mal so gut!“ von Inka &amp; Markus Brand. Kein offizielles Produkt.</p>
+        </details>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const { esc, rnd } = Spielkit;
+const $ = id => document.getElementById(id);
+
+// ---------- Spielblatt (Standardblatt, abgelesen aus der Anleitung) ----------
+// r = pink, o = orange, y = gelb, g = grün, b = blau; * = Stern, @ = goldenes Sonderwürfel-Feld
+const ORIGINAL = [
+  "r r o* y y r* r g g y y* o* o o b",
+  "b y y y o o r r b b* y y r o o",
+  "b y@ b b b o o o* b g g y r r o@",
+  "o b* b g* b@ y y b o o g g g* r r",
+  "o o r r g b b b y o o r@ y y y*",
+  "g g r o g g g* y y r r r b b* g",
+  "y* g g o r* g@ g y r* r b b b g g",
+];
+const NR = 7, NC = 15, H = 7, MAXJ = 6, SLOTS = 10, HEARTS = 5, MAXP = 6;
+const LET = "ABCDEFGHIJKLMNO", ROWL = "PQRSTUV";
+const TOP = [5,3,3,3,2,2,2,1,2,2,2,3,3,3,5];
+const BOT = [3,2,2,2,1,1,1,0,1,1,1,2,2,2,3];
+const ROW_BONUS = ["die", "bomb", "heart", "bomb", "die", "heart", "bomb"];
+const ROW_PTS = 5;
+const COLORS = ["g","y","b","r","o"];
+const CNAME = { r: "Pink", o: "Orange", y: "Gelb", g: "Grün", b: "Blau" };
+const CADJ = { r: "pinke", o: "orange", y: "gelbe", g: "grüne", b: "blaue" };
+const CVAR = { r: "--red", o: "--orange", y: "--yellow", g: "--green", b: "--blue" };
+const COLOR_FACES = ["g","y","b","r","o","J"];
+const NUM_FACES = [1,2,3,4,5,"J"];
+// Die Anleitung nennt fünf Aktionen des Sonderwürfels; jede Seite gleich wahrscheinlich.
+const SPECIAL_FACES = ["bomb", "heart", "stars", "row", "block"];
+const SNAME = { bomb: "Bombe", heart: "Herz", stars: "Sterne", row: "Drei in einer Zeile", block: "Farbblock", die: "Sonderwürfel" };
+const BOT_NAMES = ["Ada","Kurt","Mila","Ole","Pia"];
+const LEVELS = [
+  [91, "Würfelkönig", "Mehr geht kaum. Bomben, Herzen und Sterne saßen."],
+  [85, "Meisterklasse", "Jeder Sonderwürfel zur rechten Zeit."],
+  [79, "Profi", "Damit gewinnst du jeden Spieleabend."],
+  [74, "Spitze", "Eine richtig starke Runde."],
+  [70, "Sehr gut", "Kaum ein Kreuz am falschen Platz."],
+  [66, "Gut", "Das kann sich sehen lassen."],
+  [60, "Geübt", "Man merkt, dass du das nicht zum ersten Mal spielst."],
+  [50, "Ordentlich", "Solide, da geht aber noch mehr."],
+  [40, "Im Kommen", "Die Richtung stimmt."],
+  [30, "Einsteiger", "Ein Anfang ist gemacht."],
+  [20, "Anfänger", "Beim nächsten Mal läuft es besser."],
+  [10, "Aufwärmrunde", "Das war erst das Warmspielen."],
+  [-Infinity, "Pechvogel", "Heute waren die Würfel nicht auf deiner Seite."],
+];
+
+const rc = i => [Math.floor(i / NC), i % NC];
+const NB = Array.from({ length: NR * NC }, (_, i) => {
+  const [r, c] = rc(i), out = [];
+  if (r > 0) out.push(i - NC); if (r < NR - 1) out.push(i + NC);
+  if (c > 0) out.push(i - 1); if (c < NC - 1) out.push(i + 1);
+  return out;
+});
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let BOARD = [], BLOCK = [], BLOCKS = [], boardKey = "";
+const parseBoard = rows => rows.map(r => r.split(" ").map(t => ({ c: t[0], star: t.includes("*"), gold: t.includes("@") })));
+const cellOf = i => BOARD[Math.floor(i / NC)][i % NC];
+const colorOf = i => cellOf(i).c;
+const isStar = i => cellOf(i).star;
+const isGold = i => cellOf(i).gold;
+function setBoard(rows) {
+  BOARD = parseBoard(rows);
+  BLOCK = Array(NR * NC).fill(-1); BLOCKS = [];
+  for (let i = 0; i < NR * NC; i++) {
+    if (BLOCK[i] >= 0) continue;
+    const id = BLOCKS.length, cells = [i], st = [i]; BLOCK[i] = id;
+    while (st.length) { const k = st.pop(); for (const j of NB[k]) if (BLOCK[j] < 0 && colorOf(j) === colorOf(i)) { BLOCK[j] = id; cells.push(j); st.push(j); } }
+    BLOCKS.push(cells);
+  }
+}
+
+// Zufälliges Blatt: Farbblöcke 1–6, je Farbe 21 Felder, ein Stern pro Spalte, ein goldenes Feld pro Farbe
+function genBoard() {
+  const SIZES = [1,2,2,3,3,3,3,4,4,4,4,4,5,5,5,5,6,6];
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const blk = Array(NR * NC).fill(-1), blocks = [];
+    for (const s of shuffle([...Array(NR * NC).keys()])) {
+      if (blk[s] >= 0) continue;
+      const target = SIZES[rnd(SIZES.length)], cells = [s];
+      blk[s] = blocks.length;
+      while (cells.length < target) {
+        const fr = [];
+        for (const i of cells) for (const j of NB[i]) if (blk[j] < 0) fr.push(j);
+        if (!fr.length) break;
+        const j = fr[rnd(fr.length)]; blk[j] = blocks.length; cells.push(j);
+      }
+      blocks.push(cells);
+    }
+    if (blocks.filter(b => b.length === 1).length > 6) continue;
+    const adj = blocks.map(() => new Set());
+    for (let i = 0; i < NR * NC; i++) for (const j of NB[i]) if (blk[i] !== blk[j]) adj[blk[i]].add(blk[j]);
+    const order = blocks.map((_, k) => k).sort((a, b) => blocks[b].length - blocks[a].length);
+    const col = Array(blocks.length).fill(null), cap = { g: 21, y: 21, b: 21, r: 21, o: 21 };
+    let steps = 0;
+    const bt = k => {
+      if (k === order.length) return true;
+      if (++steps > 20000) return false;
+      const b = order[k], sz = blocks[b].length;
+      for (const c of COLORS.map(c => [c, cap[c] + Math.random() * 3]).sort((x, y) => y[1] - x[1]).map(x => x[0])) {
+        if (cap[c] < sz) continue;
+        let clash = false;
+        for (const o of adj[b]) if (col[o] === c) { clash = true; break; }
+        if (clash) continue;
+        col[b] = c; cap[c] -= sz;
+        if (bt(k + 1)) return true;
+        col[b] = null; cap[c] += sz;
+      }
+      return false;
+    };
+    if (!bt(0)) continue;
+    const starRow = Array.from({ length: NC }, () => rnd(NR));
+    const star = i => starRow[i % NC] === Math.floor(i / NC);
+    const gold = new Set();
+    for (const c of COLORS) {
+      const cand = [...Array(NR * NC).keys()].filter(i => col[blk[i]] === c && !star(i) && i % NC !== H);
+      gold.add(cand[rnd(cand.length)]);
+    }
+    const rows = [];
+    for (let r = 0; r < NR; r++) {
+      const t = [];
+      for (let c = 0; c < NC; c++) { const i = r * NC + c; t.push(col[blk[i]] + (star(i) ? "*" : "") + (gold.has(i) ? "@" : "")); }
+      rows.push(t.join(" "));
+    }
+    return rows;
+  }
+  return ORIGINAL.slice();
+}
+
+// ---------- Zustand ----------
+let S, kit;
+const UI = { sel: { ci: null, ni: null, sp: false, cells: [] }, selKey: "", err: "", rolled: false, preview: null };
+
+function newPlayer(r) {
+  return { id: r.id, name: r.name, ai: r.ai, x: Array(NR * NC).fill(false), jokers: 0,
+    colDone: Array(NC).fill(null), colHeart: Array(NC).fill(null), rowDone: Array(NR).fill(null), colorDone: {},
+    hearts: 0, sdice: 1, sdiceTotal: 1, pendingBombs: 0, fresh: [] };
+}
+function newState({ mode, roster, options, rematch }) {
+  const nd = mode === "solo" ? 2 : 3, kind = options.boardKind || "original";
+  const board = !rematch && options.board ? options.board.slice() : kind === "zufall" ? genBoard() : ORIGINAL.slice();
+  const s = {
+    boardKind: kind, board, players: roster.map(newPlayer), active: 0, throw: 0, phase: "idle",
+    dice: { c: Array(nd).fill(null), n: Array(nd).fill(null), s: null },
+    activeUsed: null, choices: {}, firstCol: Array(NC).fill(null), firstRow: Array(NR).fill(null), firstColor: {}, log: [], soloBonus: 0,
+  };
+  const nh = roster.filter(r => !r.ai).length;
+  if (mode === "local" && nh > 1) s.active = rnd(nh);
+  return s;
+}
+function onStart(s) {
+  s.active = rnd(s.players.length); s.phase = "idle";
+  kit.addLog(`Spiel beginnt. <b>${esc(s.players[s.active].name)}</b> würfelt zuerst.`);
+}
+function whoActs() {
+  const n = S.players.length, out = [];
+  if (S.phase === "choose") for (let k = 0; k < n; k++) { const i = (S.active + k) % n; if (canChoose(i)) out.push(i); }
+  else if (S.phase === "bonus") for (let k = 0; k < n; k++) { const i = (S.active + k) % n; if (S.players[i].pendingBombs > 0) out.push(i); }
+  else if (S.phase === "idle") out.push(S.active);
+  return out;
+}
+
+// ---------- Regeln ----------
+const touches = (p, i) => i % NC === H || NB[i].some(j => p.x[j]);
+function connected(cells) {
+  const set = new Set(cells), seen = new Set([cells[0]]), st = [cells[0]];
+  while (st.length) { const i = st.pop(); for (const j of NB[i]) if (set.has(j) && !seen.has(j)) { seen.add(j); st.push(j); } }
+  return seen.size === set.size;
+}
+// alle Felder erreichbar: grenzen an Kreuze/Spalte H oder an ein anderes erreichbares Feld derselben Aktion
+function reachableAll(p, cells) {
+  const set = new Set(cells), ok = new Set(cells.filter(i => touches(p, i)));
+  let grew = true;
+  while (grew) { grew = false; for (const i of cells) if (!ok.has(i) && NB[i].some(j => ok.has(j) && set.has(j))) { ok.add(i); grew = true; } }
+  return ok.size === set.size;
+}
+function shapes(p, color) {
+  const ok = new Set();
+  for (let i = 0; i < NR * NC; i++) if (!p.x[i] && colorOf(i) === color) ok.add(i);
+  const res = [], seen = new Set();
+  let level = [...ok].map(i => [i]);
+  for (let k = 1; k <= 5 && level.length; k++) {
+    res.push(...level);
+    if (k === 5) break;
+    const next = [];
+    for (const s of level) {
+      const ss = new Set(s);
+      for (const i of s) for (const j of NB[i]) if (ok.has(j) && !ss.has(j)) {
+        const t = [...s, j].sort((a, b) => a - b), key = t.join();
+        if (!seen.has(key)) { seen.add(key); next.push(t); }
+      }
+    }
+    level = next;
+  }
+  return res.filter(s => s.some(i => touches(p, i)));
+}
+const jokerCost = (cf, nf) => (cf === "J" ? 1 : 0) + (nf === "J" ? 1 : 0);
+function legalCombos(p, cf, nf) {
+  if (jokerCost(cf, nf) > MAXJ - p.jokers) return [];
+  const out = [];
+  for (const color of cf === "J" ? COLORS : [cf]) for (const s of shapes(p, color)) if (nf === "J" || s.length === nf) out.push(s);
+  return out;
+}
+function validateCombo(p, cells, cf, nf) {
+  if (cf == null || nf == null) return "Wähle einen Farb- und einen Zahlenwürfel oder den Sonderwürfel.";
+  if (!cells.length) return "";
+  const color = colorOf(cells[0]);
+  if (cells.some(i => colorOf(i) !== color || p.x[i])) return "Alle Kreuze müssen dieselbe Farbe haben.";
+  if (cf !== "J" && color !== cf) return `Der Farbwürfel zeigt ${CNAME[cf]}.`;
+  if (nf === "J" ? cells.length > 5 : cells.length !== nf) return null;
+  if (!connected(cells)) return "Die Kästchen müssen waagerecht oder senkrecht zusammenhängen.";
+  if (!cells.some(i => touches(p, i))) return "Beginne in Spalte H oder schließe an ein Kreuz an.";
+  if (jokerCost(cf, nf) > MAXJ - p.jokers) return "Du hast keine Ausrufezeichen mehr für Joker.";
+  return "ok";
+}
+const in2x2 = cells => { const rs = cells.map(i => rc(i)[0]), cs = cells.map(i => rc(i)[1]); return Math.max(...rs) - Math.min(...rs) <= 1 && Math.max(...cs) - Math.min(...cs) <= 1; };
+// Sonderaktion prüfen. "ok", null (noch unvollständig) oder Fehlertext.
+function validateSpecial(p, face, cells) {
+  if (face === "heart") return p.hearts >= HEARTS ? "Alle Herzen sind schon eingekreist." : "ok";
+  if (!cells.length) return null;
+  if (cells.some(i => p.x[i])) return "Dieses Feld ist schon angekreuzt.";
+  if (face === "bomb") {
+    if (cells.length > 4 || !in2x2(cells)) return "Eine Bombe trifft höchstens 4 Felder in einem 2×2-Quadrat.";
+    return "ok";
+  }
+  if (face === "stars") {
+    if (cells.some(i => !isStar(i))) return "Mit „Sterne“ kreuzt du nur Sternfelder an.";
+    if (cells.length > 2) return "Höchstens 2 Sterne.";
+    if (!reachableAll(p, cells)) return "Sterne müssen an ein Kreuz grenzen oder in Spalte H liegen.";
+    return "ok";
+  }
+  if (face === "row") {
+    if (new Set(cells.map(i => rc(i)[0])).size > 1) return "Alle Felder müssen in derselben Zeile liegen.";
+    if (cells.length > 3) return "Höchstens 3 Felder.";
+    if (!reachableAll(p, cells)) return "Die Felder müssen an Kreuze grenzen oder in Spalte H liegen.";
+    return "ok";
+  }
+  if (face === "block") {
+    const b = BLOCK[cells[0]], rest = BLOCKS[b].filter(i => !p.x[i]);
+    if (cells.length !== rest.length || cells.some(i => BLOCK[i] !== b)) return "Kreuze den ganzen restlichen Farbblock an.";
+    if (!rest.some(i => touches(p, i))) return "Der Farbblock muss an ein Kreuz grenzen oder in Spalte H liegen.";
+    return "ok";
+  }
+  return "Unbekannte Aktion.";
+}
+// alle sinnvollen Sonderaktionen (für Hinweise und Computer)
+function specialOptions(p, face) {
+  const out = [], free = i => !p.x[i];
+  if (face === "heart") return p.hearts < HEARTS ? [[]] : [];
+  if (face === "bomb") {
+    for (let r = 0; r < NR - 1; r++) for (let c = 0; c < NC - 1; c++) {
+      const w = [r * NC + c, r * NC + c + 1, (r + 1) * NC + c, (r + 1) * NC + c + 1].filter(free);
+      if (w.length) out.push(w);
+    }
+  } else if (face === "stars") {
+    const st = [...Array(NR * NC).keys()].filter(i => free(i) && isStar(i));
+    for (let a = 0; a < st.length; a++) {
+      if (reachableAll(p, [st[a]])) out.push([st[a]]);
+      for (let b = a + 1; b < st.length; b++) if (reachableAll(p, [st[a], st[b]])) out.push([st[a], st[b]]);
+    }
+  } else if (face === "row") {
+    for (let r = 0; r < NR; r++) {
+      const cand = [];
+      for (let c = 0; c < NC; c++) { const i = r * NC + c; if (free(i) && (touches(p, i) || NB[i].some(j => free(j) && touches(p, j) && rc(j)[0] === r))) cand.push(i); }
+      for (let a = 0; a < cand.length; a++) {
+        out.push([cand[a]]);
+        for (let b = a + 1; b < cand.length; b++) {
+          out.push([cand[a], cand[b]]);
+          for (let d = b + 1; d < cand.length; d++) out.push([cand[a], cand[b], cand[d]]);
+        }
+      }
+    }
+    return out.filter(s => reachableAll(p, s));
+  } else if (face === "block") {
+    BLOCKS.forEach(b => { const rest = b.filter(free); if (rest.length && rest.some(i => touches(p, i))) out.push(rest); });
+  }
+  return out;
+}
+const colFull = (p, c) => { for (let r = 0; r < NR; r++) if (!p.x[r * NC + c]) return false; return true; };
+const rowFull = (p, r) => { for (let c = 0; c < NC; c++) if (!p.x[r * NC + c]) return false; return true; };
+const colorFull = (p, color) => { for (let i = 0; i < NR * NC; i++) if (colorOf(i) === color && !p.x[i]) return false; return true; };
+const remCol = (p, c) => { let n = 0; for (let r = 0; r < NR; r++) if (!p.x[r * NC + c]) n++; return n; };
+const remRow = (p, r) => { let n = 0; for (let c = 0; c < NC; c++) if (!p.x[r * NC + c]) n++; return n; };
+const remColor = (p, color) => { let n = 0; for (let i = 0; i < NR * NC; i++) if (colorOf(i) === color && !p.x[i]) n++; return n; };
+function unlockDie(p) { if (p.sdiceTotal < SLOTS) { p.sdiceTotal++; p.sdice++; return true; } return false; }
+
+function score(p) {
+  let bonus = 0, cols = 0, rows = 0, hearts = 0, stars = 0;
+  for (const c of COLORS) if (p.colorDone[c] != null) bonus += p.colorDone[c] === S.firstColor[c] ? 5 : 3;
+  for (let j = 0; j < NC; j++) if (p.colDone[j] != null) { cols += p.colDone[j] === S.firstCol[j] ? TOP[j] : BOT[j]; hearts += p.colHeart[j] || 0; }
+  for (let r = 0; r < NR; r++) if (p.rowDone[r] != null) rows += ROW_PTS;
+  for (let i = 0; i < NR * NC; i++) if (isStar(i) && !p.x[i]) stars++;
+  const jok = MAXJ - p.jokers, dice = 2 * p.sdice, extra = S.mode === "solo" ? S.soloBonus || 0 : 0;
+  return { bonus, cols, rows, hearts, jok, dice, stars: -2 * stars, extra, total: bonus + cols + rows + hearts + jok + dice - 2 * stars + extra };
+}
+
+// ---------- Computer-Gegner ----------
+function evalCells(p, s) {
+  let v = 0; const cols = {}, rows = {}, colors = {};
+  for (const i of s) {
+    v += 1; if (isStar(i)) v += 2; if (isGold(i) && p.sdiceTotal < SLOTS) v += 2.5;
+    const [r, c] = rc(i); cols[c] = (cols[c] || 0) + 1; rows[r] = (rows[r] || 0) + 1; colors[colorOf(i)] = (colors[colorOf(i)] || 0) + 1;
+  }
+  for (const k in cols) {
+    const c = +k, rem = remCol(p, c), val = (S.firstCol[c] != null ? BOT[c] : TOP[c]) + p.hearts + (c === H ? 2 : 0);
+    v += cols[k] === rem ? val * 1.3 + .5 : val * cols[k] / rem * .5;
+  }
+  for (const k in rows) {
+    const r = +k, rem = remRow(p, r), val = ROW_PTS + (S.firstRow[r] == null ? 3 : 0);
+    v += rows[k] === rem ? val * 1.2 : val * rows[k] / rem * .35;
+  }
+  for (const c in colors) {
+    const rem = remColor(p, c), cv = S.firstColor[c] != null ? 3 : 5;
+    v += colors[c] === rem ? cv * 1.3 + .5 : cv * colors[c] / rem * .4;
+  }
+  const ss = new Set(s); let open = 0;
+  for (const i of s) for (const j of NB[i]) if (!ss.has(j) && !p.x[j] && !touches(p, j)) open++;
+  return v + open * .12;
+}
+const heartValue = p => p.hearts >= HEARTS ? -9 : 1 + NC * .15 - p.colDone.filter(x => x != null).length * .15 + (S.throw < 15 ? 1 : 0);
+function bestSpecial(p, face) {
+  let best = null, bv = -Infinity;
+  for (const cells of specialOptions(p, face)) {
+    const v = (face === "heart" ? heartValue(p) : evalCells(p, cells)) - 2.2 + Math.random() * .2;
+    if (v > bv) { bv = v; best = cells; }
+  }
+  return best ? { cells: best, value: bv } : null;
+}
+function aiChoose(p, avail) {
+  let best = null, bs = .6;
+  for (const ci of avail.c) for (const ni of avail.n) {
+    const cf = S.dice.c[ci], nf = S.dice.n[ni], jk = jokerCost(cf, nf);
+    for (const s of legalCombos(p, cf, nf)) {
+      const v = evalCells(p, s) - jk * (S.throw < 10 ? 2.6 : 2.1) + Math.random() * .25;
+      if (v > bs) { bs = v; best = { kind: "c", cells: s, ci, ni }; }
+    }
+  }
+  if (avail.s && p.sdice > 0) {
+    const sp = bestSpecial(p, S.dice.s);
+    if (sp && sp.value > bs) best = { kind: "s", face: S.dice.s, cells: sp.cells };
+  }
+  return best;
+}
+
+// ---------- Ablauf ----------
+const allAvail = () => ({ c: S.dice.c.map((_, i) => i), n: S.dice.n.map((_, i) => i), s: S.dice.s != null });
+function availFor(pi) {
+  const all = allAvail();
+  if (S.mode === "solo" || pi === S.active || S.throw <= 3 || !S.activeUsed) return all;
+  if (S.activeUsed.special) return { c: all.c, n: all.n, s: false };
+  return { c: all.c.filter(i => i !== S.activeUsed.ci), n: all.n.filter(i => i !== S.activeUsed.ni), s: all.s };
+}
+function canChoose(pi) {
+  if (pi < 0 || S.phase !== "choose" || S.choices[pi]) return false;
+  if (pi === S.active || S.mode === "solo" || S.throw <= 3) return true;
+  return !!S.choices[S.active];
+}
+function canRoll(pi) {
+  if (S.phase !== "idle" || pi < 0) return false;
+  return S.mode !== "online" || S.players[S.active].ai || S.active === pi;
+}
+function faceText(cf, nf, color) {
+  const col = cf === "J" ? `${CNAME[color]} (Farbjoker)` : CNAME[color];
+  return nf === "J" ? `${col}, Zahlenjoker` : col;
+}
+function crossCells(p, cells) {
+  let unlocked = 0;
+  for (const i of cells) { p.x[i] = true; if (isGold(i) && unlockDie(p)) unlocked++; }
+  p.fresh = p.fresh.concat(cells);
+  if (unlocked) kit.addLog(`<b>${esc(p.name)}</b> schaltet über ein goldenes Feld einen Sonderwürfel frei.`);
+}
+function applyMove(pi, m) {
+  const p = S.players[pi];
+  if (m.kind === "c") {
+    const cf = S.dice.c[m.ci], nf = S.dice.n[m.ni];
+    p.jokers += jokerCost(cf, nf);
+    kit.addLog(`Wurf ${S.throw} · <b>${esc(p.name)}</b>: ${m.cells.length}× ${faceText(cf, nf, colorOf(m.cells[0]))}`);
+    crossCells(p, m.cells);
+  } else {
+    p.sdice--;
+    if (m.face === "heart") { p.hearts = Math.min(HEARTS, p.hearts + 1); kit.addLog(`Wurf ${S.throw} · <b>${esc(p.name)}</b>: Sonderwürfel Herz (${p.hearts}. Herz)`); }
+    else { kit.addLog(`Wurf ${S.throw} · <b>${esc(p.name)}</b>: Sonderwürfel ${SNAME[m.face]}, ${m.cells.length} Feld${m.cells.length === 1 ? "" : "er"}`); crossCells(p, m.cells); }
+  }
+}
+function submitRaw(pi, m) {
+  if (m) applyMove(pi, m); else kit.addLog(`Wurf ${S.throw} · <b>${esc(S.players[pi].name)}</b> passt.`);
+  S.choices[pi] = true;
+  if (pi === S.active) S.activeUsed = m ? (m.kind === "s" ? { special: true } : { ci: m.ci, ni: m.ni }) : null;
+}
+function advance() {
+  if (S.phase !== "choose") return;
+  let moved = true;
+  while (moved) {
+    moved = false;
+    S.players.forEach((p, pi) => { if (p.ai && canChoose(pi)) { submitRaw(pi, aiChoose(p, availFor(pi))); moved = true; } });
+  }
+  if (S.players.every((_, pi) => S.choices[pi])) finishRound();
+}
+function doRoll() {
+  S.throw++;
+  S.dice.c = S.dice.c.map(() => COLOR_FACES[rnd(6)]);
+  S.dice.n = S.dice.n.map(() => NUM_FACES[rnd(6)]);
+  S.dice.s = SPECIAL_FACES[rnd(SPECIAL_FACES.length)];
+  S.activeUsed = null; S.choices = {};
+  S.players.forEach(p => p.fresh = []);
+  S.phase = "choose";
+  advance();
+}
+// Zeilen, Spalten und Farben werten. Zeilenboni zuerst (Herz zählt dann schon für gleichzeitig volle Spalten).
+function resolve() {
+  const t = S.throw;
+  for (const p of S.players) for (let r = 0; r < NR; r++) if (p.rowDone[r] == null && rowFull(p, r)) p.rowDone[r] = t;
+  for (let r = 0; r < NR; r++) {
+    const who = S.players.filter(p => p.rowDone[r] === t && !p.rowLogged?.[r]);
+    who.forEach(p => { p.rowLogged = p.rowLogged || Array(NR).fill(false); p.rowLogged[r] = true; });
+    if (!who.length || (S.firstRow[r] != null && S.firstRow[r] !== t)) {
+      if (who.length) kit.addLog(`Zeile ${ROWL[r]} voll: ${who.map(p => `<b>${esc(p.name)}</b>`).join(", ")} (+${ROW_PTS})`);
+      continue;
+    }
+    if (S.firstRow[r] == null) S.firstRow[r] = t;
+    for (const p of who) {
+      if (p.rowBonusTaken && p.rowBonusTaken[r]) continue;
+      p.rowBonusTaken = p.rowBonusTaken || Array(NR).fill(false);
+      p.rowBonusTaken[r] = true;
+      const b = ROW_BONUS[r];
+      if (b === "die") unlockDie(p); else if (b === "heart") p.hearts = Math.min(HEARTS, p.hearts + 1); else p.pendingBombs++;
+    }
+    kit.addLog(`Zeile ${ROWL[r]} voll: ${who.map(p => `<b>${esc(p.name)}</b>`).join(", ")} (+${ROW_PTS}, Bonus ${SNAME[ROW_BONUS[r]]})`);
+  }
+  for (const p of S.players) for (let j = 0; j < NC; j++) if (p.colDone[j] == null && colFull(p, j)) {
+    p.colDone[j] = t; p.colHeart[j] = p.hearts;
+    if (j === H && unlockDie(p)) kit.addLog(`<b>${esc(p.name)}</b> schaltet über Spalte H einen Sonderwürfel frei.`);
+  }
+  for (let j = 0; j < NC; j++) {
+    const who = S.players.filter(p => p.colDone[j] === t && !p.colLogged?.[j]);
+    if (!who.length) continue;
+    if (S.firstCol[j] == null) S.firstCol[j] = t;
+    const pts = S.firstCol[j] === t ? TOP[j] : BOT[j];
+    who.forEach(p => { p.colLogged = p.colLogged || Array(NC).fill(false); p.colLogged[j] = true; });
+    kit.addLog(`Spalte ${LET[j]} voll: ${who.map(p => `<b>${esc(p.name)}</b>${p.colHeart[j] ? ` +${p.colHeart[j]} Herz` : ""}`).join(", ")} (+${pts})`);
+  }
+  for (const p of S.players) for (const c of COLORS) if (p.colorDone[c] == null && colorFull(p, c)) p.colorDone[c] = t;
+  for (const c of COLORS) {
+    const who = S.players.filter(p => p.colorDone[c] === t && !p.colorLogged?.[c]);
+    if (!who.length) continue;
+    if (S.firstColor[c] == null) S.firstColor[c] = t;
+    who.forEach(p => { p.colorLogged = p.colorLogged || {}; p.colorLogged[c] = true; });
+    kit.addLog(`Alle ${CADJ[c]}n Felder: ${who.map(p => `<b>${esc(p.name)}</b>`).join(", ")} (+${S.firstColor[c] === t ? 5 : 3})`);
+  }
+}
+function finishRound() {
+  resolve();
+  if (S.players.some(p => p.pendingBombs > 0)) { S.phase = "bonus"; advanceBonus(); return; }
+  endRound();
+}
+// Bombe als Zeilenbonus: alle Betroffenen zünden, dann neu werten (kann weitere Boni auslösen)
+function advanceBonus() {
+  if (S.phase !== "bonus") return;
+  let guard = 0;
+  while (guard++ < 50) {
+    S.players.forEach(p => {
+      while (p.ai && p.pendingBombs > 0) {
+        const sp = bestSpecial(p, "bomb");
+        p.pendingBombs--;
+        if (sp) { kit.addLog(`<b>${esc(p.name)}</b> zündet die Bonus-Bombe (${sp.cells.length} Felder).`); crossCells(p, sp.cells); }
+      }
+    });
+    if (S.players.some(p => p.pendingBombs > 0)) return; // Menschen sind dran
+    resolve();
+    if (!S.players.some(p => p.pendingBombs > 0)) break;
+  }
+  endRound();
+}
+function endRound() {
+  const colorsDone = p => Object.keys(p.colorDone).length >= 2;
+  let over;
+  if (S.mode === "solo") {
+    over = S.throw >= 30 || colorsDone(S.players[0]);
+    if (over && colorsDone(S.players[0]) && S.throw < 30) {
+      S.soloBonus = 2 * (30 - S.throw);
+      kit.addLog(`Zwei Farben voll nach ${S.throw} Würfen: +${S.soloBonus} für gesparte Würfe.`);
+    }
+  } else over = S.players.some(colorsDone);
+  if (over) { S.phase = "over"; kit.addLog("<b>Spielende.</b>"); }
+  else { S.active = (S.active + 1) % S.players.length; S.phase = "idle"; }
+}
+
+// ---------- Eingaben ----------
+function onDie(kind, idx) {
+  const mi = kit.me();
+  if (!canChoose(mi)) return;
+  const av = availFor(mi);
+  if (kind === "s") {
+    if (!av.s || S.players[mi].sdice <= 0) return;
+    UI.sel = { ci: null, ni: null, sp: !UI.sel.sp, cells: [] };
+  } else {
+    if (!av[kind].includes(idx)) return;
+    if (UI.sel.sp) UI.sel = { ci: null, ni: null, sp: false, cells: [] };
+    const key = kind === "c" ? "ci" : "ni";
+    UI.sel[key] = UI.sel[key] === idx ? null : idx;
+  }
+  UI.err = "";
+  kit.render();
+}
+const selFace = () => (S.phase === "bonus" ? "bomb" : UI.sel.sp ? S.dice.s : null);
+const myAction = mi => (S.phase === "bonus" ? mi >= 0 && S.players[mi].pendingBombs > 0 : canChoose(mi));
+function onCell(i) {
+  const mi = kit.me();
+  if (!myAction(mi)) return;
+  const me = S.players[mi];
+  if (me.x[i]) return;
+  const face = selFace(), cells = UI.sel.cells, k = cells.indexOf(i);
+  if (face === "block") UI.sel.cells = k >= 0 ? [] : BLOCKS[BLOCK[i]].filter(j => !me.x[j]);
+  else if (face === "heart") return;
+  else if (k >= 0) cells.splice(k, 1);
+  else if (!face && cells.length && colorOf(cells[0]) !== colorOf(i)) UI.sel.cells = [i];
+  else if (face === "row" && cells.length && rc(cells[0])[0] !== rc(i)[0]) UI.sel.cells = [i];
+  else if (face === "bomb" && cells.length && !in2x2([...cells, i])) UI.sel.cells = [i];
+  else cells.push(i);
+  UI.err = "";
+  kit.render();
+}
+function currentCheck(mi) {
+  const p = S.players[mi], face = selFace(), { ci, ni, cells } = UI.sel;
+  if (face) return validateSpecial(p, face, cells);
+  const cf = ci == null ? null : S.dice.c[ci], nf = ni == null ? null : S.dice.n[ni];
+  return validateCombo(p, cells, cf, nf);
+}
+function onConfirm() {
+  const mi = kit.me();
+  if (!myAction(mi)) return;
+  const v = currentCheck(mi);
+  if (v !== "ok") {
+    const nf = UI.sel.ni == null ? null : S.dice.n[UI.sel.ni];
+    UI.err = v || (selFace() ? "Wähle zuerst die Felder." : nf === "J" ? "Kreuze 1 bis 5 Kästchen an." : `Kreuze genau ${nf} Kästchen an.`);
+    kit.render(); return;
+  }
+  const cells = UI.sel.cells.slice(), thr = S.throw;
+  if (S.phase === "bonus") {
+    kit.act(() => {
+      const k = kit.me(), p = S.players[k];
+      if (S.phase !== "bonus" || S.throw !== thr || !p || p.pendingBombs <= 0 || validateSpecial(p, "bomb", cells) !== "ok") return false;
+      p.pendingBombs--;
+      kit.addLog(`<b>${esc(p.name)}</b> zündet die Bonus-Bombe (${cells.length} Felder).`);
+      crossCells(p, cells);
+      advanceBonus();
+    });
+    return;
+  }
+  const face = selFace(), { ci, ni } = UI.sel;
+  const move = face ? { kind: "s", face, cells } : { kind: "c", cells, ci, ni };
+  kit.act(() => {
+    const k = kit.me();
+    if (S.throw !== thr || !canChoose(k)) return false;
+    const av = availFor(k), p = S.players[k];
+    if (move.kind === "s") {
+      if (!av.s || p.sdice <= 0 || S.dice.s !== move.face || validateSpecial(p, move.face, move.cells) !== "ok") return false;
+    } else if (!av.c.includes(ci) || !av.n.includes(ni) || validateCombo(p, move.cells, S.dice.c[ci], S.dice.n[ni]) !== "ok") return false;
+    submitRaw(k, move); advance();
+  });
+}
+function onPass() {
+  const thr = S.throw;
+  kit.act(() => {
+    const k = kit.me();
+    if (S.phase === "bonus") { // Bonus-Bombe verfallen lassen
+      const p = S.players[k];
+      if (!p || p.pendingBombs <= 0) return false;
+      p.pendingBombs--; kit.addLog(`<b>${esc(p.name)}</b> verzichtet auf die Bonus-Bombe.`); advanceBonus(); return;
+    }
+    if (S.throw !== thr || !canChoose(k)) return false;
+    submitRaw(k, null); advance();
+  });
+}
+function onRoll() { UI.rolled = true; kit.act(() => { if (!canRoll(kit.me())) return false; doRoll(); }); }
+function onForce() {
+  const thr = S.throw;
+  kit.act(() => {
+    if (!kit.isHost() || S.throw !== thr) return false;
+    let any = false;
+    if (S.phase === "choose") S.players.forEach((p, pi) => { if (!p.ai && canChoose(pi) && pi !== kit.me()) { submitRaw(pi, null); any = true; } });
+    if (S.phase === "bonus") S.players.forEach((p, pi) => { if (!p.ai && p.pendingBombs > 0 && pi !== kit.me()) { p.pendingBombs = 0; any = true; } });
+    if (!any) return false;
+    if (S.phase === "bonus") advanceBonus(); else advance();
+  });
+}
+
+// ---------- Symbole ----------
+const ICON = {
+  bomb: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="14" r="7" fill="currentColor"/><path d="M14 8l3-3M17 5l2 0M17 5l0-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="7.5" cy="11.5" r="1.6" fill="#fff" opacity=".55"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="currentColor"/></svg>`,
+  stars: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3l1.6 3.4 3.7.4-2.8 2.5.8 3.7L8 11.2 4.7 13l.8-3.7L2.7 6.8l3.7-.4z" fill="currentColor"/><path d="M16.5 10l1.3 2.8 3 .3-2.3 2 .7 3-2.7-1.5-2.7 1.5.7-3-2.3-2 3-.3z" fill="currentColor"/></svg>`,
+  row: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h20" stroke="currentColor" stroke-width="1.5" opacity=".5"/><path d="M3 9l4 6M7 9l-4 6M10 9l4 6M14 9l-4 6M17 9l4 6M21 9l-4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  block: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" opacity=".45"/></svg>`,
+  die: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="var(--gold)"/><circle cx="8.5" cy="8.5" r="1.7" fill="#5a3b06"/><circle cx="15.5" cy="15.5" r="1.7" fill="#5a3b06"/><circle cx="12" cy="12" r="1.7" fill="#5a3b06"/></svg>`,
+};
+
+// ---------- Darstellung ----------
+function colorDieSvg(f) {
+  const stroke = f === "J" ? "var(--cross)" : `var(${CVAR[f]})`;
+  return `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 9L31 31M31 9L9 31" stroke="${stroke}" stroke-width="9" stroke-linecap="round"/></svg>`;
+}
+function ensureBoard() {
+  const key = S.board.join("|");
+  if (key === boardKey) return;
+  boardKey = key; setBoard(S.board);
+  let html = "";
+  for (let r = 0; r < NR; r++) {
+    html += `<div class="rb" id="rb-${r}" title="Zeilenbonus: ${SNAME[ROW_BONUS[r]]}">${ICON[ROW_BONUS[r]]}</div>`;
+    for (let c = 0; c < NC; c++) {
+      const i = r * NC + c, cell = BOARD[r][c];
+      html += `<button type="button" class="cell" data-i="${i}" aria-label="${LET[c]}${ROWL[r]} ${CNAME[cell.c]}${cell.star ? " mit Stern" : ""}${cell.gold ? " mit Sonderwürfel" : ""}"></button>`;
+    }
+    html += `<div class="rl" id="rl-${r}">${ROWL[r]}</div>`;
+  }
+  $("board").innerHTML = html;
+}
+function hintSet(me, mi) {
+  if (!myAction(mi)) return null;
+  const face = selFace(), { ci, ni, cells } = UI.sel;
+  let moves;
+  if (face) moves = specialOptions(me, face);
+  else if (ci != null && ni != null) moves = legalCombos(me, S.dice.c[ci], S.dice.n[ni]);
+  else return null;
+  if (face === "heart") return null;
+  moves = moves.filter(s => cells.every(i => s.includes(i)));
+  const set = new Set(); moves.forEach(s => s.forEach(i => set.add(i)));
+  if (face === "bomb") { set.clear(); for (let i = 0; i < NR * NC; i++) if (!me.x[i] && (!cells.length || in2x2([...cells, i]))) set.add(i); }
+  return { set, count: moves.length };
+}
+function render() {
+  ensureBoard();
+  const solo = S.mode === "solo", online = S.mode === "online", lobby = S.phase === "lobby";
+  const mi = kit.me(), vi = mi >= 0 ? mi : 0, me = S.players[vi], sc = score(me), seat = kit.hotSeat();
+  const act = myAction(mi);
+  const key = `${S.throw}:${S.phase}:${mi}:${me.pendingBombs}`;
+  if (UI.selKey !== key) { UI.sel = { ci: null, ni: null, sp: false, cells: [] }; UI.selKey = key; UI.err = ""; }
+  if (!act) UI.sel = { ci: null, ni: null, sp: false, cells: [] };
+  const active = S.players[S.active];
+
+  $("who").textContent = mi < 0 ? `Blatt von ${me.name} (Zuschauer)` : (online || seat || me.name !== "Du") ? `Blatt von ${me.name}` : "Dein Blatt";
+  $("meta").textContent = solo ? `Wurf ${S.throw} von 30` : `${online ? `Raum ${kit.roomId()} · ` : ""}Wurf ${S.throw} · ${S.players.length} Spieler · ${S.boardKind === "zufall" ? "Zufallsblatt" : "Standardblatt"}`;
+
+  $("letters").innerHTML = `<div class="lt blank"></div>` + [...LET].map((l, j) => {
+    let marks = "";
+    if (solo) {
+      if (S.throw > 2 * j) marks += `<line x1="15" y1="85" x2="85" y2="15"/>`;
+      if (S.throw > 2 * j + 1) marks += `<line x1="15" y1="15" x2="85" y2="85"/>`;
+    }
+    return `<div class="lt${j === H ? " h" : ""}">${l}${marks ? `<svg viewBox="0 0 100 100">${marks}</svg>` : ""}</div>`;
+  }).join("") + `<div class="lt blank"></div>`;
+
+  const hs = hintSet(me, mi), selSet = new Set(UI.sel.cells), fresh = new Set(me.fresh);
+  document.querySelectorAll("#board .cell").forEach(el => {
+    const i = +el.dataset.i, [r, c] = rc(i), b = BOARD[r][c];
+    let cls = `cell c-${b.c}`;
+    if (c === H) cls += " h";
+    if (b.star) cls += " star";
+    if (b.gold) cls += " gold";
+    if (me.x[i]) cls += " x";
+    if (me.x[i] && fresh.has(i)) cls += " fresh";
+    if (selSet.has(i)) cls += " sel";
+    if (hs && !me.x[i] && !selSet.has(i)) cls += hs.set.has(i) ? " hint" : " dim";
+    el.className = cls;
+    el.disabled = me.x[i];
+  });
+  for (let r = 0; r < NR; r++) {
+    const mine = me.rowDone[r] != null, first = mine && me.rowDone[r] === S.firstRow[r];
+    $("rb-" + r).className = `rb rb-${ROW_BONUS[r]}${first ? " won" : ""}${!first && S.firstRow[r] != null ? " gone" : ""}`;
+    $("rl-" + r).className = "rl" + (mine ? " done" : "");
+    $("rl-" + r).textContent = mine ? ROW_PTS : ROWL[r];
+  }
+  $("pts-top").innerHTML = `<div class="pt blank"></div>` + TOP.map((v, j) => {
+    const won = me.colDone[j] != null && me.colDone[j] === S.firstCol[j];
+    const gone = !won && S.firstCol[j] != null;
+    return `<div class="pt${j === H ? " one goldpt" : ""}${won ? " won" : ""}${gone ? " gone" : ""}">${v}</div>`;
+  }).join("") + `<div class="pt blank"></div>`;
+  $("pts-bot").innerHTML = `<div class="pt blank"></div>` + BOT.map((v, j) => {
+    const won = me.colDone[j] != null && me.colDone[j] !== S.firstCol[j];
+    return `<div class="pt${v === 0 ? " zero" : ""}${j === H ? " goldpt" : ""}${won ? " won" : ""}">${v}</div>`;
+  }).join("") + `<div class="pt blank"></div>`;
+  $("pts-heart").innerHTML = `<div class="pt blank"></div>` + me.colHeart.map((v, j) =>
+    `<div class="pt hpt${me.colDone[j] != null ? " filled" : ""}" title="Herzbonus Spalte ${LET[j]}">${me.colDone[j] != null ? v : ICON.heart}</div>`).join("") + `<div class="pt blank"></div>`;
+
+  $("hearts").innerHTML = Array.from({ length: HEARTS }, (_, k) => `<span class="hk${k < me.hearts ? " on" : ""}" aria-label="Herz ${k + 1}${k < me.hearts ? " eingekreist" : ""}">${ICON.heart}<b>${k + 1}</b></span>`).join("");
+  const used = me.sdiceTotal - me.sdice;
+  $("sdice").innerHTML = Array.from({ length: SLOTS }, (_, k) => {
+    const st = k < used ? "used" : k < me.sdiceTotal ? "free" : "locked";
+    return `<span class="sd ${st}" aria-label="Sonderwürfel ${st === "free" ? "frei" : st === "used" ? "verbraucht" : "noch gesperrt"}">${ICON.die}</span>`;
+  }).join("");
+  $("jokers").innerHTML = Array.from({ length: MAXJ }, (_, k) => `<span class="jk${k < me.jokers ? " used" : ""}" aria-label="${k < me.jokers ? "verbraucht" : "frei"}">!</span>`).join("");
+  $("bonus").innerHTML = COLORS.map(c => {
+    const done = me.colorDone[c] != null, first = done && me.colorDone[c] === S.firstColor[c];
+    const fiveGone = !first && S.firstColor[c] != null;
+    return `<div class="bonus c-${c}" title="${CNAME[c]}"><div class="b pt${first ? " won" : ""}${fiveGone ? " gone" : ""}">5</div><div class="b pt${done && !first ? " won" : ""}">3</div></div>`;
+  }).join("");
+  $("sum").innerHTML = `
+    <dt>Farbbonus</dt><dd>${sc.bonus}</dd>
+    <dt>Spalten A–O</dt><dd>+${sc.cols}</dd>
+    <dt>Zeilen P–V</dt><dd>+${sc.rows}</dd>
+    <dt>Herzen</dt><dd>+${sc.hearts}</dd>
+    <dt>Ausrufezeichen (+1)</dt><dd>+${sc.jok}</dd>
+    <dt>Sonderwürfel (+2)</dt><dd>+${sc.dice}</dd>
+    <dt>Sterne offen (−2)</dt><dd>${sc.stars}</dd>
+    ${solo && sc.extra ? `<dt>Gesparte Würfe</dt><dd>+${sc.extra}</dd>` : ""}
+    <dt class="total">Gesamt</dt><dd class="total">${sc.total}</dd>`;
+
+  // Würfel
+  $("dice-panel").hidden = lobby;
+  const choosing = canChoose(mi), av = choosing ? availFor(mi) : { c: [], n: [], s: false };
+  const takenTag = S.activeUsed && S.active !== mi && S.phase === "choose" ? active.name : null;
+  const dieBtn = (kind, f, idx) => {
+    const blank = f == null;
+    const picked = kind === "s" ? UI.sel.sp : (kind === "c" ? UI.sel.ci : UI.sel.ni) === idx;
+    const used = S.activeUsed && (kind === "s" ? S.activeUsed.special : (kind === "c" ? S.activeUsed.ci : S.activeUsed.ni) === idx);
+    const taken = choosing && (kind === "s" ? !av.s : !av[kind].includes(idx));
+    const locked = kind === "s" && choosing && !taken && me.sdice <= 0;
+    const face = blank ? "" : kind === "c" ? colorDieSvg(f) : kind === "n" ? (f === "J" ? "?" : f) : ICON[f];
+    const label = blank ? "noch nicht gewürfelt" : kind === "c" ? (f === "J" ? "Farbjoker" : CNAME[f]) : kind === "n" ? (f === "J" ? "Zahlenjoker" : `Zahl ${f}`) : `Sonderwürfel: ${SNAME[f]}`;
+    const cls = `die ${kind === "c" ? "cd" : kind === "n" ? "nd" : "sdie"}${blank ? " blank" : ""}${picked ? " picked" : ""}${taken || locked ? " taken" : ""}${UI.rolled ? " rolling" : ""}`;
+    const tag = used && takenTag ? `<span class="tag">${esc(takenTag)}</span>` : "";
+    return `<button type="button" class="${cls}" data-k="${kind}" data-d="${idx}" aria-pressed="${picked}" aria-label="${label}"${blank || taken || locked || !choosing ? " disabled" : ""}>${face}${tag}</button>`;
+  };
+  $("dice-c").innerHTML = S.dice.c.map((f, i) => dieBtn("c", f, i)).join("");
+  $("dice-n").innerHTML = S.dice.n.map((f, i) => dieBtn("n", f, i)).join("");
+  $("dice-s").innerHTML = dieBtn("s", S.dice.s, 0) + (S.dice.s ? `<span class="sname">${SNAME[S.dice.s]}</span>` : "");
+  UI.rolled = false;
+
+  let st = "";
+  if (S.phase === "idle") {
+    if (online && !active.ai && S.active !== mi) st = `Warte, bis <strong>${esc(active.name)}</strong> würfelt.`;
+    else if (active.ai) st = `<strong>${esc(active.name)}</strong> (Computer) ist aktiver Spieler. Würfle für ${esc(active.name)}.`;
+    else if (seat) st = `<strong>${esc(me.name)}</strong>, du bist aktiver Spieler. Würfle!`;
+    else st = S.throw === 0 ? "Würfle, um zu beginnen. Dein erstes Kreuz muss in der Startspalte <strong>H</strong> liegen." : "Du bist aktiver Spieler. Würfle!";
+    if (S.throw === 0 && !online) st += `<br><span class="muted">Mitspieler, Computer-Gegner und Spielblatt stellst du unter „Neues Spiel“ ein.</span>`;
+  } else if (S.phase === "bonus") {
+    const waiting = S.players.filter(p => !p.ai && p.pendingBombs > 0).map(p => p.name);
+    if (act) st = `<strong>Zeilenbonus Bombe:</strong> wähle bis zu 4 Felder in einem 2×2-Quadrat (gewählt: ${UI.sel.cells.length}).`;
+    else st = `Warte auf die Bonus-Bombe von <strong>${waiting.map(esc).join(", ")}</strong>.`;
+  } else if (S.phase === "choose") {
+    const { ci, ni, cells, sp } = UI.sel;
+    if (S.active !== mi && S.choices[S.active]) {
+      st = !S.activeUsed ? `${esc(active.name)} passt. ` : S.activeUsed.special ? `${esc(active.name)} hat den Sonderwürfel genommen. `
+        : `${esc(active.name)} hat ${faceText(S.dice.c[S.activeUsed.ci], S.dice.n[S.activeUsed.ni], active.fresh.length ? colorOf(active.fresh[0]) : "r")} genommen. `;
+    }
+    if (mi >= 0 && S.choices[mi]) {
+      const wait = S.players.filter((p, pi) => !p.ai && !S.choices[pi]).map(p => p.name);
+      st += wait.length ? `Du bist fertig. Warte auf: <strong>${wait.map(esc).join(", ")}</strong>.` : "";
+    } else if (!choosing) st += mi < 0 ? "Du schaust zu." : `Warte, bis <strong>${esc(active.name)}</strong> gewählt hat.`;
+    else {
+      if (seat) st += `<strong>${esc(me.name)}</strong> ist dran. `;
+      if (!solo && S.active !== mi && S.throw <= 3) st += "In den ersten 3 Würfen darfst du aus allen Würfeln wählen. ";
+      if (sp) {
+        const f = S.dice.s;
+        st += f === "heart" ? (me.hearts >= HEARTS ? `<span class="err">Alle Herzen sind schon eingekreist.</span>` : `Sonderwürfel <strong>Herz</strong>: Mit „Einkreisen“ kreist du dein ${me.hearts + 1}. Herz ein.`)
+          : f === "bomb" ? `Sonderwürfel <strong>Bombe</strong>: bis zu 4 Felder in einem 2×2-Quadrat (gewählt: ${cells.length}).`
+          : f === "stars" ? `Sonderwürfel <strong>Sterne</strong>: bis zu 2 Sternfelder, die an Kreuze grenzen (gewählt: ${cells.length}).`
+          : f === "row" ? `Sonderwürfel <strong>Drei in einer Zeile</strong>: bis zu 3 Felder einer Zeile, die an Kreuze grenzen (gewählt: ${cells.length}).`
+          : `Sonderwürfel <strong>Farbblock</strong>: tippe einen Farbblock an, der an ein Kreuz grenzt.`;
+        if (f !== "heart" && hs && hs.count === 0 && !cells.length) st += ` <span class="err">Gerade passt nirgends etwas.</span>`;
+      } else if (ci == null || ni == null) st += `Wähle einen <strong>Farb-</strong> und einen <strong>Zahlenwürfel</strong>${av.s && me.sdice > 0 ? " oder den <strong>Sonderwürfel</strong>" : ""}, oder passe.`;
+      else {
+        const cf = S.dice.c[ci], nf = S.dice.n[ni], cost = jokerCost(cf, nf);
+        const col = cf === "J" ? "Kästchen einer beliebigen Farbe" : `${CADJ[cf]} Kästchen`;
+        if (cost > MAXJ - me.jokers) st += `<span class="err">Für diese Kombination fehlen dir Ausrufezeichen.</span>`;
+        else if (hs && hs.count === 0 && !cells.length) st += `<span class="err">Mit dieser Kombination passt nichts auf dein Blatt.</span> Wähle andere Würfel oder passe.`;
+        else st += `Kreuze <strong>${nf === "J" ? "1 bis 5" : nf}</strong> zusammenhängende ${col} an (gewählt: ${cells.length})${cost ? ` · kostet ${cost} Joker` : ""}.`;
+      }
+      if (av.s && me.sdice <= 0 && !sp) st += ` <span class="muted">Sonderwürfel: keiner freigeschaltet.</span>`;
+    }
+  } else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (UI.err) st += `<br><span class="err">${esc(UI.err)}</span>`;
+  if (kit.error) st += `<br><span class="err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("tray-title").textContent = S.phase === "bonus" ? "Zeilenbonus" : choosing ? (S.active === mi || solo || S.throw <= 3 ? "Deine Wahl" : "Wähle aus den übrigen Würfeln") : "Würfel";
+
+  const heartPick = act && selFace() === "heart";
+  $("btn-roll").disabled = !canRoll(mi);
+  $("btn-roll").textContent = active.ai && S.phase === "idle" ? `Würfeln für ${active.name}` : "Würfeln";
+  $("btn-ok").disabled = !act || (!UI.sel.cells.length && !heartPick);
+  $("btn-ok").textContent = S.phase === "bonus" ? "Bombe zünden" : heartPick ? "Herz einkreisen" : UI.sel.sp ? "Aktion ausführen" : "Ankreuzen";
+  $("btn-clear").disabled = !act || !UI.sel.cells.length;
+  $("btn-pass").disabled = !act;
+  $("btn-pass").textContent = S.phase === "bonus" ? "Verzichten" : "Passen";
+  $("btn-force").hidden = !(kit.isHost() && ((S.phase === "choose" && S.players.some((p, pi) => !p.ai && pi !== mi && canChoose(pi)))
+    || (S.phase === "bonus" && S.players.some((p, pi) => !p.ai && pi !== mi && p.pendingBombs > 0))));
+
+  const others = S.players.map((p, pi) => [p, pi]).filter(([, pi]) => pi !== vi);
+  $("opp-panel").hidden = solo || !others.length;
+  $("opps").innerHTML = others.map(([p, pi]) => {
+    const s = score(p), isAct = pi === S.active && S.phase !== "over" && !lobby;
+    const mini = p.x.map((x, i) => `<i class="c-${colorOf(i)}${x ? " x" : ""}"></i>`).join("");
+    const nCol = Object.keys(p.colorDone).length;
+    let chip = "";
+    if (S.phase === "choose" && !p.ai) chip = S.choices[pi] ? '<span class="sk-chip done">fertig</span>' : canChoose(pi) ? '<span class="sk-chip on">wählt …</span>' : '<span class="sk-chip">wartet</span>';
+    return `<div class="opp${isAct ? " active" : ""}">
+      <div class="nm">${esc(p.name)}${p.ai ? ' <span class="muted">(Computer)</span>' : ""}${isAct ? " · am Zug" : ""} ${chip}</div><div class="sc">${s.total}</div>
+      <div class="mini" aria-hidden="true">${mini}</div>
+      <div class="info">${p.x.filter(Boolean).length} Kreuze · ${nCol} Farbe${nCol === 1 ? "" : "n"} voll · ${p.hearts} Herz${p.hearts === 1 ? "" : "en"} · ${p.sdice} Sonderwürfel · ${MAXJ - p.jokers} Joker</div>
+    </div>`;
+  }).join("");
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+
+  const res = $("result");
+  if (S.phase === "over") {
+    const again = online
+      ? (kit.isHost() ? `<button class="btn primary" type="button" data-again>Neue Runde im selben Raum</button>` : `<p class="muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`)
+      : `<button class="btn primary" type="button" data-again>Noch eine Runde</button>`;
+    if (solo) {
+      const [, lvName, lvText] = LEVELS.find(([min]) => sc.total >= min);
+      res.innerHTML = `<h2>Spielende: ${sc.total} Punkte · ${lvName}</h2><p>${lvText}</p>${again}`;
+    } else {
+      const rank = S.players.map(p => ({ p, s: score(p) })).sort((a, b) => b.s.total - a.s.total || a.p.jokers - b.p.jokers);
+      const best = rank[0], win = rank.filter(r => r.s.total === best.s.total && r.p.jokers === best.p.jokers).map(r => r.p.name);
+      res.innerHTML = `<h2>${win.length > 1 ? "Gleichstand" : `${esc(win[0])} ${win[0] === "Du" ? "gewinnst" : "gewinnt"}`}</h2>
+        <ol class="rank">${rank.map(r => `<li><span>${esc(r.p.name)}</span><span>${r.s.total} Punkte · ${MAXJ - r.p.jokers} Joker übrig</span></li>`).join("")}</ol>${again}`;
+    }
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellung „Spielblatt“ ----------
+const boardSetup = {
+  html: `<div class="sk-field"><div class="sk-label">Spielblatt</div>
+    <div class="sk-seg" role="radiogroup" aria-label="Spielblatt">
+      <label><input type="radio" name="fkp-board" id="fkp-board-original" value="original" checked>Standardblatt<small>wie der gedruckte Block</small></label>
+      <label><input type="radio" name="fkp-board" id="fkp-board-zufall" value="zufall">Zufällig verteilt<small>Farben, Sterne und Gold neu</small></label>
+    </div>
+    <div class="preview" id="fkp-preview" aria-hidden="true"></div>
+    <button class="btn small" type="button" id="fkp-reshuffle" hidden>Neu verteilen</button></div>`,
+  init(root) {
+    root.querySelectorAll('input[name="fkp-board"]').forEach(r => r.addEventListener("change", () => boardSetup.sync()));
+    $("fkp-reshuffle").addEventListener("click", () => { UI.preview = genBoard(); boardSetup.sync(); });
+  },
+  sync() {
+    const zufall = $("fkp-board-zufall").checked;
+    if (zufall && !UI.preview) UI.preview = genBoard();
+    $("fkp-preview").innerHTML = parseBoard(zufall ? UI.preview : ORIGINAL)
+      .flatMap(r => r.map((c, j) => `<i class="c-${c.c}${c.star ? " s" : ""}${c.gold ? " g" : ""}${j === H ? " h" : ""}"></i>`)).join("");
+    $("fkp-reshuffle").hidden = !zufall;
+  },
+  read() {
+    const zufall = $("fkp-board-zufall").checked, out = { boardKind: zufall ? "zufall" : "original", board: zufall ? UI.preview : null };
+    UI.preview = null;
+    return out;
+  },
+};
+
+// ---------- Start ----------
+kit = Spielkit.create({
+  id: "farbkreuzplus", version: 1, minPlayers: 2, maxPlayers: MAXP, bots: true, defaultBots: 2, botNames: BOT_NAMES,
+  solo: { label: "Allein", small: "Solo-Regeln, 30 Würfe" },
+  setup: boardSetup,
+  defaultOptions: () => ({ boardKind: "original" }),
+  newPlayer, newState, onStart, whoActs,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.board) && !!s.dice && Array.isArray(s.firstRow),
+  roomStatus: s => `läuft · Wurf ${s.throw}`,
+  handoverText: (s, i) => s.phase === "bonus" ? "Zeilenbonus: Du darfst eine Bombe zünden."
+    : s.phase === "idle" ? "Du bist aktiver Spieler und würfelst."
+    : i === s.active ? "Du hast gewürfelt. Wähle deine Würfel." : "Wähle eine Kombination oder den Sonderwürfel.",
+  render,
+});
+$("board").addEventListener("click", e => { const b = e.target.closest(".cell"); if (b) onCell(+b.dataset.i); });
+document.querySelector(".tray").addEventListener("click", e => { const d = e.target.closest(".die"); if (d) onDie(d.dataset.k, +d.dataset.d); });
+$("result").addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+$("btn-roll").addEventListener("click", onRoll);
+$("btn-ok").addEventListener("click", onConfirm);
+$("btn-clear").addEventListener("click", () => { UI.sel.cells = []; UI.err = ""; kit.render(); });
+$("btn-pass").addEventListener("click", onPass);
+$("btn-force").addEventListener("click", onForce);
+kit.start();
+})();
+</script>

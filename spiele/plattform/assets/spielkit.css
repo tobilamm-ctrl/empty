@@ -31,6 +31,7 @@
 
 /* Dialoge */
 .sk-overlay { position: fixed; inset: 0; background: rgba(8, 8, 12, .72); display: grid; place-items: center; z-index: 20; padding: 16px; overflow-y: auto; }
+.sk-overlay.sk-private { background: var(--table, #121117); } /* deckend: verdeckte Karten bleiben verborgen */
 .sk-dialog { background: var(--sheet, #1e1d24); color: var(--ink, #f6f5f8); border-radius: 16px; padding: 22px; width: min(460px, 100%); display: grid; gap: 14px; margin: auto; }
 .sk-dialog h2 { font-family: var(--font-display, sans-serif); font-weight: 400; margin: 0; font-size: 24px; }
 .sk-field { display: grid; gap: 5px; }
