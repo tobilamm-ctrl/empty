@@ -124,6 +124,7 @@
       turnInfo: null,      // (S) => { active, next, also } für Spiele mit besonderer Reihenfolge
       moveSound: "move",   // Ton, wenn ein anderer zieht: move, card, stone, dice, tile
       speech: null,        // (text) => Text zum Vorlesen umformen (z. B. Zugschreibweise)
+      sharedDevice: false, // true: ein Gerät für alle am Tisch (z. B. Punkteblock) – kein „Du bist dran“, kein Weitergeben
     }, cfg);
 
     let S = null;
@@ -445,7 +446,7 @@
       if (!show) return;
       const over = S.phase === "over";
       const ti = over ? { active: -1, next: -1, also: [] } : turnInfo() || { active: -1, next: -1, also: [] }, also = ti.also || [];
-      const me = i => i === mi && !S.players[i].ai;
+      const me = i => i >= 0 && i === mi && !S.players[i].ai;
       bar.classList.toggle("sk-mine", me(ti.active) || also.includes(mi));
       const head = ti.active >= 0
         ? (me(ti.active) ? `<b>Du bist dran${S.players.filter(p => !p.ai).length > 1 ? `, ${esc(S.players[mi].name)}` : ""}!</b>` : `<b>${esc(S.players[ti.active].name)}</b> ist dran${S.players[ti.active].ai ? " (Computer)" : ""}`)
@@ -592,7 +593,7 @@
         lobbyEl.hidden = S.phase !== "lobby";
         if (S.phase === "lobby") lobbyEl.innerHTML = lobbyHtml();
       }
-      const show = kit.hotSeat() && S.phase !== "lobby" && S.phase !== "over" && mi !== ui.ackHuman && q("#sk-dlg").hidden;
+      const show = !cfg.sharedDevice && kit.hotSeat() && S.phase !== "lobby" && S.phase !== "over" && mi !== ui.ackHuman && q("#sk-dlg").hidden;
       q("#sk-handover").hidden = !show;
       if (show) {
         const p = S.players[mi];
@@ -626,11 +627,12 @@
       const mi = kit.me();
       if (S.mode === "local") ui.lastHuman = mi;
       cfg.render(S);
-      const since = renderNews(mi);
+      const vi = cfg.sharedDevice ? -1 : mi;   // wer „du“ ist (bei einem gemeinsamen Gerät niemand)
+      const since = renderNews(vi);
       renderChrome(mi, since);
-      renderTurns(mi, since);
-      soundCues(mi);
-      try { announce(mi, !q("#sk-handover").hidden); } catch (e) { /* Ansage darf das Spiel nie stören */ }
+      renderTurns(vi, since);
+      soundCues(vi);
+      try { announce(vi, !q("#sk-handover").hidden); } catch (e) { /* Ansage darf das Spiel nie stören */ }
       save();
       scheduleBots();
     }

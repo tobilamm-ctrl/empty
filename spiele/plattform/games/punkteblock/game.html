@@ -1,0 +1,355 @@
+<title>Punkteblock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Punkteblock für Spiele auf dem Tisch (Voreinstellung Qwirkle): oben der Stand, darunter die Eingabe
+   mit Zahlenfeld, dann die Tabelle aller Züge. Ein Gerät für alle. */
+:root {
+  color-scheme: dark;
+  --table: #10141a;
+  --sheet: #1a212b;
+  --sheet-2: #26303d;
+  --ink: #f1f4f8;
+  --muted: #9eabbb;
+  --accent: #8fd0ff;
+  --tile-ink: #10141a;
+  --red: #ef6b6b;
+  --green: #7fd18b;
+  --gold: #ffd25a;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand", "Comic Sans MS", cursive;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { main.game { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: 16px; min-width: 0; }
+
+/* Stand */
+.standings { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.st { background: var(--sheet-2); border-radius: 12px; padding: 8px 10px; display: grid; gap: 2px; position: relative; }
+.st.on { box-shadow: 0 0 0 3px var(--accent); }
+.st .nm { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st .tot { font-family: var(--font-display); font-size: 30px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.st .meta { font-size: 12px; color: var(--muted); }
+.st .lead { position: absolute; top: 6px; right: 8px; color: var(--gold); font-size: 18px; }
+
+/* Eingabe */
+.entry { display: grid; gap: 12px; }
+.who { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.who b { font-family: var(--font-display); font-weight: 400; font-size: 24px; color: var(--accent); }
+.display { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #0c1016; border-radius: 12px; padding: 8px 14px; min-height: 64px; }
+.display .num { font-family: var(--font-display); font-size: 42px; font-variant-numeric: tabular-nums; }
+.display .num.empty { color: #4a5666; }
+.display .extra { color: var(--gold); font-weight: 800; font-size: 14px; text-align: right; }
+.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.key { border: 0; border-radius: 12px; background: var(--sheet-2); font-family: var(--font-display); font-size: 26px; min-height: 56px; cursor: pointer; }
+.key:active { transform: scale(.97); }
+.key.wide { grid-column: span 2; }
+.key.qw { background: color-mix(in srgb, var(--gold) 26%, var(--sheet-2)); color: var(--gold); font-size: 18px; }
+.key.ok { background: var(--accent); color: var(--tile-ink); font-size: 20px; }
+.key.ok:disabled { opacity: .4; }
+.key.soft { font-family: var(--font-body); font-weight: 800; font-size: 15px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { min-height: 44px; }
+.editnote { background: color-mix(in srgb, var(--gold) 18%, var(--sheet-2)); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pickend { display: grid; gap: 8px; }
+.pickend .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tabelle */
+.tbl-wrap { overflow-x: auto; }
+table.sheet { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-family: var(--font-hand); font-size: 20px; }
+.sheet th, .sheet td { padding: 0; text-align: center; border-bottom: 1px solid var(--sheet-2); }
+.sheet thead th { font-family: var(--font-body); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 6px 4px; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.sheet th.rn { width: 34px; color: var(--muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; }
+.sheet td button { width: 100%; min-height: 40px; border: 0; background: none; font: inherit; cursor: pointer; border-radius: 6px; }
+.sheet td button:hover { background: var(--sheet-2); }
+.sheet td .q { color: var(--gold); font-size: 13px; font-family: var(--font-body); font-weight: 800; margin-left: 3px; }
+.sheet td.bonus button { color: var(--gold); }
+.sheet td.last button { box-shadow: inset 0 0 0 2px var(--accent); }
+.sheet td.zero button { color: var(--muted); }
+.sheet tfoot td { font-family: var(--font-display); font-size: 22px; padding: 8px 0; border-top: 2px solid var(--sheet-2); }
+.empty-note { color: var(--muted); margin: 0; }
+.result { border: 2px solid var(--gold); }
+.result h2 { color: var(--gold); }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--gold); }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 260px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+@media (max-width: 560px) {
+  .panel { padding: 12px; }
+  .st .tot { font-size: 26px; }
+  .key { min-height: 52px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Punkte<span>block</span></h1>
+      <div class="sub">Punkte für Spiele auf dem Tisch mitschreiben</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+  <section class="panel sk-lobby" data-sk-lobby hidden></section>
+  <section class="standings" id="standings" aria-label="Stand"></section>
+
+  <main class="game" id="game">
+    <div class="col">
+      <section class="panel entry" id="entry" aria-label="Punkte eintragen"></section>
+    </div>
+    <div class="col">
+      <section class="panel">
+        <h2>Alle Züge</h2>
+        <div class="tbl-wrap" id="sheet"></div>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>So geht's</summary>
+          <ul id="rules-list"></ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc } = Spielkit;
+const QW = 6;           // Qwirkle: 6 Extrapunkte für eine Reihe aus sechs Steinen; ebenso für das Spielende
+const ART = { qwirkle: "Qwirkle", frei: "Allgemein" };
+
+let S, kit;
+// Eingabe auf diesem Gerät (geht erst mit „Eintragen“ in den Spielstand)
+const UI = { num: "", qw: 0, neg: false, edit: null, pickEnd: false, key: "" };
+const O = () => Object.assign({ art: "qwirkle" }, S.options || {});
+const qwirkle = () => O().art === "qwirkle";
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 120); };
+const total = i => S.turns.filter(t => t.p === i).reduce((a, t) => a + t.pts, 0);
+const pts = n => `${n} ${Math.abs(n) === 1 ? "Punkt" : "Punkte"}`;
+const nm = i => `<b>${esc(S.players[i].name)}</b>`;
+const valueOf = () => (UI.num === "" ? 0 : +UI.num) * (UI.neg ? -1 : 1) + UI.qw * QW;
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: false });
+const newState = ({ roster, options }) => ({ players: roster.map(newPlayer), turns: [], active: 0, phase: "play", seq: 0, log: [], options: Object.assign({ art: "qwirkle" }, options) });
+const onStart = s => { s.active = 0; s.phase = "play"; s.seq++; };
+const whoActs = () => [];   // ein Gerät für alle: niemand wird „weitergegeben“
+const canEdit = () => !kit.online() || kit.me() >= 0;
+
+// ---------- Eintragen (verändert nur S, läuft über kit.act) ----------
+function enter(value, qws, note) {
+  const i = S.active;
+  S.turns.push({ p: i, pts: value, q: qws, note: note || "" });
+  S.seq++;
+  log(`${nm(i)}: ${pts(value)}${qws ? ` (mit ${qws > 1 ? qws + " " : ""}Qwirkle)` : ""}${note ? `, ${note}` : ""}. Stand ${total(i)}.`);
+  S.active = (i + 1) % S.players.length;
+}
+function undo() {
+  const t = S.turns.pop();
+  if (!t) return false;
+  S.active = t.p; S.seq++;
+  if (S.phase === "over") S.phase = "play";
+  log(`Rückgängig: ${nm(t.p)} ${t.bonus ? "Schlussbonus" : pts(t.pts)} gestrichen.`);
+}
+function change(k, value, qws) {
+  const t = S.turns[k];
+  if (!t) return false;
+  const old = t.pts;
+  t.pts = value; t.q = qws; S.seq++;
+  log(`Geändert: ${nm(t.p)}, Zug ${S.turns.slice(0, k + 1).filter(x => x.p === t.p).length}: ${old} → ${value}. Stand ${total(t.p)}.`);
+}
+function finish(ender) {
+  if (ender >= 0) {
+    S.turns.push({ p: ender, pts: QW, q: 0, bonus: true });
+    log(`${nm(ender)} hat die letzten Steine gelegt: +${QW} Schlussbonus.`);
+  }
+  S.phase = "over"; S.seq++;
+  const r = ranking();
+  log(`<b>Spielende.</b> ${r.filter(x => x.t === r[0].t).map(x => nm(x.i)).join(" und ")} vorn mit ${pts(r[0].t)}.`);
+}
+const ranking = () => S.players.map((p, i) => ({ i, t: total(i) })).sort((a, b) => b.t - a.t);
+
+// ---------- Eingaben ----------
+function act(fn) {
+  const seq = S.seq;
+  kit.act(() => { if (!canEdit() || S.seq !== seq) return false; return fn(); });
+}
+function resetEntry() { UI.num = ""; UI.qw = 0; UI.neg = false; UI.edit = null; UI.pickEnd = false; }
+$("entry").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]");
+  if (!b || b.disabled) return;
+  const k = b.dataset.k;
+  if (/^\d$/.test(k)) { if (UI.num.length < 4) UI.num = (UI.num === "0" ? "" : UI.num) + k; }
+  else if (k === "del") UI.num = UI.num.slice(0, -1);
+  else if (k === "qw") UI.qw++;
+  else if (k === "qw0") UI.qw = 0;
+  else if (k === "neg") UI.neg = !UI.neg;
+  else if (k === "ok") {
+    const v = valueOf(), q = UI.qw, ed = UI.edit;
+    resetEntry();
+    if (ed != null) act(() => change(ed, v, q));
+    else act(() => { if (S.phase !== "play") return false; enter(v, q); });
+    return;
+  }
+  else if (k === "swap") { resetEntry(); act(() => { if (S.phase !== "play") return false; enter(0, 0, "Steine getauscht"); }); return; }
+  else if (k === "cancel") resetEntry();
+  else if (k === "undo") { resetEntry(); act(() => undo()); return; }
+  else if (k === "end") UI.pickEnd = !UI.pickEnd;
+  else if (k === "ender") { const i = +b.dataset.i; resetEntry(); act(() => { if (S.phase !== "play") return false; finish(i); }); return; }
+  else if (k === "next") { resetEntry(); act(() => { if (S.phase !== "play") return false; S.active = (S.active + 1) % S.players.length; S.seq++; log(`Weiter mit ${nm(S.active)}.`); }); return; }
+  render();
+});
+$("sheet").addEventListener("click", e => {
+  const b = e.target.closest("[data-t]");
+  if (!b || !canEdit()) return;
+  const t = S.turns[+b.dataset.t];
+  if (!t || t.bonus) return;
+  UI.edit = +b.dataset.t; UI.num = String(Math.abs(t.pts - (t.q || 0) * QW)); UI.neg = t.pts - (t.q || 0) * QW < 0; UI.qw = t.q || 0; UI.pickEnd = false;
+  render();
+  $("entry").scrollIntoView({ block: "nearest", behavior: "smooth" });
+});
+document.addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Darstellung ----------
+function render() {
+  const lobby = S.phase === "lobby";
+  $("game").hidden = $("standings").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = rulesHtml();
+  if (lobby) { $("result").hidden = true; return; }
+  const key = `${S.seq}`;
+  if (UI.key !== key) { if (UI.edit != null && !S.turns[UI.edit]) resetEntry(); UI.key = key; }
+  const play = S.phase === "play", r = ranking(), best = r[0].t, anyPts = S.turns.length > 0;
+
+  // Stand
+  $("standings").innerHTML = S.players.map((p, i) => {
+    const n = S.turns.filter(t => t.p === i && !t.bonus).length, q = S.turns.filter(t => t.p === i).reduce((a, t) => a + (t.q || 0), 0);
+    return `<div class="st${play && i === S.active ? " on" : ""}"><span class="nm">${esc(p.name)}</span><span class="tot">${total(i)}</span>
+      <span class="meta">${n} ${n === 1 ? "Zug" : "Züge"}${qwirkle() && q ? ` · ${q}× Qwirkle` : ""}</span>${anyPts && total(i) === best ? '<span class="lead" title="vorn">♛</span>' : ""}</div>`;
+  }).join("");
+
+  // Eingabe
+  const a = S.players[S.active], ed = UI.edit != null ? S.turns[UI.edit] : null;
+  let h = "";
+  if (!canEdit()) h = `<p class="empty-note">Du schaust zu. Eintragen können die Mitspieler.</p>`;
+  else if (!play && !ed) h = `<p class="empty-note">Das Spiel ist beendet. Einzelne Züge lassen sich in der Tabelle noch antippen und ändern.</p>
+    <div class="actions"><button class="btn" type="button" data-k="undo">Letzten Eintrag zurücknehmen</button></div>`;
+  else if (UI.pickEnd) h = `<div class="pickend"><div class="who"><span>Wer hat die <b style="font-size:18px">letzten Steine</b> gelegt? (+${QW})</span></div>
+      <div class="opts">${S.players.map((p, i) => `<button class="btn primary" type="button" data-k="ender" data-i="${i}">${esc(p.name)}</button>`).join("")}
+      <button class="btn" type="button" data-k="ender" data-i="-1">Ohne Bonus beenden</button><button class="btn" type="button" data-k="end">Abbrechen</button></div></div>`;
+  else {
+    const v = valueOf(), has = UI.num !== "" || UI.qw > 0;
+    h = `${ed ? `<div class="editnote"><span>Ändern: <b>${esc(S.players[ed.p].name)}</b>, Zug ${S.turns.slice(0, UI.edit + 1).filter(x => x.p === ed.p).length} (bisher ${ed.pts})</span><button class="btn small" type="button" data-k="cancel">Abbrechen</button></div>`
+        : `<div class="who"><span>Dran: <b>${esc(a.name)}</b></span><span class="sk-muted">${pts(total(S.active))} bisher</span></div>`}
+      <div class="display" aria-live="polite"><span class="num${has ? "" : " empty"}">${has ? v : "0"}</span>
+        <span class="extra">${UI.qw ? `${UI.num === "" ? 0 : (UI.neg ? "−" : "") + UI.num} + ${UI.qw}× Qwirkle (${UI.qw * QW})` : ""}</span></div>
+      <div class="keys">
+        ${[7, 8, 9].map(n => `<button class="key" type="button" data-k="${n}">${n}</button>`).join("")}<button class="key soft" type="button" data-k="del" aria-label="Ziffer löschen">⌫</button>
+        ${[4, 5, 6].map(n => `<button class="key" type="button" data-k="${n}">${n}</button>`).join("")}${qwirkle() ? `<button class="key qw" type="button" data-k="qw">Qwirkle<br>+${QW}</button>` : `<button class="key soft" type="button" data-k="neg">±</button>`}
+        ${[1, 2, 3].map(n => `<button class="key" type="button" data-k="${n}">${n}</button>`).join("")}<button class="key soft" type="button" data-k="${qwirkle() && UI.qw ? "qw0" : "cancel"}">${qwirkle() && UI.qw ? "ohne Q." : "C"}</button>
+        <button class="key" type="button" data-k="0">0</button><button class="key ok wide" type="button" data-k="ok"${has ? "" : " disabled"}>${ed ? "Speichern" : "Eintragen"}</button>
+        ${qwirkle() ? `<button class="key soft" type="button" data-k="swap" title="Steine getauscht, 0 Punkte"${ed ? " disabled" : ""}>Tausch</button>` : `<button class="key soft" type="button" data-k="next"${ed ? " disabled" : ""}>Weiter</button>`}
+      </div>
+      ${ed ? "" : `<div class="actions"><button class="btn" type="button" data-k="undo"${S.turns.length ? "" : " disabled"}>Rückgängig</button>
+        ${qwirkle() ? `<button class="btn" type="button" data-k="next">Überspringen</button>` : ""}
+        <button class="btn" type="button" data-k="end"${S.turns.length ? "" : " disabled"}>Spielende…</button></div>`}`;
+  }
+  $("entry").innerHTML = h;
+
+  // Tabelle: eine Spalte je Spieler, eine Zeile je Runde
+  const cols = S.players.map((p, i) => S.turns.map((t, k) => ({ ...t, k })).filter(t => t.p === i));
+  const rows = Math.max(0, ...cols.map(c => c.length)), lastK = S.turns.length - 1;
+  $("sheet").innerHTML = rows ? `<table class="sheet"><thead><tr><th class="rn">#</th>${S.players.map(p => `<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>
+    ${Array.from({ length: rows }, (_, r) => `<tr><th class="rn">${r + 1}</th>${cols.map(c => {
+      const t = c[r];
+      if (!t) return "<td></td>";
+      const cls = [t.bonus ? "bonus" : "", t.k === lastK ? "last" : "", t.pts === 0 ? "zero" : ""].join(" ").trim();
+      return `<td${cls ? ` class="${cls}"` : ""}><button type="button" data-t="${t.k}" aria-label="${esc(S.players[t.p].name)}: ${t.pts}${t.bonus ? ", Schlussbonus" : ", antippen zum Ändern"}">${t.bonus ? "+" : ""}${t.pts}${t.q ? `<span class="q">Q${t.q > 1 ? "×" + t.q : ""}</span>` : ""}</button></td>`;
+    }).join("")}</tr>`).join("")}</tbody>
+    <tfoot><tr><td></td>${S.players.map((p, i) => `<td>${total(i)}</td>`).join("")}</tr></tfoot></table>`
+    : `<p class="empty-note">Noch keine Punkte. Trag den ersten Zug oben ein.</p>`;
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const win = r.filter(x => x.t === best);
+    const again = kit.online() && !kit.isHost() ? "" : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neuer Block im selben Raum" : "Neuer Block"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(x => esc(S.players[x.i].name)).join(" und ")}` : `${esc(S.players[win[0].i].name)} gewinnt`}</h2>
+      <ol class="rank">${r.map((x, k) => `<li><span>${k + 1}. ${esc(S.players[x.i].name)}</span><span>${pts(x.t)}</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+function rulesHtml() {
+  return qwirkle()
+    ? `<li>Gespielt wird ganz normal mit den Steinen auf dem Tisch. Hier werden nur die Punkte mitgeschrieben, an einem Gerät für alle.</li>
+      <li>Wer dran ist, steht oben. Punkte eintippen und <b>Eintragen</b>, danach ist automatisch der Nächste dran.</li>
+      <li><b>Qwirkle +6:</b> für jede Reihe aus sechs Steinen einmal antippen; die 6 Punkte kommen zu den gelegten Punkten dazu.</li>
+      <li><b>Tausch:</b> wer Steine tauscht statt zu legen, bekommt 0 Punkte. <b>Überspringen</b> geht ohne Eintrag weiter.</li>
+      <li><b>Spielende…:</b> Wer zuletzt alle Steine gelegt hat, bekommt +6. Danach steht das Ergebnis oben.</li>
+      <li>Vertippt? <b>Rückgängig</b> nimmt den letzten Eintrag zurück; jede Zahl in der Tabelle lässt sich antippen und ändern.</li>`
+    : `<li>Ein Block für beliebige Spiele: Punkte eintippen und <b>Eintragen</b>, danach ist der Nächste dran. Mit <b>±</b> auch Minuspunkte.</li>
+      <li><b>Weiter</b> geht ohne Eintrag zum Nächsten. <b>Spielende…</b> beendet den Block und zeigt das Ergebnis.</li>
+      <li>Vertippt? <b>Rückgängig</b> nimmt den letzten Eintrag zurück; jede Zahl in der Tabelle lässt sich antippen und ändern.</li>`;
+}
+
+// ---------- Einstellung: welches Spiel ----------
+const setup = {
+  html: `<div class="sk-field"><div class="sk-label">Punkteblock für</div><div class="sk-seg" role="radiogroup" aria-label="Punkteblock für">
+    <label><input type="radio" name="pb-art" id="pb-art-qwirkle" value="qwirkle" checked>Qwirkle<small>mit Qwirkle +6 und Schlussbonus</small></label>
+    <label><input type="radio" name="pb-art" id="pb-art-frei" value="frei">Allgemein<small>für jedes Spiel, auch Minuspunkte</small></label></div></div>`,
+  read(root) { const r = root.querySelector('input[name="pb-art"]:checked'); return { art: r ? r.value : "qwirkle" }; },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "punkteblock", version: 1, minPlayers: 2, maxPlayers: 8, bots: false, sharedDevice: true,
+  setup, defaultOptions: () => ({ art: "qwirkle" }),
+  newPlayer, newState, onStart, whoActs, render,
+  turnInfo: s => (s.phase === "play" ? { active: s.active, next: (s.active + 1) % s.players.length, also: [] } : null),
+  moveSound: "tile",
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.turns) && Array.isArray(s.players),
+  roomStatus: s => `${s.turns.length} Einträge`,
+  // nur für automatische Tests
+  test: { enter, undo, change, finish, total, get S() { return S; } },
+});
+kit.start();
+})();
+</script>

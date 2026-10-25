@@ -3,7 +3,8 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Schafkopf.
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Schafkopf, Farbreihen (Prinzip „Qwixx“).
+Außerdem der **Punkteblock** zum Mitschreiben bei Spielen auf dem Tisch (Voreinstellung Qwirkle).
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
@@ -38,7 +39,7 @@ oder Kartenbild 1:1 kopieren.
 | **Wizard** (Stiche ansagen) | 3–6 | online ideal | mittel–hoch | beruht auf dem freien „Oh Hell“ |
 | **„Ganz schön clever“** | 1–4 | Würfel nehmen und ablegen | mittel–hoch | wie Farbkreuz, Fotos von Block und Anleitung nötig |
 
-**Eher nicht fürs Handy:** Carcassonne und Qwirkle (wachsender gemeinsamer Plan), Zug um Zug (kleine Strecken
+**Eher nicht fürs Handy:** Carcassonne und Qwirkle (wachsender gemeinsamer Plan; für Qwirkle gibt es den Punkteblock), Zug um Zug (kleine Strecken
 auf großer Karte), Splendor (viele kleine Kostenangaben), Catan (Handeln und Bauen zu fummelig).
 
 ## Für jedes neue Spiel

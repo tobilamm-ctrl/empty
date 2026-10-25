@@ -10,6 +10,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 |---|---|---|
 | **Farbkreuz** | 1–6 | Würfelspiel nach den Regeln von „Noch mal!“, Standard- oder Zufallsblatt, Solo mit 30 Würfen |
 | **Farbkreuz Plus** | 1–6 | nach „Noch mal so gut!“: Sonderwürfel, Bomben, Herzen, Zeilenboni |
+| **Farbreihen** | 2–5 | Würfelspiel nach dem Prinzip „Qwixx“: vier Farbreihen, Reihen abschließen, Fehlwürfe |
 | **Würfelpoker** | 1–6 | 13 Runden, 5 Würfel, Wertungsblock, Solo mit Bestwert |
 | **Vier in einer Reihe** | 2 | Computer in drei Stärken |
 | **Reversi** | 2 | Computer in drei Stärken, perfektes Endspiel auf „schwer“ |
@@ -24,6 +25,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Kunterbunt** | 2–8 | Ablegespiel im Stil von „Uno“: Aussetzen, Richtungswechsel, +2, Farbwahl, +4; Weitergeben als Hausregel |
 | **Rommé** | 2–6 | zwei Blätter mit 6 Jokern, erstes Auslegen ab 30/40 Punkten, Joker tauschen, vierfarbiges Blatt |
 | **Schafkopf** | 4 | Sauspiel, Wenz, Farbsolo, Abrechnung über die Sitzung; fehlende Spieler übernimmt der Computer |
+| **Punkteblock** | 2–8 | kein Spiel, sondern ein Zettel: Punkte für Spiele auf dem Tisch mitschreiben (Qwirkle oder allgemein), ein Gerät für alle |
 
 Voraussetzungen: PHP 8.1 oder neuer, Apache mit `.htaccess` (bei Hetzner Webhosting gegeben).
 Keine Datenbank nötig. Die Daten liegen als Dateien im Ordner `data/`.

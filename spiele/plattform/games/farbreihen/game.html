@@ -1,0 +1,512 @@
+<title>Farbreihen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Würfelspiel nach dem Prinzip „Qwixx“: oben die sechs Würfel, darunter der eigene Zettel mit vier Farbreihen
+   (Rot und Gelb 2→12, Grün und Blau 12→2) und Fehlwürfen; die Zettel der anderen klein */
+:root {
+  color-scheme: dark;
+  --table: #131313;
+  --sheet: #1f1f22;
+  --sheet-2: #2c2c31;
+  --ink: #f6f5f2;
+  --muted: #a8a6a0;
+  --accent: #ffd34d;
+  --tile-ink: #1f1f22;
+  --red: #e5574b;
+  --green: #64c27b;
+  --c-r: #d9443a;
+  --c-y: #efbd25;
+  --c-g: #2f9e55;
+  --c-b: #2f72d2;
+  --paper: #fbf8ef;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand", "Comic Sans MS", cursive;
+  --cw: 34px;   /* Feldbreite */
+  --ch: 48px;   /* Feldhöhe */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 .r { color: var(--c-r); } .brand h1 .y { color: var(--c-y); } .brand h1 .g { color: #4cc274; } .brand h1 .b { color: #5b97ec; }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { main.game { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+.col { display: grid; gap: 16px; min-width: 0; }
+
+/* Würfel */
+.dicebar { display: grid; gap: 10px; }
+.dice { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.die { width: 52px; height: 52px; border-radius: 12px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 8px; box-shadow: 0 3px 0 rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.25); position: relative; }
+.die i { width: 9px; height: 9px; border-radius: 50%; place-self: center; background: currentColor; }
+.die.w { background: var(--paper); color: #222; }
+.die.r { background: var(--c-r); color: #fff; } .die.y { background: var(--c-y); color: #3b2c00; } .die.g { background: var(--c-g); color: #fff; } .die.b { background: var(--c-b); color: #fff; }
+.die.off { opacity: .22; }
+.die.off::after { content: "🔒"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; }
+.die.blank { background: var(--sheet-2); box-shadow: inset 0 0 0 2px rgba(255,255,255,.08); }
+.sums { display: flex; gap: 6px 14px; flex-wrap: wrap; justify-content: center; font-size: 14px; color: var(--muted); }
+.sums b { color: var(--ink); font-family: var(--font-display); font-weight: 400; font-size: 18px; }
+.status { text-align: center; min-height: 1.5em; margin: 0; font-size: 16px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn { min-height: 44px; }
+
+/* Zettel */
+.sheetwrap { display: grid; gap: 8px; justify-items: center; }
+.sheetwrap h2 { justify-self: stretch; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; margin: 0; }
+.sheetwrap h2 small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
+.paper { background: var(--paper); border-radius: 12px; padding: 8px; display: grid; gap: 6px; color: #222; max-width: 100%; }
+.row { display: grid; grid-template-columns: repeat(12, var(--cw)); gap: 3px; border-radius: 8px; padding: 3px; }
+.row.r { background: var(--c-r); } .row.y { background: var(--c-y); } .row.g { background: var(--c-g); } .row.b { background: var(--c-b); }
+.row.locked { filter: saturate(.35) brightness(.85); }
+.cell { width: var(--cw); height: var(--ch); border: 0; padding: 0; border-radius: 6px; background: rgba(255,255,255,.88); color: #222; font-family: var(--font-display); font-size: 17px; position: relative; display: grid; place-items: center; }
+.row.r .cell { color: #a82b22; } .row.y .cell { color: #8a6a00; } .row.g .cell { color: #1d6b38; } .row.b .cell { color: #1c4e99; }
+.cell.x::after { content: ""; position: absolute; inset: 5px 3px; background: linear-gradient(45deg, transparent 44%, #1a1a1a 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #1a1a1a 44% 56%, transparent 56%); }
+.cell.gone { background: rgba(255,255,255,.45); color: rgba(0,0,0,.25) !important; }
+.cell.can { cursor: pointer; box-shadow: 0 0 0 3px #111, 0 0 0 5px var(--accent); z-index: 1; }
+.cell.can.w { box-shadow: 0 0 0 3px #111, 0 0 0 5px #fff; }
+.cell.sel { background: var(--accent); }
+.cell.sel::after { content: ""; position: absolute; inset: 5px 3px; background: linear-gradient(45deg, transparent 44%, #6b5300 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #6b5300 44% 56%, transparent 56%); opacity: .7; }
+.cell.fresh::after { background: linear-gradient(45deg, transparent 42%, #000 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, #000 42% 58%, transparent 58%); }
+.cell.lock { font-size: 15px; background: rgba(0,0,0,.18); color: #fff !important; }
+.cell.lock svg { width: 60%; height: 60%; }
+.cell.lock.x { background: rgba(0,0,0,.45); }
+.cell:disabled { cursor: default; }
+.foot { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; width: 100%; padding: 2px 4px; }
+.pens { display: flex; gap: 5px; align-items: center; font-size: 13px; color: #555; }
+.pen { width: 26px; height: 26px; border-radius: 5px; background: #e6e1d3; position: relative; }
+.pen.x::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; color: #b22; font-size: 18px; }
+.pts { font-family: var(--font-hand); font-size: 18px; color: #333; }
+.pts b { font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+
+/* Zettel der anderen */
+.others { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.other { background: var(--sheet-2); border-radius: 12px; padding: 8px; display: grid; gap: 5px; --cw: 11px; --ch: 13px; }
+.other.on { box-shadow: 0 0 0 3px var(--accent); }
+.other .nm { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; font-weight: 800; }
+.other .nm span:last-child { color: var(--muted); font-weight: 600; }
+.other .paper { padding: 4px; gap: 2px; border-radius: 6px; }
+.other .row { gap: 1px; padding: 1px; border-radius: 3px; }
+.other .cell { border-radius: 2px; font-size: 0; }
+.other .cell.x::after, .other .cell.fresh::after { inset: 1px; }
+.other .cell.fresh { box-shadow: 0 0 0 1.5px #fff; }
+.other .pens { gap: 2px; }
+.other .pen { width: 11px; height: 11px; border-radius: 2px; }
+.other .pen.x::after { font-size: 9px; }
+.other .chip { font-size: 11px; color: var(--muted); }
+
+/* Seitenleiste */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; flex-wrap: wrap; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.score th, .score td { padding: 5px 4px; text-align: right; border-bottom: 1px solid var(--sheet-2); white-space: nowrap; }
+.score th:first-child, .score td:first-child { text-align: left; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.score td.tot { font-family: var(--font-display); font-size: 18px; }
+.score tr.on td:first-child { color: var(--accent); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  :root { --cw: min(30px, calc((100vw - 92px) / 12)); --ch: 46px; }
+  .panel { padding: 12px; }
+  .paper { padding: 5px; gap: 5px; }
+  .row { gap: 2px; padding: 2px; }
+  .cell { font-size: 15px; border-radius: 5px; }
+  .die { width: 44px; height: 44px; padding: 7px; }
+  .die i { width: 8px; height: 8px; }
+  .dice { gap: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Zeichen der vier Farben (zusätzlich zur Farbe) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="fr-r" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38"/></symbol>
+    <symbol id="fr-y" viewBox="0 0 100 100"><path d="M50 4 61 36 95 37 68 57 78 90 50 70 22 90 32 57 5 37 39 36Z"/></symbol>
+    <symbol id="fr-g" viewBox="0 0 100 100"><path d="M50 8 94 88H6Z"/></symbol>
+    <symbol id="fr-b" viewBox="0 0 100 100"><path d="M50 4C66 30 86 48 86 66a36 36 0 0 1-72 0C14 48 34 30 50 4Z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span class="r">Farb</span><span class="y">rei</span><span class="g">h</span><span class="b">en</span></h1>
+      <div class="sub">Würfeln, ankreuzen, Reihen abschließen</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="panel dicebar" id="dicebar">
+        <div class="dice" id="dice"></div>
+        <div class="sums" id="sums"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="actions" id="actions"></div>
+      </section>
+      <section class="panel sheetwrap" id="mine">
+        <h2><span id="who">Dein Zettel</span><small id="meta"></small></h2>
+        <div id="sheet"></div>
+      </section>
+      <section class="others" id="others" aria-label="Zettel der anderen"></section>
+    </div>
+    <div class="col">
+      <section class="panel">
+        <h2>Wertung</h2>
+        <table class="score" id="score"></table>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Jeder hat einen Zettel mit vier Reihen: <b>Rot</b> und <b>Gelb</b> von 2 bis 12, <b>Grün</b> und <b>Blau</b> von 12 bis 2. Jede Farbe hat zusätzlich ein Zeichen (● ★ ▲ 💧).</li>
+            <li>Gewürfelt wird mit zwei weißen und vier farbigen Würfeln. Wer dran ist, würfelt.</li>
+            <li><b>Schritt 1, alle gleichzeitig:</b> Jeder darf die Summe der beiden weißen Würfel in einer beliebigen Reihe ankreuzen, muss aber nicht.</li>
+            <li><b>Schritt 2, nur wer gewürfelt hat:</b> zusätzlich einen weißen und einen farbigen Würfel zusammenzählen und die Summe in der Reihe dieser Farbe ankreuzen.</li>
+            <li>In jeder Reihe wird <b>nur von links nach rechts</b> angekreuzt. Übersprungene Felder sind verloren.</li>
+            <li>Das letzte Feld einer Reihe (12 bzw. 2) darf erst angekreuzt werden, wenn in der Reihe schon <b>mindestens 5 Kreuze</b> sind. Dann kommt auch das Schloss dazu (zählt als Kreuz), und die Reihe ist für alle <b>abgeschlossen</b>. Der Würfel dieser Farbe ist aus dem Spiel.</li>
+            <li>Kreuzt der Würfelnde in beiden Schritten nichts an, bekommt er einen <b>Fehlwurf</b> (−5 Punkte).</li>
+            <li>Das Spiel endet, sobald <b>zwei Reihen abgeschlossen</b> sind oder jemand <b>vier Fehlwürfe</b> hat.</li>
+            <li>Punkte je Reihe nach der Zahl der Kreuze: 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78. Fehlwürfe kosten je 5 Punkte.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Zettel ----------
+// Reihen r, y (2 → 12) und g, b (12 → 2); Feld 0–10, Feld 10 ist das letzte Zahlenfeld, danach das Schloss
+const ROWS = ["r", "y", "g", "b"];
+const NAME = { r: "Rot", y: "Gelb", g: "Grün", b: "Blau" };
+const asc = c => c === "r" || c === "y";
+const idxOf = (c, v) => (asc(c) ? v - 2 : 12 - v);
+const valAt = (c, i) => (asc(c) ? i + 2 : 12 - i);
+const tri = n => n * (n + 1) / 2;
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole"];
+const vb = (name, du, er) => (name === "Du" ? du : er);
+
+let S, kit;
+const UI = { sel: [], key: "", err: "" };
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 120); };
+const nm = i => `<b>${esc(S.players[i].name)}</b>`;
+const crosses = (p, c) => p.rows[c].filter(Boolean).length + (p.locks[c] ? 1 : 0);
+const lastIdx = (p, c) => p.rows[c].lastIndexOf(true);
+function score(p) {
+  const rows = {}; let t = 0;
+  for (const c of ROWS) { rows[c] = tri(crosses(p, c)); t += rows[c]; }
+  return { rows, pen: -5 * p.pen, total: t - 5 * p.pen };
+}
+
+// ---------- Regeln ----------
+// Darf Spieler p in Reihe c Feld i ankreuzen? pend = schon vorgemerktes Kreuz (für den zweiten Schritt)
+function canCross(p, c, i, pend) {
+  if (S.locked[c] || i < 0 || i > 10 || p.rows[c][i]) return false;
+  let last = lastIdx(p, c), n = p.rows[c].filter(Boolean).length;
+  if (pend && pend.c === c) { if (pend.i >= i) return false; last = Math.max(last, pend.i); n++; }
+  if (last >= i) return false;
+  return i < 10 || n >= 5;
+}
+const whiteSum = () => S.dice.w1 + S.dice.w2;
+const colorSums = c => (S.locked[c] ? [] : [...new Set([S.dice.w1 + S.dice[c], S.dice.w2 + S.dice[c]])]);
+// mögliche Felder: Weiß für alle, Farbe nur für den, der gewürfelt hat
+function whiteCells(p, pend) { const v = whiteSum(); return ROWS.map(c => ({ c, i: idxOf(c, v) })).filter(x => canCross(p, x.c, x.i, pend)); }
+function colorCells(p, pend) { const out = []; for (const c of ROWS) for (const v of colorSums(c)) { const i = idxOf(c, v); if (canCross(p, c, i, pend)) out.push({ c, i }); } return out; }
+const same = (a, b) => a.c === b.c && a.i === b.i;
+// Ist diese Auswahl erlaubt? Liefert die Zuordnung { w, f } (Weiß zuerst, dann Farbe) oder null
+function check(pi, cells) {
+  const p = S.players[pi], active = pi === S.active;
+  if (!cells.length) return { w: null, f: null };
+  if (!active) return cells.length === 1 && whiteCells(p).some(x => same(x, cells[0])) ? { w: cells[0], f: null } : null;
+  if (cells.length === 1) {
+    if (whiteCells(p).some(x => same(x, cells[0]))) return { w: cells[0], f: null };
+    if (colorCells(p).some(x => same(x, cells[0]))) return { w: null, f: cells[0] };
+    return null;
+  }
+  if (cells.length !== 2) return null;
+  for (const [a, b] of [[cells[0], cells[1]], [cells[1], cells[0]]])
+    if (whiteCells(p).some(x => same(x, a)) && colorCells(p, a).some(x => same(x, b))) return { w: a, f: b };
+  return null;
+}
+const cellText = x => `${NAME[x.c]} ${valAt(x.c, x.i)}`;
+function submit(pi, cells) {
+  const p = S.players[pi], m = check(pi, cells);
+  S.choices[pi] = { w: m.w, f: m.f };
+  p.fresh = [];
+  if (pi === S.active && !m.w && !m.f) S.choices[pi].pen = true;
+}
+function doRoll() {
+  S.roll++;
+  S.dice = { w1: 1 + rnd(6), w2: 1 + rnd(6) };
+  for (const c of ROWS) S.dice[c] = S.locked[c] ? 0 : 1 + rnd(6);
+  S.choices = {}; S.phase = "choose"; S.seq++;
+  S.players.forEach(p => { p.fresh = []; });
+  log(`${nm(S.active)} ${vb(S.players[S.active].name, "würfelst", "würfelt")}: Weiß ${S.dice.w1} und ${S.dice.w2}${ROWS.filter(c => !S.locked[c]).map(c => `, ${NAME[c]} ${S.dice[c]}`).join("")}.`);
+  botChoices();
+  if (allChosen()) finishRound();
+}
+const allChosen = () => S.players.every((_, i) => S.choices[i]);
+// Alle Entscheidungen auf einmal anwenden; Abschlüsse gelten erst danach für alle
+function finishRound() {
+  const lockedNow = new Set();
+  S.players.forEach((p, i) => {
+    const ch = S.choices[i], got = [];
+    for (const x of [ch.w, ch.f]) if (x) {
+      p.rows[x.c][x.i] = true; got.push(x); p.fresh.push(x);
+      if (x.i === 10) { p.locks[x.c] = true; lockedNow.add(x.c); }
+    }
+    // „kreuzt“ und „schließt“ heißen bei „du“ genauso
+    if (ch.pen) { p.pen++; log(`${nm(i)} kreuzt nichts an und ${vb(p.name, "bekommst", "bekommt")} einen Fehlwurf (${p.pen} von 4).`); }
+    else if (got.length) log(`${nm(i)} kreuzt ${got.map(cellText).join(" und ")} an${got.some(x => x.i === 10) ? " und schließt die Reihe ab" : ""}.`);
+  });
+  for (const c of lockedNow) { S.locked[c] = true; log(`<b>${NAME[c]} ist abgeschlossen.</b> Der ${NAME[c].toLowerCase()}e Würfel ist aus dem Spiel.`); }
+  S.seq++;
+  if (Object.keys(S.locked).length >= 2 || S.players.some(p => p.pen >= 4)) {
+    S.phase = "over";
+    const r = ranking();
+    log(`<b>Spielende.</b> ${nm(S.players.indexOf(r[0]))} ${vb(r[0].name, "gewinnst", "gewinnt")} mit ${score(r[0]).total} Punkten.`);
+    return;
+  }
+  S.active = (S.active + 1) % S.players.length; S.phase = "roll";
+}
+const ranking = () => S.players.slice().sort((a, b) => score(b).total - score(a).total);
+
+// ---------- Computer-Gegner ----------
+// Wert eines Kreuzes: lohnt sich, wenn kaum Felder übersprungen werden; Abschließen ist viel wert
+function crossValue(p, x, pend) {
+  let last = lastIdx(p, x.c), n = crosses(p, x.c);
+  if (pend && pend.c === x.c) { last = Math.max(last, pend.i); n++; }
+  const skip = x.i - last - 1, late = S.roll > 22 ? .45 : S.roll > 12 ? .6 : .8;
+  let v = 1 + .12 * n - late * skip;
+  if (x.i === 10) v += 3 + .3 * n;
+  // Felder am Rand (2, 3, 11, 12) kommen selten: früh nehmen ist gut
+  if (last < 0 && x.i <= 1) v += .4;
+  return v;
+}
+function botChoose(pi) {
+  const p = S.players[pi], active = pi === S.active;
+  let best = [], bv = active ? -4.2 : 0.35;   // Fehlwurf vermeiden lohnt sich
+  for (const w of whiteCells(p)) { const v = crossValue(p, w); if (v > bv) { bv = v; best = [w]; } }
+  if (active) {
+    for (const f of colorCells(p)) { const v = crossValue(p, f); if (v > bv) { bv = v; best = [f]; } }
+    for (const w of whiteCells(p)) for (const f of colorCells(p, w)) {
+      const v = crossValue(p, w) + crossValue(p, f, w);
+      if (v > bv && crossValue(p, f, w) > .2) { bv = v; best = [w, f]; }
+    }
+  }
+  return best;
+}
+function botChoices() { S.players.forEach((p, i) => { if (p.ai && !S.choices[i]) submit(i, botChoose(i)); }); }
+// Würfeln ist der einzige eigene Schritt der Computer; ihre Kreuze wählen sie gleich nach dem Wurf
+const botPending = () => S.phase === "roll" && S.players[S.active].ai;
+function playBots() {
+  if (kit.paced()) return;
+  let guard = 0;
+  while (botPending() && guard++ < 500) doRoll();
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, rows: { r: Array(11).fill(false), y: Array(11).fill(false), g: Array(11).fill(false), b: Array(11).fill(false) }, locks: {}, pen: 0, fresh: [] });
+function fresh(s) {
+  s.players.forEach(p => Object.assign(p, newPlayer(p)));
+  s.locked = {}; s.dice = null; s.choices = {}; s.roll = 0; s.phase = "roll";
+}
+function newState({ roster, mode }) {
+  const s = { players: roster.map(newPlayer), active: 0, phase: "roll", locked: {}, dice: null, choices: {}, roll: 0, seq: 0, log: [] };
+  if (mode !== "online") { S = s; playBots(); }
+  return s;
+}
+function onStart(s) { S = s; fresh(s); s.active = rnd(s.players.length); log(`${nm(s.active)} ${vb(s.players[s.active].name, "würfelst", "würfelt")} zuerst.`); playBots(); }
+const whoActs = () => S.phase === "roll" ? [S.active] : S.phase === "choose" ? S.players.map((p, i) => i).filter(i => !S.choices[i]) : [];
+
+// ---------- Eingaben ----------
+const mi = () => kit.me();
+const canChoose = i => i >= 0 && S.phase === "choose" && !S.choices[i] && !S.players[i].ai;
+function act(fn) { const seq = S.seq; kit.act(() => { if (S.seq !== seq) return false; if (fn() === false) return false; playBots(); }); }
+$("actions").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b || b.disabled) return;
+  const a = b.dataset.a, me = mi();
+  if (a === "roll") act(() => { if (S.phase !== "roll" || S.active !== me || S.players[me].ai) return false; doRoll(); });
+  if (a === "ok" || a === "none") {
+    const cells = a === "none" ? [] : UI.sel.slice();
+    if (cells.length && !check(me, cells)) { UI.err = "So geht das nicht: zuerst Weiß, dann Farbe, und immer weiter rechts."; render(); return; }
+    UI.sel = []; UI.err = "";
+    act(() => { if (!canChoose(me) || !check(me, cells)) return false; submit(me, cells); if (allChosen()) finishRound(); });
+  }
+  if (a === "clear") { UI.sel = []; UI.err = ""; render(); }
+});
+$("sheet").addEventListener("click", e => {
+  const b = e.target.closest(".cell[data-c]");
+  if (!b || b.disabled) return;
+  const x = { c: b.dataset.c, i: +b.dataset.i }, me = mi(), k = UI.sel.findIndex(y => same(y, x));
+  if (k >= 0) UI.sel.splice(k, 1);
+  else {
+    const max = me === S.active ? 2 : 1;
+    if (UI.sel.length >= max) UI.sel = max === 1 ? [] : UI.sel.slice(1);
+    UI.sel.push(x);
+  }
+  UI.err = UI.sel.length && !check(me, UI.sel) ? "Diese beiden passen so nicht zusammen. Zuerst Weiß, dann Farbe (weiter rechts)." : "";
+  render();
+});
+document.addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Darstellung ----------
+const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const dieHtml = (v, cls, label) => `<div class="die ${cls}" role="img" aria-label="${label}">${v ? Array.from({ length: 9 }, (_, k) => PIPS[v].includes(k) ? "<i></i>" : "<span></span>").join("") : ""}</div>`;
+const symbol = c => `<svg viewBox="0 0 100 100" aria-hidden="true"><use href="#fr-${c}" fill="currentColor"/></svg>`;
+function sheetHtml(p, opt = {}) {
+  const can = opt.can || { w: [], f: [] }, sel = opt.sel || [], fr = p.fresh || [];
+  const rows = ROWS.map(c => {
+    const cells = Array.from({ length: 11 }, (_, i) => {
+      const x = { c, i }, crossed = p.rows[c][i], gone = !crossed && i < lastIdx(p, c);
+      const isW = can.w.some(y => same(y, x)), isF = can.f.some(y => same(y, x)), isSel = sel.some(y => same(y, x));
+      const tap = opt.interactive && (isW || isF);
+      const cls = `cell${crossed ? " x" : ""}${gone ? " gone" : ""}${tap ? " can" + (isW ? " w" : "") : ""}${isSel ? " sel" : ""}${crossed && fr.some(y => same(y, x)) ? " fresh" : ""}`;
+      return opt.interactive
+        ? `<button type="button" class="${cls}" data-c="${c}" data-i="${i}"${tap ? "" : " disabled"} aria-label="${NAME[c]} ${valAt(c, i)}${crossed ? ", angekreuzt" : tap ? ", ankreuzbar" : ""}">${valAt(c, i)}</button>`
+        : `<span class="${cls}">${valAt(c, i)}</span>`;
+    }).join("");
+    const lock = `<span class="cell lock${p.locks[c] ? " x" : ""}" title="Schloss ${NAME[c]}">${opt.interactive ? symbol(c) : ""}</span>`;
+    return `<div class="row ${c}${S.locked[c] ? " locked" : ""}" aria-label="Reihe ${NAME[c]}">${cells}${lock}</div>`;
+  }).join("");
+  const sc = score(p);
+  const pens = `<div class="pens">${opt.interactive ? "Fehlwürfe" : ""}${Array.from({ length: 4 }, (_, k) => `<span class="pen${k < p.pen ? " x" : ""}"></span>`).join("")}</div>`;
+  return `<div class="paper">${rows}<div class="foot">${pens}${opt.interactive ? `<span class="pts">Punkte <b>${sc.total}</b></span>` : ""}</div></div>`;
+}
+
+function render() {
+  const lobby = S.phase === "lobby", me = mi(), vi = me >= 0 ? me : 0, pl = S.players[vi], a = S.players[S.active];
+  $("dicebar").hidden = $("mine").hidden = $("others").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  if (lobby) { $("result").hidden = true; $("score").innerHTML = ""; return; }
+  const key = `${S.seq}:${me}`;
+  if (UI.key !== key) { UI.key = key; UI.sel = []; UI.err = ""; }
+  const choosing = canChoose(me), activeMe = me === S.active;
+
+  // Würfel
+  const d = S.dice;
+  $("dice").innerHTML = d
+    ? dieHtml(d.w1, "w", `Weiß ${d.w1}`) + dieHtml(d.w2, "w", `Weiß ${d.w2}`) + ROWS.map(c => dieHtml(S.locked[c] ? 0 : d[c], c + (S.locked[c] ? " off" : ""), S.locked[c] ? `${NAME[c]} aus dem Spiel` : `${NAME[c]} ${d[c]}`)).join("")
+    : Array.from({ length: 6 }, () => dieHtml(0, "blank", "noch nicht gewürfelt")).join("");
+  $("sums").innerHTML = d && S.phase === "choose"
+    ? `<span>Weiß: <b>${whiteSum()}</b> (alle)</span>${ROWS.filter(c => !S.locked[c]).map(c => `<span>${NAME[c]}: <b>${colorSums(c).join(" / ")}</b></span>`).join("")}<span class="sk-muted">Farbe nur für ${esc(a.name)}</span>`
+    : "";
+
+  // Status und Knöpfe
+  let st = "", acts = "";
+  if (S.phase === "roll") {
+    if (activeMe && !a.ai) { st = `<strong>${esc(a.name)}</strong>, du würfelst.`; acts = `<button class="btn primary big" type="button" data-a="roll">Würfeln</button>`; }
+    else st = `Warte, bis <strong>${esc(a.name)}</strong> würfelt.`;
+  } else if (S.phase === "choose") {
+    if (choosing) {
+      const n = UI.sel.length, ok = !UI.err && (n === 0 || check(me, UI.sel));
+      st = activeMe
+        ? `Du hast gewürfelt: <strong>Weiß ${whiteSum()}</strong> in einer Reihe und/oder <strong>Weiß + Farbe</strong> in der Reihe dieser Farbe ankreuzen.`
+        : `Du darfst <strong>Weiß ${whiteSum()}</strong> in einer Reihe ankreuzen.`;
+      if (n) acts = `<button class="btn primary big" type="button" data-a="ok"${ok ? "" : " disabled"}>${n === 1 ? `${cellText(UI.sel[0])} ankreuzen` : `${UI.sel.map(cellText).join(" und ")} ankreuzen`}</button><button class="btn" type="button" data-a="clear">Auswahl löschen</button>`;
+      else acts = `<button class="btn${activeMe ? "" : " primary"}" type="button" data-a="none">${activeMe ? "Nichts ankreuzen (Fehlwurf −5)" : "Nichts ankreuzen"}</button>`;
+    } else {
+      const wait = S.players.filter((p, i) => !S.choices[i] && !p.ai).map(p => esc(p.name));
+      st = wait.length ? `Warte auf ${wait.map(n => `<strong>${n}</strong>`).join(", ")}.` : "";
+    }
+  } else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (UI.err) st += `<span class="sk-err">${esc(UI.err)}</span>`;
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  $("actions").innerHTML = acts;
+
+  // eigener Zettel
+  $("who").textContent = me < 0 ? `Zettel von ${pl.name}` : (kit.hotSeat() || kit.online() || pl.name !== "Du") ? `Zettel von ${pl.name}` : "Dein Zettel";
+  $("meta").textContent = `Wurf ${S.roll}${Object.keys(S.locked).length ? ` · abgeschlossen: ${Object.keys(S.locked).map(c => NAME[c]).join(", ")}` : ""}${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
+  const can = choosing ? { w: whiteCells(pl), f: activeMe ? colorCells(pl, UI.sel.length === 1 && whiteCells(pl).some(y => same(y, UI.sel[0])) ? UI.sel[0] : null) : [] } : null;
+  $("sheet").innerHTML = sheetHtml(pl, { interactive: true, can, sel: UI.sel });
+
+  // die anderen
+  $("others").innerHTML = S.players.map((p, i) => i === vi ? "" : `<div class="other${i === S.active && S.phase !== "over" ? " on" : ""}">
+    <div class="nm"><span>${esc(p.name)}${p.ai ? " 🤖" : ""}</span><span>${score(p).total} P.</span></div>${sheetHtml(p)}
+    ${S.phase === "choose" && !p.ai ? `<span class="chip">${S.choices[i] ? "hat gewählt" : "wählt noch …"}</span>` : ""}</div>`).join("");
+
+  // Wertung
+  $("score").innerHTML = `<thead><tr><th>Spieler</th>${ROWS.map(c => `<th><span class="dot" style="background:var(--c-${c})" title="${NAME[c]}"></span></th>`).join("")}<th>−</th><th>Summe</th></tr></thead><tbody>${S.players.map((p, i) => {
+    const sc = score(p);
+    return `<tr class="${i === S.active && S.phase !== "over" ? "on" : ""}"><td>${esc(p.name)}</td>${ROWS.map(c => `<td>${sc.rows[c]}</td>`).join("")}<td>${sc.pen}</td><td class="tot">${sc.total}</td></tr>`;
+  }).join("")}</tbody>`;
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const r = ranking(), top = score(r[0]).total, win = r.filter(p => score(p).total === top);
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(p => esc(p.name)).join(" und ")}` : `${esc(win[0].name)} ${vb(win[0].name, "gewinnst", "gewinnt")}`}</h2>
+      <ol class="rank">${r.map((p, k) => { const sc = score(p); return `<li><span>${k + 1}. ${esc(p.name)}</span><span>${sc.total} Punkte (${ROWS.map(c => sc.rows[c]).join(" + ")}${p.pen ? ` − ${5 * p.pen}` : ""})</span></li>`; }).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "farbreihen", version: 1, minPlayers: 2, maxPlayers: 5, bots: true, defaultBots: 2, botNames: BOT_NAMES,
+  newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => doRoll(), moveSound: "dice",
+  // aktiv ist, wer würfelt; beim Ankreuzen sind alle gleichzeitig dran
+  turnInfo: s => s.phase === "roll" || s.phase === "choose"
+    ? { active: s.active, next: (s.active + 1) % s.players.length, also: s.phase === "choose" ? s.players.map((p, i) => i).filter(i => i !== s.active && !s.choices[i] && !s.players[i].ai) : [] }
+    : null,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.players) && s.players.every(p => p.rows && p.rows.r),
+  roomStatus: s => `läuft · Wurf ${s.roll}`,
+  handoverText: s => s.phase === "roll" ? "Du würfelst." : `Weiß ${s.dice ? s.dice.w1 + s.dice.w2 : ""}: Möchtest du ankreuzen?`,
+  // nur für automatische Tests der Regeln
+  test: { canCross, check, submit, doRoll, finishRound, score, whiteCells, colorCells, botChoose, playBots, get S() { return S; } },
+});
+kit.start();
+})();
+</script>

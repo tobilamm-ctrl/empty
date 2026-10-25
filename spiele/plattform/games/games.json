@@ -14,6 +14,13 @@
     "color": "#e0a83a"
   },
   {
+    "id": "farbreihen",
+    "title": "Farbreihen",
+    "description": "Würfeln und in vier Farbreihen von links nach rechts ankreuzen, Reihen abschließen. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–5 Spieler · ca. 15 Minuten",
+    "color": "#ef4f45"
+  },
+  {
     "id": "wuerfelpoker",
     "title": "Würfelpoker",
     "description": "Fünf Würfel, drei Würfe, dreizehn Zeilen. Allein auf Bestwert, zu mehreren an einem Gerät, gegen den Computer oder online.",
@@ -110,5 +117,12 @@
     "description": "Bayerisches Kartenspiel zu viert mit Sauspiel, Wenz und Solo. Fehlende Mitspieler übernimmt der Computer.",
     "players": "4 Spieler · Sitzung nach Wahl",
     "color": "#d0574c"
+  },
+  {
+    "id": "punkteblock",
+    "title": "Punkteblock",
+    "description": "Punkte für Spiele auf dem Tisch mitschreiben, mit Voreinstellung für Qwirkle. Ein Gerät für alle, auf Wunsch auch online zum Mitlesen.",
+    "players": "2–8 Spieler",
+    "color": "#8fd0ff"
   }
 ]
