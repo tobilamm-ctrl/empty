@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-24'` hochzählen (z. B. auf `lammping-25`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-25'` hochzählen (z. B. auf `lammping-26`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -131,7 +131,7 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 
 ## Bereiche im Überblick
 
-- **Karte:** Route der Reise, gemerkte und geplante Orte (Herz-Knopf blendet sie ein und aus),
+- **Karte:** Route der Reise, gemerkte und geplante Orte. Der Ebenen-Knopf legt fest, was zu sehen ist: alle Symbole, nur Übernachtungen oder nur die Strecke; gemerkte Orte ein/aus,
   importierte GPX-Strecken, Auto-Standort.
 - **Tagebuch:** je Reise **Planung** (Stellplätze und Sehenswertes vormerken, Listen und Extras
   zum Packen für diese Reise) und **Tagebuch** (Einträge unterwegs). „Hier sind wir“ macht aus

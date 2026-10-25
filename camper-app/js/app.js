@@ -19,7 +19,7 @@ import installZeitachse from './zeitachse.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 24;
+const APP_VERSION = 25;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -152,6 +152,7 @@ const ui = {
   diaryFilter: 'alle',
   diaryMode: {},        // je Reise: 'planung' oder 'tagebuch'
   showPlaces: LS.get('showPlaces', true),
+  mapPins: LS.get('mapPins', 'alle'),    // Symbole auf der Karte: alle | nacht (nur Übernachtungen) | keine (nur Strecke)
   listTab: LS.get('listTab', 'einkauf'),
   packMode: 'packen',
   packQuery: '',
@@ -503,11 +504,13 @@ function drawRoute(t, emphasis) {
   if (pts.length > 1 && !tracked) {
     L.polyline(pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
     L.polyline(pts, { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);
-  } else if (pts.length > 1) {
+  } else if (pts.length > 1 && ui.mapPins !== 'keine') {
     L.polyline(pts, { color, weight: 2, opacity: 0.6, dashArray: '2 8' }).addTo(routeLayer);
   }
   const movable = emphasis && ui.mapEdit === 'orte';
-  stops.forEach(e => {
+  // Beim Bearbeiten immer alle Orte zeigen, sonst nach Wahl im Ebenen-Knopf
+  const show = e => movable || ui.mapPins === 'alle' || (ui.mapPins === 'nacht' && e.type === 'stellplatz');
+  stops.filter(show).forEach(e => {
     const small = !emphasis || e.type === 'notiz';
     const m = L.marker([e.lat, e.lng], { icon: pinIcon(e.type, color, small && !movable), draggable: movable })
       .bindPopup(entryPopup(e, emphasis ? null : t))
@@ -546,7 +549,7 @@ function drawMap() {
 
   // Erweiterungen aus mehr.js: Orte und GPX-Strecken
   mapHooks.forEach(h => { pts = pts.concat(h(routeLayer, ui.mapScope, t) || []); });
-  $('#placesBtn').setAttribute('aria-pressed', ui.showPlaces);
+  $('#placesBtn').setAttribute('aria-pressed', ui.mapPins !== 'alle' || !ui.showPlaces);
 
   const car = S.meta.find(m => m.id === 'car');
   const chip = $('#carChip');
@@ -1721,6 +1724,11 @@ const ACTIONS = {
   'diary-filter': el => { ui.diaryFilter = el.dataset.f; render(); },
   'diary-mode': el => { ui.diaryMode[currentTrip().id] = el.dataset.mode; render(); },
   'toggle-places': () => { ui.showPlaces = !ui.showPlaces; LS.set('showPlaces', ui.showPlaces); render(); },
+  'map-layers': () => openSheet(`<div class="map-layers">${sheetHead('Was zeigt die Karte?')}
+      <div class="field"><span>Symbole der Reise</span><div class="seg">${[['alle', 'Alle'], ['nacht', 'Nur Übernachtungen'], ['keine', 'Nur Strecke']].map(([k, l]) =>
+        `<label><input type="radio" name="pins" value="${k}" data-action-input="map-pins"${ui.mapPins === k ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div></div>
+      <label class="check"><input type="checkbox" data-action-input="map-places"${ui.showPlaces ? ' checked' : ''}><span>Gemerkte und geplante Orte zeigen</span></label>
+      <p class="sub">„Nur Strecke“ zeigt nur die Linie der Reise, ohne Symbole und ohne gemerkte Orte – z. B. für einen schönen Überblick oder ein Bildschirmfoto.</p></div>`),
   'set-theme': el => {
     const v = el.dataset.theme;
     LS.set('theme', v);
@@ -2010,6 +2018,12 @@ document.addEventListener('submit', ev => {
   if (!form) return;
   ev.preventDefault();
   FORMS[form.dataset.form](form);
+});
+
+document.addEventListener('change', ev => {
+  const k = ev.target.dataset.actionInput;
+  if (k === 'map-pins') { ui.mapPins = ev.target.value; LS.set('mapPins', ui.mapPins); render(); }
+  if (k === 'map-places') { ui.showPlaces = ev.target.checked; LS.set('showPlaces', ui.showPlaces); render(); }
 });
 
 document.addEventListener('input', ev => {

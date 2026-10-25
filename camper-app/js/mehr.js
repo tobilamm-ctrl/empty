@@ -429,7 +429,7 @@ export default function installMore(app) {
     iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12],
   });
   mapHooks.push((layer, scope, t) => {
-    if (!ui.showPlaces) return [];
+    if (!ui.showPlaces || ui.mapPins === 'keine') return [];
     const L = window.L;
     const planned = t && scope === 'trip' ? tripPlaces(t).filter(hasPos) : [];
     if (planned.length > 1) {

@@ -1245,3 +1245,8 @@ body.blog-page { padding: 0; }
 .tl-list select { min-height: 40px; max-width: 150px; }
 .tl-list li:has(> input:not(:checked)) > div { opacity: .45; }
 .chips .chip.on { background: var(--trip); border-color: var(--trip); color: #fff; }
+
+/* Ebenen-Knopf: Punkt, wenn nicht alles gezeigt wird */
+#placesBtn { position: relative; }
+#placesBtn[aria-pressed="true"]::after { content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--trip); box-shadow: 0 0 0 2px var(--surface); }
+.map-layers .seg span { font-size: 14px; }
