@@ -90,7 +90,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-20'` hochzählen (z. B. auf `lammping-21`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-21'` hochzählen (z. B. auf `lammping-22`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -159,6 +159,19 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   die Packliste.
 - **Rückblick** (Knopf über dem Tagebuch): Die Strecke zeichnet sich Tag für Tag auf der Karte nach, an den
   Orten erscheinen Titel und Fotos. Pause und Tempo 1×, 2×, 4× unten.
+- **Reisebudget** (in der Reise einstellen): Die Kasse zeigt, wie viel noch übrig ist und wie viel pro
+  restlichem Tag bleibt; die Heute-Karte auch.
+- **Highlight des Tages:** Jeder schreibt, was am schönsten war (mit Symbol). Steht im Tagebuch unter dem
+  Tag, im Reiseheft und im Reiseblog. Verwalter können es auch für die Kinder eintragen.
+- **Camper-Dienste** (unter Mehr): Abwasch, Wasser holen, Müll usw. werden jeden Tag reihum unter allen
+  Mitreisenden verteilt. Abhaken bringt Punkte (und Reisepass-Stempel), „Tauschen“ gibt einen Dienst ab.
+  Die Liste der Dienste ändern Verwalter.
+- **Feedback** (unten auf „Mehr“ und in den Einstellungen): Was stört oder fehlt, landet in der Merkliste
+  „LAMMping-Feedback“. „Alles kopieren“ in den Einstellungen gibt die Sammlung als Text weiter.
+- **Schnellstart (Android):** Lange auf das LAMMping-Symbol drücken: „Ich bin hier“, „Auto geparkt“,
+  „Einkaufsliste“ und „Highlight des Tages“. Die Einträge lassen sich auch einzeln auf den Startbildschirm
+  ziehen. Auf dem iPhone geht das nicht; dort hilft die App „Kurzbefehle“ mit „URL öffnen“, z. B.
+  `https://lammping.lamm7.de/lammping/#/karte/hier`.
 - **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
   kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
   Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.

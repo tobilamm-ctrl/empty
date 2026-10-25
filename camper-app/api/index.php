@@ -446,7 +446,15 @@ case 'blogphoto':
         $k = json_decode($r['data'], true);
         if (($k['tripId'] ?? '') === $share['trip_id']) $tracks[] = ['kind' => $k['kind'] ?? '', 'name' => $k['name'] ?? '', 'pts' => $k['pts'] ?? ''];
     }
+    $highlights = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'games' AND deleted = 0", [$crew]) as $r) {
+        $g = json_decode($r['data'], true);
+        if (($g['kind'] ?? '') === 'highlight' && ($g['tripId'] ?? '') === $share['trip_id'] && (($g['text'] ?? '') !== '' || ($g['emoji'] ?? '') !== '')) {
+            $highlights[] = ['day' => $g['day'] ?? '', 'text' => $g['text'] ?? '', 'emoji' => $g['emoji'] ?? ''];
+        }
+    }
     out([
+        'highlights' => $highlights,
         'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
     ]);

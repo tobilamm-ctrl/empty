@@ -34,7 +34,7 @@ async function load() {
 }
 function fail(msg) { $('#blog').innerHTML = `<section class="empty"><h1>Schade</h1><p>${esc(msg)}</p></section>`; }
 
-function show({ trip, entries, tracks, at }) {
+function show({ trip, entries, tracks, at, highlights = [] }) {
   document.title = `${trip.name} · Reiseblog`;
   document.documentElement.style.setProperty('--trip', trip.color);
   const es = entries.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
@@ -52,7 +52,9 @@ function show({ trip, entries, tracks, at }) {
   es.filter(e => !SKIP.includes(e.type)).forEach(e => (days[e.date.slice(0, 10)] ||= []).push(e));
   const timeline = Object.entries(days).reverse().map(([d, list]) => {
     const n = first ? Math.round((new Date(d + 'T12:00') - new Date(first + 'T12:00')) / 864e5) + 1 : 0;
+    const hl = highlights.filter(h => h.day === d);
     return `<li class="day"><h2><span>${n > 0 ? 'Tag ' + n : day(d)}</span>${n > 0 ? `<small>${day(d)}</small>` : ''}</h2>
+      ${hl.length ? `<p class="blog-hl">Highlights des Tages: ${hl.map(h => `${esc(h.emoji)} ${esc(h.text)}`).join(' · ')}</p>` : ''}
       <ol>${list.reverse().map(e => `<li class="stop stop-${e.type}"><div class="blog-stop">
         <span class="node"></span>
         <span class="body">

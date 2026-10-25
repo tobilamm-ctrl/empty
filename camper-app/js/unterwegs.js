@@ -6,7 +6,7 @@ export default function installUnterwegs(app) {
     S, ui, LS, VIEWS, ACTIONS, FORMS, esc, icon, pageHead, newId, save, toast, render, go, openSheet, closeSheet,
     today, fmtDay, fmtShort, ago, km, fmtKm, hasPos, navUrl, byDate, getPos, currentTrip, tripColor, me,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const hhmm = d => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   const dur = min => {
     min = Math.max(1, Math.round(min));

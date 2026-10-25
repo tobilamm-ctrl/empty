@@ -15,7 +15,7 @@ export default function installMapEdit(app) {
   let routeWarned = false;
 
   const bar = document.getElementById('mapEditBar');
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const pos = ll => `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
   const dist = (a, b) => km({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });
 

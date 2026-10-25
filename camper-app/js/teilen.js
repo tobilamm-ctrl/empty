@@ -4,7 +4,7 @@ import { api } from './store.js';
 
 export default function installTeilen(app) {
   const { S, ACTIONS, FORMS, esc, icon, toast, openSheet, closeSheet, fmtShort, tripColor, currentTrip } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const isAdmin = () => !!(app.session() && app.session().user.isAdmin);
   const tripById = id => S.trips.find(t => t.id === id);
 

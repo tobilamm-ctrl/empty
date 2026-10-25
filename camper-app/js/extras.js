@@ -7,7 +7,7 @@ export default function installExtras(app) {
     sortTrips, byDate, members, personName, me, TYPES, listsOf,
   } = app;
   const isAdmin = () => !!(app.session() && app.session().user.isAdmin);
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const daysUntil = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
   const dec = (v, n = 1) => (v == null || !isFinite(v) ? '–' : Number(v).toLocaleString('de-DE', { maximumFractionDigits: n }));
   const lines = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean);

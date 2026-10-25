@@ -6,7 +6,7 @@ export default function installIdeen(app) {
     S, ui, VIEWS, ACTIONS, FORMS, esc, icon, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
     today, me, personName, nextColor, setTrip,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   // Adressen in Notizen anklickbar machen (erst maskieren, dann verlinken)
   const linkify = s => esc(s).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}${u.length > 48 ? '…' : ''}</a>`);
   const likes = i => Object.keys(i.likes || {}).filter(k => i.likes[k]);

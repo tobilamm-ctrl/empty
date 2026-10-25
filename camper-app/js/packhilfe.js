@@ -3,7 +3,7 @@
 
 export default function installPackhilfe(app) {
   const { S, VIEWS, ACTIONS, FORMS, esc, icon, newId, save, toast, openSheet, closeSheet, currentTrip, isPacked, extrasOf } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const notes = () => S.meta.find(m => m.id === 'packnotes') || { id: 'packnotes', missing: [], unused: {} };
   const tripById = id => S.trips.find(t => t.id === id);
 

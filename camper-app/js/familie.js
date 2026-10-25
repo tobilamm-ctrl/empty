@@ -6,7 +6,7 @@ export default function installFamilie(app) {
     S, ui, LS, VIEWS, ACTIONS, FORMS, esc, icon, art, toast, render, go, openSheet, closeSheet,
     settingsPanels, chromeHooks, api,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const user = () => (app.session() && app.session().user) || {};
 
   /* ====================================================================== */
@@ -58,8 +58,17 @@ export default function installFamilie(app) {
       a.hidden = t === 'kinder' ? !simple() : t === 'mehr' ? simple() : !app.allowed(t);
       if (simple() && t === 'kinder') a.classList.toggle('on', tab === 'mehr' || ui.route === 'kinder');
     });
+    // Ohne Freigabe für „Reisen“: Reise über eine kleine Auswahl wechseln
+    const chip = document.getElementById('tripChip');
+    if (chip) chip.dataset.action = app.allowed('reisen') ? '' : 'trip-pick';
     maybeIntro();
   });
+  ACTIONS['trip-pick'] = () => {
+    const list = S.trips.filter(t => !t.archived);
+    openSheet(`<div>${sheetHead('Welche Reise?')}<ul class="ledger">${list.map(t => `<li><button data-action="trip-pick-set" data-id="${t.id}">
+      <span class="txt"><b>${esc(t.name)}</b><small>${esc(app.fmtRange(t))}</small></span></button></li>`).join('')}</ul></div>`);
+  };
+  ACTIONS['trip-pick-set'] = el => { app.setTrip(el.dataset.id); closeSheet(); render(); };
 
   /* ---------- Formular in der Verwaltung ---------- */
 

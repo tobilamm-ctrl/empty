@@ -7,7 +7,7 @@ export default function installExport(app) {
     today, fmtDay, fmtShort, fmtTime, fmtRange, km, fmtKm, hasPos, byDate, money,
     currentTrip, tripColor, tripStats, canCash, TYPES, extraText,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const tripById = id => S.trips.find(t => t.id === id);
   const started = (t, st) => st.es.length > 0 || (t.start && t.start <= today());
 
@@ -274,7 +274,7 @@ ${trks}
         ${sts.map(s => `<tr><td>${s.n > 0 ? s.n : ''}</td><td>${fmtDay(s.day)}</td><td>${esc(placeName(s.from)) || '–'}</td>
           <td>${s.to ? `<span class="pd-no" style="--c:${color}">${no.get(s.to.id)}</span>${esc(placeName(s.to))}` : '–'}</td><td>${s.dist >= 1 ? fmtKm(s.dist) : '–'}</td></tr>`).join('')}
       </tbody></table>` : ''}
-      ${sts.length ? `<h2>Tag für Tag</h2>${sts.map(s => `<section class="pd-day"><h3>${s.n > 0 ? `Tag ${s.n} · ` : ''}${fmtDay(s.day)}</h3>${s.es.map(entry).join('')}</section>`).join('')}` : ''}
+      ${sts.length ? `<h2>Tag für Tag</h2>${sts.map(s => `<section class="pd-day"><h3>${s.n > 0 ? `Tag ${s.n} · ` : ''}${fmtDay(s.day)}</h3>${app.dayHighlights ? app.dayHighlights(t, s.day, true) : ''}${s.es.map(entry).join('')}</section>`).join('')}` : ''}
       ${plan.length || S.places.some(p => p.tripId === t.id && !p.done && !hasPos(p)) ? `<h2>Geplant</h2><ol class="pd-plan" type="A">${S.places.filter(p => p.tripId === t.id && !p.done)
         .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9')).map(p => `<li><b>${esc(p.name)}</b>${p.planDate ? `, ${fmtDay(p.planDate)}` : ''}${p.place ? `, ${esc(p.place)}` : ''}${p.note ? `<br><span>${esc(p.note)}</span>` : ''}</li>`).join('')}</ol>` : ''}
       ${opt.cost && cost.length ? `<h2>Kosten</h2><table class="pd-cost">${Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><td>${esc(c)}</td><td>${money(v)}</td></tr>`).join('')}

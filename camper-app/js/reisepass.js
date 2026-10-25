@@ -7,7 +7,7 @@ export default function installReisepass(app) {
     S, ui, LS, VIEWS, ACTIONS, FORMS, esc, icon, pageHead, newId, save, remove, toast, openSheet, closeSheet,
     fmtShort, today, tripStats, sortTrips, members, me, personName, chromeHooks,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const isAdmin = () => !!(app.session() && app.session().user.isAdmin);
   const byDate = (a, b) => (a.date || '').localeCompare(b.date || '');
   const day = d => (d || '').slice(0, 10);
@@ -151,6 +151,13 @@ export default function installReisepass(app) {
     ['kz100', 'Kennzeichen-König', '100 Städte-Kennzeichen gesammelt', 'car', 100, plates('de')],
     ['kz250', 'Kennzeichen-Kaiser', '250 Städte-Kennzeichen gesammelt', 'car', 250, plates('de')],
     ['kzint10', 'Europa-Spotter', '10 Länderkennzeichen gesehen', 'flag', 10, plates('int')],
+    // Mithelfen und Erinnern
+    ['helfer10', 'Helferlein', 'Zehn Camper-Dienste erledigt', 'check', 10, (g, c) => nth(S.games.filter(x => x.kind === 'duty' && c.trips.some(t => t.id === x.tripId))
+      .flatMap(x => Object.values(x.done || {}).filter(p => p === c.pid).map(() => ({ date: x.day }))).sort(byDate), g)],
+    ['helfer50', 'Superhelfer', 'Fünfzig Camper-Dienste erledigt', 'check', 50, (g, c) => nth(S.games.filter(x => x.kind === 'duty' && c.trips.some(t => t.id === x.tripId))
+      .flatMap(x => Object.values(x.done || {}).filter(p => p === c.pid).map(() => ({ date: x.day }))).sort(byDate), g)],
+    ['highlight10', 'Glückspilz', 'Zehn Highlights des Tages eingetragen', 'star', 10, (g, c) => nth(S.games.filter(x => x.kind === 'highlight' && x.by === c.pid)
+      .map(x => ({ date: x.day, place: x.text })).sort(byDate), g)],
     ['bingo', 'Bingo!', 'Eine volle Reihe beim Reise-Bingo', 'star', 1, bingo],
     ['quiz10', 'Quiz-Ass', 'Zehn Kennzeichen in Folge richtig', 'badge', 10, quiz],
   ];
@@ -162,7 +169,14 @@ export default function installReisepass(app) {
 
   /* ---------- Alle Stempel einer Person ---------- */
 
+  // Je Zeichnen nur einmal rechnen (Ansicht, Stempel-Moment und Zähler fragen alle)
+  const memo = new Map();
+  chromeHooks.push(() => memo.clear());
   function passport(pid) {
+    if (!memo.has(pid)) memo.set(pid, passportNow(pid));
+    return memo.get(pid);
+  }
+  function passportNow(pid) {
     const c = ctxOf(pid);
     const auto = STAMPS.map(([id, title, text, ic, goal, fn]) => ({ id, kind: 'auto', title, text, ic, goal, ...fn(goal, c) }));
     // Länder: erster Eintrag im Land

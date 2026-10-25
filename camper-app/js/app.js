@@ -13,6 +13,7 @@ import installReisepass from './reisepass.js';
 import installPackhilfe from './packhilfe.js';
 import installFamilie from './familie.js';
 import installFilm from './film.js';
+import installAlltag from './alltag.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -217,6 +218,7 @@ function toast(msg) {
 // Schreiben ohne Warten: offline landet es in der Warteschlange von Firestore
 function save(coll, doc) {
   doc.updatedAt = Date.now();
+  statsMemo.clear();
   store.put(coll, doc).catch(e => toast('Speichern hat nicht geklappt: ' + e.message));
   return doc;
 }
@@ -239,12 +241,20 @@ const activeTrips = () => sortTrips(S.trips.filter(t => !t.archived));
 
 function currentTrip() {
   const id = LS.get('trip.' + crew.id, null);
-  return S.trips.find(t => t.id === id) || activeTrips()[0] || null;
+  // Ohne Auswahl: die gerade laufende Reise, sonst die neueste
+  const running = activeTrips().find(t => !t.ended && t.start && t.start <= today() && (!t.end || t.end >= today()));
+  return S.trips.find(t => t.id === id) || running || activeTrips()[0] || null;
 }
 const tripColor = t => (t && t.color) || '#0F6670';
 const tripEntries = t => S.entries.filter(e => t && e.tripId === t.id);
 
+// Kennzahlen einer Reise; je Zeichnen nur einmal berechnet (Tageskopf, Reisepass & Co. fragen oft)
+const statsMemo = new Map();
 function tripStats(t) {
+  if (!statsMemo.has(t.id)) statsMemo.set(t.id, tripStatsNow(t));
+  return statsMemo.get(t.id);
+}
+function tripStatsNow(t) {
   const es = tripEntries(t);
   const stops = es.filter(hasPos).sort(byDate);
   let dist = 0;
@@ -315,13 +325,14 @@ async function shrink(file, max, quality) {
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
 const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
+const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
   <div class="ph-text"><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${art(key)}
 </header>`;
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -335,6 +346,7 @@ function render() {
 const VIEWS = {};
 
 function draw() {
+  statsMemo.clear();
   const loggedOut = !!gate;
   document.body.classList.toggle('locked', loggedOut);
   if (loggedOut) {
@@ -612,6 +624,7 @@ VIEWS.tagebuch = () => {
     const n = st.firstDay ? Math.round((dayDate(day) - dayDate(st.firstDay)) / 864e5) + 1 : null;
     return `<li class="day">
       <h2><span>${n && n > 0 ? 'Tag ' + n : fmtDay(day)}</span>${n && n > 0 ? `<small>${fmtDay(day)}</small>` : ''}${APP.dayExtras ? APP.dayExtras(day, t) : ''}</h2>
+      ${APP.dayHighlights ? APP.dayHighlights(t, day) : ''}
       <ol>${es.map(stopItem).join('')}</ol>
     </li>`;
   }).join('');
@@ -1309,6 +1322,7 @@ function tripForm(id) {
       <label class="field"><span>Ende</span><input type="date" name="end" value="${t.end || ''}"></label>
     </div>
     <div class="field"><span>Farbe der Reise</span><div class="swatches">${swatches}</div></div>
+    ${canCash() ? `<label class="field"><span>Reisebudget in € (optional)</span><input name="budget" inputmode="decimal" value="${t.budget ? String(t.budget).replace('.', ',') : ''}" placeholder="z. B. 1500"></label>` : ''}
     ${members().length > 1 ? `<div class="field"><span>Wer ist dabei? (für den Reisepass)</span><div class="chips wrap">${members().map(m =>
       `<label class="chip"><input type="checkbox" name="who" value="${m.id}"${!t.members || t.members.includes(m.id) ? ' checked' : ''}><span>${esc(m.name)}</span></label>`).join('')}</div></div>` : ''}
     ${t.id ? `<label class="check"><input type="checkbox" name="archived"${t.archived ? ' checked' : ''}><span>Reise ist abgeschlossen (ins Archiv)</span></label>
@@ -1920,6 +1934,7 @@ const FORMS = {
       name: form.name.value.trim(), start: form.start.value, end: form.end.value,
       color: form.color.value || nextColor(),
       archived: old ? form.archived.checked : false,
+      budget: form.budget ? num(form.budget.value) || 0 : (old && old.budget) || 0,
       // Mitreisende: leer = alle (auch Personen, die später dazukommen)
       members: form.who && [...form.querySelectorAll('[name=who]:not(:checked)')].length ? [...form.querySelectorAll('[name=who]:checked')].map(c => c.value) : null,
     });
@@ -2018,12 +2033,25 @@ function go(route) {
   else { ui.route = route; render(); }
 }
 
+// Unteradressen für Schnellstart (App-Symbol lange drücken), z. B. #/karte/hier oder #/listen/einkauf
+const ROUTE_ARGS = {
+  'karte/hier': () => ACTIONS['here-menu'](),
+  'karte/auto': () => carSheet(),
+  'listen/einkauf': () => { ui.listTab = 'einkauf'; LS.set('listTab', 'einkauf'); render(); },
+};
 function onHash() {
-  const r = location.hash.replace(/^#\/?/, '') || 'karte';
+  const [r, arg] = (location.hash.replace(/^#\/?/, '') || 'karte').split('/');
   ui.route = r;
   closeSheet();
   render();
   if (r !== 'karte') window.scrollTo(0, 0);
+  const fn = arg && ROUTE_ARGS[`${r}/${arg}`];
+  if (fn) {
+    history.replaceState(null, '', '#/' + r);
+    // warten, bis Anmeldung und Daten bereit sind
+    const run = () => (gate ? setTimeout(run, 300) : setTimeout(fn, 150));
+    run();
+  }
 }
 window.addEventListener('hashchange', onHash);
 
@@ -2102,7 +2130,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
-  crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, nextColor, setTrip, tripHead, afterDraw, openEntry,
+  crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
@@ -2122,5 +2150,6 @@ installReisepass(APP);
 installPackhilfe(APP);
 installFilm(APP);
 installFamilie(APP);
+installAlltag(APP);
 
 start();

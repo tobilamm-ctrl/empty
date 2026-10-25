@@ -8,7 +8,7 @@ export default function installSpiele(app) {
     S, ui, LS, VIEWS, ACTIONS, FORMS, esc, icon, pageHead, newId, save, remove, toast, render, openSheet, closeSheet,
     currentTrip, members, me, personName,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
   // Wer spielt gerade? Standard: die angemeldete Person, auf einem geteilten Handy umstellbar

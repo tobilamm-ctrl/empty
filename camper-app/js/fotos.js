@@ -6,7 +6,7 @@ export default function installFotos(app) {
     S, ACTIONS, FORMS, esc, icon, newId, save, toast, openSheet, closeSheet,
     fmtDay, km, hasPos, me, TYPES, shrink, placeInfo,
   } = app;
-  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const tripById = id => S.trips.find(t => t.id === id);
 
   // Knopf in der Leiste über dem Tagebuch

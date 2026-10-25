@@ -11,7 +11,7 @@ export default function installMore(app) {
     openEntryForm, itemListId, extrasOf, isPacked, FEATURES, TYPES,
   } = app;
 
-  const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const sheetHead = app.sheetHead;
   const daysUntil = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
   const dec = (v, n = 1) => (v == null || !isFinite(v) ? '–' : v.toLocaleString('de-DE', { minimumFractionDigits: n, maximumFractionDigits: n }));
   const inputNum = v => (v || v === 0 ? String(v).replace('.', ',') : '');
@@ -33,6 +33,7 @@ export default function installMore(app) {
     { route: 'album', art: 'album', title: 'Fotoalbum', text: 'Galerie und Jahresrückblick' },
     { route: 'kochen', art: 'kochen', title: 'Kochen', text: 'Rezepte und Einkaufsliste' },
     { route: 'autarkie', art: 'autarkie', title: 'Autarkie', text: 'Wasser, Gas und Strom' },
+    { route: 'dienste', art: 'check', title: 'Camper-Dienste', text: 'Wer ist heute dran?' },
     { route: 'spiele', art: 'spiele', title: 'Spiele & Co', text: 'Kennzeichen, Bingo, Quiz' },
     { route: 'ideen', art: 'ideen', title: 'Reiseideen', text: 'Wohin als Nächstes?' },
     { route: 'reisen', art: 'reisen', title: 'Reisen', text: 'Alle Reisen und Archiv' },
