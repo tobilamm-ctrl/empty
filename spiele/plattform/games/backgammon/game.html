@@ -751,8 +751,8 @@ function render() {
   $("btn-roll").disabled = !me || !!t.dice;
   $("btn-undo").disabled = !me || !t.dice || !t.moves.length;
   $("btn-done").disabled = !me || !t.dice || t.moves.length !== t.max;
-  $("btn-roll").hidden = !play || !!t.dice;
-  $("btn-undo").hidden = $("btn-done").hidden = !play || !t.dice;
+  $("btn-roll").hidden = !play || !!t.dice || (!me && kit.online());
+  $("btn-undo").hidden = $("btn-done").hidden = !play || !t.dice || !me;
   const tg = $("targets");
   tg.hidden = !(me && UI.sel != null && targets.size);
   if (!tg.hidden) tg.innerHTML = `<span class="sk-label">Ziel</span>` + [...targets.keys()].sort((x, y) => y - x)
