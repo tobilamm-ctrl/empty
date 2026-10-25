@@ -15,6 +15,17 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
   Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu, Flaggen-Quiz, Reise-Memory, Sudoku.~~ Erledigt in Lieferung 28.
 - ~~Montagsmaler, Tic-Tac-Toe, Geschichten-Würfel; Mehr-Kacheln durch Ziehen anordnen.~~ Erledigt in Lieferung 29.
 
+**Neu vorgemerkt (Spiele):**
+
+- **Umriss-Quiz:** Länderumriss erraten (Grenzen der Rubbelkarte).
+- **Wo liegt das?** Auf einer leeren Karte tippen, je näher, desto mehr Punkte.
+- **Hauptstädte-Quiz:** Land mit Flagge zur Hauptstadt und umgekehrt.
+- **Kniffel:** Fünf Würfel, dreimal würfeln, Würfel festhalten, Punkteblock für die Familie.
+- **Punkteblock für eigene Spiele:** Uno, Rommé, Mölkky, Boule – Runden, Summen, Sieger.
+- **Murmel-Labyrinth:** Handy neigen (Lagesensor wie bei der Wasserwaage), nur in Pausen.
+- **Farben-Merkspiel (wie Senso):** Folge nachtippen, wird immer länger.
+- **Wer ist schneller?** Zwei Spieler, ein Handy, Reaktion auf ein Signal.
+
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
 - Wetterwarnung (Sturm, Gewitter, Starkregen am Stellplatz oder nächsten Ziel)
@@ -42,3 +53,4 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - UV-Warnung in der Heute-Karte
 - Bildschirmzeit-Konto für Kinder
 - Reise-Quiz aus dem eigenen Tagebuch; Kennzeichen-Sätze; Schätz-Duell; Kopfrechen-Rennen; Galgenmännchen; Vier gewinnt und Schiffe versenken
+- Mastermind (Farbcode knacken); Wörter-Gitter (4 × 4 Buchstaben); Puzzle und Schiebepuzzle aus einem Reisefoto
