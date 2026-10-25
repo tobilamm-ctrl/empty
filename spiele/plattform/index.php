@@ -73,5 +73,8 @@ $games = games();
     <p class="note">Noch keine Spiele hinterlegt. Neue Spiele kommen in den Ordner <code>games/</code>.</p>
   <?php endif; ?>
 </div>
+<?php $stand = @file_get_contents(__DIR__ . '/VERSION.txt'); if ($stand): ?>
+  <p class="note version">Stand: <?= h(trim($stand)) ?></p>
+<?php endif; ?>
 <?php
 page_end();

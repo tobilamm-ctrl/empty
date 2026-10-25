@@ -69,6 +69,42 @@
     };
   })();
 
+  // ---------- Sprachausgabe (Stimmen des Geräts, nur solche, die auf dem Gerät selbst laufen) ----------
+  const Speech = (() => {
+    const syn = window.speechSynthesis || null;
+    const LEVELS = ["Aus", "Wer dran ist", "Mit Zügen", "Mit Anweisungen"];
+    const SHORT = ["Aus", "Wer dran", "Züge", "Alles"];
+    let level = 0, voice = null;
+    try { level = Math.min(3, Math.max(0, +localStorage.getItem("spieleabend-ansage") || 0)); } catch (e) { /* egal */ }
+    // deutsche Stimme, die auf dem Gerät läuft (Stimmen aus dem Netz, z. B. von Google, schicken den Text weg)
+    const pick = () => {
+      if (!syn) return;
+      const vs = syn.getVoices().filter(v => /^de([-_]|$)/i.test(v.lang) && v.localService !== false);
+      voice = vs.find(v => /de[-_]DE/i.test(v.lang) && v.default) || vs.find(v => /de[-_]DE/i.test(v.lang)) || vs[0] || null;
+    };
+    if (syn) { pick(); if (syn.addEventListener) syn.addEventListener("voiceschanged", pick); else syn.onvoiceschanged = pick; }
+    // erst nach einer Berührung darf der Browser sprechen
+    window.addEventListener("pointerdown", () => { if (level && syn) syn.speak(new SpeechSynthesisUtterance("")); }, { once: true, passive: true });
+    return {
+      LEVELS, SHORT,
+      level: () => level,
+      available() { if (!voice) pick(); return !!(syn && voice); },
+      cycle() { level = (level + 1) % LEVELS.length; try { localStorage.setItem("spieleabend-ansage", String(level)); } catch (e) { /* egal */ } if (!level && syn) syn.cancel(); return level; },
+      busy: () => !!syn && (syn.speaking || syn.pending),
+      say(text) {
+        if (!level || !syn || !text) return;
+        if (!voice) pick();
+        if (!voice) return;
+        try {
+          if (syn.pending) syn.cancel();           // nicht hinterherreden: Wartendes verwerfen
+          const u = new SpeechSynthesisUtterance(text);
+          u.voice = voice; u.lang = voice.lang; u.rate = 1.05;
+          syn.speak(u);
+        } catch (e) { /* Sprachausgabe darf das Spiel nie stören */ }
+      },
+    };
+  })();
+
   function create(cfg) {
     cfg = Object.assign({
       version: 1,          // bei inkompatiblen Änderungen am Spielstand erhöhen
@@ -87,10 +123,11 @@
       nextUp: null,        // (S, aktiv) => wer als Nächstes dran ist (sonst der Sitz danach)
       turnInfo: null,      // (S) => { active, next, also } für Spiele mit besonderer Reihenfolge
       moveSound: "move",   // Ton, wenn ein anderer zieht: move, card, stone, dice, tile
+      speech: null,        // (text) => Text zum Vorlesen umformen (z. B. Zugschreibweise)
     }, cfg);
 
     let S = null;
-    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, newsOpen: false,
+    const ui = { room: null, busy: false, banner: "", lastHuman: 0, ackHuman: null, seen: {}, prevLog: null, newsOpen: false, fresh: [], spokeTurn: null, spokeStatus: "",
       botT: 0, botAt: 0, changedAt: Date.now(), lastPoll: 0, wasMine: null, lastPhase: null };
     const suffix = P ? "-" + P.user : "";
     const store = {
@@ -155,7 +192,7 @@
       if (key && !ui.seen[key]) { ui.seen[key] = snap(); saveSeen(); }
       const since = key && S.phase !== "lobby" ? newSince(ui.seen[key]) : [];
       const fresh = ui.prevLog ? newSince(ui.prevLog) : [];
-      ui.prevLog = snap();
+      ui.prevLog = snap(); ui.fresh = fresh;
       if (fresh.length && S.phase !== "lobby") Sound.play(cfg.moveSound);
       return since;
     }
@@ -381,11 +418,14 @@
       const at = (S.mode === "online" && !kit.isHost() ? ui.changedAt : Date.now()) + delay;
       if (ui.botT && Math.abs(ui.botAt - at) < 50) return;
       clearTimeout(ui.botT); ui.botAt = at;
-      ui.botT = setTimeout(() => {
+      const fire = () => {
         ui.botT = 0;
         if (!botsWaiting() || ui.busy) { scheduleBots(); return; }
+        // mit Ansage: warten, bis sie fertig ist
+        if (Speech.level() >= 2 && Speech.busy()) { ui.botAt = Date.now() + 250; ui.botT = setTimeout(fire, 250); return; }
         act(() => { if (!cfg.botPending(S)) return false; cfg.botStep(S); }, { bot: true });
-      }, Math.max(60, at - Date.now()));
+      };
+      ui.botT = setTimeout(fire, Math.max(60, at - Date.now()));
     }
 
     // ---------- Zugleiste: wer ist dran, wer als Nächstes ----------
@@ -436,6 +476,51 @@
       ui.lastPhase = S.phase;
     }
 
+    // ---------- Ansage ----------
+    // Verlaufseintrag (HTML) in vorlesbaren Text: Elemente mit title (z. B. Farbstecker) zählen mit ihrem Namen
+    function speakable(html) {
+      const d = document.createElement("div");
+      d.innerHTML = html;
+      d.querySelectorAll("[title]").forEach(el => { el.textContent = ` ${el.getAttribute("title")} `; });
+      let t = d.textContent;
+      if (cfg.speech) t = cfg.speech(t);
+      return t.replace(/×/g, " ").replace(/·/g, ",").replace(/→/g, " auf ").replace(/[−–](?=\s?\d)/g, "minus ")
+        .replace(/(^|[\s(])-(?=\d)/g, "$1minus ").replace(/\+(?=\d)/g, "plus ").replace(/\s:\s/g, " zu ").replace(/…/g, "")
+        .replace(/\s+/g, " ").trim();
+    }
+    function announce(mi, handover) {
+      const L = Speech.level();
+      if (!L || S.phase === "lobby") { ui.spokeTurn = null; ui.spokeStatus = ""; return; }
+      const parts = [];
+      // Züge der anderen (Stufe 2 und 3), älteste zuerst; bei vielen nur die letzten drei
+      if (L >= 2 && ui.fresh.length) {
+        if (ui.fresh.length > 3) parts.push("Mehrere Züge.");
+        parts.push(...ui.fresh.slice(0, 3).reverse().map(speakable));
+      }
+      // wer dran ist
+      const over = S.phase === "over", ti = over ? null : turnInfo() || { active: -1, also: [] };
+      const also = ti ? ti.also || [] : [];
+      const mine = !!ti && mi >= 0 && !S.players[mi].ai && (ti.active === mi || also.includes(mi));
+      const key = over ? "over" : `${ti.active}|${also.join(",")}|${handover ? "ho" : ""}`;
+      const many = S.players.filter(p => !p.ai).length > 1;
+      let status = "";
+      if (L >= 3 && mine && !handover && !over) { const st = q("#status"); status = st ? speakable(st.innerHTML) : ""; }
+      if (key !== ui.spokeTurn) {
+        ui.spokeTurn = key;
+        if (over) {
+          const h = q("#result h2");
+          parts.push("Spiel vorbei." + (h && h.offsetParent ? " " + speakable(h.innerHTML) + "." : ""));
+        } else if (handover && mi >= 0) parts.push(`Gerät weitergeben an ${S.players[mi].name}.`);
+        else if (mine) { if (!/dran/.test(status)) parts.push(many ? `${S.players[mi].name}, du bist dran.` : "Du bist dran."); }
+        else if (L === 1 && ti.active >= 0) parts.push(`${S.players[ti.active].name} ist dran.`);
+        else if (L === 1 && also.length) parts.push(`Gleichzeitig dran: ${also.map(i => S.players[i].name).join(", ")}.`);
+      }
+      // Anweisung (Stufe 3): wenn sich die Statuszeile im eigenen Zug ändert
+      if (status && status !== ui.spokeStatus) parts.push(status);
+      ui.spokeStatus = status;
+      if (parts.length) Speech.say(parts.map(s => /[.!?:]$/.test(s) ? s : s + ".").join(" "));
+    }
+
     // ---------- Speichern auf dem Gerät ----------
     function save() { if (S && S.mode !== "online") store.set(stateKey, JSON.stringify(S)); }
     function load() {
@@ -452,6 +537,7 @@
       if (tb) tb.innerHTML = `<a class="sk-home" id="sk-home" href="index.php" hidden>← Alle Spiele</a>
         <button class="btn small" id="sk-leave" type="button" hidden>Raum verlassen</button>
         <button class="btn small sk-snd" id="sk-sound" type="button" aria-pressed="true"></button>
+        <button class="btn small sk-snd" id="sk-speech" type="button" title="Ansage: aus, wer dran ist, mit Zügen, mit Anweisungen"></button>
         <button class="btn" id="sk-new" type="button">Neues Spiel</button>`;
       if (!q("[data-sk-turns]")) {
         const bn = q("[data-sk-banner]");
@@ -544,6 +630,7 @@
       renderChrome(mi, since);
       renderTurns(mi, since);
       soundCues(mi);
+      try { announce(mi, !q("#sk-handover").hidden); } catch (e) { /* Ansage darf das Spiel nie stören */ }
       save();
       scheduleBots();
     }
@@ -608,6 +695,19 @@
       const snd = q("#sk-sound");
       const showSnd = () => { snd.textContent = Sound.on() ? "🔊 Ton an" : "🔇 Ton aus"; snd.setAttribute("aria-pressed", Sound.on()); };
       if (snd) { showSnd(); snd.addEventListener("click", () => { Sound.toggle(); showSnd(); Sound.play("tap"); }); }
+      const sp = q("#sk-speech");
+      const showSp = () => { sp.textContent = `🗣 ${Speech.SHORT[Speech.level()]}`; sp.setAttribute("aria-label", `Ansage: ${Speech.LEVELS[Speech.level()]}`); };
+      if (sp) {
+        showSp();
+        sp.addEventListener("click", () => {
+          const l = Speech.cycle(); showSp();
+          ui.spokeTurn = null; ui.spokeStatus = "";
+          if (l && !Speech.available()) { ui.banner = "Auf diesem Gerät gibt es keine deutsche Stimme. Am Handy lässt sie sich in den Einstellungen unter Sprachausgabe nachladen."; render(); return; }
+          if (ui.banner.startsWith("Auf diesem Gerät gibt es keine deutsche Stimme")) ui.banner = "";
+          if (l) Speech.say(`Ansage: ${Speech.LEVELS[l]}.`);
+          render();
+        });
+      }
       // Klick beim Antippen von allem, was man im Spiel bedienen kann
       document.addEventListener("pointerdown", e => {
         if (e.target.closest("#sk-sound")) return;

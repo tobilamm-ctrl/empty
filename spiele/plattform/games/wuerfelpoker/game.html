@@ -461,6 +461,8 @@ kit = Spielkit.create({
   solo: { label: "Allein", small: "13 Runden, Bestwert schlagen" },
   newPlayer, newState, onStart, whoActs, render,
   botPending, botStep, moveSound: "dice",
+  // Ansage: „Ada: Dreierpasch 18 (3 3 3 4 5)“ → „Ada: Dreierpasch, 18 Punkte“
+  speech: t => t.replace(/\s*\([\d ]+\)/, "").replace(/: (.+?) (\d+)$/, ": $1, $2 Punkte"),
   onState: s => { S = s; },
   validState: s => Array.isArray(s.dice) && s.players.every(p => p.sheet),
   roomStatus: s => `läuft · Runde ${Math.min(ROUNDS, Math.min(...s.players.map(filled)) + 1)}`,

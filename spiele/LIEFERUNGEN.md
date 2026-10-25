@@ -1,0 +1,14 @@
+# Lieferungen „Spieleabend“
+
+Jede Lieferung hat eine fortlaufende Nummer und kommt als zwei ZIP-Dateien:
+
+- `spieleabend-NN-komplett.zip`: die ganze Plattform. Hochladen und alles außer dem Ordner `data/` überschreiben.
+- `spieleabend-NN-update.zip`: nur die Dateien, die sich seit der vorigen Lieferung geändert haben. Hochladen und
+  überschreiben. Steht darin eine Datei `GELOESCHT.txt`, die dort genannten Dateien auf dem Server löschen.
+
+Welche Lieferung auf dem Server liegt, steht unten auf der Spieleübersicht („Stand: Lieferung NN“, aus `VERSION.txt`).
+
+| Nr. | Datum | Commit | Inhalt |
+|---|---|---|---|
+| 1 | 25.10.2026 | f031468 | Alle Spiele bis dahin; Zugleiste mit Neuigkeiten, Computer mit Pause, Töne (letzte Lieferung ohne Nummer) |
+| 2 | 25.10.2026 | (dieser Stand) | Sprachausgabe (Knopf „🗣“: aus, wer dran ist, mit Zügen, mit Anweisungen); Verlaufstexte mit „du“-Formen in Mau-Mau, Backgammon, Codeknacker; Stand-Anzeige auf der Spieleübersicht |

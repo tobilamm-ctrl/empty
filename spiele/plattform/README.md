@@ -102,6 +102,10 @@ Es übernimmt:
 - **Töne:** im Browser erzeugt (keine Dateien), Knopf „Ton an/aus“ oben. Klick beim Antippen, Ton bei Zügen der
   anderen, Gong bei „Du bist dran“, Melodie am Spielende. Spiele können mit `kit.sound("stone")` usw. eigene Töne
   auslösen (Vier in einer Reihe beim Aufschlagen des Steins).
+- **Ansage (Sprachausgabe):** Knopf „🗣“ oben schaltet um: aus (Vorgabe), wer dran ist, mit Zügen der anderen,
+  mit Anweisungen (liest die Statuszeile `#status` im eigenen Zug vor). Es spricht nur eine deutsche Stimme, die auf
+  dem Gerät läuft (keine Stimmen aus dem Netz). Die Computer warten, bis die Ansage fertig ist. Spiele können Texte
+  fürs Vorlesen mit `speech: text => …` umformen (Backgammon, Würfelpoker).
 - **Neuigkeiten:** Die zweite Zeile der Zugleiste zeigt, was Mitspieler und Computer seit dem eigenen letzten
   Zug gemacht haben (aus dem Verlauf `S.log`, Neuestes zuerst); „Alle“ klappt die Liste über dem Spielfeld auf.
   Die Leiste hat immer dieselbe Höhe, damit das Spielfeld nicht springt. Beim Weitergeben des Geräts steht die

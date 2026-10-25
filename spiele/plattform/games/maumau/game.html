@@ -289,6 +289,7 @@ let S, kit;
 const UI = { wishFor: null, key: "" };
 const O = () => Object.assign({}, DEFAULTS, S.options || {});
 const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 80); };
+const vb = (name, du, er) => (name === "Du" ? du : er);
 const pname = i => `<b>${esc(S.players[i].name)}</b>`;
 const top = () => S.discard[S.discard.length - 1];
 const nextIdx = (i, k = 1) => (i + k) % S.players.length;
@@ -339,7 +340,7 @@ function startRound() {
   S.discard = [c]; S.by = null;
   S.wish = null; S.pending = 0; S.drawn = null; S.passStreak = 0; S.last = null;
   S.active = S.starter; S.phase = "play"; S.seq++;
-  log(`<b>Runde ${S.roundNo}</b>: ${size} Karten für jeden${size < o.hand ? ` (bei ${n} Spielern nicht mehr, damit genug zum Ziehen bleibt)` : ""}, Startkarte ${cardName(c)}. ${pname(S.active)} beginnt.`);
+  log(`<b>Runde ${S.roundNo}</b>: ${size} Karten für jeden${size < o.hand ? ` (bei ${n} Spielern nicht mehr, damit genug zum Ziehen bleibt)` : ""}, Startkarte ${cardName(c)}. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
 }
 
 function endRound(winner) {
@@ -366,17 +367,17 @@ function playCard(c, wish) {
   p.hand.splice(p.hand.indexOf(c), 1);
   S.discard.push(c); S.by = i;
   S.wish = null; S.drawn = null; S.passStreak = 0; S.seq++;
-  let txt = `${pname(i)} legt ${cardName(c)}`;
-  if (needsWish(c)) { S.wish = wish; txt += ` und wünscht sich <b>${SUIT_NAME[wish]}</b>`; }
+  let txt = `${pname(i)} ${vb(p.name, "legst", "legt")} ${cardName(c)}`;
+  if (needsWish(c)) { S.wish = wish; txt += ` und ${vb(p.name, "wünschst dir", "wünscht sich")} <b>${SUIT_NAME[wish]}</b>`; }
   log(txt + ".");
-  if (!p.hand.length) { log(`<span class="mau">Mau-Mau!</span> ${pname(i)} gewinnt Runde ${S.roundNo}.`); endRound(i); return; }
-  if (p.hand.length === 1) log(`<span class="mau">Mau!</span> ${pname(i)} hat nur noch eine Karte.`);
+  if (!p.hand.length) { log(`<span class="mau">Mau-Mau!</span> ${pname(i)} ${vb(p.name, "gewinnst", "gewinnt")} Runde ${S.roundNo}.`); endRound(i); return; }
+  if (p.hand.length === 1) log(`<span class="mau">Mau!</span> ${pname(i)} ${vb(p.name, "hast", "hat")} nur noch eine Karte.`);
   if (r === "7" && o.sieben) { S.pending += 2; S.active = nextIdx(i); return; }
   if (r === "8" && o.acht) {
     log(`${pname(nextIdx(i))} setzt aus.`);
     S.active = nextIdx(i, 2); return;
   }
-  if (r === "A" && o.ass) { log(`${pname(i)} darf noch einmal.`); return; }
+  if (r === "A" && o.ass) { log(`${pname(i)} ${vb(p.name, "darfst", "darf")} noch einmal.`); return; }
   S.active = nextIdx(i);
 }
 
@@ -385,24 +386,24 @@ function drawAction() {
   const i = S.active; S.seq++;
   if (S.pending > 0) {
     const want = S.pending, got = drawCards(i, want);
-    log(`${pname(i)} zieht ${got.length} Karte${got.length === 1 ? "" : "n"}${got.length < want ? " (mehr sind nicht da)" : ""} und setzt aus.`);
+    log(`${pname(i)} ${vb(S.players[i].name, "ziehst", "zieht")} ${got.length} Karte${got.length === 1 ? "" : "n"}${got.length < want ? " (mehr sind nicht da)" : ""} und setzt aus.`);
     S.pending = 0; S.active = nextIdx(i);
     return;
   }
   const got = drawCards(i, 1);
   if (!got.length) {
-    log(`${pname(i)} kann nicht legen, und es gibt keine Karte mehr zum Ziehen.`);
+    log(`${pname(i)} ${vb(S.players[i].name, "kannst", "kann")} nicht legen, und es gibt keine Karte mehr zum Ziehen.`);
     S.passStreak++;
     if (S.passStreak >= 2 * S.players.length) { log("Keiner kann mehr legen. Die Runde endet ohne Sieger."); endRound(-1); return; }
     S.active = nextIdx(i); return;
   }
-  log(`${pname(i)} zieht eine Karte.`);
+  log(`${pname(i)} ${vb(S.players[i].name, "ziehst", "zieht")} eine Karte.`);
   if (canPlay(got[0])) S.drawn = got[0];
   else S.active = nextIdx(i);
 }
 function passTurn() {
   S.drawn = null; S.seq++;
-  log(`${pname(S.active)} behält die gezogene Karte.`);
+  log(`${pname(S.active)} ${vb(S.players[S.active].name, "behältst", "behält")} die gezogene Karte.`);
   S.active = nextIdx(S.active);
 }
 function nextRound() {

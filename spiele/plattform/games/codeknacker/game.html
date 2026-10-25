@@ -352,7 +352,7 @@ function beginRound() {
     S.code = randomCode(S.len, S.ncol); S.phase = "guess";
     addLog(`Der Computer hat sich einen Code ausgedacht (${LEVELS[S.level].name}: ${S.len} Stellen, ${S.ncol} Farben).`);
   } else {
-    addLog(`<b>Durchgang ${S.round + 1} von ${S.rounds}:</b> ${esc(S.players[S.maker].name)} legt den Code, ${esc(S.players[S.breaker].name)} rät.`);
+    addLog(`<b>Durchgang ${S.round + 1} von ${S.rounds}:</b> ${esc(S.players[S.maker].name)} ${S.players[S.maker].name === "Du" ? "legst" : "legt"} den Code, ${esc(S.players[S.breaker].name)} ${S.players[S.breaker].name === "Du" ? "rätst" : "rät"}.`);
   }
   playBots();
 }

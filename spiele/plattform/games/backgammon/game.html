@@ -492,7 +492,7 @@ function undoTurn(s) {
 function commitTurn(s) {
   const t = s.turn, p = t.p;
   const d = `${t.dice[0]}-${t.dice[1]}`;
-  log(s, t.moves.length ? `${nm(s, p)} (${d}): ${moveText(t.moves)}` : `${nm(s, p)} würfelt ${d} und kann nicht ziehen.`);
+  log(s, t.moves.length ? `${nm(s, p)} (${d}): ${moveText(t.moves)}` : `${nm(s, p)} ${s.players[p].name === "Du" ? "würfelst" : "würfelt"} ${d} und ${s.players[p].name === "Du" ? "kannst" : "kann"} nicht ziehen.`);
   s.last = { p, moves: t.moves.map(m => ({ f: m.f, t: m.t })) };
   s.seq++;
   if (s.board.off[p] === CHECKERS) { endGame(s, p); return; }
@@ -808,6 +808,10 @@ kit = Spielkit.create({
   defaultOptions: () => ({ ziel: 1 }),
   newPlayer, newState, onStart, whoActs, render,
   botPending: s => botPending(s), botStep: s => botStep(s), moveSound: "dice",
+  // Ansage: „Ada (4-6): 13/9 8/2*“ → „Ada würfelt 4 und 6: von 13 auf 9, von 8 auf 2 und schlägt“
+  speech: t => t.replace(/^Du \((\d)-(\d)\):/, "Du würfelst $1 und $2:").replace(/\((\d)-(\d)\):/g, "würfelt $1 und $2:").replace(/(würfelst|würfelt) (\d)-(\d)/g, "$1 $2 und $3")
+    .replace(/\b(Bar|\d+)\/(ab|\d+)(\*?)/g, (m, f, to, h) => `${f === "Bar" ? "von der Bar" : "von " + f} ${to === "ab" ? "hinaus" : "auf " + to}${h ? " und schlägt" : ""},`)
+    .replace(/,\s*$/, ""),
   onState: s => { S = s; },
   validState: s => !!s.board && Array.isArray(s.board.pts) && !!s.turn,
   roomStatus: s => `läuft · Spiel ${s.game} · ${s.players.map(p => p.pts).join(":")}`,
