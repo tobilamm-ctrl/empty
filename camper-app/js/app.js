@@ -19,6 +19,7 @@ const ICONS = {
   car: '<path d="M3 16v-4l2-5h14l2 5v4H3zM3 12h18"/><circle cx="7.5" cy="16.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',

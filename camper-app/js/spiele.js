@@ -1,5 +1,5 @@
 // Spiele & Co: Kennzeichen sammeln, Länderkennzeichen, Reise-Bingo, Stadt-Land-Fluss, Kennzeichen-Quiz,
-// Länder-Sticker und das eigene Spieleportal (Spieleabend) eingebettet. Gespielt wird gegeneinander: jede Person sammelt für sich.
+// Länder-Sticker und das eigene Spieleportal (Spieleabend), das sich direkt in einem eigenen Fenster öffnet. Gespielt wird gegeneinander: jede Person sammelt für sich.
 
 import { KFZ, KFZ_INT, KFZ_QUELLE } from './kfz.js';
 
@@ -24,7 +24,7 @@ export default function installSpiele(app) {
     ['slf', 'Stadt, Land, Fluss', 'Buchstabe, Uhr, Punkte'],
     ['quiz', 'Kennzeichen-Quiz', 'Welche Stadt steckt dahinter?'],
     ['sticker', 'Länder-Sticker', 'Alle Länder, in denen ihr wart'],
-    ['brettspiele', 'Brettspiele', 'Spieleabend: online gegeneinander'],
+    ['brettspiele', 'Brettspiele', 'Euer Spieleportal'],
   ];
   const game = () => ui.game || null;
 
@@ -36,12 +36,17 @@ export default function installSpiele(app) {
         <button class="link back" data-action="game-open" data-g="">Zurück zu allen Spielen</button>
         ${g === 'sticker' || g === 'brettspiele' ? '' : playerBar()}${GAME_VIEWS[g]()}`;
     }
+    // Brettspiele und Portal-Spiele öffnen Spieleabend direkt in einem eigenen Fenster
+    const p = portal();
+    const row = (k, t, s, extra = '') => k === 'brettspiele' && p.url
+      ? `<li><a class="row" href="${esc(portalUrl(p))}" target="_blank" rel="noopener"><span class="txt"><b>${t}</b><small>${s}</small></span>${icon('open')}</a></li>`
+      : `<li><button data-action="game-open" data-g="${k}"${extra}><span class="txt"><b>${t}</b><small>${s}</small></span>${scoreHint(k)}</button></li>`;
     return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
-      <ul class="ledger">${GAMES.map(([k, t, s]) => `<li><button data-action="game-open" data-g="${k}">
-        <span class="txt"><b>${t}</b><small>${s}</small></span>${scoreHint(k)}</button></li>`).join('')}${portalGames().map(g => `<li><button data-action="game-open" data-g="brettspiele" data-pg="${esc(g.id)}">
-        <span class="txt"><b>${esc(g.title || g.id)}</b><small>Bei ${esc(portal().name)} spielen</small></span></button></li>`).join('')}</ul>`;
+      <ul class="ledger">${GAMES.map(([k, t, s]) => row(k, t, k === 'brettspiele' && p.url ? `${esc(p.name)}: online gegeneinander` : s)).join('')}${p.url ? portalGames().map(g =>
+        `<li><a class="row" href="${esc(portalUrl(p, g.id))}" target="_blank" rel="noopener"><span class="txt"><b>${esc(g.title || g.id)}</b><small>Bei ${esc(p.name)} spielen</small></span>${icon('open')}</a></li>`).join('') : ''}</ul>
+      <button class="link" data-action="portal-form">Spieleportal einstellen</button>`;
   };
-  ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; if (ui.game === 'brettspiele') ui.portalGame = el.dataset.pg || null; render(); window.scrollTo(0, 0); };
+  ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; render(); window.scrollTo(0, 0); };
 
   function scoreHint(k) {
     if (k === 'kennzeichen') return `<span class="amt">${platesOf(player(), 'de').length}</span>`;
@@ -221,7 +226,7 @@ export default function installSpiele(app) {
       : '<p class="hint">Sobald ihr Einträge mit Position habt, sammeln sich hier die Länder als Sticker.</p>';
   }
 
-  /* ---------- Brettspiele: euer Portal (Spieleabend), eingebettet ---------- */
+  /* ---------- Brettspiele: euer Portal (Spieleabend) ---------- */
 
   // Vorbelegt mit Spieleabend; Adresse und Spiele lassen sich in der App ändern.
   const PORTAL_DEFAULT = { id: 'portal', kind: 'portal', name: 'Spieleabend', url: 'https://spieleabend.lamm7.de/', list: [{ id: 'farbkreuz', title: 'Farbkreuz' }] };
@@ -231,19 +236,9 @@ export default function installSpiele(app) {
   const portalGames = () => (portal().list || []).filter(g => g.id);
 
   function portalView() {
-    const p = portal();
-    if (!p.url) return `<p class="hint">Tragt die Adresse eures Spieleportals ein. Dann startet ihr es von hier aus.</p>
-        <button class="primary" data-action="portal-form">Portal verknüpfen</button>`;
-    const gid = ui.portalGame || '';
-    const url = portalUrl(p, gid);
-    return `<div class="chips list-chips"><button class="chip${gid ? '' : ' on'}" data-action="portal-game" data-id="">Übersicht</button>${portalGames().map(g =>
-      `<button class="chip${g.id === gid ? ' on' : ''}" data-action="portal-game" data-id="${esc(g.id)}">${esc(g.title || g.id)}</button>`).join('')}</div>
-      <iframe class="portal-frame" src="${esc(url)}" title="${esc(p.name)}" allow="fullscreen; clipboard-write" referrerpolicy="same-origin"></iframe>
-      <p class="sub">Beim ersten Mal meldet ihr euch einmal bei ${esc(p.name)} an. Bleibt der Rahmen leer, lässt ${esc(p.name)} das Einbetten noch nicht zu – dann im eigenen Fenster öffnen.</p>
-      <div class="btnrow"><a class="ghost btn" href="${esc(url)}" target="_blank" rel="noopener">Im eigenen Fenster öffnen</a>
-        <button class="ghost" data-action="portal-form">Einstellungen</button></div>`;
+    return `<p class="hint">Tragt die Adresse eures Spieleportals ein. Dann startet ihr es von hier aus.</p>
+      <button class="primary" data-action="portal-form">Portal verknüpfen</button>`;
   }
-  ACTIONS['portal-game'] = el => { ui.portalGame = el.dataset.id || null; render(); };
   ACTIONS['portal-form'] = () => {
     const p = portal();
     openSheet(`<form data-form="portal">${sheetHead('Spieleportal')}
