@@ -68,3 +68,5 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Zwei Wahrheiten, eine Lüge; Zungenbrecher-Challenge; Emoji-Rätsel; Wortsalat; Reim-Duell; Zahlen-Jagd; Stellplatz-Quartett;
   Finde die Unterschiede; Pantomime; Stille Post mit Bildern; Schere-Stein-Papier-Turnier
 - Fristen nach Kilometern; Mitbringsel-Liste; Kartengrüße-Liste; Spiele-Meisterschaft
+- Sonnen-Kompass zum Einparken; Toilette und Grauwasser in der Autarkie; Lärm-Messer; Taschenlampe mit Rotlicht; Küchenwecker;
+  Standort per SMS; Mit Hund unterwegs; Schulferien-Kalender; Konvoi-Modus
