@@ -1,0 +1,1025 @@
+<title>Schafkopf</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Wirtshaustisch: dunkles Eichenholz, in der Mitte ein grüner Kartenteppich, daneben die Kreidetafel mit dem Kontostand */
+:root {
+  color-scheme: dark;
+  --table: #1b130d;
+  --sheet: #2a1d14;
+  --sheet-2: #3b2b1e;
+  --ink: #f6eee2;
+  --muted: #bba78f;
+  --accent: #eab54d;
+  --tile-ink: #24170e;
+  --red: #e2654f;
+  --green: #86c56d;
+  --felt: #22573a;
+  --felt-dark: #163b27;
+  --wood: #5a3a22;
+  --wood-dark: #3d2716;
+  --card: #fbf6ea;
+  --chalk: #f2f0e6;
+  --slate: #26302b;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand", "Comic Sans MS", "Segoe Print", cursive;
+  --cw: 84px;   /* Kartenbreite in der Hand */
+  --tw: 68px;   /* Kartenbreite im Stich */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  background-color: var(--table);
+  background-image: repeating-linear-gradient(92deg, rgba(255,255,255,.018) 0 3px, transparent 3px 11px, rgba(0,0,0,.05) 11px 13px, transparent 13px 29px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.rauten { height: 6px; border-radius: 3px; margin-top: 6px; width: 180px; max-width: 100%;
+  background-color: #f4f6fb; background-image: linear-gradient(45deg, #2b6cb6 25%, transparent 25%, transparent 75%, #2b6cb6 75%), linear-gradient(45deg, #2b6cb6 25%, transparent 25%, transparent 75%, #2b6cb6 75%);
+  background-size: 6px 6px; background-position: 0 0, 3px 3px; opacity: .85; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: minmax(0, 1fr) 350px; align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 979px) {
+  .col { display: contents; }
+  .sk-lobby { order: 0; } .board { order: 1; } .result { order: 2; } .tafel { order: 3; } .log-panel { order: 4; } .rules { order: 5; }
+}
+
+/* ---------- Tisch ---------- */
+.board { border-radius: 20px; padding: 12px; min-width: 0;
+  background: linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.06), 0 10px 26px rgba(0,0,0,.45); }
+.info { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; padding: 2px 6px 10px; font-size: 13.5px; color: #ead9c2; }
+.info b { color: var(--ink); }
+.info .game-name { font-family: var(--font-display); font-size: 18px; color: var(--accent); letter-spacing: .3px; }
+.felt { border-radius: 16px; padding: 12px 10px;
+  background: radial-gradient(ellipse at 50% 40%, var(--felt) 0%, var(--felt-dark) 100%);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.25), inset 0 0 40px rgba(0,0,0,.35); }
+.tisch { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: ". top ." "left mid right" ". bottom ."; gap: 8px; align-items: center; justify-items: center; }
+.seat { min-width: 0; max-width: 100%; background: rgba(0,0,0,.28); border-radius: 12px; padding: 6px 10px; text-align: center; font-size: 13px; line-height: 1.3; }
+.seat.on { box-shadow: 0 0 0 2px var(--accent); background: rgba(0,0,0,.4); }
+.seat .nm { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.seat .sub { color: #cfe0d2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seat .bid { font-weight: 800; color: var(--accent); }
+.seat .bid.pass { color: #cfe0d2; font-weight: 600; }
+.chip { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,.14); margin: 1px 2px; }
+.chip.decl { background: var(--accent); color: var(--tile-ink); }
+.chip.part { background: #f2d38f; color: var(--tile-ink); }
+.chip.deal { background: rgba(255,255,255,.1); color: #e5ecdf; }
+.backs { display: flex; justify-content: center; padding: 3px 0 2px 6px; height: 20px; }
+.backs i { width: 11px; height: 16px; border-radius: 2px; margin-left: -6px; box-shadow: 0 0 0 1px rgba(0,0,0,.3);
+  background-color: #f4f6fb; background-image: linear-gradient(45deg, #2b6cb6 25%, transparent 25%, transparent 75%, #2b6cb6 75%), linear-gradient(45deg, #2b6cb6 25%, transparent 25%, transparent 75%, #2b6cb6 75%);
+  background-size: 6px 6px; background-position: 0 0, 3px 3px; }
+.seat-top { grid-area: top; } .seat-left { grid-area: left; justify-self: stretch; } .seat-right { grid-area: right; justify-self: stretch; } .seat-bottom { grid-area: bottom; }
+.mid { grid-area: mid; position: relative; }
+.trick { display: grid; grid-template-columns: repeat(3, var(--tw)); grid-template-rows: repeat(3, calc(var(--tw) * .9)); }
+.trick .slot { width: var(--tw); }
+.trick .p0 { grid-area: 3 / 2; align-self: end; }
+.trick .p1 { grid-area: 2 / 1; align-self: center; transform: rotate(-6deg); }
+.trick .p2 { grid-area: 1 / 2; align-self: start; }
+.trick .p3 { grid-area: 2 / 3; align-self: center; transform: rotate(6deg); }
+.trick .win .card { box-shadow: 0 0 0 3px var(--accent), 0 4px 10px rgba(0,0,0,.4); }
+.trick.old .card { opacity: .82; }
+.trick-note { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 12.5px; font-weight: 800; color: #eaf2e6; background: rgba(0,0,0,.55); padding: 4px 9px; border-radius: 10px; width: max-content; max-width: calc(var(--tw) * 3); pointer-events: none; }
+.bid-note { width: calc(var(--tw) * 3); min-height: calc(var(--tw) * 2.7); display: grid; place-items: center; text-align: center; color: #e2ecdf; font-size: 14px; padding: 6px; }
+.bid-note b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--accent); }
+
+/* ---------- Karten ---------- */
+.card { width: var(--cw); aspect-ratio: 2 / 3; display: block; border-radius: 7px; background: var(--card); position: relative; overflow: hidden; border: 0; padding: 0;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25), 0 3px 9px rgba(0,0,0,.4); }
+.card svg { width: 100%; height: 100%; display: block; }
+.trick .card { width: var(--tw); }
+.hand-zone { padding: 12px 4px 4px; }
+.status { min-height: 2.9em; margin: 0 0 6px; padding: 0 4px; color: #f3e6d4; }
+.status strong { color: var(--accent); }
+.status .warn { display: block; color: #ffc4b5; font-weight: 700; }
+.hand { display: grid; justify-content: center; padding-top: 16px; min-height: calc(var(--cw) * 1.5 + 16px); }
+.hand .card { cursor: default; transition: transform .12s ease, filter .12s ease; }
+.hand .card.can { cursor: pointer; }
+.hand .card.dim { filter: brightness(.55) saturate(.6); }
+.hand .card.sel { transform: translateY(-14px); box-shadow: 0 0 0 3px var(--accent), 0 8px 16px rgba(0,0,0,.45); }
+.hand .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.hand-empty { color: #cdbca6; text-align: center; padding: 20px 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 4px 4px; }
+.bids { display: grid; gap: 8px; padding: 10px 4px 2px; }
+.bids .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bids .lbl { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #e1cfb6; min-width: 74px; }
+.btn.suit { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; min-height: 40px; background: var(--card); color: var(--tile-ink); }
+.btn.suit svg { width: 18px; height: 18px; }
+.btn.plain { min-height: 40px; }
+.hint { font-size: 12.5px; color: #dccab1; margin: 0; }
+.btn.go { background: var(--accent); color: var(--tile-ink); }
+
+/* ---------- Kreidetafel ---------- */
+.tafel { background: var(--slate); border: 8px solid #6b4a2c; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,.45), 0 8px 18px rgba(0,0,0,.35); color: var(--chalk); padding: 12px 12px 14px; }
+.tafel h2 { font-family: var(--font-hand); font-weight: 400; font-size: 26px; margin: 0 0 6px; color: var(--chalk); }
+.tafel .meta { font-family: var(--font-hand); font-size: 17px; color: #cfd6cf; margin-bottom: 6px; }
+.konto { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.konto div { text-align: center; min-width: 0; }
+.konto .n { font-family: var(--font-hand); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #dfe4dd; }
+.konto .v { font-family: var(--font-hand); font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.neg { color: #ffb0a3; } .pos { color: #c6f0b5; }
+.liste-wrap { max-height: 300px; overflow-y: auto; }
+table.liste { width: 100%; border-collapse: collapse; font-family: var(--font-hand); font-size: 16.5px; font-variant-numeric: tabular-nums; }
+.liste th, .liste td { padding: 2px 3px; border-bottom: 1px solid rgba(242,240,230,.18); text-align: right; white-space: nowrap; }
+.liste th { font-weight: 400; color: #cfd6cf; overflow: hidden; text-overflow: ellipsis; max-width: 60px; }
+.liste td.g, .liste th.g { text-align: left; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.liste td.nr, .liste th.nr { text-align: left; color: #aeb7ae; width: 1.8em; }
+
+/* ---------- Ergebnis ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 8px; }
+.parts { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+.parts li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed rgba(255,255,255,.12); padding: 2px 0; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; }
+.hands0 { display: grid; gap: 4px; margin: 8px 0 12px; font-size: 13px; }
+.hands0 div { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.hands0 .who { min-width: 70px; font-weight: 800; }
+
+/* kleine Karten im Text (Verlauf, Ergebnis) */
+.cc { display: inline-flex; align-items: center; gap: 1px; padding: 0 4px 0 2px; border-radius: 4px; background: var(--card); color: var(--tile-ink); font-weight: 800; font-size: 12.5px; line-height: 18px; vertical-align: 1px; white-space: nowrap; }
+.cc svg { width: 13px; height: 13px; }
+.cc.cE { color: #6b4410; } .cc.cG { color: #2e7d32; } .cc.cH { color: #c62828; } .cc.cS { color: #a35f00; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules h3 { font-size: 14px; margin: 12px 0 4px; color: var(--accent); }
+.rules ul { padding-left: 18px; margin: 4px 0 0; display: grid; gap: 5px; }
+.rules p { margin: 6px 0; }
+
+@media (max-width: 640px) {
+  :root { --cw: 66px; --tw: 52px; }
+  .board { padding: 8px; border-radius: 16px; }
+  .felt { padding: 10px 6px; }
+  .seat { padding: 5px 6px; font-size: 12px; }
+  .seat .nm { font-size: 13px; max-width: 110px; }
+  .chip { font-size: 9.5px; padding: 1px 5px; }
+  .tisch { gap: 6px; }
+  .bids .lbl { min-width: 0; width: 100%; }
+  .btn.suit { padding: 8px 11px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Farbzeichen: eigene Zeichnungen für Eichel, Gras (Blatt), Herz und Schellen -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="sym-E" viewBox="0 0 20 20">
+      <rect x="9.2" y="0.6" width="1.6" height="3.6" rx=".8" fill="#4a300c"/>
+      <ellipse cx="10" cy="12.6" rx="5.3" ry="6.4" fill="#9a6526"/>
+      <ellipse cx="8.3" cy="12" rx="1.5" ry="3.2" fill="#c38d47" opacity=".75"/>
+      <path d="M3.6 9.4 C3.6 4.6 16.4 4.6 16.4 9.4 C13 10.6 7 10.6 3.6 9.4 Z" fill="#4e3412"/>
+      <path d="M5.5 6.9 L14.5 8.9 M5 8.6 L12 6 M8 9.6 L15 7" stroke="#7a5626" stroke-width=".7" fill="none"/>
+    </symbol>
+    <symbol id="sym-G" viewBox="0 0 20 20">
+      <path d="M10 0.8 C16 3.6 18.2 9 15.4 13.8 C13.8 16.5 11.8 17.4 10.6 17.8 L10.6 19.6 L9.4 19.6 L9.4 17.8 C8.2 17.4 6.2 16.5 4.6 13.8 C1.8 9 4 3.6 10 0.8 Z" fill="#2f8a34"/>
+      <path d="M10 3 L10 17.4 M10 7 L13.4 5.2 M10 7 L6.6 5.2 M10 10.6 L14.4 8.6 M10 10.6 L5.6 8.6 M10 14 L13.2 12.4 M10 14 L6.8 12.4" stroke="#bfe6b0" stroke-width=".8" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="sym-H" viewBox="0 0 20 20">
+      <path d="M10 18 C3 12.6 0.8 9 0.8 6.1 C0.8 3.2 3.1 1.4 5.6 1.4 C7.6 1.4 9.1 2.6 10 4.2 C10.9 2.6 12.4 1.4 14.4 1.4 C16.9 1.4 19.2 3.2 19.2 6.1 C19.2 9 17 12.6 10 18 Z" fill="#d42c22"/>
+      <path d="M4.6 4.4 C3.8 5 3.4 6 3.6 7" stroke="#ff9d8f" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="sym-S" viewBox="0 0 20 20">
+      <circle cx="10" cy="2.4" r="1.5" fill="none" stroke="#9a6a00" stroke-width="1"/>
+      <circle cx="10" cy="11" r="7.6" fill="#f1bd2b"/>
+      <path d="M2.6 9.4 Q10 12 17.4 9.4 L17.2 11.8 Q10 14.4 2.8 11.8 Z" fill="#c6362a"/>
+      <circle cx="10" cy="15.3" r="1.3" fill="#5a3a00"/>
+      <path d="M10 16.6 L10 18.4" stroke="#5a3a00" stroke-width="1.1"/>
+      <circle cx="7" cy="6.6" r="1.4" fill="#fde69a"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Schafkopf</h1>
+      <div class="sub">Sauspiel, Wenz und Solo zu viert</div>
+      <div class="rauten" aria-hidden="true"></div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="board" id="board" aria-label="Spieltisch">
+        <div class="info" id="info"></div>
+        <div class="felt">
+          <div class="tisch" id="tisch"></div>
+        </div>
+        <div class="hand-zone">
+          <div class="status" id="status" aria-live="polite"></div>
+          <div class="hand" id="hand"></div>
+          <div class="bids" id="bids" hidden></div>
+          <div class="actions" id="actions"></div>
+        </div>
+      </section>
+      <section class="panel result" id="result" hidden></section>
+    </div>
+    <div class="col">
+      <section class="tafel" id="tafel" aria-label="Kontostand"></section>
+      <section class="panel log-panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <p>Gespielt wird zu viert mit 32 Karten: Eichel, Gras, Herz und Schellen, jeweils Sau, Zehn, König, Ober, Unter, Neun, Acht und Sieben. Jeder bekommt 8 Karten, der Geber wechselt im Uhrzeigersinn.</p>
+          <h3>Augen</h3>
+          <p>Sau 11, Zehn 10, König 4, Ober 3, Unter 2, Neun bis Sieben nichts. Zusammen 120 Augen.</p>
+          <h3>Ansage</h3>
+          <ul>
+            <li>Reihum ab dem Spieler links vom Geber sagt jeder einmal „weiter“ oder ein Spiel an. Ein späteres Spiel muss höher sein: Solo geht über Wenz, Wenz geht über Sauspiel.</li>
+            <li><b>Sauspiel:</b> Trumpf sind die Ober, dann die Unter (jeweils Eichel, Gras, Herz, Schellen), dann Herz (Sau, Zehn, König, Neun, Acht, Sieben). Du rufst eine Sau (Eichel, Gras oder Schellen), von deren Farbe du mindestens eine Karte hast, aber nicht die Sau selbst. Wer die Sau hat, spielt mit dir, zeigt sich aber erst, wenn er sie spielt.</li>
+            <li><b>Wenz:</b> nur die vier Unter sind Trumpf. Die Ober stehen in ihrer Farbe zwischen König und Neun.</li>
+            <li><b>Farbsolo:</b> Ober, Unter und die gewählte Farbe sind Trumpf. Du spielst allein gegen drei.</li>
+            <li>Sagen alle „weiter“, wird je nach Einstellung zusammengeworfen (das Spiel zählt, der nächste gibt) oder ein <b>Ramsch</b> gespielt: Trumpf wie beim Sauspiel, jeder für sich, wer die meisten Augen hat, verliert. Macht einer alle Stiche (Durchmarsch), gewinnt er.</li>
+          </ul>
+          <h3>Stiche</h3>
+          <ul>
+            <li>Der Spieler links vom Geber spielt zum ersten Stich aus, danach wer den letzten Stich gemacht hat.</li>
+            <li>Angespielte Farbe oder Trumpf musst du zugeben. Kannst du nicht, darfst du stechen oder eine beliebige Karte abwerfen.</li>
+            <li>Den Stich macht der höchste Trumpf, sonst die höchste Karte der angespielten Farbe.</li>
+          </ul>
+          <h3>Rufsau</h3>
+          <ul>
+            <li>Wird die gerufene Farbe zum ersten Mal angespielt, muss die Rufsau zugegeben werden.</li>
+            <li>Bis dahin darf der Partner die Rufsau nicht abwerfen. Spielt er die Farbe selbst an, muss er die Sau ausspielen, außer er hat 4 oder mehr Karten dieser Farbe: dann darf er mit einer anderen Karte „davonlaufen“.</li>
+          </ul>
+          <h3>Gewinnen und Abrechnung</h3>
+          <ul>
+            <li>Die Spielerpartei gewinnt mit mindestens 61 Augen. Schneider: Spieler mit 91 Augen oder mehr bzw. mit 30 oder weniger. Schwarz: eine Partei bekommt keinen Stich.</li>
+            <li>Tarif je nach Einstellung: Sauspiel 10 oder 20, Wenz und Solo 50. Schneider, Schwarz und jeder Laufende kosten zusätzlich den Grundtarif (Sauspielpreis). Laufende zählen ab 3 (beim Wenz ab 2): die höchsten Trümpfe ohne Lücke in einer Partei.</li>
+            <li>Beim Sauspiel zahlt jeder Verlierer einem Gewinner. Beim Wenz und Solo zahlt oder bekommt der Spieler von jedem der drei.</li>
+            <li>Ramsch: der Verlierer zahlt jedem anderen den Grundtarif (bei Gleichstand zahlen alle mit den meisten Augen). Durchmarsch: jeder zahlt dem Durchmarschierer den Grundtarif.</li>
+          </ul>
+          <h3>Was hier fehlt</h3>
+          <p>Klopfen, Kontra und Re, Tout und Sie, Hochzeit, Bettel, Geier und Farbwenz gibt es nicht. Beim Ramsch fehlen Jungfrau und Schieben.</p>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Regeln: reine Funktionen auf einem Spielstand s, ohne Oberfläche (auch in Node testbar) -->
+<script>
+window.SchafkopfRegeln = (() => {
+"use strict";
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const SUITS = ["E", "G", "H", "S"];
+const RANKS = ["A", "X", "K", "O", "U", "9", "8", "7"];
+const SUIT_NAME = { E: "Eichel", G: "Gras", H: "Herz", S: "Schellen" };
+const RANK_NAME = { A: "Sau", X: "Zehn", K: "König", O: "Ober", U: "Unter", 9: "Neun", 8: "Acht", 7: "Sieben" };
+const RANK_LABEL = { A: "A", X: "10", K: "K", O: "O", U: "U", 9: "9", 8: "8", 7: "7" };
+const PTS = { A: 11, X: 10, K: 4, O: 3, U: 2, 9: 0, 8: 0, 7: 0 };
+const LEVEL = { sau: 1, wenz: 2, solo: 3 };
+const OU = { E: 3, G: 2, H: 1, S: 0 };
+const PLAIN = { A: 5, X: 4, K: 3, 9: 2, 8: 1, 7: 0 };
+const PLAIN_W = { A: 6, X: 5, K: 4, O: 3, 9: 2, 8: 1, 7: 0 };
+
+const deck = () => SUITS.flatMap(s => RANKS.map(r => s + r));
+const pts = c => PTS[c[1]];
+const cardName = c => `${SUIT_NAME[c[0]]}-${RANK_NAME[c[1]]}`;
+const cc = c => `<span class="cc c${c[0]}" title="${cardName(c)}"><svg aria-hidden="true"><use href="#sym-${c[0]}"/></svg>${RANK_LABEL[c[1]]}</span>`;
+const NORMAL = { type: "sau" }; // Trumpfordnung für die Ansage und den Ramsch
+
+// ---------- Trumpf und Stich ----------
+const trumpSuit = g => (g.type === "solo" ? g.suit : g.type === "wenz" ? null : "H");
+function trumpRank(c, g) {
+  const s = c[0], r = c[1];
+  if (g.type === "wenz") return r === "U" ? OU[s] : -1;
+  if (r === "O") return 10 + OU[s];
+  if (r === "U") return 6 + OU[s];
+  return s === trumpSuit(g) ? PLAIN[r] : -1;
+}
+const isTrump = (c, g) => trumpRank(c, g) >= 0;
+const eff = (c, g) => (isTrump(c, g) ? "T" : c[0]);         // „Farbe“ im Sinne des Bedienens
+const plainRank = (c, g) => (g.type === "wenz" ? PLAIN_W : PLAIN)[c[1]];
+const power = (c, g, led) => (isTrump(c, g) ? 100 + trumpRank(c, g) : eff(c, g) === led ? plainRank(c, g) : -1);
+function trickWinner(trick, g) {                               // Index im Stich
+  const led = eff(trick[0].c, g);
+  let best = 0;
+  trick.forEach((t, i) => { if (power(t.c, g, led) > power(trick[best].c, g, led)) best = i; });
+  return best;
+}
+const trumpOrder = g => deck().filter(c => isTrump(c, g)).sort((a, b) => trumpRank(b, g) - trumpRank(a, g));
+function laufende(cards, g) {                                  // Länge der lückenlosen Reihe von oben, egal welche Partei
+  const ord = trumpOrder(g), top = cards.includes(ord[0]);
+  let k = 0;
+  while (k < ord.length && cards.includes(ord[k]) === top) k++;
+  return k;
+}
+function sortHand(hand, g) {
+  g = g || NORMAL;
+  const so = { E: 4, G: 3, H: 2, S: 1 };
+  const key = c => (isTrump(c, g) ? 1000 + trumpRank(c, g) : so[c[0]] * 20 + plainRank(c, g));
+  return hand.slice().sort((a, b) => key(b) - key(a));
+}
+const gameName = g => g.type === "sau" ? `Sauspiel auf die ${SUIT_NAME[g.suit]}-Sau`
+  : g.type === "wenz" ? "Wenz" : g.type === "solo" ? `${SUIT_NAME[g.suit]}-Solo` : "Ramsch";
+const bidName = b => b.type === "weiter" ? "weiter" : b.type === "sau" ? `Sauspiel (${SUIT_NAME[b.suit]}-Sau)`
+  : b.type === "wenz" ? "Wenz" : `${SUIT_NAME[b.suit]}-Solo`;
+const trumpText = g => g.type === "wenz" ? "nur die Unter" : `Ober, Unter, ${SUIT_NAME[trumpSuit(g)]}`;
+
+// ---------- Ansage ----------
+const callable = hand => ["E", "G", "S"].filter(s => !hand.includes(s + "A") && hand.some(c => c[0] === s && c[1] !== "O" && c[1] !== "U"));
+const curLevel = s => (s.best >= 0 ? LEVEL[s.bids[s.best].type] : 0);
+function legalBids(s, p) {
+  const lv = curLevel(s), out = [{ type: "weiter" }];
+  if (lv < 1) callable(s.hands[p]).forEach(suit => out.push({ type: "sau", suit }));
+  if (lv < 2) out.push({ type: "wenz" });
+  if (lv < 3) SUITS.forEach(suit => out.push({ type: "solo", suit }));
+  return out;
+}
+const sameBid = (a, b) => a.type === b.type && (a.suit || null) === (b.suit || null);
+const isLegalBid = (s, p, b) => s.phase === "bid" && s.bidTurn === p && legalBids(s, p).some(x => sameBid(x, b));
+
+// ---------- Spielstand ----------
+function log(s, html) { s.log.unshift(html); if (s.log.length > 160) s.log.length = 160; }
+const nm = (s, i) => `<b>${esc(s.players[i].name)}</b>`;
+function defaults(o) {
+  o = o || {};
+  return { games: [8, 16, 24].includes(+o.games) ? +o.games : 8, base: +o.base === 20 ? 20 : 10, solo: 50, allPass: o.allPass === "ramsch" ? "ramsch" : "zusammen" };
+}
+function startSession(s) {
+  s.players.forEach(p => { p.konto = 0; });
+  s.history = [];
+  s.gameNo = 1;
+  s.dealer = Math.floor(Math.random() * 4);
+  s.seq = (s.seq || 0) + 1;
+  deal(s);
+}
+function deal(s, cards) {
+  const d = cards || deck();
+  if (!cards) for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+  s.hands = [0, 1, 2, 3].map(k => d.slice(k * 8, k * 8 + 8));
+  s.hands0 = s.hands.map(h => h.slice());
+  s.bids = [null, null, null, null];
+  s.best = -1;
+  s.bidTurn = (s.dealer + 1) % 4;
+  s.game = null;
+  s.trick = []; s.lastTrick = null; s.played = []; s.ledSuits = [];
+  s.tricksWon = [0, 0, 0, 0]; s.ptsWon = [0, 0, 0, 0]; s.trickNo = 0;
+  s.searched = false; s.revealed = false;
+  s.result = null;
+  s.phase = "bid";
+  s.seq = (s.seq || 0) + 1;
+  log(s, `Spiel ${s.gameNo} von ${s.cfg.games}: ${nm(s, s.dealer)} gibt, ${nm(s, (s.dealer + 1) % 4)} ist Vorhand.`);
+}
+function doBid(s, p, b) {
+  s.bids[p] = b.type === "weiter" ? { type: "weiter" } : { type: b.type, suit: b.suit || null };
+  if (b.type !== "weiter") s.best = p;
+  log(s, b.type === "weiter" ? `${nm(s, p)}: weiter` : `${nm(s, p)} möchte spielen: <b>${b.type === "sau" ? "Sauspiel" : b.type === "wenz" ? "Wenz" : "Solo"}</b>`);
+  s.seq++;
+  if (s.bids.every(x => x)) finishBidding(s);
+  else s.bidTurn = (p + 1) % 4;
+}
+function finishBidding(s) {
+  const vh = (s.dealer + 1) % 4;
+  if (s.best < 0) {
+    if (s.cfg.allPass === "ramsch") {
+      s.game = { type: "ramsch", suit: null, decl: -1, partner: -1 };
+      log(s, "Alle sagen weiter: es wird <b>Ramsch</b> gespielt. Wer die meisten Augen hat, verliert.");
+    } else {
+      log(s, "Alle sagen weiter: die Karten werden zusammengeworfen.");
+      s.history.push({ no: s.gameNo, label: "zusammen", deltas: [0, 0, 0, 0] });
+      s.notice = `Spiel ${s.gameNo}: alle haben weiter gesagt, die Karten wurden zusammengeworfen.`;
+      if (s.gameNo >= s.cfg.games) {
+        s.result = { kind: "thrown", title: "Zusammengeworfen", lines: ["Alle haben weiter gesagt."], parts: [], deltas: [0, 0, 0, 0] };
+        s.phase = "over";
+        log(s, "<b>Die Sitzung ist zu Ende.</b>");
+      } else nextGame(s);
+      return;
+    }
+  } else {
+    const b = s.bids[s.best];
+    s.game = { type: b.type, suit: b.suit || null, decl: s.best, partner: -1 };
+    if (b.type === "sau") s.game.partner = s.hands.findIndex(h => h.includes(b.suit + "A"));
+    log(s, `${nm(s, s.best)} spielt <b>${gameName(s.game)}</b>. Trumpf: ${trumpText(s.game)}.`);
+  }
+  s.phase = "play";
+  s.turn = vh;
+  s.notice = "";
+}
+function nextGame(s) {
+  s.gameNo++;
+  s.dealer = (s.dealer + 1) % 4;
+  deal(s);
+}
+
+// ---------- Ausspielen ----------
+function legalCards(s, p) {
+  const g = s.game, hand = s.hands[p], t = s.trick;
+  let opts = hand.slice();
+  if (t.length) {
+    const led = eff(t[0].c, g), f = hand.filter(c => eff(c, g) === led);
+    if (f.length) opts = f;
+  }
+  if (g.type === "sau" && !s.searched && hand.includes(g.suit + "A")) {
+    const ace = g.suit + "A", called = c => eff(c, g) === g.suit;
+    let r;
+    if (!t.length) r = hand.filter(called).length >= 4 ? opts : opts.filter(c => !called(c) || c === ace);
+    else if (eff(t[0].c, g) === g.suit) r = [ace];
+    else r = opts.filter(c => c !== ace);
+    if (r.length) opts = r;
+  }
+  return opts;
+}
+function illegalReason(s, p, c) {
+  if (legalCards(s, p).includes(c)) return "";
+  const g = s.game, t = s.trick, hand = s.hands[p], ace = g.type === "sau" ? g.suit + "A" : null;
+  if (t.length) {
+    const led = eff(t[0].c, g);
+    if (ace && hand.includes(ace) && led === g.suit) return `${SUIT_NAME[g.suit]} ist gesucht: du musst die Rufsau zugeben.`;
+    if (hand.some(x => eff(x, g) === led) && eff(c, g) !== led)
+      return led === "T" ? "Trumpf ist angespielt: du musst Trumpf zugeben." : `${SUIT_NAME[led]} ist angespielt: du musst ${SUIT_NAME[led]} zugeben.`;
+    if (c === ace) return "Die Rufsau darfst du nicht abwerfen, solange ihre Farbe nicht gesucht wurde.";
+  } else if (ace && hand.includes(ace)) {
+    return `Du hast die Rufsau und weniger als 4 ${SUIT_NAME[g.suit]}: diese Farbe darfst du nur mit der Sau anspielen.`;
+  }
+  return "Diese Karte darfst du gerade nicht spielen.";
+}
+function playCard(s, p, c) {
+  const g = s.game;
+  s.hands[p] = s.hands[p].filter(x => x !== c);
+  s.trick.push({ p, c });
+  s.seq++;
+  if (g.type === "sau" && c === g.suit + "A" && !s.revealed) {
+    s.revealed = true;
+    log(s, `${nm(s, p)} spielt die Rufsau ${cc(c)} und ist Partner von ${nm(s, g.decl)}.`);
+  }
+  if (s.trick.length < 4) { s.turn = (p + 1) % 4; return; }
+  const wi = trickWinner(s.trick, g), w = s.trick[wi].p, ptsT = s.trick.reduce((a, t) => a + pts(t.c), 0);
+  s.ptsWon[w] += ptsT; s.tricksWon[w]++;
+  const led = eff(s.trick[0].c, g);
+  if (g.type === "sau" && led === g.suit) s.searched = true;
+  if (!s.ledSuits.includes(led)) s.ledSuits.push(led);
+  s.played.push(...s.trick.map(t => t.c));
+  s.lastTrick = { cards: s.trick, winner: w, pts: ptsT };
+  log(s, `Stich ${s.trickNo + 1}: ${s.trick.map(t => cc(t.c)).join(" ")} geht an ${nm(s, w)} (${ptsT} Augen).`);
+  s.trick = [];
+  s.trickNo++;
+  s.turn = w;
+  if (s.trickNo === 8) settle(s);
+}
+
+// ---------- Abrechnung ----------
+// Reine Rechnung für ein Sauspiel/Wenz/Solo aus Sicht der Spielerpartei
+function scoreGame({ type, partyPts, partyTricks, lauf, base, solo }) {
+  const win = partyPts >= 61;
+  const schwarz = partyTricks === 8 || partyTricks === 0;
+  const schneider = partyPts >= 91 || partyPts <= 30;
+  const minL = type === "wenz" ? 2 : 3, lc = lauf >= minL ? lauf : 0;
+  const parts = [[type === "sau" ? "Sauspiel" : type === "wenz" ? "Wenz" : "Solo", type === "sau" ? base : solo]];
+  if (schneider) parts.push(["Schneider", base]);
+  if (schwarz) parts.push(["Schwarz", base]);
+  if (lc) parts.push([`${lc} Laufende`, lc * base]);
+  const amount = parts.reduce((a, x) => a + x[1], 0);
+  return { win, schneider, schwarz, lauf, laufCounted: lc, parts, amount };
+}
+function scoreRamsch(ptsWon, tricksWon, base) {
+  const dm = tricksWon.findIndex(t => t === 8);
+  if (dm >= 0) return { durchmarsch: dm, losers: [], deltas: [0, 1, 2, 3].map(i => (i === dm ? 3 * base : -base)) };
+  const max = Math.max(...ptsWon), losers = [0, 1, 2, 3].filter(i => ptsWon[i] === max), nl = 4 - losers.length;
+  return { durchmarsch: -1, losers, deltas: [0, 1, 2, 3].map(i => (losers.includes(i) ? -base * nl : base * losers.length)) };
+}
+function settle(s) {
+  const g = s.game, cfg = s.cfg;
+  let res;
+  if (g.type === "ramsch") {
+    const r = scoreRamsch(s.ptsWon, s.tricksWon, cfg.base);
+    const names = r.losers.map(i => nm(s, i)).join(" und ");
+    res = { kind: "ramsch", deltas: r.deltas, parts: [["Grundtarif", cfg.base]],
+      title: r.durchmarsch >= 0 ? `Durchmarsch von ${esc(s.players[r.durchmarsch].name)}` : `Ramsch: ${r.losers.map(i => esc(s.players[i].name)).join(" und ")} ${r.losers.length > 1 ? "verlieren" : "verliert"}`,
+      lines: [r.durchmarsch >= 0 ? `${nm(s, r.durchmarsch)} macht alle Stiche und bekommt von jedem ${cfg.base}.`
+        : `${names} ${r.losers.length > 1 ? "haben" : "hat"} mit ${s.ptsWon[r.losers[0]]} Augen die meisten und ${r.losers.length > 1 ? "zahlen" : "zahlt"} jedem anderen ${cfg.base}.`,
+        `Augen: ${s.players.map((p, i) => `${esc(p.name)} ${s.ptsWon[i]}`).join(", ")}.`] };
+    s.history.push({ no: s.gameNo, label: "Ramsch", deltas: res.deltas });
+  } else {
+    const party = g.type === "sau" ? [g.decl, g.partner] : [g.decl];
+    const partyPts = party.reduce((a, i) => a + s.ptsWon[i], 0), partyTricks = party.reduce((a, i) => a + s.tricksWon[i], 0);
+    const lauf = laufende(party.flatMap(i => s.hands0[i]), g);
+    const r = scoreGame({ type: g.type, partyPts, partyTricks, lauf, base: cfg.base, solo: cfg.solo });
+    const deltas = [0, 1, 2, 3].map(i => {
+      const sign = party.includes(i) === r.win ? 1 : -1;
+      if (g.type === "sau") return sign * r.amount;
+      return i === g.decl ? sign * 3 * r.amount : sign * r.amount;
+    });
+    const who = g.type === "sau" ? `${nm(s, g.decl)} und ${nm(s, g.partner)}` : nm(s, g.decl);
+    const verb = g.type === "sau" ? (r.win ? "gewinnen" : "verlieren") : (r.win ? "gewinnt" : "verliert");
+    const extra = r.schwarz ? " schwarz" : r.schneider ? " mit Schneider" : "";
+    res = { kind: "game", deltas, parts: r.parts, amount: r.amount, win: r.win, partyPts,
+      title: `${g.type === "sau" ? `${esc(s.players[g.decl].name)} und ${esc(s.players[g.partner].name)}` : esc(s.players[g.decl].name)} ${verb} ${g.type === "sau" ? "das Sauspiel" : g.type === "wenz" ? "den Wenz" : "das " + SUIT_NAME[g.suit] + "-Solo"}${extra}`,
+      lines: [`${who} ${verb}${extra} mit ${partyPts} zu ${120 - partyPts} Augen (${partyTricks} ${partyTricks === 1 ? "Stich" : "Stiche"}).`,
+        r.lauf >= 1 ? `${r.lauf} Laufende${r.laufCounted ? "" : g.type === "wenz" ? " (zählen erst ab 2)" : " (zählen erst ab 3)"}.` : "",
+        g.type === "sau" ? `Jeder ${r.win ? "Gegenspieler" : "aus der Spielerpartei"} zahlt ${r.amount}.`
+          : `Jeder Gegenspieler ${r.win ? "zahlt" : "bekommt"} ${r.amount}, zusammen ${3 * r.amount}.`].filter(Boolean) };
+    s.history.push({ no: s.gameNo, label: g.type === "sau" ? `Sau ${SUIT_NAME[g.suit]}` : g.type === "wenz" ? "Wenz" : `Solo ${SUIT_NAME[g.suit]}`, deltas });
+  }
+  s.players.forEach((p, i) => { p.konto += res.deltas[i]; });
+  s.result = res;
+  log(s, `<b>${res.title}.</b> ${s.players.map((p, i) => `${esc(p.name)} ${res.deltas[i] > 0 ? "+" : ""}${res.deltas[i]}`).join(", ")}`);
+  if (s.gameNo >= cfg.games) { s.phase = "over"; log(s, "<b>Die Sitzung ist zu Ende.</b>"); }
+  else s.phase = "score";
+}
+
+// ---------- Computer: Ansage ----------
+const W_TOP = { EO: 4, GO: 3.5, HO: 3, SO: 3, EU: 2.6, GU: 2.4, HU: 2.2, SU: 2 };
+function evalNormal(hand, ts) {
+  const g = ts === "H" ? NORMAL : { type: "solo", suit: ts };
+  let t = 0, sc = 0;
+  for (const c of hand) if (isTrump(c, g)) { t++; sc += W_TOP[c] || ({ A: 1.8, X: 1.6, K: 1.3 }[c[1]] || 1.1); }
+  for (const su of SUITS) if (su !== ts) {
+    const cs = hand.filter(c => c[0] === su && !isTrump(c, g));
+    if (cs.includes(su + "A")) sc += 1.5 + (cs.includes(su + "X") ? 0.7 : 0);
+    else if (cs.length === 1 && cs[0][1] === "X") sc -= 0.5;
+    if (!cs.length && t >= 5) sc += 0.5;
+  }
+  return { t, sc, top: hand.includes("EO") || hand.includes("GO") };
+}
+function evalWenz(hand) {
+  const g = { type: "wenz" }, u = hand.filter(c => c[1] === "U").length;
+  let stand = 0, losers = 0;
+  for (const su of SUITS) {
+    const cs = hand.filter(c => c[0] === su && c[1] !== "U").sort((a, b) => plainRank(b, g) - plainRank(a, g));
+    let k = 0;
+    while (k < cs.length && plainRank(cs[k], g) === 6 - k) k++;
+    stand += k; losers += cs.length - k;
+  }
+  return { u, stand, losers, eu: hand.includes("EU") };
+}
+function botBid(s, p) {
+  const hand = s.hands[p], legal = legalBids(s, p), ok = b => legal.some(x => sameBid(x, b));
+  let best = null, bestSc = -1;
+  for (const su of SUITS) {
+    const e = evalNormal(hand, su);
+    if (((e.t >= 6 && e.sc >= 20 && e.top) || (e.t >= 7 && e.sc >= 17)) && e.sc > bestSc && ok({ type: "solo", suit: su })) { best = { type: "solo", suit: su }; bestSc = e.sc; }
+  }
+  if (best) return best;
+  const w = evalWenz(hand);
+  if (((w.u >= 2 && (w.eu || w.u >= 3) && w.losers <= 2 && w.u + w.stand >= 5) || (w.u === 4 && w.losers <= 3)) && ok({ type: "wenz" })) return { type: "wenz" };
+  const e = evalNormal(hand, "H"), calls = callable(hand);
+  if (e.t >= 4 && e.sc >= 10 && calls.length && ok({ type: "sau", suit: calls[0] })) {
+    // Am liebsten die Farbe, von der man am wenigsten hat, und keine, in der die eigene Zehn steht
+    const cnt = su => hand.filter(c => c[0] === su && c[1] !== "O" && c[1] !== "U").length + (hand.includes(su + "X") ? 0.5 : 0);
+    const suit = calls.slice().sort((a, b) => cnt(a) - cnt(b))[0];
+    return { type: "sau", suit };
+  }
+  return { type: "weiter" };
+}
+
+// ---------- Computer: Spiel ----------
+function unseen(s, p) {
+  const known = new Set([...s.hands[p], ...s.played, ...s.trick.map(t => t.c)]);
+  return deck().filter(c => !known.has(c));
+}
+const onDeclSide = (s, p) => p === s.game.decl || (s.game.type === "sau" && p === s.game.partner);
+function friend(s, me, q) {                                     // true / false / null (unbekannt)
+  const g = s.game;
+  if (q === me) return true;
+  if (g.type === "ramsch") return false;
+  if (g.type !== "sau") return (me === g.decl) === (q === g.decl);
+  if (me === g.partner) return q === g.decl;
+  if (me === g.decl) return s.revealed ? q === g.partner : null;
+  if (q === g.decl) return false;
+  return s.revealed ? q !== g.partner : null;
+}
+function isSure(s, p, c) {
+  const g = s.game, un = unseen(s, p);
+  if (isTrump(c, g)) return un.every(u => !isTrump(u, g) || trumpRank(u, g) < trumpRank(c, g));
+  if (s.ledSuits.includes(c[0])) return false;
+  return un.every(u => eff(u, g) !== c[0] || plainRank(u, g) < plainRank(c, g));
+}
+function botCard(s, p) {
+  const g = s.game, L = legalCards(s, p);
+  if (L.length === 1) return L[0];
+  const tr = c => isTrump(c, g);
+  const cost = c => pts(c) + (tr(c) ? 6 + trumpRank(c, g) : plainRank(c, g) * 0.1);
+  const smear = c => (tr(c) ? pts(c) - 8 - trumpRank(c, g) : pts(c) + plainRank(c, g) * 0.1);
+  const minBy = (arr, f) => arr.reduce((a, b) => (f(b) < f(a) ? b : a));
+  const maxBy = (arr, f) => arr.reduce((a, b) => (f(b) > f(a) ? b : a));
+  const low = () => minBy(L, cost);
+  const t = s.trick;
+
+  if (!t.length) {                                             // Ausspielen
+    if (g.type === "ramsch") return minBy(L, c => (tr(c) ? 50 + trumpRank(c, g) : plainRank(c, g)) + pts(c) * 0.01);
+    const trumps = L.filter(tr).sort((a, b) => trumpRank(b, g) - trumpRank(a, g));
+    const side = L.filter(c => !tr(c));
+    const unTr = unseen(s, p).filter(tr).length;
+    const decl = onDeclSide(s, p);
+    if (decl && trumps.length && unTr > 0) {
+      if (isSure(s, p, trumps[0])) return trumps[0];
+      if (p === g.decl ? trumps.length >= 3 : true) return trumps[trumps.length - 1];
+    }
+    if (g.type === "sau" && !decl && !s.searched) {             // Gegenspieler suchen die Rufsau
+      const cs = side.filter(c => c[0] === g.suit);
+      if (cs.length) return minBy(cs, c => plainRank(c, g));
+    }
+    const aces = side.filter(c => plainRank(c, g) === (g.type === "wenz" ? 6 : 5) && !s.ledSuits.includes(c[0]));
+    if (aces.length) return aces[0];
+    if (side.length) return minBy(side, cost);
+    return trumps[trumps.length - 1];
+  }
+
+  const led = eff(t[0].c, g), wi = trickWinner(t, g), wCard = t[wi].c, w = t[wi].p;
+  const canWin = L.filter(c => power(c, g, led) > power(wCard, g, led));
+  const lose = L.filter(c => !canWin.includes(c));
+  const trickPts = t.reduce((a, x) => a + pts(x.c), 0);
+  const after = [];
+  for (let k = t.length + 1; k < 4; k++) after.push((t[0].p + k) % 4);
+
+  if (g.type === "ramsch") {
+    if (lose.length) return maxBy(lose, c => pts(c) * 10 + power(c, g, led));
+    return maxBy(L, c => power(c, g, led));
+  }
+  const fw = friend(s, p, w);
+  const restFriends = after.every(q => friend(s, p, q) === true);
+  const wSure = !after.length || isSure(s, p, wCard) || restFriends;
+  if (fw === true) {
+    if (wSure) return maxBy(L, smear);                         // schmieren
+    return low();
+  }
+  if (canWin.length) {
+    const sideWins = canWin.filter(c => !tr(c));
+    if (!after.length || restFriends) return sideWins.length ? maxBy(sideWins, c => pts(c)) : minBy(canWin, c => trumpRank(c, g));
+    const sure = canWin.filter(c => isSure(s, p, c));
+    if (sure.length && (trickPts >= 3 || sure.some(c => pts(c) >= 10))) return minBy(sure, c => power(c, g, led) - (tr(c) ? 0 : pts(c)));
+    if (trickPts >= 10 && fw === false) return maxBy(canWin, c => power(c, g, led));
+  }
+  return low();
+}
+function runBots(s) {
+  let guard = 0;
+  while (guard++ < 200) {
+    if (s.phase === "bid" && s.players[s.bidTurn].ai) doBid(s, s.bidTurn, botBid(s, s.bidTurn));
+    else if (s.phase === "play" && s.players[s.turn].ai) playCard(s, s.turn, botCard(s, s.turn));
+    else break;
+  }
+}
+
+return { esc, SUITS, RANKS, SUIT_NAME, RANK_NAME, RANK_LABEL, LEVEL, deck, pts, cardName, cc, trumpRank, isTrump, eff, power,
+  trickWinner, trumpOrder, laufende, sortHand, gameName, bidName, trumpText, callable, legalBids, isLegalBid, sameBid,
+  defaults, startSession, deal, doBid, nextGame, legalCards, illegalReason, playCard, scoreGame, scoreRamsch, settle,
+  botBid, botCard, runBots, friend, evalNormal, evalWenz };
+})();
+</script>
+
+<!-- Oberfläche -->
+<script>
+(() => {
+"use strict";
+const R = window.SchafkopfRegeln;
+const $ = id => document.getElementById(id);
+const { esc } = Spielkit;
+const { SUIT_NAME } = R;
+let S, kit;
+const UI = { sel: null, selKey: "", warn: "", showLast: false, lastKey: "" };
+
+// ---------- Kartenbild (SVG, 60 × 90) ----------
+const COL = { E: "#6b4410", G: "#2e7d32", H: "#c62828", S: "#a35f00" };
+const ROBE = { E: "#7a5222", G: "#2f7d39", H: "#b8322a", S: "#c98a12" };
+const use = (s, x, y, size) => `<use href="#sym-${s}" x="${x}" y="${y}" width="${size}" height="${size}"/>`;
+const PIPS = {
+  7: [[22, 21], [38, 21], [30, 33], [22, 45], [38, 45], [22, 69], [38, 69]],
+  8: [[22, 21], [38, 21], [30, 33], [22, 45], [38, 45], [30, 57], [22, 69], [38, 69]],
+  9: [[19, 22], [30, 22], [41, 22], [19, 45], [30, 45], [41, 45], [19, 68], [30, 68], [41, 68]],
+  X: [[21, 20], [39, 20], [30, 30], [21, 38], [39, 38], [21, 52], [39, 52], [30, 60], [21, 70], [39, 70]],
+};
+function figure(s, r) {
+  let f = `<path d="M17 77 L22 50 Q30 45 38 50 L43 77 Z" fill="${ROBE[s]}"/>
+    <path d="M24 48.5 Q30 54 36 48.5 L34 47 Q30 49.5 26 47 Z" fill="#fbf6ea"/>
+    <rect x="21" y="61" width="18" height="3" fill="#e2b04a"/>
+    <circle cx="30" cy="40" r="6.6" fill="#f1d2b0" stroke="rgba(0,0,0,.25)" stroke-width=".6"/>
+    <path d="M27.4 41.5 Q30 43.6 32.6 41.5" stroke="#7a4a2a" stroke-width=".8" fill="none"/>`;
+  if (r === "K") f += `<path d="M22.5 34.5 L22.5 27 L26.2 30.6 L30 25 L33.8 30.6 L37.5 27 L37.5 34.5 Z" fill="#e8b23c" stroke="#8a6510" stroke-width=".7"/>` + use(s, 24.5, 64.5, 11);
+  else {
+    f += `<path d="M22.5 37 Q23 30.5 30 30.5 Q37 30.5 37.5 37 Z" fill="#3a2a1a"/><path d="M36 33 Q42 27 44 30" stroke="#d9d3c4" stroke-width="1.4" fill="none"/>`;
+    f += r === "O" ? use(s, 22, 6, 16) : use(s, 22.5, 66, 15);
+  }
+  return f;
+}
+function cardSvg(c) {
+  const s = c[0], r = c[1], col = COL[s], lab = R.RANK_LABEL[r];
+  let mid;
+  if (PIPS[r]) mid = PIPS[r].map(([x, y]) => use(s, x - 6, y - 6, 12)).join("");
+  else if (r === "A") mid = `<ellipse cx="30" cy="45" rx="19" ry="25" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="1.2"/>
+      <ellipse cx="30" cy="45" rx="16" ry="22" fill="${col}" fill-opacity=".07"/>` + use(s, 15, 28, 30)
+      + `<text x="30" y="76" text-anchor="middle" font-size="7.5" font-weight="800" letter-spacing="1" fill="${col}" font-family="Nunito, sans-serif">SAU</text>`;
+  else mid = figure(s, r);
+  const idx = `<text x="${lab.length > 1 ? 2 : 4}" y="14" font-size="${lab.length > 1 ? 12 : 13.5}" font-weight="800" fill="${col}" font-family="Nunito, Segoe UI, sans-serif"${lab.length > 1 ? ' letter-spacing="-.6"' : ""}>${lab}</text>` + use(s, 2.5, 16.5, 11);
+  return `<svg viewBox="0 0 60 90" aria-hidden="true">${mid}${idx}<g transform="rotate(180 30 45)">${idx}</g></svg>`;
+}
+const cardEl = (c, cls = "", attrs = "") => `<span class="card ${cls}" ${attrs} role="img" aria-label="${R.cardName(c)}">${cardSvg(c)}</span>`;
+
+// ---------- Spielkit-Anbindung ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, konto: 0 });
+function newState({ roster, mode, options }) {
+  const s = { players: roster.map(newPlayer), phase: "bid", log: [], cfg: R.defaults(options), history: [], gameNo: 1, dealer: 0, seq: 0, notice: "",
+    hands: [[], [], [], []], hands0: [[], [], [], []], bids: [null, null, null, null], best: -1, bidTurn: 1, game: null, trick: [], lastTrick: null,
+    played: [], ledSuits: [], tricksWon: [0, 0, 0, 0], ptsWon: [0, 0, 0, 0], trickNo: 0, turn: 0, searched: false, revealed: false, result: null };
+  if (mode !== "online") { R.startSession(s); R.runBots(s); }
+  return s;
+}
+function onStart(s) {
+  s.cfg = R.defaults(s.options || s.cfg);
+  R.startSession(s);
+  R.runBots(s);
+}
+const whoActs = () => (S.phase === "bid" ? [S.bidTurn] : S.phase === "play" ? [S.turn] : []);
+
+const setupOpts = {
+  html: `<div class="sk-field"><div class="sk-label">Anzahl Spiele</div>
+      <div class="sk-seg" role="radiogroup" aria-label="Anzahl Spiele">
+        <label><input type="radio" name="sk-games" value="8" checked>8<small>jeder gibt 2-mal</small></label>
+        <label><input type="radio" name="sk-games" value="16">16<small>jeder gibt 4-mal</small></label>
+        <label><input type="radio" name="sk-games" value="24">24<small>jeder gibt 6-mal</small></label>
+      </div></div>
+    <div class="sk-field"><div class="sk-label">Tarif</div>
+      <div class="sk-seg" role="radiogroup" aria-label="Tarif">
+        <label><input type="radio" name="sk-tarif" value="10" checked>10 / 50<small>Sauspiel 10, Wenz und Solo 50</small></label>
+        <label><input type="radio" name="sk-tarif" value="20">20 / 50<small>Sauspiel 20, Wenz und Solo 50</small></label>
+      </div></div>
+    <div class="sk-field"><div class="sk-label">Wenn alle weiter sagen</div>
+      <div class="sk-seg" role="radiogroup" aria-label="Wenn alle weiter sagen">
+        <label><input type="radio" name="sk-allpass" value="zusammen" checked>Zusammenwerfen<small>der nächste gibt</small></label>
+        <label><input type="radio" name="sk-allpass" value="ramsch">Ramsch<small>meiste Augen verliert</small></label>
+      </div></div>`,
+  init(root) {
+    const o = R.defaults(JSON.parse(kit.store.get("optionen") || "{}"));
+    const set = (n, v) => { const el = root.querySelector(`input[name="${n}"][value="${v}"]`); if (el) el.checked = true; };
+    set("sk-games", o.games); set("sk-tarif", o.base); set("sk-allpass", o.allPass);
+  },
+  read(root) {
+    const v = n => (root.querySelector(`input[name="${n}"]:checked`) || {}).value;
+    const o = { games: +v("sk-games"), base: +v("sk-tarif"), allPass: v("sk-allpass") };
+    kit.store.set("optionen", JSON.stringify(o));
+    return o;
+  },
+};
+
+// ---------- Eingaben ----------
+const me = () => kit.me();
+function onBid(b) {
+  const seq = S.seq;
+  kit.act(() => {
+    const p = me();
+    if (S.seq !== seq || p < 0 || !R.isLegalBid(S, p, b)) return false;
+    R.doBid(S, p, b);
+    R.runBots(S);
+  });
+}
+function onPlay(c) {
+  const seq = S.seq;
+  UI.sel = null; UI.warn = "";
+  kit.act(() => {
+    const p = me();
+    if (S.seq !== seq || S.phase !== "play" || S.turn !== p || !R.legalCards(S, p).includes(c)) return false;
+    R.playCard(S, p, c);
+    R.runBots(S);
+  });
+}
+function onNext() {
+  const seq = S.seq;
+  kit.act(() => {
+    if (S.seq !== seq || S.phase !== "score" || me() < 0) return false;
+    R.nextGame(S);
+    R.runBots(S);
+  });
+}
+$("hand").addEventListener("click", e => {
+  const b = e.target.closest("[data-c]");
+  if (!b) return;
+  const c = b.dataset.c, p = me();
+  if (S.phase !== "play" || S.turn !== p) return;
+  const why = R.illegalReason(S, p, c);
+  if (why) { UI.warn = why; UI.sel = null; render(); return; }
+  if (UI.sel === c) { onPlay(c); return; }
+  UI.sel = c; UI.warn = ""; render();
+});
+$("bids").addEventListener("click", e => {
+  const b = e.target.closest("[data-bid]");
+  if (!b || b.disabled) return;
+  const [type, suit] = b.dataset.bid.split(":");
+  onBid({ type, suit: suit || null });
+});
+$("actions").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const a = b.dataset.act;
+  if (a === "play" && UI.sel) onPlay(UI.sel);
+  else if (a === "last") { UI.showLast = !UI.showLast; render(); }
+  else if (a === "next") onNext();
+});
+$("result").addEventListener("click", e => {
+  if (e.target.closest("[data-again]")) kit.rematch();
+  else if (e.target.closest("[data-next]")) onNext();
+});
+
+// ---------- Darstellung ----------
+const sub = (i) => (i === 0 ? "" : "");
+function roleChips(i) {
+  const g = S.game, chips = [];
+  if (i === S.dealer) chips.push(`<span class="chip deal">Geber</span>`);
+  if (g && g.type !== "ramsch") {
+    if (i === g.decl) chips.push(`<span class="chip decl">Spieler</span>`);
+    const showPartner = g.type === "sau" && i === g.partner && (S.revealed || S.phase === "score" || S.phase === "over" || me() === i);
+    if (showPartner) chips.push(`<span class="chip part">Partner</span>`);
+  }
+  return chips.join("");
+}
+function seatHtml(i, pos, viewer) {
+  const p = S.players[i];
+  const active = (S.phase === "bid" && S.bidTurn === i) || (S.phase === "play" && S.turn === i);
+  let line = "";
+  if (S.phase === "bid") {
+    const b = S.bids[i];
+    line = b ? `<span class="bid${b.type === "weiter" ? " pass" : ""}">${b.type === "weiter" ? "weiter" : "möchte spielen"}</span>` : active ? "überlegt …" : "&nbsp;";
+  } else if (S.game) line = `${S.tricksWon[i]} ${S.tricksWon[i] === 1 ? "Stich" : "Stiche"}`;
+  const n = S.hands[i].length;
+  const backs = i === viewer && pos === 0 ? "" : `<div class="backs" aria-label="${n} Karten">${"<i></i>".repeat(n)}</div>`;
+  return `<div class="seat seat-${["bottom", "left", "top", "right"][pos]}${active ? " on" : ""}">
+    <div class="nm" title="${esc(p.name)}">${esc(p.name)}${i === viewer && kit.me() >= 0 ? "" : ""}</div>
+    <div>${roleChips(i)}</div>
+    <div class="sub">${line}</div>${pos === 0 ? "" : backs}</div>`;
+}
+function render() {
+  const lobby = S.phase === "lobby";
+  $("board").hidden = lobby;
+  const mi = kit.me(), viewer = mi >= 0 ? mi : 0, g = S.game;
+  const rel = i => (i - viewer + 4) % 4;
+
+  // Kopfzeile
+  if (!lobby) {
+    let gi = `<span>Spiel <b>${S.gameNo}</b> von ${S.cfg.games} · Geber <b>${esc(S.players[S.dealer].name)}</b></span>`;
+    if (g) gi = `<span class="game-name">${esc(R.gameName(g))}${g.type !== "ramsch" ? ` · ${esc(S.players[g.decl].name)}` : ""}</span>` + gi + `<span>Trumpf: ${R.trumpText(g)}</span>`;
+    else if (S.phase === "bid") gi = `<span class="game-name">Ansage</span>` + gi;
+    $("info").innerHTML = gi;
+  }
+
+  // Tisch
+  const seats = [0, 1, 2, 3].map(i => seatHtml(i, rel(i), viewer)).join("");
+  const lk = S.lastTrick ? `${S.gameNo}:${S.trickNo}` : "";
+  if (UI.lastKey !== lk) { UI.lastKey = lk; UI.showLast = false; }
+  let mid;
+  if (S.phase === "bid") {
+    const bp = S.best >= 0 ? S.players[S.best] : null;
+    mid = `<div class="bid-note"><div><b>Wer spielt?</b>${bp ? `${esc(bp.name)} möchte ${S.bids[S.best].type === "sau" ? "ein Sauspiel" : S.bids[S.best].type === "wenz" ? "einen Wenz" : "ein Solo"} spielen.` : "Bisher hat niemand ein Spiel angesagt."}</div></div>`;
+  } else {
+    const showOld = S.lastTrick && (UI.showLast || (!S.trick.length && S.phase === "play") || S.phase === "score" || S.phase === "over");
+    const cards = UI.showLast || !S.trick.length ? (showOld ? S.lastTrick.cards : []) : S.trick;
+    const old = cards !== S.trick;
+    const win = old && S.lastTrick ? S.lastTrick.winner : -1;
+    mid = `<div class="trick${old ? " old" : ""}">${cards.map(t => `<div class="slot p${rel(t.p)}${t.p === win ? " win" : ""}">${cardEl(t.c)}</div>`).join("")}</div>`;
+    if (old && S.lastTrick) mid += `<div class="trick-note">Letzter Stich: ${esc(S.players[S.lastTrick.winner].name)}, ${S.lastTrick.pts} Augen</div>`;
+  }
+  $("tisch").innerHTML = seats + `<div class="mid">${mid}</div>`;
+
+  // Hand
+  const myTurn = mi >= 0 && S.phase === "play" && S.turn === mi;
+  const hand = mi >= 0 ? R.sortHand(S.hands[mi], g && S.phase !== "bid" ? g : null) : [];
+  const legal = myTurn ? R.legalCards(S, mi) : [];
+  const key = `${S.seq}:${mi}`;
+  if (UI.selKey !== key) { UI.selKey = key; if (!myTurn || !legal.includes(UI.sel)) UI.sel = null; UI.warn = ""; }
+  const hz = $("hand");
+  if (mi < 0) { hz.style.gridTemplateColumns = ""; hz.innerHTML = `<div class="hand-empty">Du schaust zu.</div>`; }
+  else if (!hand.length) { hz.style.gridTemplateColumns = ""; hz.innerHTML = `<div class="hand-empty">${S.phase === "score" || S.phase === "over" ? "Alle Karten sind gespielt." : ""}</div>`; }
+  else {
+    hz.style.gridTemplateColumns = hand.length > 1 ? `repeat(${hand.length - 1}, minmax(0, calc(var(--cw) + 8px))) var(--cw)` : "var(--cw)";
+    hz.innerHTML = hand.map(c => {
+      const can = myTurn && legal.includes(c);
+      const cls = (myTurn ? (can ? "can" : "dim") : "") + (UI.sel === c ? " sel" : "");
+      return `<button type="button" class="card ${cls}" data-c="${c}" aria-label="${R.cardName(c)}${myTurn && !can ? ", nicht erlaubt" : ""}"${myTurn ? "" : ' tabindex="-1"'}>${cardSvg(c)}</button>`;
+    }).join("");
+  }
+
+  // Ansage
+  const myBid = mi >= 0 && S.phase === "bid" && S.bidTurn === mi;
+  $("bids").hidden = !myBid;
+  if (myBid) {
+    const legalB = R.legalBids(S, mi), ok = b => legalB.some(x => R.sameBid(x, b));
+    const lv = S.best >= 0 ? R.LEVEL[S.bids[S.best].type] : 0;
+    const sb = (type, suit, label) => `<button class="btn suit" type="button" data-bid="${type}:${suit}"${ok({ type, suit }) ? "" : " disabled"}><svg aria-hidden="true"><use href="#sym-${suit}"/></svg>${label}</button>`;
+    let h = `<div class="grp"><button class="btn plain big" type="button" data-bid="weiter">Weiter</button></div>`;
+    if (lv < 1) {
+      h += `<div class="grp"><span class="lbl">Sauspiel</span>${["E", "G", "S"].map(su => sb("sau", su, `${SUIT_NAME[su]}-Sau`)).join("")}</div>`;
+      if (!R.callable(S.hands[mi]).length) h += `<p class="hint">Rufen kannst du nur eine Sau, von deren Farbe du eine Karte hast, aber nicht die Sau selbst.</p>`;
+    }
+    if (lv < 2) h += `<div class="grp"><span class="lbl">Wenz</span><button class="btn plain" type="button" data-bid="wenz:">Wenz</button></div>`;
+    if (lv < 3) h += `<div class="grp"><span class="lbl">Solo</span>${R.SUITS.map(su => sb("solo", su, SUIT_NAME[su])).join("")}</div>`;
+    $("bids").innerHTML = h;
+  }
+
+  // Knöpfe
+  let acts = "";
+  if (myTurn) acts += `<button class="btn primary big" type="button" data-act="play"${UI.sel ? "" : " disabled"}>${UI.sel ? `Ausspielen: ${R.cardName(UI.sel)}` : "Karte antippen"}</button>`;
+  if (S.phase === "play" && S.lastTrick && S.trick.length) acts += `<button class="btn" type="button" data-act="last" aria-pressed="${UI.showLast}">${UI.showLast ? "Aktuellen Stich zeigen" : "Letzten Stich ansehen"}</button>`;
+  $("actions").innerHTML = acts;
+
+  // Statuszeile
+  let st = "";
+  const nmB = i => `<strong>${esc(S.players[i].name)}</strong>`;
+  if (S.phase === "bid") {
+    if (myBid) st = S.best >= 0 ? `Du bist mit der Ansage dran. ${nmB(S.best)} möchte schon spielen: drüber geht nur ein höheres Spiel.` : "Du bist mit der Ansage dran. Spielst du, oder sagst du weiter?";
+    else st = mi < 0 ? `Du schaust zu. ${nmB(S.bidTurn)} sagt an.` : `Warte auf ${nmB(S.bidTurn)} (Ansage).`;
+    if (S.notice && S.bids.every(b => !b)) st = `${esc(S.notice)} ` + st;
+  } else if (S.phase === "play") {
+    if (myTurn) {
+      if (!S.trick.length) st = "Du spielst aus. Tippe eine Karte an und bestätige.";
+      else {
+        const led = R.eff(S.trick[0].c, g);
+        st = `Du bist dran. ${led === "T" ? "Trumpf" : SUIT_NAME[led]} ist angespielt.`;
+      }
+      if (g.type === "sau" && mi === g.partner) st += ` Du hast die Rufsau und spielst mit ${nmB(g.decl)}.`;
+    } else {
+      st = mi < 0 ? `Du schaust zu. ${nmB(S.turn)} ist dran.` : `Warte auf ${nmB(S.turn)}.`;
+      if (mi >= 0 && g.type === "sau" && mi === g.partner && !S.revealed) st += ` Du hast die Rufsau und spielst mit ${nmB(g.decl)}.`;
+    }
+  } else if (S.phase === "score") st = `Spiel ${S.gameNo} ist vorbei. Die Abrechnung steht unten.`;
+  else if (S.phase === "over") st = "Die Sitzung ist zu Ende.";
+  if (UI.warn) st += `<span class="warn">${esc(UI.warn)}</span>`;
+  if (kit.error) st += `<span class="warn">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+
+  renderTafel();
+  renderResult();
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+}
+function renderTafel() {
+  const t = $("tafel");
+  if (S.phase === "lobby") { t.innerHTML = `<h2>Kontostand</h2><div class="meta">Noch kein Spiel.</div>`; return; }
+  const sign = v => (v > 0 ? "+" + v : String(v));
+  const run = [0, 0, 0, 0];
+  const rows = S.history.map(h => {
+    h.deltas.forEach((d, i) => { run[i] += d; });
+    return `<tr><td class="nr">${h.no}</td><td class="g">${esc(h.label)}</td>${run.map(v => `<td class="${v < 0 ? "neg" : ""}">${v}</td>`).join("")}</tr>`;
+  }).reverse().join("");
+  t.innerHTML = `<h2>Kontostand</h2>
+    <div class="meta">Sauspiel ${S.cfg.base} · Solo ${S.cfg.solo} · ${S.cfg.games} Spiele</div>
+    <div class="konto">${S.players.map(p => `<div><div class="n" title="${esc(p.name)}">${esc(p.name)}</div><div class="v ${p.konto < 0 ? "neg" : p.konto > 0 ? "pos" : ""}">${sign(p.konto)}</div></div>`).join("")}</div>
+    ${rows ? `<div class="liste-wrap"><table class="liste"><thead><tr><th class="nr">Nr</th><th class="g">Spiel</th>${S.players.map(p => `<th title="${esc(p.name)}">${esc(p.name.slice(0, 5))}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>` : ""}`;
+}
+function renderResult() {
+  const el = $("result"), r = S.result;
+  if (!r || (S.phase !== "score" && S.phase !== "over")) { el.hidden = true; return; }
+  const sign = v => (v > 0 ? "+" + v : String(v));
+  let h = `<h2>${r.title}</h2>${r.lines.map(l => `<p>${l}</p>`).join("")}`;
+  if (r.parts.length && r.kind === "game") h += `<ul class="parts">${r.parts.map(([l, v]) => `<li><span>${esc(l)}</span><span>${v}</span></li>`).join("")}<li><b>je Spieler</b><b>${r.amount}</b></li></ul>`;
+  h += `<ol class="rank">${S.players.map((p, i) => `<li><span>${esc(p.name)}</span><span>${sign(r.deltas[i])}</span></li>`).join("")}</ol>`;
+  if (r.kind !== "thrown") h += `<details><summary>Karten aller Spieler</summary><div class="hands0">${S.players.map((p, i) => `<div><span class="who">${esc(p.name)}</span>${R.sortHand(S.hands0[i], S.game).map(R.cc).join("")}</div>`).join("")}</div></details>`;
+  if (S.phase === "score") {
+    const nd = S.players[(S.dealer + 1) % 4].name;
+    h += kit.me() >= 0 ? `<div class="sk-actions" style="margin-top:12px"><button class="btn primary big" type="button" data-next>Nächstes Spiel (${S.gameNo + 1} von ${S.cfg.games}, ${esc(nd)} gibt)</button></div>` : `<p class="sk-muted">Warte auf das nächste Spiel.</p>`;
+  } else {
+    const rank = S.players.map(p => p).sort((a, b) => b.konto - a.konto);
+    const top = rank.filter(p => p.konto === rank[0].konto);
+    h += `<h2 style="margin-top:14px">Endstand nach ${S.cfg.games} Spielen</h2>
+      <p>${top.length > 1 ? `Gleichstand: ${top.map(p => esc(p.name)).join(" und ")}` : `${esc(top[0].name)} ${top[0].name === "Du" ? "gewinnst" : "gewinnt"} die Sitzung.`}</p>
+      <ol class="rank">${rank.map(p => `<li><span>${esc(p.name)}</span><span>${sign(p.konto)}</span></li>`).join("")}</ol>`;
+    h += kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neue Runde im selben Raum" : "Noch eine Runde"}</button>`;
+  }
+  el.innerHTML = h;
+  el.hidden = false;
+}
+
+kit = Spielkit.create({
+  id: "schafkopf", version: 1, minPlayers: 4, maxPlayers: 4, bots: true, defaultBots: 3,
+  botNames: ["Sepp", "Vroni", "Girgl", "Resi", "Hias", "Wastl"],
+  privateHands: true,
+  setup: setupOpts,
+  defaultOptions: () => R.defaults(JSON.parse(kit ? kit.store.get("optionen") || "{}" : "{}")),
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.hands) && !!s.cfg && Array.isArray(s.history),
+  roomStatus: s => `Spiel ${s.gameNo} von ${s.cfg.games}`,
+  handoverText: (s, i) => s.phase === "bid" ? "Du bist mit der Ansage dran." : "Du spielst eine Karte.",
+});
+kit.start();
+})();
+</script>

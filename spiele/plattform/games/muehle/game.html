@@ -1,0 +1,671 @@
+<title>Mühle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: Holzbrett links (schmal: oben), rechts Spieler mit Steinvorrat, Verlauf und Regeln */
+:root {
+  color-scheme: dark;
+  --table: #16100b;
+  --sheet: #231a13;
+  --sheet-2: #33261b;
+  --ink: #f4ead8;
+  --muted: #b3a28b;
+  --accent: #e6ad4f;
+  --tile-ink: #241a10;
+  --red: #e5625a;
+  --green: #86bf6a;
+  --wood-line: #3a2213;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  background: radial-gradient(ellipse at 50% 0%, #2a1c12 0%, var(--table) 60%) fixed, var(--table);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 940px) { main.game { grid-template-columns: minmax(0, 640px) minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 939px) {
+  .col { display: contents; }
+  .sk-lobby { order: 0; } .board-panel { order: 1; } .players-panel { order: 2; } .log-panel { order: 3; } .rules { order: 4; }
+}
+
+/* ---------- Brett ---------- */
+.board-panel { padding: 14px; }
+.status { min-height: 2.9em; margin: 0 2px 12px; font-size: 15.5px; }
+.status strong { color: var(--accent); }
+.status .hint { display: block; color: var(--muted); font-size: 13.5px; }
+.status .sk-err { display: block; }
+.board { width: 100%; max-width: 620px; margin: 0 auto; display: block; }
+.board svg { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,.55); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.board .hit { fill: transparent; }
+.board .hit.on { cursor: pointer; }
+.board .hit:focus { outline: none; }
+.board .hit:focus-visible { stroke: var(--accent); stroke-width: 4; stroke-dasharray: 6 5; }
+.board .tgt { fill: var(--accent); opacity: .9; pointer-events: none; }
+.board .tgt.soft { opacity: .45; }
+.board .sel { fill: none; stroke: var(--accent); stroke-width: 7; pointer-events: none; }
+.board .can { fill: none; stroke: #fff6e0; stroke-width: 3; stroke-dasharray: 7 7; opacity: .55; pointer-events: none; }
+.board .kill { fill: none; stroke: var(--red); stroke-width: 6; stroke-dasharray: 10 6; pointer-events: none; animation: spin 3s linear infinite; transform-box: fill-box; transform-origin: center; }
+.board .last { fill: none; stroke: var(--accent); stroke-width: 3; pointer-events: none; }
+.board .from { fill: none; stroke: rgba(58,34,19,.75); stroke-width: 3; stroke-dasharray: 5 5; pointer-events: none; }
+.board .gone { stroke: var(--red); stroke-width: 5; stroke-linecap: round; pointer-events: none; opacity: .85; }
+.board .mill { stroke: var(--accent); stroke-width: 12; stroke-linecap: round; opacity: .55; pointer-events: none; }
+.board .stone { pointer-events: none; }
+.board .stone.pop { animation: pop .28s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes pop { from { transform: scale(.6); opacity: .2; } to { transform: scale(1); opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Spieler ---------- */
+.players { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.pcard { background: var(--sheet-2); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; min-width: 0; border: 2px solid transparent; }
+.pcard.on { border-color: var(--accent); }
+.pname { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pname b { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pname svg { flex: 0 0 auto; }
+.pcard small { color: var(--muted); display: block; line-height: 1.3; }
+.wins { font-family: var(--font-display); font-size: 22px; color: var(--accent); line-height: 1; }
+.wins span { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .04em; }
+.supply { display: flex; flex-wrap: wrap; gap: 3px; min-height: 14px; }
+.supply svg { width: 13px; height: 13px; }
+.supply svg.used { opacity: .18; }
+.draws { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 260px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 12px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; }
+@media (max-width: 520px) {
+  .board-panel { padding: 10px; }
+  .players { gap: 8px; }
+  .pcard { padding: 8px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Mühle</h1>
+      <div class="sub">Neun Steine, drei in einer Reihe</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <section class="panel sk-lobby" data-sk-lobby hidden></section>
+    <section class="panel board-panel" id="board-panel" aria-label="Spielbrett">
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="board" id="board"></div>
+    </section>
+    <div class="col">
+      <section class="panel players-panel" id="players-panel">
+        <h2>Spieler</h2>
+        <div class="players" id="players"></div>
+        <p class="draws" id="draws"></p>
+      </section>
+      <section class="panel log-panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul>
+            <li>Das Brett hat <b>24 Punkte</b> auf drei ineinanderliegenden Quadraten, die in der Mitte jeder Seite verbunden sind. Jeder von euch hat <b>9 Steine</b>, einer spielt die hellen, einer die dunklen.</li>
+            <li><b>Setzen:</b> Ihr setzt abwechselnd je einen Stein auf einen freien Punkt, bis alle Steine auf dem Brett sind. Wer beginnt, wechselt von Runde zu Runde.</li>
+            <li><b>Ziehen:</b> Danach schiebst du in deinem Zug einen eigenen Stein entlang einer Linie auf einen freien Nachbarpunkt. Tippe dazu den Stein und dann das markierte Ziel an.</li>
+            <li><b>Springen:</b> Hast du nur noch 3 Steine, darfst du mit einem Stein auf jeden freien Punkt springen.</li>
+            <li><b>Mühle:</b> Stehen drei eigene Steine auf einer Linie, nimmst du einen Stein des Gegners vom Brett. Steine in einer geschlossenen Mühle sind geschützt, außer der Gegner hat nur noch Steine in Mühlen. Schließt ein Zug zwei Mühlen auf einmal, nimmst du trotzdem nur einen Stein. Eine Mühle öffnen und wieder schließen zählt jedes Mal neu.</li>
+            <li><b>Verloren</b> hat, wer nur noch 2 Steine hat oder keinen Stein mehr ziehen kann.</li>
+            <li><b>Unentschieden</b> ist es, wenn in der Zugphase 50 Züge hintereinander (beide zusammengezählt) kein Stein vom Brett genommen wird oder wenn dieselbe Stellung mit demselben Spieler am Zug zum dritten Mal entsteht.</li>
+            <li>Gegen den Computer stellst du unter „Neues Spiel“ die Stärke ein: leicht, mittel oder schwer.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+// RULES-START  (reine Regeln und Computer-Gegner, ohne Oberfläche; wird auch von Node-Tests geladen)
+const Muehle = (() => {
+  // Punkte: Ring r (0 außen, 1 Mitte, 2 innen), k = 0..7 im Uhrzeigersinn ab der linken oberen Ecke
+  const RING = [[0, 0], [3, 0], [6, 0], [6, 3], [6, 6], [3, 6], [0, 6], [0, 3]];
+  const XY = [];
+  for (let r = 0; r < 3; r++) for (const [x, y] of RING) XY.push([r + x * (3 - r) / 3, r + y * (3 - r) / 3]);
+  const ADJ = XY.map((_, i) => {
+    const r = Math.floor(i / 8), k = i % 8, a = [r * 8 + (k + 1) % 8, r * 8 + (k + 7) % 8];
+    if (k % 2) { if (r > 0) a.push(i - 8); if (r < 2) a.push(i + 8); }
+    return a;
+  });
+  const MILLS = [];
+  for (let r = 0; r < 3; r++) for (const k of [0, 2, 4, 6]) MILLS.push([r * 8 + k, r * 8 + k + 1, r * 8 + (k + 2) % 8]);
+  for (const k of [1, 3, 5, 7]) MILLS.push([k, 8 + k, 16 + k]);
+  const MILLS_OF = XY.map((_, i) => MILLS.filter(m => m.includes(i)));
+  const name = i => "abcdefg"[XY[i][0]] + (7 - XY[i][1]);
+  const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+  const count = (b, c) => { let n = 0; for (let i = 0; i < 24; i++) if (b[i] === c) n++; return n; };
+  const total = (pos, c) => count(pos.b, c) + pos.hand[c];
+  const inMill = (b, i) => b[i] >= 0 && MILLS_OF[i].some(m => b[m[0]] === b[i] && b[m[1]] === b[i] && b[m[2]] === b[i]);
+  // Steine der Farbe c, die geschlagen werden dürfen: zuerst solche außerhalb von Mühlen
+  function removable(b, c) {
+    const own = [], free = [];
+    for (let i = 0; i < 24; i++) if (b[i] === c) { own.push(i); if (!inMill(b, i)) free.push(i); }
+    return free.length ? free : own;
+  }
+  // "place" (Steine in der Hand), "jump" (nur noch 3 Steine), sonst "move"
+  const mode = (pos, c) => (pos.hand[c] > 0 ? "place" : count(pos.b, c) <= 3 ? "jump" : "move");
+  function targets(pos, f) {
+    const c = pos.turn;
+    if (pos.b[f] !== c || pos.hand[c] > 0) return [];
+    if (mode(pos, c) === "jump") { const t = []; for (let i = 0; i < 24; i++) if (pos.b[i] < 0) t.push(i); return t; }
+    return ADJ[f].filter(t => pos.b[t] < 0);
+  }
+  // einfache Züge {f, t} (f = −1 beim Setzen)
+  function moves(pos) {
+    const out = [], c = pos.turn;
+    if (pos.hand[c] > 0) { for (let i = 0; i < 24; i++) if (pos.b[i] < 0) out.push({ f: -1, t: i }); return out; }
+    for (let f = 0; f < 24; f++) if (pos.b[f] === c) for (const t of targets(pos, f)) out.push({ f, t });
+    return out;
+  }
+  function formsMill(b, f, t, c) {
+    const old = f >= 0 ? b[f] : 0;
+    if (f >= 0) b[f] = -1;
+    b[t] = c;
+    const m = inMill(b, t);
+    b[t] = -1;
+    if (f >= 0) b[f] = old;
+    return m;
+  }
+  // vollständige Züge {f, t, x} inklusive Wahl des geschlagenen Steins (x = −1: keiner)
+  function fullMoves(pos) {
+    const out = [], c = pos.turn;
+    for (const m of moves(pos)) {
+      if (formsMill(pos.b, m.f, m.t, c)) {
+        const b = pos.b.slice(); if (m.f >= 0) b[m.f] = -1; b[m.t] = c;
+        const xs = removable(b, 1 - c);
+        if (xs.length) { for (const x of xs) out.push({ f: m.f, t: m.t, x }); continue; }
+      }
+      out.push({ f: m.f, t: m.t, x: -1 });
+    }
+    return out;
+  }
+  function play(pos, mv) {
+    const b = pos.b.slice(), hand = pos.hand.slice(), c = pos.turn;
+    if (mv.f >= 0) b[mv.f] = -1; else hand[c]--;
+    b[mv.t] = c;
+    if (mv.x >= 0) b[mv.x] = -1;
+    return { b, hand, turn: 1 - c };
+  }
+  // Ist die Partie für den Spieler am Zug verloren? "material" | "blocked" | null
+  function lost(pos) {
+    if (total(pos, pos.turn) < 3) return "material";
+    if (pos.hand[pos.turn] === 0 && !moves(pos).length) return "blocked";
+    return null;
+  }
+
+  // ---------- Bewertung aus Sicht des Spielers am Zug ----------
+  const WIN = 100000;
+  function evaluate(pos) {
+    const b = pos.b, me = pos.turn;
+    const cnt = [0, 0], mills = [0, 0], open = [0, 0], mob = [0, 0], stuck = [0, 0];
+    for (let i = 0; i < 24; i++) if (b[i] >= 0) cnt[b[i]]++;
+    for (const m of MILLS) {
+      const v0 = b[m[0]], v1 = b[m[1]], v2 = b[m[2]];
+      for (let c = 0; c < 2; c++) {
+        const n = (v0 === c) + (v1 === c) + (v2 === c), e = (v0 < 0) + (v1 < 0) + (v2 < 0);
+        if (n === 3) mills[c]++; else if (n === 2 && e === 1) open[c]++;
+      }
+    }
+    for (let i = 0; i < 24; i++) if (b[i] >= 0) {
+      let free = 0;
+      for (const j of ADJ[i]) if (b[j] < 0) free++;
+      mob[b[i]] += free; if (!free) stuck[b[i]]++;
+    }
+    const side = c => {
+      const material = cnt[c] + pos.hand[c];
+      const jumping = pos.hand[c] === 0 && cnt[c] <= 3;
+      const moveW = pos.hand[0] + pos.hand[1] === 0 ? 5 : 1;
+      return material * 100 + mills[c] * 14 + open[c] * (jumping ? 18 : 10)
+        + (jumping ? 0 : mob[c] * moveW - stuck[c] * 2 * moveW);
+    };
+    let s = side(me) - side(1 - me);
+    // eine offene Mühle des Spielers am Zug ist eine unmittelbare Drohung
+    if (open[me]) s += 35;
+    return s;
+  }
+  function order(pos, ms) {
+    const c = pos.turn, b = pos.b;
+    for (const m of ms) {
+      let k = Math.random() * 0.5;
+      if (m.x >= 0) k += 100 + (b[m.x] >= 0 && !inMill(b, m.x) ? 2 : 0);
+      if (formsMill(b, -1, m.t, 1 - c)) k += 40; // blockiert eine gegnerische Mühle
+      m.k = k;
+    }
+    return ms.sort((a, z) => z.k - a.k);
+  }
+  const ABORT = {};
+  function negamax(pos, depth, alpha, beta, ply, ctx) {
+    if ((++ctx.nodes & 127) === 0 && now() > ctx.deadline) throw ABORT;
+    if (lost(pos)) return -WIN + ply;
+    if (depth <= 0) return evaluate(pos);
+    const ms = order(pos, fullMoves(pos));
+    for (const m of ms) {
+      const v = -negamax(play(pos, m), depth - 1, -beta, -alpha, ply + 1, ctx);
+      if (v > alpha) { alpha = v; if (alpha >= beta) break; }
+    }
+    return alpha;
+  }
+  const LEVELS = {
+    leicht: { depth: 1, noise: 70, random: 0.15, ms: 120 },
+    mittel: { depth: 3, noise: 14, random: 0, ms: 170 },
+    schwer: { depth: 12, noise: 0, random: 0, ms: 190 },
+  };
+  // bester vollständiger Zug für pos.turn
+  function bestMove(pos, level, opts) {
+    const L = LEVELS[level] || LEVELS.mittel, rand = (opts && opts.rand) || Math.random;
+    let ms = fullMoves(pos);
+    if (!ms.length) return null;
+    if (ms.length === 1) return ms[0];
+    if (L.random && rand() < L.random) return ms[Math.floor(rand() * ms.length)];
+    const ctx = { nodes: 0, deadline: now() + ((opts && opts.ms) || L.ms) };
+    ms = order(pos, ms);
+    if (L.noise) { // jede Wurzelzugfolge mit vollem Fenster bewerten, dann etwas Rauschen
+      let best = ms[0], bv = -Infinity;
+      try {
+        for (const m of ms) {
+          const v = -negamax(play(pos, m), L.depth - 1, -Infinity, Infinity, 1, ctx) + rand() * L.noise;
+          if (v > bv) { bv = v; best = m; }
+        }
+      } catch (e) { if (e !== ABORT) throw e; }
+      return best;
+    }
+    let best = ms[0];
+    for (let d = 1; d <= L.depth; d++) {
+      let alpha = -Infinity, cur = null;
+      try {
+        for (const m of ms) {
+          const v = -negamax(play(pos, m), d - 1, -Infinity, -alpha, 1, ctx);
+          if (v > alpha) { alpha = v; cur = m; }
+        }
+      } catch (e) { if (e !== ABORT) throw e; break; }
+      best = cur;
+      if (alpha >= WIN - 100) break; // sicherer Sieg gefunden
+      ms = [cur].concat(ms.filter(m => m !== cur)); // bester Zug zuerst
+    }
+    return best;
+  }
+
+  return { XY, ADJ, MILLS, name, count, total, inMill, removable, mode, targets, moves, formsMill, fullMoves, play, lost, evaluate, bestMove, LEVELS, WIN };
+})();
+// RULES-END
+</script>
+
+<script>
+(() => {
+"use strict";
+const R = Muehle;
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+const QUIET_LIMIT = 50;
+const COLOR = ["Hell", "Dunkel"];
+const LEVEL_NAME = { leicht: "leicht", mittel: "mittel", schwer: "schwer" };
+const G = v => 50 + v * 100; // Brettkoordinate → SVG
+
+let S, kit;
+const UI = { sel: null, hint: "", key: "", popAt: -1, seenSeq: -1 };
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai });
+const rosterKey = ps => ps.map(p => `${p.id}|${p.name}|${p.ai ? 1 : 0}`).join("/");
+function newState({ roster }) {
+  // gleiche Besetzung wie zuvor: Siege übernehmen, Anfänger wechselt
+  const prev = S && Array.isArray(S.players) && Array.isArray(S.wins) && S.players.length === 2 && roster.length === 2
+    && rosterKey(S.players) === rosterKey(roster) ? S : null;
+  const first = prev ? 1 - prev.first : 0;
+  return {
+    players: roster.map(newPlayer), b: Array(24).fill(-1), hand: [9, 9], turn: first, first, carried: !!prev,
+    awaitRemove: false, quiet: 0, rep: {}, last: null, seq: 0, result: null,
+    wins: prev ? prev.wins.slice() : [0, 0], draws: prev ? prev.draws : 0, round: prev ? prev.round + 1 : 1,
+    phase: "play", log: [],
+  };
+}
+function onStart(s) {
+  if (!s.carried) s.first = rnd(2);
+  s.turn = s.first; s.phase = "play";
+  kit.addLog(`Runde ${s.round}: <b>${esc(s.players[s.first].name)}</b> beginnt.`);
+  playBots();
+}
+const whoActs = () => (S.phase === "play" ? [S.turn] : []);
+const pos = () => ({ b: S.b, hand: S.hand, turn: S.turn });
+const level = () => (S.options && R.LEVELS[S.options.level] ? S.options.level : "mittel");
+
+// ---------- Züge (verändern nur S, laufen über kit.act) ----------
+function step(f, t) {
+  const c = S.turn, p = S.players[c], verb = f < 0 ? `setzt auf ${R.name(t)}`
+    : `${R.mode(pos(), c) === "jump" ? "springt" : "zieht"} von ${R.name(f)} nach ${R.name(t)}`;
+  if (f < 0) S.hand[c]--; else S.b[f] = -1;
+  S.b[t] = c;
+  S.last = { c, f, t, x: -1, mill: false };
+  S.seq++;
+  const mill = R.inMill(S.b, t);
+  S.last.mill = mill;
+  kit.addLog(`<b>${esc(p.name)}</b> ${verb}${mill ? " und schließt eine Mühle" : ""}.`);
+  if (mill && S.b.some(v => v === 1 - c)) { S.awaitRemove = true; return; }
+  finishTurn(false);
+}
+function removeStone(x) {
+  const c = S.turn;
+  S.b[x] = -1; S.last.x = x; S.awaitRemove = false; S.seq++;
+  kit.addLog(`<b>${esc(S.players[c].name)}</b> nimmt den Stein auf ${R.name(x)} vom Brett.`);
+  finishTurn(true);
+}
+function finishTurn(captured) {
+  const moved = S.last && S.last.f >= 0;
+  S.quiet = captured ? 0 : moved ? S.quiet + 1 : 0;
+  if (captured) S.rep = {};
+  S.turn = 1 - S.turn;
+  const why = R.lost(pos());
+  if (why) {
+    const loser = S.players[S.turn];
+    return end(1 - S.turn, why === "material" ? `${esc(loser.name)} hat nur noch zwei Steine.` : `${esc(loser.name)} kann keinen Stein mehr ziehen.`);
+  }
+  if (S.hand[0] + S.hand[1] === 0) {
+    const key = S.b.map(v => (v < 0 ? "." : v)).join("") + S.turn;
+    S.rep[key] = (S.rep[key] || 0) + 1;
+    if (S.rep[key] >= 3) return end(-1, "Dieselbe Stellung ist zum dritten Mal entstanden.");
+    if (S.quiet >= QUIET_LIMIT) return end(-1, `${QUIET_LIMIT} Züge lang wurde kein Stein geschlagen.`);
+  }
+}
+function end(winner, reason) {
+  S.phase = "over";
+  S.result = { winner, reason };
+  if (winner >= 0) {
+    S.wins[winner]++;
+    kit.addLog(`<b>${esc(S.players[winner].name)}</b> gewinnt. ${reason}`);
+  } else {
+    S.draws++;
+    kit.addLog(`<b>Unentschieden.</b> ${reason}`);
+  }
+}
+// Computer-Gegner: ziehen synchron, solange sie dran sind
+function playBots() {
+  let guard = 0;
+  while (S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai && guard++ < 4) {
+    if (S.awaitRemove) { removeStone(bestRemoval()); continue; }
+    const mv = R.bestMove(pos(), level());
+    if (!mv) break;
+    step(mv.f, mv.t);
+    if (S.awaitRemove) removeStone(mv.x >= 0 && R.removable(S.b, 1 - S.turn).includes(mv.x) ? mv.x : bestRemoval());
+  }
+}
+function bestRemoval() {
+  const c = S.turn, xs = R.removable(S.b, 1 - c);
+  let best = xs[0], bv = -Infinity;
+  for (const x of xs) {
+    const b = S.b.slice(); b[x] = -1;
+    const v = -R.evaluate({ b, hand: S.hand, turn: 1 - c });
+    if (v > bv) { bv = v; best = x; }
+  }
+  return best;
+}
+
+// ---------- Eingaben ----------
+const mine = () => S.phase === "play" && kit.me() === S.turn && !S.players[S.turn].ai;
+function clickPoint(i) {
+  if (!mine()) return;
+  const c = S.turn, seq = S.seq;
+  UI.hint = "";
+  if (S.awaitRemove) {
+    if (!R.removable(S.b, 1 - c).includes(i)) {
+      UI.hint = S.b[i] === 1 - c ? "Dieser Stein steht in einer Mühle und ist geschützt." : "Tippe einen rot markierten Stein an.";
+      render(); return;
+    }
+    kit.act(() => {
+      if (!mine() || !S.awaitRemove || S.seq !== seq || !R.removable(S.b, 1 - S.turn).includes(i)) return false;
+      removeStone(i); playBots();
+    });
+    return;
+  }
+  if (S.hand[c] > 0) {
+    if (S.b[i] >= 0) { UI.hint = "Dieser Punkt ist schon besetzt."; render(); return; }
+    kit.act(() => {
+      if (!mine() || S.awaitRemove || S.seq !== seq || S.hand[S.turn] <= 0 || S.b[i] >= 0) return false;
+      step(-1, i); if (!S.awaitRemove) playBots();
+    });
+    return;
+  }
+  if (S.b[i] === c) {
+    if (UI.sel === i) { UI.sel = null; render(); return; }
+    if (R.targets(pos(), i).length) UI.sel = i;
+    else { UI.sel = null; UI.hint = "Dieser Stein ist eingeklemmt und kann nicht ziehen."; }
+    render(); return;
+  }
+  if (UI.sel != null && S.b[i] < 0 && R.targets(pos(), UI.sel).includes(i)) {
+    const f = UI.sel;
+    UI.sel = null;
+    kit.act(() => {
+      if (!mine() || S.awaitRemove || S.seq !== seq || S.b[f] !== S.turn || !R.targets(pos(), f).includes(i)) return false;
+      step(f, i); if (!S.awaitRemove) playBots();
+    });
+    return;
+  }
+  if (UI.sel != null) UI.hint = "Dorthin kann dieser Stein nicht ziehen.";
+  UI.sel = null; render();
+}
+$("board").addEventListener("click", e => { const h = e.target.closest("[data-p]"); if (h) clickPoint(+h.dataset.p); });
+$("board").addEventListener("keydown", e => {
+  const h = e.target.closest("[data-p]");
+  if (h && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); clickPoint(+h.dataset.p); }
+});
+$("result").addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// ---------- Darstellung ----------
+const STONE_DEFS = `<radialGradient id="mu-st0" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#fffbf2"/><stop offset=".55" stop-color="#eedcb8"/><stop offset="1" stop-color="#c7a473"/></radialGradient>
+  <radialGradient id="mu-st1" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#7a5640"/><stop offset=".5" stop-color="#3d2619"/><stop offset="1" stop-color="#170d07"/></radialGradient>`;
+function stoneSvg(c, x, y, r, cls = "") {
+  const k = r / 36;
+  return `<g class="stone${cls}"><circle cx="${x + 3 * k}" cy="${y + 5 * k}" r="${r}" fill="rgba(0,0,0,.38)"/>`
+    + `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#mu-st${c})" stroke="${c ? "#0d0704" : "#9d7c4e"}" stroke-width="${2 * k}"/>`
+    + (c ? `<circle cx="${x}" cy="${y}" r="${9 * k}" fill="#c99a62"/><circle cx="${x}" cy="${y}" r="${9 * k}" fill="none" stroke="#5a3a20" stroke-width="${1.5 * k}"/>`
+      : `<circle cx="${x}" cy="${y}" r="${21 * k}" fill="none" stroke="rgba(130,92,48,.65)" stroke-width="${3.2 * k}"/>`)
+    + `</g>`;
+}
+const miniStone = (c, used) => `<svg viewBox="0 0 40 40"${used ? ' class="used"' : ""} aria-hidden="true"><defs>${STONE_DEFS}</defs>${stoneSvg(c, 18, 17, 15)}</svg>`;
+
+let boardBuilt = false;
+function buildBoard() {
+  const lines = [];
+  for (let r = 0; r < 3; r++) { const a = G(r), w = (6 - 2 * r) * 100; lines.push(`<rect x="${a}" y="${a}" width="${w}" height="${w}" />`); }
+  lines.push(`<path d="M${G(3)} ${G(0)}V${G(2)}M${G(3)} ${G(4)}V${G(6)}M${G(0)} ${G(3)}H${G(2)}M${G(4)} ${G(3)}H${G(6)}"/>`);
+  const labels = [];
+  for (let x = 0; x < 7; x++) labels.push(`<text x="${G(x)}" y="716">${"abcdefg"[x]}</text>`);
+  for (let y = 0; y < 7; y++) labels.push(`<text x="-12" y="${G(y) + 6}">${7 - y}</text>`);
+  $("board").innerHTML = `<svg viewBox="-34 -34 768 768" role="group" aria-label="Mühlebrett">
+    <defs>${STONE_DEFS}
+      <linearGradient id="mu-wood" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#d9a866"/><stop offset=".45" stop-color="#c98f52"/><stop offset="1" stop-color="#b47a41"/></linearGradient>
+      <filter id="mu-grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.004 0.075" numOctaves="3" seed="11"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 .33  0 0 0 0 .18  0 0 0 0 .07  0 0 0 -1.6 1.05"/>
+        <feComposite in2="SourceGraphic" operator="in"/>
+      </filter>
+    </defs>
+    <rect x="-34" y="-34" width="768" height="768" rx="26" fill="url(#mu-wood)"/>
+    <rect x="-34" y="-34" width="768" height="768" rx="26" fill="#000" filter="url(#mu-grain)" opacity=".55"/>
+    <rect x="-22" y="-22" width="744" height="744" rx="18" fill="none" stroke="rgba(58,34,19,.35)" stroke-width="3"/>
+    <g fill="none" stroke="var(--wood-line)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${lines.join("")}</g>
+    <g fill="var(--wood-line)">${R.XY.map(([x, y]) => `<circle cx="${G(x)}" cy="${G(y)}" r="11"/>`).join("")}</g>
+    <g fill="rgba(58,34,19,.7)" font-family="Nunito, sans-serif" font-weight="800" font-size="19" text-anchor="middle">${labels.join("")}</g>
+    <g id="mu-dyn"></g>
+    <g id="mu-hit"></g>
+  </svg>`;
+  boardBuilt = true;
+}
+
+function renderBoard(me) {
+  if (!boardBuilt) buildBoard();
+  const c = S.turn, p = pos(), play = S.phase === "play";
+  const kills = me && S.awaitRemove ? R.removable(S.b, 1 - c) : [];
+  const placing = me && !S.awaitRemove && S.hand[c] > 0;
+  const moving = me && !S.awaitRemove && S.hand[c] === 0;
+  const tg = moving && UI.sel != null ? R.targets(p, UI.sel) : [];
+  const movable = moving ? R.XY.map((_, i) => i).filter(i => S.b[i] === c && R.targets(p, i).length) : [];
+  const L = S.last;
+  let dyn = "";
+  // frisch geschlossene Mühle hervorheben
+  if (L && L.mill && S.b[L.t] === L.c) for (const m of R.MILLS) if (m.includes(L.t) && m.every(j => S.b[j] === L.c)) {
+    const xs = m.map(j => R.XY[j][0]), ys = m.map(j => R.XY[j][1]);
+    dyn += `<line class="mill" x1="${G(Math.min(...xs))}" y1="${G(Math.min(...ys))}" x2="${G(Math.max(...xs))}" y2="${G(Math.max(...ys))}"/>`;
+  }
+  if (L && L.f >= 0 && S.b[L.f] < 0) dyn += `<circle class="from" cx="${G(R.XY[L.f][0])}" cy="${G(R.XY[L.f][1])}" r="22"/>`;
+  if (L && L.x >= 0 && S.b[L.x] < 0) { const [x, y] = R.XY[L.x].map(G); dyn += `<path class="gone" d="M${x - 14} ${y - 14}L${x + 14} ${y + 14}M${x + 14} ${y - 14}L${x - 14} ${y + 14}"/>`; }
+  const pop = L && S.seq !== UI.seenSeq ? L.t : -1;
+  for (let i = 0; i < 24; i++) {
+    const [x, y] = R.XY[i].map(G);
+    if (S.b[i] >= 0) {
+      dyn += stoneSvg(S.b[i], x, y, 36, i === pop ? " pop" : "");
+      if (L && i === L.t && play) dyn += `<circle class="last" cx="${x}" cy="${y}" r="41"/>`;
+      if (i === UI.sel && moving) dyn += `<circle class="sel" cx="${x}" cy="${y}" r="43"/>`;
+      else if (movable.includes(i) && UI.sel == null) dyn += `<circle class="can" cx="${x}" cy="${y}" r="42"/>`;
+      if (kills.includes(i)) dyn += `<circle class="kill" cx="${x}" cy="${y}" r="44"/>`;
+    } else if (tg.includes(i)) dyn += `<circle class="tgt" cx="${x}" cy="${y}" r="16"/>`;
+    else if (placing) dyn += `<circle class="tgt soft" cx="${x}" cy="${y}" r="13"/>`;
+  }
+  UI.seenSeq = S.seq;
+  $("mu-dyn").innerHTML = dyn;
+  // Tippflächen
+  $("mu-hit").innerHTML = R.XY.map(([gx, gy], i) => {
+    const on = kills.includes(i) || (placing && S.b[i] < 0) || (moving && (S.b[i] === c || tg.includes(i)));
+    const what = S.b[i] < 0 ? "frei" : `${COLOR[S.b[i]]}er Stein`;
+    return `<circle class="hit${on ? " on" : ""}" data-p="${i}" cx="${G(gx)}" cy="${G(gy)}" r="47"${on ? ` tabindex="0" role="button"` : ""} aria-label="${R.name(i)}, ${what}"/>`;
+  }).join("");
+}
+
+function statusHtml(me, mi) {
+  const a = S.players[S.turn], c = S.turn;
+  if (S.phase === "over") {
+    const r = S.result;
+    return r.winner >= 0 ? `<strong>${esc(S.players[r.winner].name)}</strong> ${S.players[r.winner].name === "Du" ? "gewinnst" : "gewinnt"}. ${r.reason}` : `Unentschieden. ${r.reason}`;
+  }
+  if (!me) {
+    const who = `<strong>${esc(a.name)}</strong>${a.ai ? " (Computer)" : ""}`;
+    return mi < 0 ? `Du schaust zu. ${who} ist dran.` : `Warte auf ${who}.`;
+  }
+  const you = kit.hotSeat() || kit.online() ? `<strong>${esc(a.name)}</strong>, du` : "Du";
+  let t;
+  if (S.awaitRemove) t = `Mühle! Tippe einen rot markierten Stein von ${esc(S.players[1 - c].name)} an, um ihn vom Brett zu nehmen.`;
+  else if (S.hand[c] > 0) t = `${you} bist dran: Setze einen Stein auf einen freien Punkt. Noch ${S.hand[c]} zu setzen.`;
+  else if (R.mode(pos(), c) === "jump") t = UI.sel != null ? "Tippe den Punkt an, auf den der Stein springen soll." : `${you} hast nur noch drei Steine und darfst springen. Tippe einen Stein an.`;
+  else t = UI.sel != null ? "Tippe ein markiertes Ziel an oder wähle einen anderen Stein." : `${you} bist dran: Tippe einen deiner markierten Steine an, um ihn zu ziehen.`;
+  if (S.hand[0] + S.hand[1] === 0 && S.quiet >= QUIET_LIMIT - 20) t += `<span class="hint">Noch ${QUIET_LIMIT - S.quiet} Züge ohne Schlagen bis zum Unentschieden.</span>`;
+  return t;
+}
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine();
+  $("board-panel").hidden = lobby;
+  $("players-panel").hidden = lobby;
+  const key = `${S.seq}:${S.turn}:${mi}:${S.phase}`;
+  if (UI.key !== key) { UI.key = key; UI.sel = null; UI.hint = ""; }
+  if (!lobby) {
+    renderBoard(me);
+    let st = statusHtml(me, mi);
+    if (UI.hint) st += `<span class="hint">${esc(UI.hint)}</span>`;
+    if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+    $("status").innerHTML = st;
+    $("players").innerHTML = S.players.map((p, i) => {
+      const onB = R.count(S.b, i), lostN = 9 - S.hand[i] - onB;
+      const sup = Array.from({ length: 9 }, (_, k) => miniStone(i, k >= S.hand[i])).join("");
+      return `<div class="pcard${S.phase === "play" && i === S.turn ? " on" : ""}">
+        <div class="pname"><svg width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><defs>${STONE_DEFS}</defs>${stoneSvg(i, 18, 17, 16)}</svg><b title="${esc(p.name)}">${esc(p.name)}</b></div>
+        <small>${COLOR[i]}${p.ai ? ` · Computer, ${LEVEL_NAME[level()]}` : ""}</small>
+        <div class="wins">${S.wins[i]} <span>${S.wins[i] === 1 ? "SIEG" : "SIEGE"}</span></div>
+        <div class="supply" aria-label="noch ${S.hand[i]} Steine zu setzen">${sup}</div>
+        <small>${S.hand[i] ? `noch ${S.hand[i]} zu setzen · ` : ""}${onB} auf dem Brett${lostN ? ` · ${lostN} verloren` : ""}</small>
+      </div>`;
+    }).join("");
+    $("draws").textContent = `Runde ${S.round}${S.draws ? ` · ${S.draws} Unentschieden` : ""}`;
+  }
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+
+  const res = $("result");
+  if (S.phase === "over" && S.result) {
+    const r = S.result;
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Eine neue Runde kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neue Runde im selben Raum" : "Noch eine Runde"}</button>`;
+    const order = r.winner >= 0 ? [r.winner, 1 - r.winner] : [0, 1];
+    const title = r.winner >= 0 ? `${esc(S.players[r.winner].name)} ${S.players[r.winner].name === "Du" ? "gewinnst" : "gewinnt"}` : "Unentschieden";
+    res.innerHTML = `<h2>${title}</h2><p>${r.reason}</p>
+      <ol class="rank">${order.map((i, k) => `<li><span>${r.winner >= 0 ? `${k + 1}. ` : ""}${esc(S.players[i].name)} <span class="sk-muted">(${COLOR[i]})</span></span><span>${S.wins[i]} ${S.wins[i] === 1 ? "Sieg" : "Siege"}</span></li>`).join("")}</ol>
+      <p class="sk-muted">Nach ${S.round} ${S.round === 1 ? "Runde" : "Runden"}${S.draws ? `, dazu ${S.draws} Unentschieden` : ""}. In der nächsten Runde beginnt ${esc(S.players[1 - S.first].name)}.</p>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+
+  // an diesem Gerät beginnt der Computer: seinen ersten Zug nachholen
+  if (!kit.online() && S.phase === "play" && S.players[S.turn] && S.players[S.turn].ai) {
+    const seq = S.seq;
+    setTimeout(() => kit.act(() => {
+      if (kit.online() || S.phase !== "play" || S.seq !== seq || !S.players[S.turn].ai) return false;
+      playBots();
+    }), 350);
+  }
+}
+
+// ---------- Einstellung im Dialog: Stärke des Computers ----------
+const levelSetup = {
+  html: `<div class="sk-field" id="mu-level-field"><label class="sk-label" for="mu-level">Stärke des Computers</label>
+    <select id="mu-level"><option value="leicht">Leicht</option><option value="mittel" selected>Mittel</option><option value="schwer">Schwer</option></select></div>`,
+  init(root, k) { const v = k.store.get("staerke"); if (R.LEVELS[v]) root.querySelector("#mu-level").value = v; },
+  sync(root, mode) {
+    const bots = document.getElementById("sk-bots");
+    root.querySelector("#mu-level-field").hidden = mode === "local" && bots && +bots.value === 0;
+  },
+  read(root) { const v = root.querySelector("#mu-level").value; kit.store.set("staerke", v); return { level: v }; },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "muehle", version: 1, minPlayers: 2, maxPlayers: 2, bots: true, defaultBots: 1,
+  setup: levelSetup,
+  defaultOptions: () => ({ level: "mittel" }),
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.b) && s.b.length === 24 && Array.isArray(s.hand) && Array.isArray(s.wins),
+  roomStatus: s => `läuft · Runde ${s.round}`,
+  handoverText: (s, i) => `Du spielst ${COLOR[i] === "Hell" ? "die hellen" : "die dunklen"} Steine. ${s.hand[i] > 0 ? `Noch ${s.hand[i]} zu setzen.` : "Ziehe einen Stein."}`,
+});
+kit.start();
+})();
+</script>
