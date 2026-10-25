@@ -756,3 +756,12 @@ body.locked .backdrop { display: none; }
 
 /* Spieleportal eingebettet */
 .portal-frame { display: block; width: 100%; height: min(78vh, 760px); border: 1.5px solid var(--line); border-radius: 14px; background: var(--paper); margin: 10px 0 6px; }
+
+/* Gesammelte Kennzeichen nebeneinander, Name darunter */
+.plate-grid { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 10px; }
+.plate-grid button { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+.plate-grid button:focus-visible .plate { outline: 2px solid var(--petrol); outline-offset: 2px; }
+.plate-grid button:active .plate { transform: scale(.95); }
+.plate-grid .plate { min-width: 92px; justify-content: center; }
+.plate-grid .plate.int { padding: 0 10px; }
+.plate-grid small { font-size: 13px; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }

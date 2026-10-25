@@ -79,8 +79,9 @@ export default function installSpiele(app) {
         </li>`).join('') || '<li class="none">Dieses Kennzeichen gibt es nicht.</li>'}</ul>` : ''}
       ${leaderboard(set)}
       <h3 class="date-head">Zuletzt gesehen</h3>
-      <ul class="plate-list">${recent.slice(0, 40).map(p => `<li><span class="plate ${set}">${esc(p.code)}</span><span class="txt">${esc(data[p.code] || '')}</span>
-        <button class="icon-btn small" data-action="plate-del" data-id="${p.id}" aria-label="Entfernen">${icon('close')}</button></li>`).join('') || '<li class="none">Noch nichts gesammelt.</li>'}</ul>
+      ${recent.length ? `<ul class="plate-grid">${recent.slice(0, 60).map(p => `<li><button data-action="plate-del" data-id="${p.id}" aria-label="${esc(p.code)} entfernen">
+        <span class="plate ${set}">${esc(p.code)}</span><small>${esc(data[p.code] || '')}</small></button></li>`).join('')}</ul>
+        <p class="sub">Zum Entfernen auf ein Kennzeichen tippen.</p>` : '<p class="hint">Noch nichts gesammelt.</p>'}
       ${set === 'de' ? `<p class="sub source">${KFZ_QUELLE}</p>` : ''}`;
   }
   document.addEventListener('input', ev => {
@@ -93,7 +94,12 @@ export default function installSpiele(app) {
     ui.plateQuery = '';
     toast(`${code}: ${(set === 'de' ? KFZ : KFZ_INT)[code]} gesammelt`);
   };
-  ACTIONS['plate-del'] = el => remove('plates', el.dataset.id);
+  ACTIONS['plate-del'] = el => {
+    const p = S.plates.find(x => x.id === el.dataset.id);
+    if (!p) return;
+    const name = (p.set === 'de' ? KFZ : KFZ_INT)[p.code];
+    if (confirm(`${p.code}${name ? ` (${name})` : ''} aus der Sammlung entfernen?`)) remove('plates', p.id);
+  };
 
   /* ---------- Reise-Bingo ---------- */
 
