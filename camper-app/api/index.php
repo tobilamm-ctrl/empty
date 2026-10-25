@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 $CFG = require __DIR__ . '/config.php';
 const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta', 'photos',
-    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games'];
+    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games', 'ideas'];
 const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
 const TOKEN_DAYS = 400;

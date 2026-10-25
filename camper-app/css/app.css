@@ -765,3 +765,74 @@ body.locked .backdrop { display: none; }
 .plate-grid small { font-size: 13px; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
 
 .ledger a.row .ic { color: var(--muted); }
+
+/* Tagebuch: Reise beenden und exportieren */
+.trip-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.trip-bar .ic { width: 18px; height: 18px; margin-right: 6px; }
+.trip-bar.ended { padding: 10px 12px; border-radius: 14px; background: var(--mist); }
+.trip-bar.ended > span { flex: 1 1 100%; font-weight: 700; }
+
+/* Reiseideen */
+.badge.info { background: var(--petrol); color: var(--on-primary); }
+.ideas { list-style: none; margin: 0; padding: 0; }
+.idea { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.idea .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.idea strong { font: 600 18px/1.25 var(--head); }
+.idea small { color: var(--muted); font-size: 14px; }
+.idea .likers { grid-column: 1 / -1; color: var(--danger); }
+.like { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); }
+.like svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.like.on { color: var(--danger); border-color: currentColor; }
+.like.on svg { fill: currentColor; }
+.like b { font: 700 15px var(--head); min-width: 0; }
+.idea-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0 0 12px; }
+.idea-facts dt { color: var(--muted); }
+.idea-facts dd { margin: 0; font-weight: 600; }
+.idea-text { white-space: pre-line; }
+.idea-like-row { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; }
+.idea-notes { list-style: none; margin: 0 0 12px; padding: 0; }
+.idea-notes li { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; background: var(--mist); }
+.idea-notes p { margin: 0 0 4px; white-space: pre-line; overflow-wrap: anywhere; }
+.idea-notes small { color: var(--muted); }
+.idea-notes .link { font-size: inherit; padding: 0; min-height: 0; }
+.idea-note-form { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+.idea-note-form textarea { flex: 1; }
+
+/* Reiseheft: nur beim Drucken sichtbar */
+#printDoc { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  body.printing { background: #fff !important; color: #222; }
+  body.printing > *:not(#printDoc) { display: none !important; }
+  body.printing #printDoc { display: block; }
+}
+.pd { font: 11pt/1.4 var(--body); color: #222; }
+.pd-head { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 3px solid var(--c); margin-bottom: 10px; }
+.pd-sheep { width: 64px; height: 50px; color: #6B4226; flex: none; }
+.pd h1 { font: 600 24pt/1.1 var(--head); margin: 0; color: #6B4226; }
+.pd-head p { margin: 2px 0 0; color: #666; }
+.pd h2 { font: 600 15pt var(--head); color: #6B4226; margin: 18px 0 6px; break-after: avoid; }
+.pd h3 { font: 600 12pt var(--head); margin: 12px 0 4px; break-after: avoid; }
+.pd-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 10px; }
+.pd-facts dt { font-size: 8.5pt; color: #777; text-transform: uppercase; letter-spacing: .04em; }
+.pd-facts dd { margin: 0; font-weight: 700; }
+.pd-map { position: relative; overflow: hidden; border: 1px solid #ccc; border-radius: 6px; max-width: 100%; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pd-map img { position: absolute; width: 256px; height: 256px; }
+.pd-map svg { position: absolute; inset: 0; }
+.pd-map small { position: absolute; right: 0; bottom: 0; padding: 1px 5px; background: rgba(255,255,255,.85); font-size: 7pt; color: #444; }
+.pd-stages, .pd-cost { width: 100%; border-collapse: collapse; font-size: 10pt; }
+.pd-stages th { text-align: left; font-size: 8.5pt; color: #777; border-bottom: 1px solid #bbb; padding: 3px 6px 3px 0; }
+.pd-stages td, .pd-cost td { border-bottom: 1px solid #e3e3e3; padding: 4px 6px 4px 0; vertical-align: top; }
+.pd-stages tr, .pd-entry, .pd-plan li { break-inside: avoid; }
+.pd-no { display: inline-block; min-width: 16px; height: 16px; margin-right: 5px; border-radius: 50%; background: var(--c); color: #fff; font: 700 8pt/16px var(--body); text-align: center; vertical-align: 1px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pd-entry { display: grid; grid-template-columns: 42px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px dotted #ddd; }
+.pd-time { color: #777; font-size: 9.5pt; padding-top: 1px; }
+.pd-type { display: block; color: #666; font-size: 9.5pt; }
+.pd-entry p { margin: 3px 0 0; }
+.pd-photos { display: flex; gap: 5px; margin-top: 5px; }
+.pd-photos img { width: 90px; height: 68px; object-fit: cover; border-radius: 3px; }
+.pd-plan { padding-left: 22px; }
+.pd-plan span { color: #666; }
+.pd-cost td:last-child { text-align: right; }
+.pd-cost .sum td { font-weight: 700; border-top: 2px solid #999; }
+.pd footer { margin-top: 18px; font-size: 8pt; color: #999; }

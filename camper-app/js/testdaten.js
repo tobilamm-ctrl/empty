@@ -189,6 +189,16 @@ export default function installTestdaten(app) {
       save('plates', { ...D, id: `demo-pl-${m.id}-${code}`, by: m.id, set: 'de', code, at: Date.now() - k * 60000, tripId: trip })));
     ['I', 'NL', 'CH'].forEach(code => save('plates', { ...D, id: `demo-pl-${me()}-int-${code}`, by: me(), set: 'int', code, at: Date.now(), tripId: trip }));
 
+    // Reiseideen mit Notizen und Stimmen
+    const others = members().filter(m => m.id !== me());
+    const other = (others[0] || { id: me() }).id;
+    save('ideas', { ...D, id: 'demo-idea1', title: 'Test: Schottland mit dem Camper', where: 'Highlands, Isle of Skye', season: 'Sommerferien 2027', days: '3 Wochen',
+      text: 'Fähre ab Amsterdam nach Newcastle, dann die North Coast 500.', likes: { [me()]: true, [other]: true },
+      notes: [{ id: 'demo-n1', by: other, at: Date.now() - 864e5, text: 'Wildcampen ist in Schottland erlaubt (Scottish Outdoor Access Code).' },
+        { id: 'demo-n2', by: me(), at: Date.now() - 36e5, text: 'Fähre: https://www.dfds.com/de-de/faehre/niederlande-england' }] });
+    save('ideas', { ...D, id: 'demo-idea2', by: other, title: 'Test: Bretagne', where: 'Frankreich, Atlantikküste', season: 'Pfingsten', days: '2 Wochen',
+      text: 'Crêpes, Leuchttürme, Ebbe und Flut.', likes: { [other]: true }, notes: [] });
+
     // Frist mit Erinnerung
     save('deadlines', { ...D, id: 'demo-d1', title: 'Test: Gasprüfung', due: dayOffset(20), repeat: 24, note: 'Beispiel für die Erinnerung', done: false });
 

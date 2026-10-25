@@ -1,0 +1,249 @@
+// Reise beenden und exportieren: GPX-Datei (Strecke, Stopps, geplante Route) und ein druckfertiges
+// Reiseheft mit Streckenkarte, Etappen und Notizen, das der Browser als PDF speichert.
+
+export default function installExport(app) {
+  const {
+    S, ACTIONS, FORMS, esc, icon, save, toast, openSheet, closeSheet,
+    today, fmtDay, fmtShort, fmtTime, fmtRange, km, fmtKm, hasPos, byDate, money,
+    currentTrip, tripColor, tripStats, canCash, TYPES, extraText,
+  } = app;
+  const sheetHead = t => `<div class="sheet-head"><h2>${t}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
+  const tripById = id => S.trips.find(t => t.id === id);
+  const started = (t, st) => st.es.length > 0 || (t.start && t.start <= today());
+
+  /* ---------- Leiste im Tagebuch: beenden und exportieren ---------- */
+
+  app.tripBar = (t, st) => t.ended
+    ? `<div class="trip-bar ended"><span>Reise beendet${t.end ? ` am ${fmtShort(t.end)}` : ''}.</span>
+        <button class="link" data-action="trip-resume" data-id="${t.id}">Wieder aufnehmen</button>
+        <button class="ghost small-btn" data-action="export-form" data-id="${t.id}">${icon('download')}Exportieren</button>
+        ${t.archived ? '' : `<button class="ghost small-btn" data-action="trip-archive" data-id="${t.id}">Ins Archiv</button>`}</div>`
+    : `<div class="trip-bar">
+        ${started(t, st) ? `<button class="ghost small-btn" data-action="trip-end" data-id="${t.id}">${icon('flag')}Reise beenden</button>` : ''}
+        <button class="ghost small-btn" data-action="export-form" data-id="${t.id}">${icon('download')}Exportieren</button></div>`;
+
+  ACTIONS['trip-end'] = el => {
+    const t = tripById(el.dataset.id);
+    if (!t || !confirm(`„${t.name}“ beenden? Das Ende wird auf heute gesetzt, falls kein früheres eingetragen ist. Ins Archiv kommt die Reise erst, wenn ihr das extra wählt.`)) return;
+    save('trips', { ...t, ended: true, end: t.end && t.end <= today() ? t.end : today() });
+    toast('Reise beendet. Willkommen zu Hause!');
+  };
+  ACTIONS['trip-resume'] = el => {
+    const t = tripById(el.dataset.id);
+    if (t) save('trips', { ...t, ended: false, end: t.end === today() ? '' : t.end });
+  };
+  ACTIONS['trip-archive'] = el => {
+    const t = tripById(el.dataset.id);
+    if (t && confirm(`„${t.name}“ ins Archiv legen? Ihr findet sie unter Mehr → Reisen.`)) save('trips', { ...t, archived: true });
+  };
+
+  ACTIONS['export-form'] = el => {
+    const t = tripById(el.dataset.id) || currentTrip();
+    const hasPhotos = S.entries.some(e => e.tripId === t.id && (e.photos || []).length);
+    openSheet(`<form data-form="export-pdf" data-id="${t.id}">${sheetHead('Reise exportieren')}
+      <h3 class="date-head">GPX-Datei</h3>
+      <p class="sub">Für Navi, OsmAnd, Komoot oder Google Earth: gefahrene Strecke, alle Stopps als Wegpunkte und die geplante Route.</p>
+      <button type="button" class="ghost" data-action="export-gpx" data-id="${t.id}">${icon('download')}GPX herunterladen</button>
+      <h3 class="date-head">Reiseheft als PDF</h3>
+      <p class="sub">Streckenplan, Etappen Tag für Tag und eure Notizen. Im Druckfenster „Als PDF speichern“ wählen.</p>
+      ${hasPhotos ? '<label class="check"><input type="checkbox" name="photos" checked><span>Fotos (klein) mit aufnehmen</span></label>' : ''}
+      ${canCash() ? '<label class="check"><input type="checkbox" name="cost"><span>Kosten mit aufnehmen</span></label>' : ''}
+      <div class="sheet-foot"><button class="primary">${icon('print')}PDF erstellen</button></div></form>`);
+  };
+
+  /* ---------- GPX ---------- */
+
+  const x = s => String(s ?? '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
+  const iso = d => { const v = new Date(d); return isNaN(v) ? '' : v.toISOString(); };
+  const slug = s => (s || 'reise').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss')
+    .replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'reise';
+  const tracksOf = t => S.tracks.filter(k => k.tripId === t.id).map(k => ({ ...k, line: app.decodePts(k.pts) }));
+  const plannedOf = t => S.places.filter(p => p.tripId === t.id && !p.done && hasPos(p))
+    .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9') || (a.createdAt || 0) - (b.createdAt || 0));
+
+  function gpx(t) {
+    const st = tripStats(t);
+    const tracks = tracksOf(t);
+    const pt = (tag, p, inner = '') => `<${tag} lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}">${inner}</${tag}>`;
+    const wpts = st.stops.map(e => pt('wpt', e, [
+      e.date ? `<time>${iso(e.date)}</time>` : '',
+      `<name>${x(e.title || e.place || TYPES[e.type].label)}</name>`,
+      `<desc>${x([e.place, extraText(e), e.text].filter(Boolean).join(' – '))}</desc>`,
+      `<type>${x(TYPES[e.type].label)}</type>`,
+    ].join(''))).join('\n');
+    const drive = tracks.filter(k => k.kind !== 'hike');
+    const trk = (name, line, type) => `<trk><name>${x(name)}</name>${type ? `<type>${type}</type>` : ''}<trkseg>${line.map(([la, ln]) => `<trkpt lat="${la}" lon="${ln}"/>`).join('')}</trkseg></trk>`;
+    const trks = [
+      ...(drive.length ? drive.map(k => trk(k.name || t.name, k.line, 'Fahrt'))
+        : st.stops.length > 1 ? [trk(`${t.name} (Stopps verbunden)`, st.stops.map(e => [e.lat.toFixed(6), e.lng.toFixed(6)]), 'Fahrt')] : []),
+      ...tracks.filter(k => k.kind === 'hike').map(k => trk(k.name || 'Wanderung', k.line, 'Wanderung')),
+    ].join('\n');
+    const plan = plannedOf(t);
+    const rte = plan.length ? `<rte><name>${x(t.name)}: geplant</name>${plan.map(p => pt('rtept', p, `<name>${x(p.name)}</name>${p.note ? `<desc>${x(p.note)}</desc>` : ''}`)).join('')}</rte>` : '';
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="LAMMping" xmlns="http://www.topografix.com/GPX/1/1">
+<metadata><name>${x(t.name)}</name><desc>${x(fmtRange(t))}</desc><time>${new Date().toISOString()}</time></metadata>
+${wpts}
+${rte}
+${trks}
+</gpx>
+`;
+  }
+
+  function download(name, text, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  }
+
+  ACTIONS['export-gpx'] = el => {
+    const t = tripById(el.dataset.id);
+    const st = tripStats(t);
+    if (!st.stops.length && !S.tracks.some(k => k.tripId === t.id) && !plannedOf(t).length) return toast('Diese Reise hat noch keine Orte mit Position.');
+    download(`${slug(t.name)}.gpx`, gpx(t), 'application/gpx+xml');
+    toast('GPX-Datei wird heruntergeladen');
+  };
+
+  /* ---------- Reiseheft (Drucken → PDF) ---------- */
+
+  // Streckenkarte aus OpenStreetMap-Kacheln und einer SVG-Linie darüber, ohne Leaflet
+  function staticMap(lines, marks, color, W = 680, H = 400) {
+    const all = [...lines.flatMap(l => l.pts), ...marks.map(m => [m.lat, m.lng])];
+    if (!all.length) return '';
+    const proj = (la, ln, z) => {
+      const s = 256 * 2 ** z, r = Math.max(-85, Math.min(85, la)) * Math.PI / 180;
+      return [(ln + 180) / 360 * s, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * s];
+    };
+    const lats = all.map(p => p[0]), lngs = all.map(p => p[1]);
+    const n = Math.max(...lats), s = Math.min(...lats), e = Math.max(...lngs), w = Math.min(...lngs);
+    let z = 15;
+    while (z > 2) {
+      const [x1, y1] = proj(n, w, z), [x2, y2] = proj(s, e, z);
+      if (x2 - x1 <= W - 60 && y2 - y1 <= H - 60) break;
+      z--;
+    }
+    if (all.length === 1) z = 11;
+    const [cx1, cy1] = proj(n, w, z), [cx2, cy2] = proj(s, e, z);
+    const left = (cx1 + cx2) / 2 - W / 2, top = (cy1 + cy2) / 2 - H / 2;
+    const max = 2 ** z;
+    let tiles = '';
+    for (let tx = Math.floor(left / 256); tx <= Math.floor((left + W) / 256); tx++) {
+      for (let ty = Math.floor(top / 256); ty <= Math.floor((top + H) / 256); ty++) {
+        if (ty < 0 || ty >= max) continue;
+        tiles += `<img src="https://tile.openstreetmap.org/${z}/${((tx % max) + max) % max}/${ty}.png" style="left:${(tx * 256 - left).toFixed(1)}px;top:${(ty * 256 - top).toFixed(1)}px" alt="">`;
+      }
+    }
+    const xy = (la, ln) => { const [px, py] = proj(la, ln, z); return [(px - left).toFixed(1), (py - top).toFixed(1)]; };
+    const poly = (line, style) => `<polyline points="${line.map(p => xy(p[0], p[1]).join(',')).join(' ')}" ${style}/>`;
+    const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+      ${lines.map(l => poly(l.pts, l.hike ? `fill="none" stroke="#2F8F4E" stroke-width="3" stroke-dasharray="6 5"` : l.plan ? `fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"` : `fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/><polyline points="${l.pts.map(p => xy(p[0], p[1]).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`)).join('')}
+      ${marks.map(m => { const [mx, my] = xy(m.lat, m.lng); return m.label
+        ? `<circle cx="${mx}" cy="${my}" r="10" fill="${m.plan ? '#fff' : color}" stroke="${m.plan ? color : '#fff'}" stroke-width="2.5"/><text x="${mx}" y="${(+my + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${m.plan ? color : '#fff'}">${m.label}</text>`
+        : `<circle cx="${mx}" cy="${my}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/>`; }).join('')}
+    </svg>`;
+    return `<div class="pd-map" style="width:${W}px;height:${H}px">${tiles}${svg}<small>Karte © OpenStreetMap-Mitwirkende</small></div>`;
+  }
+
+  // Etappen: je Tag die Einträge, Start- und Zielort und die Luftlinie seit dem letzten Ort des Vortags
+  function stages(t, st) {
+    const days = {};
+    st.es.slice().sort(byDate).forEach(e => (days[e.date.slice(0, 10)] ||= []).push(e));
+    let last = null;
+    const no = new Map();                  // Nummer je Stellplatz, gleich wie auf der Karte
+    st.es.filter(e => e.type === 'stellplatz').sort(byDate).forEach((e, i) => no.set(e.id, i + 1));
+    const list = Object.entries(days).map(([day, es]) => {
+      const from = last;
+      let dist = 0, prev = last;
+      es.filter(hasPos).forEach(e => { if (prev) dist += km(prev, e); prev = e; });
+      const nights = es.filter(e => e.type === 'stellplatz');
+      const to = nights[nights.length - 1] || null;
+      if (prev) last = prev;
+      const n = st.firstDay ? Math.round((new Date(day + 'T12:00') - new Date(st.firstDay + 'T12:00')) / 864e5) + 1 : 0;
+      return { day, n, es, from, to, dist };
+    });
+    return { list, no };
+  }
+  const placeName = e => e && (e.place || e.title) || '';
+
+  function bookHtml(t, opt) {
+    const st = tripStats(t);
+    const color = tripColor(t);
+    const { list: sts, no } = stages(t, st);
+    const tracks = tracksOf(t);
+    const drive = tracks.filter(k => k.kind !== 'hike');
+    const plan = plannedOf(t);
+    const lines = [
+      ...(drive.length ? drive.map(k => ({ pts: k.line })) : st.stops.length > 1 ? [{ pts: st.stops.map(e => [e.lat, e.lng]) }] : []),
+      ...tracks.filter(k => k.kind === 'hike').map(k => ({ pts: k.line, hike: true })),
+      ...(plan.length ? [{ pts: [...(st.stops.length ? [st.stops[st.stops.length - 1]] : []), ...plan].map(p => [p.lat, p.lng]), plan: true }] : []),
+    ];
+    const marks = [
+      ...st.stops.filter(e => e.type !== 'stellplatz').map(e => ({ lat: e.lat, lng: e.lng })),
+      ...st.stops.filter(e => e.type === 'stellplatz').map(e => ({ lat: e.lat, lng: e.lng, label: no.get(e.id) })),
+      ...plan.map((p, i) => ({ lat: p.lat, lng: p.lng, label: String.fromCharCode(65 + (i % 26)), plan: true })),
+    ];
+    const countries = (app.tripCountries ? app.tripCountries(t) : []).map(cc => `${app.flag(cc)} ${esc((app.COUNTRIES[cc] || {}).name || cc)}`).join(', ');
+    const cost = opt.cost ? S.expenses.filter(x => x.tripId === t.id && x.cat !== app.SETTLE) : [];
+    const byCat = {};
+    cost.forEach(x => { byCat[x.cat] = (byCat[x.cat] || 0) + (x.amount || 0); });
+
+    const facts = [
+      ['Zeitraum', fmtRange(t)], st.days ? ['Tage', st.days] : null, ['Stellplätze', st.nights],
+      st.dist ? [st.driven ? 'Gefahren' : 'Strecke (Luftlinie)', fmtKm(st.dist)] : null,
+      countries ? ['Länder', countries] : null, opt.cost && cost.length ? ['Kosten', money(st.cost)] : null,
+    ].filter(Boolean);
+
+    const entry = e => `<div class="pd-entry pd-${e.type}">
+      <span class="pd-time">${fmtTime(e.date)}</span>
+      <div><b>${no.has(e.id) ? `<span class="pd-no" style="--c:${color}">${no.get(e.id)}</span>` : ''}${esc(e.title || (e.type === 'notiz' ? 'Notiz' : TYPES[e.type].label))}</b>
+        <span class="pd-type">${esc(TYPES[e.type].label)}${e.place && e.place !== e.title ? `, ${esc(e.place)}` : ''}${e.rating ? ` ${'★'.repeat(e.rating)}` : ''}${extraText(e) ? `, ${esc(extraText(e))}` : ''}${opt.cost && e.cost ? `, ${money(e.cost)}` : ''}</span>
+        ${e.text ? `<p>${esc(e.text).replace(/\n/g, '<br>')}</p>` : ''}
+        ${opt.photos && (e.photos || []).length ? `<div class="pd-photos">${e.photos.slice(0, 4).map(p => `<img src="${p.thumb}" alt="">`).join('')}</div>` : ''}
+      </div></div>`;
+
+    return `<article class="pd">
+      <header class="pd-head" style="--c:${color}">
+        <svg class="pd-sheep" aria-hidden="true"><use href="#schaf"/></svg>
+        <div><h1>${esc(t.name)}</h1><p>${esc(fmtRange(t))}</p></div>
+      </header>
+      <dl class="pd-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${typeof v === 'string' && v.includes('<') ? v : esc(v)}</dd></div>`).join('')}</dl>
+      ${staticMap(lines, marks, color)}
+      ${sts.length ? `<h2>Etappen</h2>
+      <table class="pd-stages"><thead><tr><th>Tag</th><th>Datum</th><th>Von</th><th>Nach</th><th>Luftlinie</th></tr></thead><tbody>
+        ${sts.map(s => `<tr><td>${s.n > 0 ? s.n : ''}</td><td>${fmtDay(s.day)}</td><td>${esc(placeName(s.from)) || '–'}</td>
+          <td>${s.to ? `<span class="pd-no" style="--c:${color}">${no.get(s.to.id)}</span>${esc(placeName(s.to))}` : '–'}</td><td>${s.dist >= 1 ? fmtKm(s.dist) : '–'}</td></tr>`).join('')}
+      </tbody></table>` : ''}
+      ${sts.length ? `<h2>Tag für Tag</h2>${sts.map(s => `<section class="pd-day"><h3>${s.n > 0 ? `Tag ${s.n} · ` : ''}${fmtDay(s.day)}</h3>${s.es.map(entry).join('')}</section>`).join('')}` : ''}
+      ${plan.length || S.places.some(p => p.tripId === t.id && !p.done && !hasPos(p)) ? `<h2>Geplant</h2><ol class="pd-plan" type="A">${S.places.filter(p => p.tripId === t.id && !p.done)
+        .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9')).map(p => `<li><b>${esc(p.name)}</b>${p.planDate ? `, ${fmtDay(p.planDate)}` : ''}${p.place ? `, ${esc(p.place)}` : ''}${p.note ? `<br><span>${esc(p.note)}</span>` : ''}</li>`).join('')}</ol>` : ''}
+      ${opt.cost && cost.length ? `<h2>Kosten</h2><table class="pd-cost">${Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<tr><td>${esc(c)}</td><td>${money(v)}</td></tr>`).join('')}
+        <tr class="sum"><td>Gesamt</td><td>${money(st.cost)}</td></tr></table>` : ''}
+      <footer>Erstellt mit LAMMping am ${fmtShort(today())}</footer>
+    </article>`;
+  }
+
+  FORMS['export-pdf'] = async form => {
+    const t = tripById(form.dataset.id);
+    const opt = { photos: !!(form.photos && form.photos.checked), cost: !!(form.cost && form.cost.checked) };
+    closeSheet();
+    let doc = document.getElementById('printDoc');
+    if (!doc) { doc = document.createElement('div'); doc.id = 'printDoc'; document.body.appendChild(doc); }
+    doc.innerHTML = bookHtml(t, opt);
+    document.body.classList.add('printing');
+    toast('Reiseheft wird vorbereitet …');
+    // Kartenkacheln müssen geladen sein, bevor das Druckfenster aufgeht
+    await Promise.all([...doc.querySelectorAll('img')].map(img => img.complete ? null
+      : new Promise(r => { img.onload = img.onerror = r; setTimeout(r, 8000); })));
+    const done = () => { document.body.classList.remove('printing'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    const old = document.title;
+    document.title = t.name;               // wird zum Dateinamen des PDFs
+    window.print();
+    setTimeout(() => { document.title = old; }, 1000);
+  };
+
+  app.exportGpx = gpx;
+}

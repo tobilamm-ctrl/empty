@@ -4,6 +4,8 @@ import installMapEdit from './kartenedit.js';
 import installTestdaten from './testdaten.js';
 import installExtras from './extras.js';
 import installSpiele from './spiele.js';
+import installIdeen from './ideen.js';
+import installExport from './export.js';
 
 /* ---------- Konstanten ---------- */
 
@@ -19,6 +21,9 @@ const ICONS = {
   car: '<path d="M3 16v-4l2-5h14l2 5v4H3zM3 12h18"/><circle cx="7.5" cy="16.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  print: '<path d="M7 9V4h10v5M7 17H4v-7h16v7h-3M7 14h10v6H7z"/>',
   open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
@@ -87,7 +92,7 @@ const SETTLE = 'Ausgleich';
 const S = {
   trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], lists: [], listItems: [], meta: [],
   fuel: [], places: [], checklists: [], checkstate: [], deadlines: [], tracks: [],
-  documents: [], recipes: [], plates: [], games: [],
+  documents: [], recipes: [], plates: [], games: [], ideas: [],
 };
 const WATCHED = Object.keys(S);
 let store = null;
@@ -277,7 +282,7 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
   <div class="ph-text"><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${art(key)}
@@ -285,7 +290,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -547,7 +552,7 @@ VIEWS.tagebuch = () => {
     </li>`;
   }).join('');
 
-  return `${installHint()}${tripHead(t, st)}${modeSeg}
+  return `${installHint()}${tripHead(t, st)}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
     <div class="toolbar diary-bar">
       <div class="chips">${chips}</div>
       <button class="primary" data-action="entry-form">${icon('plus')}Eintrag</button>
@@ -1998,13 +2003,13 @@ async function start() {
 const APP = {
   S, ui, LS, VIEWS, ACTIONS, FORMS, CHANGES, mapHooks,
   $, esc, money, num, icon, art, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
-  today, nowLocal, fmtDay, fmtShort, fmtRange, ago, km, fmtKm, hasPos, navUrl, byDate, sortTrips,
+  today, nowLocal, fmtDay, fmtShort, fmtTime, fmtRange, ago, km, fmtKm, hasPos, navUrl, byDate, sortTrips,
   getPos, placeInfo, locateInto, openPicker, setFormPos, posLabel, pinIcon, entryPopup,
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
-  crewId: () => crew.id,
+  crewId: () => crew.id, nextColor, setTrip, tripHead,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; },
   get map() { return map; },
@@ -2014,5 +2019,7 @@ installMapEdit(APP);
 installTestdaten(APP);
 installExtras(APP);
 installSpiele(APP);
+installIdeen(APP);
+installExport(APP);
 
 start();

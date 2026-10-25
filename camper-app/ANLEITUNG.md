@@ -78,7 +78,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-13'` hochzählen (z. B. auf `lammping-14`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-14'` hochzählen (z. B. auf `lammping-15`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -94,6 +94,9 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 
 ## Gut zu wissen
 
+- **Impressum und Datenschutz:** Für eine rein private, passwortgeschützte Seite für die Familie ist kein
+  Impressum nötig, und die DSGVO greift bei rein familiärer Nutzung nicht. Suchmaschinen sind über
+  `robots.txt` und `noindex` ausgesperrt.
 - **Route:** Die Linie auf der Karte verbindet eure Einträge mit Position in zeitlicher
   Reihenfolge. Eine lückenlose Aufzeichnung während der Fahrt kann eine Web-App nicht leisten.
   Geplant für Stufe 2: GPX-Import aus einer Tracking-App wie OsmAnd oder Komoot.
@@ -109,6 +112,9 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Tagebuch:** je Reise **Planung** (Stellplätze und Sehenswertes vormerken, Listen und Extras
   zum Packen für diese Reise) und **Tagebuch** (Einträge unterwegs). „Hier sind wir“ macht aus
   einem geplanten Ort einen Tagebuch-Eintrag.
+- **Reise beenden und exportieren** (im Tagebuch): „Reise beenden“ setzt das Ende auf heute, ins Archiv
+  kommt die Reise erst mit „Ins Archiv“. „Exportieren“ erzeugt eine GPX-Datei (Strecke, Stopps, geplante
+  Route) oder ein Reiseheft mit Streckenkarte, Etappen und Notizen: im Druckfenster „Als PDF speichern“.
 - **Listen:** beliebig viele Einkaufs- und Merklisten, auf Wunsch einer Reise zugeordnet.
   Einträge antippen, um sie zu bearbeiten oder in eine andere Liste zu verschieben.
 - **Boxen & Fächer:** Inventar mit Suche „Wo ist …?“, Packliste pro Reise mit Extras.
@@ -130,10 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   - *Kochen:* Rezepte für die Campingküche, Zutaten mit einem Tipp auf die Einkaufsliste.
   - *Autarkie:* Füllstand Wasser, Gas und Strom mit Schätzung der Resttage. Ein Eintrag
     „Ver- und Entsorgung“ mit Häkchen „Wasser getankt“ füllt den Wassertank wieder auf.
+  - *Reiseideen:* Vorschläge für künftige Ziele mit Ort, Reisezeit und Dauer. Alle können Notizen und
+    Links dazuschreiben und mit dem Herz zeigen, wem die Idee gefällt. „Reise planen“ macht daraus eine
+    neue Reise; die Notizen landen auf Wunsch als Merkliste in deren Planung.
   - *Spiele & Co:* Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
     Länder-Sticker und euer Spieleportal Spieleabend (`https://spieleabend.lamm7.de/`), das sich mit einem Tipp direkt öffnet;
-    Farbkreuz und weitere Portal-Spiele bekommen eine eigene Kachel (unter „Spieleportal einstellen“ änderbar). Kennzeichen-Daten: Senatsverwaltung
+    die Adresse lässt sich unter „Spieleportal einstellen“ ändern. Kennzeichen-Daten: Senatsverwaltung
     Berlin, CC BY 3.0.
 - **Karte bearbeiten** (Stift-Knopf auf der Karte):
   - *Orte:* auf die Karte tippen fügt nachträglich einen Stellplatz, Sehenswertes, eine Tankstelle,

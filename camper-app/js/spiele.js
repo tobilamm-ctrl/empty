@@ -36,14 +36,12 @@ export default function installSpiele(app) {
         <button class="link back" data-action="game-open" data-g="">Zurück zu allen Spielen</button>
         ${g === 'sticker' || g === 'brettspiele' ? '' : playerBar()}${GAME_VIEWS[g]()}`;
     }
-    // Brettspiele und Portal-Spiele öffnen Spieleabend direkt in einem eigenen Fenster
+    // Brettspiele öffnet Spieleabend direkt in einem eigenen Fenster
     const p = portal();
-    const row = (k, t, s, extra = '') => k === 'brettspiele' && p.url
-      ? `<li><a class="row" href="${esc(portalUrl(p))}" target="_blank" rel="noopener"><span class="txt"><b>${t}</b><small>${s}</small></span>${icon('open')}</a></li>`
-      : `<li><button data-action="game-open" data-g="${k}"${extra}><span class="txt"><b>${t}</b><small>${s}</small></span>${scoreHint(k)}</button></li>`;
     return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
-      <ul class="ledger">${GAMES.map(([k, t, s]) => row(k, t, k === 'brettspiele' && p.url ? `${esc(p.name)}: online gegeneinander` : s)).join('')}${p.url ? portalGames().map(g =>
-        `<li><a class="row" href="${esc(portalUrl(p, g.id))}" target="_blank" rel="noopener"><span class="txt"><b>${esc(g.title || g.id)}</b><small>Bei ${esc(p.name)} spielen</small></span>${icon('open')}</a></li>`).join('') : ''}</ul>
+      <ul class="ledger">${GAMES.map(([k, t, s]) => k === 'brettspiele' && p.url
+        ? `<li><a class="row" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="txt"><b>${t}</b><small>${esc(p.name)}: online gegeneinander</small></span>${icon('open')}</a></li>`
+        : `<li><button data-action="game-open" data-g="${k}"><span class="txt"><b>${t}</b><small>${s}</small></span>${scoreHint(k)}</button></li>`).join('')}</ul>
       <button class="link" data-action="portal-form">Spieleportal einstellen</button>`;
   };
   ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; render(); window.scrollTo(0, 0); };
@@ -228,12 +226,9 @@ export default function installSpiele(app) {
 
   /* ---------- Brettspiele: euer Portal (Spieleabend) ---------- */
 
-  // Vorbelegt mit Spieleabend; Adresse und Spiele lassen sich in der App ändern.
-  const PORTAL_DEFAULT = { id: 'portal', kind: 'portal', name: 'Spieleabend', url: 'https://spieleabend.lamm7.de/', list: [{ id: 'farbkreuz', title: 'Farbkreuz' }] };
+  // Vorbelegt mit Spieleabend; die Adresse lässt sich in der App ändern.
+  const PORTAL_DEFAULT = { id: 'portal', kind: 'portal', name: 'Spieleabend', url: 'https://spieleabend.lamm7.de/' };
   const portal = () => ({ ...PORTAL_DEFAULT, ...(S.games.find(g => g.id === 'portal') || {}) });
-  const portalBase = p => p.url.replace(/(index\.php)?([?#].*)?$/, '').replace(/\/?$/, '/');
-  const portalUrl = (p, gid) => gid ? `${portalBase(p)}play.php?spiel=${encodeURIComponent(gid)}` : portalBase(p);
-  const portalGames = () => (portal().list || []).filter(g => g.id);
 
   function portalView() {
     return `<p class="hint">Tragt die Adresse eures Spieleportals ein. Dann startet ihr es von hier aus.</p>
@@ -244,14 +239,11 @@ export default function installSpiele(app) {
     openSheet(`<form data-form="portal">${sheetHead('Spieleportal')}
       <label class="field"><span>Name</span><input name="name" value="${esc(p.name)}"></label>
       <label class="field"><span>Adresse</span><input name="url" type="url" value="${esc(p.url)}" placeholder="https://…" required></label>
-      <label class="field"><span>Spiele mit eigener Kachel (je Zeile: Kennung = Name)</span>
-        <textarea name="list" rows="3" placeholder="farbkreuz = Farbkreuz">${esc(portalGames().map(g => `${g.id} = ${g.title || g.id}`).join('\n'))}</textarea></label>
       <div class="sheet-foot"><button class="primary">Speichern</button></div></form>`);
   };
   FORMS.portal = form => {
-    const list = form.list.value.split('\n').map(l => l.split('=')).map(([id, title]) => ({ id: (id || '').trim().toLowerCase(), title: (title || id || '').trim() }))
-      .filter(g => /^[a-z0-9-]+$/.test(g.id));
-    save('games', { ...portal(), name: form.name.value.trim() || 'Spieleportal', url: form.url.value.trim(), list });
+    const old = portal(); delete old.list;
+    save('games', { ...old, name: form.name.value.trim() || 'Spieleportal', url: form.url.value.trim() });
     closeSheet();
   };
 
