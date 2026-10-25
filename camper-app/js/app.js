@@ -15,11 +15,13 @@ import installFamilie from './familie.js';
 import installFilm from './film.js';
 import installAlltag from './alltag.js';
 import installZeitachse from './zeitachse.js';
+import installWelt from './welt.js';
+import installAuswertung from './auswertung.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 25;
+const APP_VERSION = 26;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -332,7 +334,7 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
@@ -341,7 +343,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -885,6 +887,7 @@ function entryView(e) {
     ${e.rating ? `<p class="rating" aria-label="${e.rating} von 5">${'★'.repeat(e.rating)}<span>${'★'.repeat(5 - e.rating)}</span></p>` : ''}
     ${feats ? `<div class="chips wrap">${feats}</div>` : ''}
     ${extraText(e) ? `<p class="extra-line">${esc(extraText(e))}</p>` : ''}
+    ${APP.entryExtra ? APP.entryExtra(e) : ''}
     <dl class="facts-list">
       ${e.cost ? `<div><dt>Kosten</dt><dd>${money(e.cost)}</dd></div>` : ''}
       ${hasPos(e) ? `<div><dt>Position</dt><dd>${posLabel(e)}</dd></div>` : ''}
@@ -2174,5 +2177,7 @@ installFilm(APP);
 installFamilie(APP);
 installAlltag(APP);
 installZeitachse(APP);
+installWelt(APP);
+installAuswertung(APP);
 
 start();

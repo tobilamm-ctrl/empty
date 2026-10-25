@@ -1,0 +1,2 @@
+Länder- und Regionsgrenzen: Natural Earth (naturalearthdata.com), gemeinfrei (Public Domain).
+Vereinfacht mit mapshaper für LAMMping (Rubbelkarte).

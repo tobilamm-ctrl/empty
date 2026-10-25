@@ -28,6 +28,7 @@ export default function installMore(app) {
     { route: 'fahrzeug', art: 'fahrzeug', title: 'Fahrzeug', text: 'Steckbrief und Fristen' },
     { route: 'statistik', art: 'statistik', title: 'Statistik', text: 'Eure Reisen in Zahlen' },
     { route: 'wetter', art: 'wetter', title: 'Wetter', text: 'Vorhersage für Standort und Ziele' },
+    { route: 'rubbelkarte', art: 'rubbelkarte', title: 'Rubbelkarte', text: 'Wo wart ihr schon überall?' },
     { route: 'laender', art: 'laender', title: 'Länderinfos', text: 'Maut, Tempo, Pflichtausstattung' },
     { route: 'dokumente', art: 'dokumente', title: 'Dokumente & Notfall', text: 'Ausweise, Kontakte, Notruf', alt: 'Notfall' },
     { route: 'album', art: 'album', title: 'Fotoalbum', text: 'Galerie und Jahresrückblick' },
@@ -382,7 +383,7 @@ export default function installMore(app) {
     // GPX einer Wanderung/Radtour: eigene Strecke, zählt nicht als gefahrene Kilometer
     if (e && hike) {
       S.tracks.filter(t => t.entryId === e.id).forEach(t => remove('tracks', t.id));
-      save('tracks', { id: newId(), kind: 'hike', entryId: e.id, tripId: e.tripId, name: e.title || hike.name, km: hike.km, pts: encodePts(hike.pts), createdAt: Date.now() });
+      save('tracks', { id: newId(), kind: 'hike', entryId: e.id, tripId: e.tripId, name: e.title || hike.name, km: hike.km, pts: encodePts(hike.pts), createdAt: Date.now(), ...(hike.profile || {}) });
     }
     return e;
   };
@@ -396,9 +397,11 @@ export default function installMore(app) {
       const g = parseGpx(await f.text());
       const form = el.closest('form');
       pendingHike = { form, ...g };
-      document.getElementById('hikeInfo').textContent = `Strecke „${g.name || f.name}“ übernommen: ${fmtKm(g.km)}`;
+      document.getElementById('hikeInfo').textContent = `Strecke „${g.name || f.name}“ übernommen: ${fmtKm(g.km)}${g.profile ? `, ↑ ${g.profile.up} m, höchster Punkt ${g.profile.maxEle} m` : ''}`;
       const kmField = form.querySelector('[name=x_wanderung_km]');
       if (kmField && !kmField.value) kmField.value = String(g.km).replace('.', ',');
+      const upField = form.querySelector('[name=x_wanderung_up]');
+      if (upField && !upField.value && g.profile) upField.value = String(g.profile.up);
     } catch (err) { toast(err.message); }
   };
 
@@ -488,14 +491,18 @@ export default function installMore(app) {
     if (doc.getElementsByTagName('parsererror').length) throw new Error('Die Datei ist keine gültige GPX-Datei.');
     let nodes = [...doc.getElementsByTagName('trkpt')];
     if (!nodes.length) nodes = [...doc.getElementsByTagName('rtept')];
-    const pts = nodes.map(n => [parseFloat(n.getAttribute('lat')), parseFloat(n.getAttribute('lon'))]).filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const all = nodes.map(n => { const e = n.getElementsByTagName('ele')[0]; return [parseFloat(n.getAttribute('lat')), parseFloat(n.getAttribute('lon')), e ? parseFloat(e.textContent) : NaN]; })
+      .filter(p => isFinite(p[0]) && isFinite(p[1]));
+    const pts = all.map(p => [p[0], p[1]]);
+    // Höhen aus der GPX-Datei (für das Höhenprofil), nur wenn die meisten Punkte eine haben
+    const ele = all.filter(p => isFinite(p[2])).length > all.length / 2 ? all.map(p => p[2]) : null;
     if (pts.length < 2) throw new Error('In der Datei ist keine Strecke enthalten.');
     const nameEl = doc.querySelector('trk > name') || doc.querySelector('rte > name') || doc.querySelector('metadata > name');
     let dist = 0;
     for (let i = 1; i < pts.length; i++) dist += km({ lat: pts[i - 1][0], lng: pts[i - 1][1] }, { lat: pts[i][0], lng: pts[i][1] });
     let tol = 8, small = simplify(pts, tol);
     while (small.length > 2500) small = simplify(pts, tol *= 2);
-    return { name: nameEl ? nameEl.textContent.trim() : '', pts: small, km: Math.round(dist * 10) / 10 };
+    return { name: nameEl ? nameEl.textContent.trim() : '', pts: small, km: Math.round(dist * 10) / 10, profile: ele && app.makeProfile ? app.makeProfile(pts, ele) : null };
   }
 
   VIEWS.trackList = t => {

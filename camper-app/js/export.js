@@ -305,19 +305,25 @@ ${trks}
     const t = tripById(form.dataset.id);
     const opt = { photos: !!(form.photos && form.photos.checked), cost: !!(form.cost && form.cost.checked) };
     closeSheet();
+    toast('Reiseheft wird vorbereitet …');
+    printHtml(await bookHtml(t, opt), t.name);
+  };
+
+  // Druckt fertiges HTML über #printDoc; der Titel wird zum Dateinamen des PDFs
+  async function printHtml(html, title) {
     let doc = document.getElementById('printDoc');
     if (!doc) { doc = document.createElement('div'); doc.id = 'printDoc'; document.body.appendChild(doc); }
-    toast('Reiseheft wird vorbereitet …');
-    doc.innerHTML = await bookHtml(t, opt);
+    doc.innerHTML = html;
     document.body.classList.add('printing');
     await Promise.all([...doc.querySelectorAll('img')].map(img => img.decode().catch(() => {})));
     const done = () => { document.body.classList.remove('printing'); window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
     const old = document.title;
-    document.title = t.name;               // wird zum Dateinamen des PDFs
+    document.title = title;
     window.print();
     setTimeout(() => { document.title = old; }, 1000);
-  };
+  }
+  app.printHtml = printHtml;
 
   app.exportGpx = gpx;
 }

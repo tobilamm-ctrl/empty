@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-25'` hochzählen (z. B. auf `lammping-26`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-26'` hochzählen (z. B. auf `lammping-27`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -195,14 +195,16 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Einträge antippen, um sie zu bearbeiten oder in eine andere Liste zu verschieben.
 - **Boxen & Fächer:** Inventar mit Suche „Wo ist …?“, Packliste pro Reise mit Extras.
 - **Eintragsarten im Tagebuch:** Stellplatz (Campingplatz, Stellplatz, frei stehen), Sehenswertes,
-  Museum, Wanderung (Strecke, Höhenmeter, Dauer, GPX-Datei), Baden (See, Meer, Freibad …),
+  Museum, Wanderung (Strecke, Höhenmeter, Dauer, GPX-Datei – mit Höhenprofil: Anstieg, Abstieg und höchster
+  Punkt; fehlen in der Datei die Höhen, holt die App sie einmal aus dem Höhenmodell von Open-Meteo), Baden (See, Meer, Freibad …),
   Café / Restaurant, Spielplatz & Kinder, Tankstelle, Ver- und Entsorgung, Einkauf, Pause,
   Fähre & Maut, Werkstatt, Wäsche, Notiz. Bei Stellplatz, Baden, Café / Restaurant, Museum,
   Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
   passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen.
 - **Mehr:** Unten auf der Seite „Kacheln anordnen“: Reihenfolge mit Pfeilen festlegen und Kacheln ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
-  (Steckbrief und Fristen mit Erinnerung), Statistik, Reisen und Archiv, Einstellungen, außerdem:
+  (Steckbrief und Fristen mit Erinnerung), Statistik (mit Jahresvergleich: Kilometer, Nächte, Tage, Länder,
+  Reisen und Kosten pro Jahr), Reisen und Archiv, Einstellungen, außerdem:
   - *Wetter* am aktuellen Standort bzw. letzten Stellplatz (Open-Meteo, braucht Internet).
   - *Länderinfos:* Tempolimits, Promillegrenze, Maut, Pflichtausstattung, Notruf und Tipps für die
     Länder der Reise. Ohne Gewähr – vor der Fahrt beim ADAC bzw. Auswärtigen Amt prüfen (Links in der App).
@@ -222,7 +224,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     zwar aus den Reisen, bei denen die Person dabei war (in der Reise unter „Wer ist dabei?“). Dazu ein
     Visum-Stempel für jedes neue Land und ein Stempel für jeden Ort mit fünf Sternen. Verwalter vergeben
     außerdem eigene Stempel mit Name, Symbol, Farbe und Datum. Neue Stempel erscheinen beim nächsten Öffnen
-    mit einer kleinen Stempel-Animation.
+    mit einer kleinen Stempel-Animation. Neu: Höhen-Stempel (über 1000, 2000 und 3000 m, aus den GPX-Strecken),
+    „Höhenmeter-Sammler“ und Kontinent-Stempel. „Drucken oder als PDF“ macht daraus einen Pass mit Deckblatt,
+    Stempelseite, Visa und Traumorten – zum Einkleben ins Fotoalbum.
+  - *Rubbelkarte:* Weltkarte, auf der sich alle bereisten Länder golden färben, je Person. Umschalten auf
+    „Regionen“ zeigt Bundesländer, Kantone, Provinzen usw. (Europa, USA, Kanada, Australien, Neuseeland) mit
+    „x von y“. Die Grenzen stammen von Natural Earth (gemeinfrei) und liegen in `vendor/welt`.
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,

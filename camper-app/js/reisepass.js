@@ -88,6 +88,15 @@ export default function installReisepass(app) {
     for (const e of c.es) { s += (e.photos || []).length; if (s >= goal) return { date: day(e.date), place: e.place || e.title || '', cur: s }; }
     return { cur: s };
   };
+  // Höhen aus den GPX-Strecken der Touren (Höhenprofil, auswertung.js)
+  const heights = c => (app.hikeHeights ? app.hikeHeights(c.es) : []);
+  const summit = (goal, c) => {
+    const h = heights(c);
+    const top = h.find(x => x.t.maxEle >= goal);
+    return top ? { date: day(top.e.date), place: top.e.title || top.e.place || '', cur: goal } : { cur: Math.max(0, ...h.map(x => x.t.maxEle)) };
+  };
+  const climbed = e => { const h = heights({ es: [e] })[0]; return h ? h.t.up : num(x(e).up); };
+  const continents = (goal, c) => nth(app.continentsOf ? app.continentsOf(c.pid) || [] : [], goal);
   const time = (from, to) => e => e.date.slice(11, 16) >= from && e.date.slice(11, 16) < to;
 
   // Vorgegebene Stempel: Kennung, Titel, Beschreibung, Symbol, Ziel, Prüfung
@@ -117,6 +126,9 @@ export default function installReisepass(app) {
     ['laender5', '5 Länder', 'Fünf Länder entdeckt', 'flag', 5, countries],
     ['laender10', '10 Länder', 'Zehn Länder – echte Weltenbummler', 'flag', 10, countries],
     ['laender15', '15 Länder', 'Fünfzehn Länder – halb Europa gesehen', 'flag', 15, countries],
+    ['kontinent2', 'Zwei Kontinente', 'Auf zwei Kontinenten unterwegs gewesen', 'flag', 2, continents],
+    ['kontinent3', 'Drei Kontinente', 'Drei Kontinente bereist', 'flag', 3, continents],
+    ['kontinent5', 'Weltreisende', 'Fünf Kontinente bereist', 'flag', 5, continents],
     // Wasser
     ['faehre', 'Fährmann', 'Mit der Fähre übers Wasser', 'faehre', 1, count(e => e.type === 'faehre' && (x(e).kind === 'Fähre' || (!x(e).kind && /fähre/i.test(e.title || ''))))],
     ['faehre5', 'Kapitän', 'Fünfmal mit der Fähre gefahren', 'faehre', 5, count(e => e.type === 'faehre' && (x(e).kind === 'Fähre' || !x(e).kind))],
@@ -128,6 +140,10 @@ export default function installReisepass(app) {
     // Draußen
     ['gipfel', 'Gipfelstürmer', 'Eine Tour mit mindestens 500 Höhenmetern', 'mountain', 1, count(e => e.type === 'wanderung' && num(x(e).up) >= 500)],
     ['bergziege', 'Bergziege', 'Eine Tour mit 1000 Höhenmetern', 'mountain', 1, count(e => e.type === 'wanderung' && num(x(e).up) >= 1000)],
+    ['hoehe1000', 'Über 1000 m', 'Auf einer Tour über 1000 Meter hoch gekommen', 'mountain', 1000, summit],
+    ['hoehe2000', 'Über 2000 m', 'Auf einer Tour über 2000 Meter hoch – Hochgebirge!', 'mountain', 2000, summit],
+    ['hoehe3000', 'Über 3000 m', 'Über 3000 Meter – dünne Luft da oben', 'mountain', 3000, summit],
+    ['hm5000', 'Höhenmeter-Sammler', 'Insgesamt 5000 Höhenmeter bergauf', 'mountain', 5000, sum(e => e.type === 'wanderung', climbed)],
     ['wandern50', 'Wanderkönig', 'Insgesamt 50 km gewandert', 'wanderung', 50, sum(e => e.type === 'wanderung' && x(e).mode !== 'mit dem Rad', e => num(x(e).km))],
     ['rad30', 'Radprofi', 'Eine Radtour über 30 km', 'wanderung', 1, count(e => e.type === 'wanderung' && x(e).mode === 'mit dem Rad' && num(x(e).km) >= 30)],
     ['rad200', 'Radmarathon', 'Insgesamt 200 km Rad gefahren', 'wanderung', 200, sum(e => e.type === 'wanderung' && x(e).mode === 'mit dem Rad', e => num(x(e).km))],
@@ -214,6 +230,7 @@ export default function installReisepass(app) {
   const who = () => (members().some(m => m.id === ui.passFor) ? ui.passFor : me());
   VIEWS.reisepass = () => {
     const pid = who();
+    if (app.loadWorld) app.loadWorld();
     const p = passport(pid);
     setTimeout(() => celebrate(pid), 300);
     return `${pageHead('spiele', 'Reisepass', `${personName(pid)}: ${p.got.length} Stempel, ${p.lands.length} ${p.lands.length === 1 ? 'Land' : 'Länder'}`)}
@@ -224,11 +241,34 @@ export default function installReisepass(app) {
           <div><b>Reisepass</b><span>${esc(personName(pid))}${app.crewName ? ` · ${esc(app.crewName())}` : ''}</span></div></header>
         <div class="pp-progress"><span style="width:${(p.got.filter(s => s.kind === 'auto').length / STAMPS.length) * 100}%"></span></div>
         ${p.got.length ? `<div class="stamps">${p.got.map(s => stampHtml(s)).join('')}</div>` : '<p class="hint">Noch keine Stempel. Die erste Nacht im Camper bringt den ersten!</p>'}
-        ${isAdmin() ? `<div class="btnrow"><button class="ghost small-btn" data-action="stamp-form" data-to="${pid}">${icon('plus')}Eigenen Stempel vergeben</button></div>` : ''}
+        <div class="btnrow">${isAdmin() ? `<button class="ghost small-btn" data-action="stamp-form" data-to="${pid}">${icon('plus')}Eigenen Stempel vergeben</button>` : ''}
+          <button class="ghost small-btn" data-action="pass-print">${icon('download')}Drucken oder als PDF</button></div>
       </section>
-      ${p.lands.length ? `<section class="passport visa-page"><h2 class="date-head">Länder</h2><div class="visas">${p.lands.map(s => stampHtml(s)).join('')}</div></section>` : ''}
+      ${p.lands.length ? `<section class="passport visa-page"><h2 class="date-head">Länder${!app.allowed || app.allowed('rubbelkarte') ? ` <a class="link small-link" href="#/rubbelkarte">Rubbelkarte</a>` : ''}</h2><div class="visas">${p.lands.map(s => stampHtml(s)).join('')}</div></section>` : ''}
       ${p.places.length ? `<section class="passport visa-page"><h2 class="date-head">Traumorte</h2><div class="stamps">${p.places.map(s => stampHtml(s)).join('')}</div></section>` : ''}
       ${p.open.length ? `<details class="open-stamps"><summary>Noch zu holen (${p.open.length})</summary><div class="stamps open">${p.open.map(s => stampHtml(s)).join('')}</div></details>` : '<p class="hint">Alle vorgegebenen Stempel gesammelt. Wahnsinn!</p>'}`;
+  };
+  // Pass zum Ausdrucken: Deckblatt, Stempelseiten, Visa und Traumorte – zum Einkleben ins Fotoalbum
+  ACTIONS['pass-print'] = () => {
+    const pid = who();
+    const p = passport(pid);
+    const cs = app.continentsOf ? app.continentsOf(pid) : null;
+    const page = (title, html, cont) => `<section class="pp-page${cont ? ' cont' : ''}"><h2>${title}</h2>${html}</section>`;
+    app.printHtml(`<article class="pd pp-print">
+      <section class="pp-cover">
+        <p class="pp-k">Reisepass</p>
+        <svg class="pp-cover-sheep" aria-hidden="true"><use href="#schaf"/></svg>
+        <h1>${esc(personName(pid))}</h1>
+        ${app.crewName ? `<p>${esc(app.crewName())}</p>` : ''}
+        <dl class="pd-facts"><div><dt>Stempel</dt><dd>${p.got.length}</dd></div><div><dt>Länder</dt><dd>${p.lands.length}</dd></div>
+          ${cs ? `<div><dt>Kontinente</dt><dd>${cs.length}</dd></div>` : ''}<div><dt>Traumorte</dt><dd>${p.places.length}</dd></div></dl>
+        <p class="pp-date">Stand ${fmtShort(today())}</p>
+      </section>
+      ${p.got.length ? page('Stempel', `<div class="stamps">${p.got.map(s => stampHtml(s)).join('')}</div>`) : ''}
+      ${p.lands.length ? page('Länder', `<div class="visas">${p.lands.map(s => stampHtml(s)).join('')}</div>`) : ''}
+      ${p.places.length ? page('Traumorte', `<div class="stamps">${p.places.map(s => stampHtml(s)).join('')}</div>`, p.lands.length > 0 && p.lands.length <= 12) : ''}
+      <footer>Erstellt mit LAMMping am ${fmtShort(today())}</footer>
+    </article>`, `Reisepass ${personName(pid)}`);
   };
   ACTIONS['pass-for'] = el => { ui.passFor = el.dataset.id; app.render(); };
 

@@ -2,15 +2,12 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
-## Vorgemerkt (Stand: Lieferung 25)
+## Vorgemerkt (Stand: Lieferung 26)
 
-- **Rubbelkarte:** Weltkarte mit allen bereisten Ländern farbig, auf Wunsch auch Regionen (z. B. Schottland,
-  Bayern), für alle Kontinente. Passt zum Reisepass (eigene Seite oder Kachel).
-- **Höhenprofil für Touren:** Bei Wanderungen und Radtouren mit GPX-Datei eine Kurve mit Anstieg, Abstieg und
-  höchstem Punkt. Reisepass-Stempel für echte Höhen (z. B. „Über 1000 m“, „Über 2000 m“).
-- **Reisepass zum Ausdrucken:** Pass eines Kindes als PDF (Stempel, Länder-Visa, Traumorte), zum Einkleben ins
-  Fotoalbum.
-- **Jahresvergleich in der Statistik:** Kilometer, Nächte, Länder und Kosten pro Jahr nebeneinander.
+- ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
+- ~~**Höhenprofil für Touren** mit Höhen-Stempeln im Reisepass.~~ Erledigt in Lieferung 26.
+- ~~**Reisepass zum Ausdrucken** (Stempel, Länder-Visa, Traumorte).~~ Erledigt in Lieferung 26.
+- ~~**Jahresvergleich in der Statistik:** Kilometer, Nächte, Länder und Kosten pro Jahr.~~ Erledigt in Lieferung 26.
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
@@ -19,3 +16,10 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Kalender-Export der geplanten Reise
 - Gespeicherte Orte aus Google Maps (Takeout) in die Wunschliste übernehmen
 - Zahl am App-Symbol (offene Einkäufe, fällige Fristen)
+- Pausenplaner (Pause alle 2 Stunden mit Spielplatz oder Café auf der Strecke)
+- „Hier wart ihr schon mal“ (Hinweis, wenn ihr in die Nähe eines früheren Stellplatzes kommt)
+- Sätze für unterwegs (wichtige Sätze in der Landessprache)
+- Packvorschläge nach Wetter und Reiseziel
+- Durchfahrtshöhe und -breite des Campers bei Brücken und Gassen beachten
+- Schatzsuche für Kinder am Stellplatz
+- Stellplatz-Notizbuch (Strom, Wasser, Entsorgung, Tipps für das nächste Mal)

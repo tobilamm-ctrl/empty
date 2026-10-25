@@ -1250,3 +1250,64 @@ body.blog-page { padding: 0; }
 #placesBtn { position: relative; }
 #placesBtn[aria-pressed="true"]::after { content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--trip); box-shadow: 0 0 0 2px var(--surface); }
 .map-layers .seg span { font-size: 14px; }
+
+/* ---------- Rubbelkarte ---------- */
+.rubbel-map { height: 320px; margin-bottom: 12px; border-radius: 16px; border: 1.5px solid var(--line); background: #CFE3EA; overflow: hidden; }
+.rubbel-map.leaflet-container { background: #CFE3EA; }
+.rubbel-stat .progress { margin-bottom: 4px; }
+.rubbel-stat .progress span { background: #E0A21B; }
+.rubbel-stat .sub { margin: 0 0 6px; }
+.rubbel-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 12px; }
+.rubbel-list li { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.rubbel-list .rf { grid-row: span 2; font-size: 24px; line-height: 1; }
+.rubbel-list small { color: var(--muted); font-size: 13px; }
+.rubbel-regs { margin: 0 0 8px; line-height: 1.6; }
+.date-head small { font: 500 15px var(--body); color: var(--muted); margin-left: 6px; }
+.small-link { font-size: 15px; margin-left: 10px; padding: 0; font-family: var(--body); }
+
+/* ---------- Höhenprofil ---------- */
+.profile { margin: 10px 0 14px; padding: 10px 12px 6px; border-radius: 14px; background: var(--mist); }
+.prof-facts { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 6px; color: var(--muted); }
+.prof-facts b { color: var(--ink); }
+.prof-chart { display: block; width: 100%; height: 110px; overflow: visible; }
+.prof-chart .pa { fill: color-mix(in srgb, #4F8A3C 30%, transparent); }
+.prof-chart .pl { fill: none; stroke: #4F8A3C; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.prof-chart .pt { fill: #fff; stroke: #4F8A3C; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.prof-chart text { font: 11px var(--body); fill: var(--muted); }
+.profile .source { margin: 2px 0 0; font-size: 12px; }
+
+/* ---------- Jahresvergleich ---------- */
+.years { margin-top: 18px; }
+.year-bars { list-style: none; margin: 4px 0 14px; padding: 0; }
+.year-bars li { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; padding: 5px 0; }
+.yb-y { font: 700 16px var(--head); color: var(--wood); }
+.yb-bar { height: 16px; border-radius: 8px; background: var(--mist); overflow: hidden; }
+.yb-bar i { display: block; height: 100%; border-radius: 8px; background: var(--trip); }
+.year-bars b { font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+.year-table { overflow-x: auto; }
+.year-table table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.year-table th { text-align: right; font-weight: 600; color: var(--muted); padding: 4px 6px; border-bottom: 1.5px solid var(--line); white-space: nowrap; }
+.year-table td { text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.year-table th:first-child, .year-table td:first-child { text-align: left; font-weight: 700; }
+
+/* ---------- Reisepass zum Ausdrucken ---------- */
+.pp-print { --surface: #fff; --ink: #222; --muted: #777; --mist: #eee; }
+.pp-cover { break-after: page; min-height: 240mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  border: 3px double #2E5FA8; border-radius: 14px; padding: 20mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pp-k { font: 700 30pt var(--head); letter-spacing: .12em; text-transform: uppercase; color: #2E5FA8; margin: 0 0 10mm; }
+.pp-cover-sheep { width: 70mm; height: 55mm; color: #6B4226; }
+.pp-cover h1 { font-size: 30pt; margin-top: 8mm; }
+.pp-cover .pd-facts { justify-content: center; margin-top: 10mm; text-align: center; }
+.pp-date { color: #777; margin-top: 6mm; }
+.pp-page { break-before: page; }
+.pp-page h2 { font: 600 18pt var(--head); color: #2E5FA8; margin: 0 0 6mm; }
+.pp-print .stamps { grid-template-columns: repeat(5, 1fr); gap: 7mm 4mm; }
+.pp-print .visas { grid-template-columns: repeat(3, 1fr); gap: 7mm 6mm; }
+.pp-page.cont { break-before: auto; margin-top: 12mm; }
+.pp-cover .pd-facts dt { font-size: 10pt; }
+.pp-cover .pd-facts dd { font: 700 22pt var(--head); color: #2E5FA8; }
+.pp-print .stamp, .pp-print .visa, .pp-print .oval { break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pp-print .st-ring, .pp-print .visa, .pp-print .oval > span { color: var(--ink); }
+.pp-print .visa { width: 100%; padding: 6px 6px; }
+.pp-print .visa b { font-size: 10pt; overflow-wrap: anywhere; }
+.pp-print .visa small { font-size: 8pt; }
