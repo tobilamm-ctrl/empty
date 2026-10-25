@@ -3,38 +3,50 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Schafkopf.
+Vier in einer Reihe, Reversi, Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Schafkopf.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
 Regeltexte sind geschützt. Darum eigener Name, eigene Gestaltung und eigene Texte, kein Blatt
 oder Kartenbild 1:1 kopieren.
 
-## Brettspiele und Klassiker
+## Reihenfolge (nach Aufwand und Nutzen)
+
+| # | Spiel (Prinzip) | Spieler | Aufwand | Handy | Computer-Gegner | Hinweise |
+|---|---|---|---|---|---|---|
+| ✓ | **Reversi** | 2 | fertig | sehr gut (8×8) | drei Stärken | „Othello“ ist ein Markenname |
+| 2 | **Skyjo** | 2–8 | gering–mittel | gut (eigenes 3×4-Raster) | leicht | `maxPlayers` im Spielkit auf 8 anheben |
+| 3 | **Mau-Mau im Uno-Stil** | 2–6 | gering–mittel | gut | Mau-Mau-Computer erweitern | Zahlen 0–9 in 4 Farben, Richtungswechsel, +2, +4, Farbwahl; eigener Name und eigenes Kartendesign (kein „UNO“, kein Oval) |
+| 4 | **Kingdomino** | 2–4 | mittel | sehr gut (5×5) | mittel | 48 Dominos selbst gestalten; Wertung Fläche × Kronen |
+| 5 | **Azul** | 2–4 | mittel | gut | mittel | Fliesen zusätzlich mit Muster unterscheidbar |
+| 6 | **Rommé** | 2–4 | mittel–hoch | gut mit sortierter Hand, Sätze untereinander | mittel | Hausregeln als Einstellungen (40 Punkte zum Auslegen, Joker tauschen); kein Rummikub (freies Umbauen am Handy unpraktisch) |
+| 7 | **Watten / Waddeln** | 4 (2 Teams), auch 2 | mittel–hoch | sehr gut (5 Karten) | aufwendig (Bieten, Bluffen) | Deuten über Zeichen zum Antippen; **eure Hausregeln nötig** (Kritische ja/nein, bis wie viele Punkte, „Gehen“) |
+| 8 | **Patchwork** | 2 | mittel–hoch | gut, Drehen/Spiegeln braucht gute Bedienung | mittel | 33 Flicken selbst gestalten |
+| 9 | **Sagrada** | 2–4 | hoch | sehr gut (4×5) | mittel | erst Grundspiel, die 12 Werkzeugkarten danach; Fenstermuster selbst gestalten |
+
+## Weitere Ideen
 
 | Spiel | Spieler | Passt, weil | Aufwand | Rechtlich |
 |---|---|---|---|---|
-| **Halma / Sternhalma** | 2–6 | Familienspiel für große Runden, Springen über Ketten, Computer-Gegner einfach | mittel | frei |
-| **Reversi** | 2 | schnell erklärt, taktisch, starker Computer-Gegner leicht möglich | gering | frei, „Othello“ ist ein Markenname |
-| **Kalaha (Mancala)** | 2 | uraltes Bohnenspiel, in einer Minute erklärt, sehr guter Computer-Gegner möglich | gering | frei |
+| **Halma / Sternhalma** | 2–6 | Familienspiel für große Runden | mittel | frei |
+| **Kalaha (Mancala)** | 2 | in einer Minute erklärt, sehr guter Computer-Gegner möglich | gering | frei |
 | **Sperrsteine** (Prinzip „Malefiz“) | 2–4 | würfeln, laufen, Sperrsteine versetzen | mittel | Prinzip frei, „Malefiz“ ist ein Markenname |
-| **Ludo / Pachisi** (Prinzip „Mensch ärgere dich nicht“) | 2–4 | Familienklassiker, Computer-Gegner einfach | mittel | Prinzip frei, Name geschützt |
+| **Ludo / Pachisi** (Prinzip „Mensch ärgere dich nicht“) | 2–4 | Familienklassiker | mittel | Prinzip frei, Name geschützt |
 | **Dame** | 2 | Klassiker | mittel | frei |
-| **Domino** | 2–4 | Legeregeln einfach, Computer-Gegner einfach | gering | frei |
+| **Domino** | 2–4 | Legeregeln einfach | gering | frei |
+| **Stadt, Land, Fluss** | 2–6+ | online ideal, alle schreiben gleichzeitig | mittel | frei |
+| **Zehntausend** | 2–6 | würfeln und zocken | gering | frei |
+| **Wizard** (Stiche ansagen) | 3–6 | online ideal | mittel–hoch | beruht auf dem freien „Oh Hell“ |
+| **„Ganz schön clever“** | 1–4 | Würfel nehmen und ablegen | mittel–hoch | wie Farbkreuz, Fotos von Block und Anleitung nötig |
 
-## Würfel-, Karten- und Partyspiele
-
-| Spiel | Spieler | Passt, weil | Aufwand | Rechtlich |
-|---|---|---|---|---|
-| **Stadt, Land, Fluss** | 2–6+ | online ideal: alle schreiben gleichzeitig am eigenen Gerät, danach gemeinsame Bewertung, ohne Computer-Gegner | mittel | frei |
-| **Zehntausend** | 2–6 | würfeln und zocken, schnell erklärt | gering | frei (Volksspiel) |
-| **Wizard** (Stiche ansagen) | 3–6 | Runde für Runde Stiche ansagen, online ideal | mittel–hoch: Computer muss Stiche schätzen | beruht auf dem freien „Oh Hell“; Name und Kartenbilder nicht |
-| **Skyjo** (Karten tauschen, möglichst wenig Punkte) | 2–8 | verdecktes Kartenraster, rundenbasiert, Computer einfach; für mehr als 6 Spieler `maxPlayers` erhöhen | mittel | neueres Verlagsspiel, Lage wie bei Farbkreuz; verwandt mit dem freien „Golf“ |
-| **„Ganz schön clever“** (fünf Farbbereiche mit Kettenboni) | 1–4 | Würfel nehmen und ablegen, Solo-Variante vorhanden | mittel–hoch: viele Sonderregeln, Computer anspruchsvoll | wie Farbkreuz. Fotos von Block und Anleitung nötig |
+**Eher nicht fürs Handy:** Carcassonne und Qwirkle (wachsender gemeinsamer Plan), Zug um Zug (kleine Strecken
+auf großer Karte), Splendor (viele kleine Kostenangaben), Catan (Handeln und Bauen zu fummelig).
 
 ## Für jedes neue Spiel
 
 - auf dem Spielkit bauen, Ausgangspunkt `games/vorlage/`
 - an einem Gerät, online und (wenn sinnvoll) allein bzw. gegen Computer spielbar
-- verdeckte Informationen (eigene Hand, geheimer Code): `privateHands: true`, nur die eigenen Geheimnisse zeigen
+- **Handy zuerst:** alles bei 400 px ohne Zoomen erkennbar, Tippziele mindestens 44 px, Farben immer
+  zusätzlich mit Symbol oder Muster, eigenes Tableau groß, Mitspieler kompakt
+- verdeckte Informationen: `privateHands: true`, nur die eigenen Geheimnisse zeigen
 - testen: an einem Gerät, gegen Computer, online mit zwei Konten (beide Geräte gleicher Stand)

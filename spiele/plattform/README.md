@@ -12,6 +12,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Farbkreuz Plus** | 1–6 | nach „Noch mal so gut!“: Sonderwürfel, Bomben, Herzen, Zeilenboni |
 | **Würfelpoker** | 1–6 | 13 Runden, 5 Würfel, Wertungsblock, Solo mit Bestwert |
 | **Vier in einer Reihe** | 2 | Computer in drei Stärken |
+| **Reversi** | 2 | Computer in drei Stärken, perfektes Endspiel auf „schwer“ |
 | **Codeknacker** | 1–2 | Farbcode knacken, allein gegen den Computer oder abwechselnd zu zweit |
 | **Mühle** | 2 | Setzen, Ziehen, Springen |
 | **Backgammon** | 2 | Partie bis 1, 3 oder 5 Punkte, ohne Verdopplungswürfel |

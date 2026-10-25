@@ -28,6 +28,13 @@
     "color": "#4f7fe0"
   },
   {
+    "id": "reversi",
+    "title": "Reversi",
+    "description": "Steine einschließen und umdrehen, bis das Brett erobert ist. Zu zweit an einem Gerät, gegen den Computer oder online.",
+    "players": "2 Spieler · ca. 10–15 Minuten",
+    "color": "#d9b45a"
+  },
+  {
     "id": "codeknacker",
     "title": "Codeknacker",
     "description": "Den geheimen Farbcode mit möglichst wenigen Versuchen knacken. Allein gegen den Computer, zu zweit an einem Gerät oder online.",
