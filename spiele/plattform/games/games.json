@@ -91,6 +91,13 @@
     "color": "#e2463c"
   },
   {
+    "id": "romme",
+    "title": "Rommé",
+    "description": "Sätze und Folgen auslegen, anlegen, Joker tauschen, als Erster die Hand leeren. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–6 Spieler · ca. 15 Minuten je Runde",
+    "color": "#f2b84b"
+  },
+  {
     "id": "muehle",
     "title": "Mühle",
     "description": "Der Brettspielklassiker mit neun Steinen. Zu zweit an einem Gerät, gegen den Computer oder online.",

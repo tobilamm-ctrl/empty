@@ -1,0 +1,746 @@
+<title>Rommé</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Layout: Tisch mit Mitspielern, Stapel, Ablage und den ausgelegten Kartenreihen; darunter die eigene Hand
+   in Reihen ohne Überlappung; rechts bzw. darunter Wertung, Verlauf und Regeln */
+:root {
+  color-scheme: dark;
+  --table: #16110c;
+  --sheet: #231b14;
+  --sheet-2: #33281d;
+  --ink: #f6f0e6;
+  --muted: #b9aa93;
+  --accent: #f2b84b;
+  --tile-ink: #231b14;
+  --red: #e5604f;
+  --green: #79c27b;
+  --felt: #2a4d6e;
+  --felt-dark: #183148;
+  --card: #fffdf7;
+  --s-x: #1d1f26;   /* Kreuz */
+  --s-p: #1f7a3a;   /* Pik */
+  --s-h: #cc2f3b;   /* Herz */
+  --s-k: #d9770f;   /* Karo */
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --cw: 56px;     /* Kartenbreite in der Hand */
+  --mw: 34px;     /* Kartenbreite auf dem Tisch */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+svg text { font-family: var(--font-display); }
+
+/* ---------- Tisch ---------- */
+.felt {
+  background: radial-gradient(ellipse at 50% 30%, var(--felt) 0%, var(--felt-dark) 100%);
+  border-radius: 22px; padding: 14px; display: grid; gap: 12px; min-width: 0;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.45);
+}
+.seats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.seat { background: rgba(0,0,0,.25); border-radius: 10px; padding: 5px 10px; font-size: 13px; display: grid; justify-items: center; }
+.seat.on { box-shadow: 0 0 0 3px var(--accent); }
+.seat b { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat span { color: color-mix(in srgb, var(--ink) 70%, var(--felt)); font-variant-numeric: tabular-nums; }
+.seat .out { color: var(--green); font-weight: 800; }
+.mid { display: flex; gap: 18px; justify-content: center; align-items: flex-end; }
+.pile { display: grid; gap: 4px; justify-items: center; }
+.pile .lbl { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 70%, var(--felt)); white-space: nowrap; }
+.stack { width: 64px; height: 90px; border: 0; padding: 0; background: none; border-radius: 7px; position: relative; }
+.stack svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
+button.stack { cursor: pointer; }
+button.stack:disabled { cursor: default; }
+button.stack.can { box-shadow: 0 0 0 3px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+.stack .empty { position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,.3); border-radius: 7px; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; }
+.melds { display: flex; flex-wrap: wrap; gap: 8px 10px; justify-content: center; min-height: 40px; }
+.meld { border: 0; background: rgba(0,0,0,.22); border-radius: 9px; padding: 5px 6px 5px calc(6px + var(--mw) * .55); display: flex; min-height: 44px; align-items: center; }
+.meld svg { width: var(--mw); height: calc(var(--mw) * 1.4); margin-left: calc(var(--mw) * -.55); display: block; filter: drop-shadow(-1px 1px 1px rgba(0,0,0,.35)); }
+button.meld { cursor: pointer; }
+button.meld.can { box-shadow: 0 0 0 3px var(--accent); background: color-mix(in srgb, var(--accent) 22%, rgba(0,0,0,.2)); }
+button.meld:disabled { cursor: default; }
+.meld.fresh { box-shadow: 0 0 0 2px #fff; }
+.nomelds { color: color-mix(in srgb, var(--ink) 60%, var(--felt)); font-size: 13px; }
+.status { text-align: center; min-height: 1.5em; margin: 0; font-size: 16px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+
+/* ---------- Hand ---------- */
+.handzone { background: var(--sheet); border-radius: 18px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.handzone h2 { font-family: var(--font-display); font-weight: 400; font-size: 18px; margin: 0; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.handzone h2 small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: rgba(242,184,75,.08); border: 1px dashed var(--accent); border-radius: 12px; padding: 8px; }
+.stage .meld { background: rgba(0,0,0,.25); }
+.stage p { margin: 0; width: 100%; text-align: center; font-size: 14px; }
+.hand { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding-top: 10px; }
+.card { width: var(--cw); aspect-ratio: 100 / 140; border: 0; padding: 0; background: none; border-radius: 7px; position: relative; transition: transform .12s ease; cursor: pointer; }
+.card svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.card.sel { transform: translateY(-10px); }
+.card.sel svg { border-radius: 7px; box-shadow: 0 0 0 3px var(--accent); }
+.card.new::after { content: "neu"; position: absolute; top: -16px; left: 2px; font-size: 11px; font-weight: 800; color: var(--accent); }
+.card:disabled { cursor: default; }
+.card.staged { opacity: .25; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn { min-height: 44px; }
+.handnote { text-align: center; color: var(--muted); margin: 10px 0; }
+
+/* ---------- Seitenleiste ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 10px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+.rest { display: grid; gap: 8px; margin: 0 0 12px; }
+.rest .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--sheet-2); border-radius: 10px; padding: 6px 10px; }
+.rest .who { min-width: 80px; font-weight: 800; }
+.rest .pts { margin-left: auto; font-family: var(--font-display); font-size: 18px; }
+.rest .cards { display: flex; padding-left: 16px; flex-wrap: wrap; }
+.rest .cards svg { width: 30px; height: 42px; margin-left: -16px; }
+table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.score th, .score td { padding: 5px 6px; text-align: center; border-bottom: 1px solid var(--sheet-2); white-space: nowrap; }
+.score th:first-child, .score td:first-child { text-align: left; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.score td.r { color: var(--muted); }
+.score td.r.win { color: var(--green); font-weight: 800; }
+.score td.tot { font-family: var(--font-display); font-size: 18px; }
+.score tr.on td:first-child { color: var(--accent); }
+.score-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  :root { --cw: min(48px, calc((100vw - 100px) / 7)); --mw: 34px; }
+  .felt { padding: 10px 8px; border-radius: 18px; }
+  .handzone { padding: 10px 8px; }
+  .hand { gap: 5px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Farbzeichen (vierfarbiges Blatt: Kreuz schwarz, Pik grün, Herz rot, Karo orange) und Kartenrücken -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="su-h" viewBox="0 0 100 100"><path d="M50 90C22 68 5 50 5 31 5 16 17 6 30 6c10 0 16 6 20 14 4-8 10-14 20-14 13 0 25 10 25 25 0 19-17 37-45 59Z"/></symbol>
+    <symbol id="su-k" viewBox="0 0 100 100"><path d="M50 3 87 50 50 97 13 50Z"/></symbol>
+    <symbol id="su-p" viewBox="0 0 100 100"><path d="M50 4C64 24 95 38 95 60c0 14-11 23-23 23-8 0-14-4-17-9 1 10 5 17 12 21H33c7-4 11-11 12-21-3 5-9 9-17 9C16 83 5 74 5 60 5 38 36 24 50 4Z"/></symbol>
+    <symbol id="su-x" viewBox="0 0 100 100"><circle cx="50" cy="27" r="20"/><circle cx="27" cy="59" r="20"/><circle cx="73" cy="59" r="20"/><circle cx="50" cy="55" r="11"/><path d="M45 58c0 17-4 28-12 37h34c-8-9-12-20-12-37Z"/></symbol>
+    <symbol id="su-j" viewBox="0 0 100 100"><path d="M50 4 62 36 96 37 69 58 79 92 50 72 21 92 31 58 4 37 38 36Z"/></symbol>
+    <pattern id="rm-back" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#1f4466"/><path d="M0 6h12M6 0v12" stroke="#2f5e86" stroke-width="2"/><circle cx="6" cy="6" r="1.8" fill="#f2b84b"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Rom<span>mé</span></h1>
+      <div class="sub">Sätze und Folgen auslegen, als Erster die Hand leeren</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="felt" id="felt" aria-label="Tisch">
+        <div class="seats" id="seats"></div>
+        <div class="mid">
+          <div class="pile"><button type="button" class="stack" id="drawpile" aria-label="Vom Stapel ziehen"></button><span class="lbl" id="drawcount">Stapel</span></div>
+          <div class="pile"><button type="button" class="stack" id="discard" aria-label="Von der Ablage nehmen"></button><span class="lbl">Ablage</span></div>
+        </div>
+        <div class="melds" id="melds"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </section>
+      <section class="handzone" id="handzone" aria-label="Deine Karten">
+        <h2><span id="hand-title">Deine Karten</span><small id="hand-sub"></small></h2>
+        <div class="stage" id="stage" hidden></div>
+        <div class="hand" id="hand"></div>
+        <div class="actions" id="actions"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel" id="round-panel" hidden></section>
+      <section class="panel">
+        <h2>Minuspunkte</h2>
+        <table class="score" id="score"></table>
+        <p class="score-note" id="score-note"></p>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul id="rules-list"></ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Karten ----------
+// Karte = Farbe + Wert + Kopie (zwei Blätter), z. B. "hD0" (Herz Dame), "kT1" (Karo 10); Joker "j*0" bis "j*5".
+// Farben: x Kreuz, p Pik, h Herz, k Karo. Werte: A 2–9 T(10) B D K.
+const SUITS = ["x", "p", "h", "k"];
+const SUIT_NAME = { x: "Kreuz", p: "Pik", h: "Herz", k: "Karo" };
+const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "B", "D", "K"];
+const RANK_NAME = { A: "Ass", T: "10", B: "Bube", D: "Dame", K: "König" };
+const RANK_SHOW = { T: "10" };
+const isJ = c => c[0] === "j";
+const suitOf = c => c[0];
+const rankOf = c => c[1];
+const num = (r, aceHigh) => r === "A" ? (aceHigh ? 14 : 1) : RANKS.indexOf(r) + 1;
+const rankFromNum = v => v === 14 || v === 1 ? "A" : RANKS[v - 1];
+const valNum = v => v === 1 ? 1 : v === 14 ? 11 : v >= 10 ? 10 : v;          // Wert einer Karte in einer Folge
+const valRank = r => r === "A" ? 11 : num(r) >= 10 ? 10 : num(r);              // Wert in einem Satz
+const penalty = c => isJ(c) ? 20 : valRank(rankOf(c));
+const handPoints = h => h.reduce((a, c) => a + penalty(c), 0);
+const cardName = c => isJ(c) ? "Joker" : `${SUIT_NAME[suitOf(c)]} ${RANK_NAME[rankOf(c)] || rankOf(c)}`;
+function fullDeck() {
+  const d = [];
+  for (const k of [0, 1]) for (const s of SUITS) for (const r of RANKS) d.push(s + r + k);
+  for (let k = 0; k < 6; k++) d.push("j*" + k);
+  return d;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// Ist das ein gültiger Satz oder eine gültige Folge? → { type, order, rep (Joker → vertretene Karte), value } oder null
+function analyze(ids) {
+  const nat = ids.filter(c => !isJ(c)), jok = ids.filter(isJ);
+  if (ids.length < 3 || nat.length < 2) return null;
+  const r0 = rankOf(nat[0]);
+  if (nat.every(c => rankOf(c) === r0)) {
+    if (ids.length > 4) return null;
+    const suits = nat.map(suitOf);
+    if (new Set(suits).size !== suits.length) return null;
+    const missing = SUITS.filter(s => !suits.includes(s)), rep = {};
+    jok.forEach((j, k) => { rep[j] = missing[k] + r0; });
+    return { type: "set", order: [...nat.slice().sort((a, b) => SUITS.indexOf(suitOf(a)) - SUITS.indexOf(suitOf(b))), ...jok], rep, value: valRank(r0) * ids.length };
+  }
+  const s0 = suitOf(nat[0]);
+  if (!nat.every(c => suitOf(c) === s0)) return null;
+  for (const aceHigh of [false, true]) {
+    const min = aceHigh ? 2 : 1, max = aceHigh ? 14 : 13;
+    const pairs = nat.map(c => [num(rankOf(c), aceHigh), c]).sort((a, b) => a[0] - b[0]);
+    if (new Set(pairs.map(p => p[0])).size !== pairs.length) continue;
+    let lo = pairs[0][0], hi = pairs[pairs.length - 1][0];
+    let extra = jok.length - (hi - lo + 1 - pairs.length);
+    if (extra < 0) continue;
+    while (extra > 0 && hi < max) { hi++; extra--; }
+    while (extra > 0 && lo > min) { lo--; extra--; }
+    if (extra > 0) continue;
+    const order = [], rep = {}, js = jok.slice(); let value = 0;
+    for (let v = lo; v <= hi; v++) {
+      const p = pairs.find(q => q[0] === v);
+      if (p) order.push(p[1]); else { const j = js.shift(); order.push(j); rep[j] = s0 + rankFromNum(v); }
+      value += valNum(v);
+    }
+    return { type: "run", order, rep, value };
+  }
+  return null;
+}
+
+const DEFAULTS = { min: 40, ablage: "immer", joker: true, runden: 3 };
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi"];
+
+let S, kit;
+const UI = { sel: [], stage: [], key: "", sortRank: false };
+const O = () => Object.assign({}, DEFAULTS, S.options || {});
+const vb = (name, du, er) => (name === "Du" ? du : er);
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 80); };
+const pname = i => `<b>${esc(S.players[i].name)}</b>`;
+const top = () => S.discard[S.discard.length - 1];
+
+// ---------- Ablauf (verändert nur S, läuft über kit.act) ----------
+function startRound() {
+  S.roundNo++;
+  S.deck = shuffle(fullDeck());
+  S.players.forEach(p => { p.hand = S.deck.splice(0, 13); p.out = false; });
+  S.discard = [S.deck.pop()];
+  S.melds = []; S.active = S.starter; S.phase = "draw"; S.took = null; S.fresh = null; S.last = null; S.seq++;
+  log(`<b>Runde ${S.roundNo}</b>: 13 Karten für jeden. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
+}
+function reshuffle() {
+  if (S.discard.length < 2) return false;
+  const keep = S.discard.pop(); S.deck = shuffle(S.discard); S.discard = [keep];
+  log("Der Stapel ist leer. Die Ablage wird gemischt.");
+  return true;
+}
+const canTakeDiscard = () => S.discard.length > 0 && (O().ablage === "immer" || S.players[S.active].out);
+function drawFrom(src) {
+  const i = S.active, p = S.players[i];
+  if (src === "pile") {
+    if (!S.deck.length && !reshuffle()) { log("Es gibt keine Karte mehr zum Ziehen. Die Runde endet ohne Sieger."); endRound(-1); return; }
+    const c = S.deck.pop(); p.hand.push(c); S.took = { src, c };
+    log(`${pname(i)} ${vb(p.name, "ziehst", "zieht")} vom Stapel.`);
+  } else {
+    const c = S.discard.pop(); p.hand.push(c); S.took = { src, c };
+    log(`${pname(i)} ${vb(p.name, "nimmst", "nimmt")} ${cardName(c)} von der Ablage.`);
+  }
+  S.phase = "play"; S.seq++;
+}
+const handHas = (p, ids) => ids.every(c => p.hand.includes(c)) && new Set(ids).size === ids.length;
+function removeFromHand(p, ids) { for (const c of ids) p.hand.splice(p.hand.indexOf(c), 1); }
+// Auslegen: beim ersten Mal mehrere Kombinationen zusammen mit mindestens O().min Punkten
+function meldCheck(p, groups) {
+  const all = groups.flat();
+  if (!groups.length || !handHas(p, all)) return "Diese Karten hast du nicht.";
+  const an = groups.map(analyze);
+  if (an.some(a => !a)) return "Das ist kein gültiger Satz und keine gültige Folge.";
+  if (p.hand.length - all.length < 1) return "Eine Karte musst du zum Abwerfen behalten.";
+  const sum = an.reduce((t, a) => t + a.value, 0);
+  if (!p.out && sum < O().min) return `Zum ersten Auslegen brauchst du mindestens ${O().min} Punkte (jetzt ${sum}).`;
+  return null;
+}
+function meld(groups) {
+  const i = S.active, p = S.players[i];
+  const an = groups.map(analyze), sum = an.reduce((t, a) => t + a.value, 0), first = !p.out;
+  removeFromHand(p, groups.flat());
+  S.fresh = [];
+  an.forEach(a => { S.melds.push({ cards: a.order, type: a.type, rep: a.rep, owner: i }); S.fresh.push(S.melds.length - 1); });
+  p.out = true; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "legst", "legt")} ${an.length === 1 ? (an[0].type === "set" ? "einen Satz" : "eine Folge") : `${an.length} Kombinationen`} aus${first ? ` (${sum} Punkte, zum ersten Mal)` : ""}.`);
+}
+function layoffCheck(p, ids, mi) {
+  if (!p.out) return "Anlegen darfst du erst, wenn du selbst ausgelegt hast.";
+  if (!handHas(p, ids) || !S.melds[mi]) return "Diese Karten hast du nicht.";
+  if (p.hand.length - ids.length < 1) return "Eine Karte musst du zum Abwerfen behalten.";
+  return analyze([...S.melds[mi].cards, ...ids]) ? null : "Die Karten passen nicht an diese Kombination.";
+}
+function layoff(ids, mi) {
+  const i = S.active, p = S.players[i], m = S.melds[mi], a = analyze([...m.cards, ...ids]);
+  removeFromHand(p, ids);
+  m.cards = a.order; m.type = a.type; m.rep = a.rep; S.fresh = [mi]; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "legst", "legt")} ${ids.length === 1 ? cardName(ids[0]) : ids.length + " Karten"} an.`);
+}
+// Joker tauschen: die echte Karte ersetzt den Joker, der Joker kommt auf die Hand
+function swapCheck(p, c, mi) {
+  const m = S.melds[mi];
+  if (!O().joker) return "Joker tauschen ist in diesem Spiel aus.";
+  if (!p.out) return "Joker tauschen darfst du erst, wenn du selbst ausgelegt hast.";
+  if (!m || isJ(c) || !p.hand.includes(c)) return "So geht das nicht.";
+  const j = m.cards.find(x => isJ(x) && (m.type === "set" ? rankOf(m.rep[x]) === rankOf(c) : m.rep[x] === suitOf(c) + rankOf(c)));
+  if (!j) return "In dieser Kombination vertritt kein Joker diese Karte.";
+  return analyze(m.cards.map(x => x === j ? c : x)) ? null : "So geht das nicht.";
+}
+function swapJoker(c, mi) {
+  const i = S.active, p = S.players[i], m = S.melds[mi];
+  const j = m.cards.find(x => isJ(x) && (m.type === "set" ? rankOf(m.rep[x]) === rankOf(c) : m.rep[x] === suitOf(c) + rankOf(c)));
+  const a = analyze(m.cards.map(x => x === j ? c : x));
+  p.hand.splice(p.hand.indexOf(c), 1, j);
+  m.cards = a.order; m.type = a.type; m.rep = a.rep; S.fresh = [mi]; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "tauschst", "tauscht")} ${cardName(c)} gegen einen Joker.`);
+}
+function discardCheck(p, c) {
+  if (!p.hand.includes(c)) return "Diese Karte hast du nicht.";
+  if (S.took && S.took.src === "discard" && S.took.c === c && p.hand.length > 1) return "Die eben aufgenommene Karte darfst du nicht gleich wieder abwerfen.";
+  return null;
+}
+function discardCard(c) {
+  const i = S.active, p = S.players[i];
+  removeFromHand(p, [c]); S.discard.push(c); S.seq++; S.took = null;
+  log(`${pname(i)} ${vb(p.name, "wirfst", "wirft")} ${cardName(c)} ab.`);
+  if (!p.hand.length) { log(`${pname(i)} ${vb(p.name, "hast", "hat")} keine Karten mehr und ${vb(p.name, "gewinnst", "gewinnt")} Runde ${S.roundNo}.`); endRound(i); return; }
+  S.active = (i + 1) % S.players.length; S.phase = "draw";
+}
+function endRound(winner) {
+  S.players.forEach((p, i) => { const pts = i === winner ? 0 : handPoints(p.hand); p.rounds.push(pts); p.total += pts; if (i === winner) p.wins++; });
+  S.last = { winner, hands: S.players.map(p => p.hand.slice()) };
+  S.seq++;
+  const done = S.roundNo >= O().runden;
+  S.phase = done ? "over" : "roundover";
+  if (done) { const w = ranking()[0]; log(`<b>Spielende.</b> Am wenigsten Minuspunkte: ${pname(S.players.indexOf(w))} (${w.total}).`); }
+}
+const ranking = () => S.players.slice().sort((a, b) => a.total - b.total || b.wins - a.wins);
+function nextRound() { S.starter = (S.starter + 1) % S.players.length; startRound(); playBots(); }
+
+// ---------- Computer-Gegner ----------
+// alle möglichen Sätze und Folgen aus der Hand (höchstens ein Joker je Kombination)
+function candidates(hand) {
+  const nat = hand.filter(c => !isJ(c)), jok = hand.filter(isJ), out = [], seen = new Set();
+  const add = ids => { const k = ids.slice().sort().join(); if (seen.has(k)) return; const a = analyze(ids); if (a) { seen.add(k); out.push({ ids, value: a.value }); } };
+  const subsets = (arr, k, start = 0, acc = [], res = []) => { if (acc.length === k) { res.push(acc.slice()); return res; } for (let i = start; i < arr.length; i++) { acc.push(arr[i]); subsets(arr, k, i + 1, acc, res); acc.pop(); } return res; };
+  for (const r of RANKS) {
+    const bySuit = {}; nat.filter(c => rankOf(c) === r).forEach(c => { bySuit[suitOf(c)] = bySuit[suitOf(c)] || c; });
+    const u = Object.values(bySuit);
+    for (const k of [3, 4]) subsets(u, k).forEach(add);
+    for (const j of jok.slice(0, 2)) { subsets(u, 2).forEach(s => add([...s, j])); subsets(u, 3).forEach(s => add([...s, j])); }
+  }
+  for (const s of SUITS) {
+    const at = {}; nat.filter(c => suitOf(c) === s).forEach(c => { const v = num(rankOf(c)); at[v] = at[v] || c; if (v === 1) at[14] = at[14] || c; });
+    for (let lo = 1; lo <= 12; lo++) for (let hi = lo + 2; hi <= (lo === 1 ? 13 : 14); hi++) {
+      const ids = [], miss = [];
+      for (let v = lo; v <= hi; v++) at[v] ? ids.push(at[v]) : miss.push(v);
+      if (miss.length > 1 || ids.length < 2) continue;
+      if (!miss.length) add(ids);
+      else for (const j of jok.slice(0, 2)) add([...ids, j]);
+    }
+  }
+  return out;
+}
+// beste Auswahl sich nicht überschneidender Kombinationen (nach Punkten)
+function bestMelds(hand) {
+  const cs = candidates(hand).sort((a, b) => b.value - a.value);
+  let best = { value: 0, groups: [] }, steps = 0;
+  const used = new Set();
+  (function dfs(k, val, groups) {
+    if (++steps > 20000) return;
+    if (val > best.value) best = { value: val, groups: groups.slice() };
+    for (let i = k; i < cs.length; i++) {
+      if (cs[i].ids.some(c => used.has(c))) continue;
+      cs[i].ids.forEach(c => used.add(c)); groups.push(cs[i].ids);
+      dfs(i + 1, val + cs[i].value, groups);
+      groups.pop(); cs[i].ids.forEach(c => used.delete(c));
+    }
+  })(0, 0, []);
+  return best;
+}
+// eine Karte behalten: wenn alles ausgelegt würde, die kleinste Kombination weglassen
+function keepOne(p, groups) {
+  const g = groups.slice().sort((a, b) => analyze(b).value - analyze(a).value);
+  while (g.length && p.hand.length - g.flat().length < 1) g.pop();
+  return g;
+}
+function keepValue(p, c) {
+  if (isJ(c)) return 100;
+  let v = -penalty(c) / 8;
+  for (const x of p.hand) {
+    if (x === c || isJ(x)) continue;
+    if (rankOf(x) === rankOf(c) && suitOf(x) !== suitOf(c)) v += 3;
+    if (suitOf(x) === suitOf(c)) { const d = Math.abs(num(rankOf(x)) - num(rankOf(c))); if (d === 1) v += 3; else if (d === 2) v += 1.5; }
+  }
+  if (p.out && S.melds.some(m => analyze([...m.cards, c]))) v -= 5;   // passt auf den Tisch, kommt eh weg
+  return v + Math.random() * 0.3;
+}
+function botTurn() {
+  const i = S.active, p = S.players[i];
+  if (S.phase === "draw") {
+    const t = top();
+    let take = false;
+    if (t && canTakeDiscard() && !isJ(t) === true) {
+      if (p.out) take = S.melds.some(m => analyze([...m.cards, t])) || bestMelds([...p.hand, t]).value > bestMelds(p.hand).value + 4;
+      else { const b = bestMelds([...p.hand, t]); take = b.value >= O().min && b.groups.flat().includes(t) && bestMelds(p.hand).value < O().min; }
+    }
+    if (t && isJ(t) && canTakeDiscard()) take = true;
+    drawFrom(take ? "discard" : "pile");
+    return;
+  }
+  // auslegen
+  const b = bestMelds(p.hand);
+  if (b.groups.length) {
+    const g = keepOne(p, b.groups), sum = g.reduce((t, x) => t + analyze(x).value, 0);
+    if (g.length && (p.out || sum >= O().min)) meld(g);
+  }
+  if (p.out) {
+    // Joker tauschen, wenn es geht, und dann noch einmal auslegen
+    if (O().joker) for (const c of p.hand.slice()) for (let mi = 0; mi < S.melds.length; mi++) if (!isJ(c) && p.hand.includes(c) && !swapCheck(p, c, mi)) swapJoker(c, mi);
+    const b2 = bestMelds(p.hand);
+    if (b2.groups.length) { const g = keepOne(p, b2.groups); if (g.length) meld(g); }
+    // anlegen
+    let again = true;
+    while (again) {
+      again = false;
+      for (const c of p.hand.slice()) for (let mi = 0; mi < S.melds.length; mi++) if (p.hand.includes(c) && !layoffCheck(p, [c], mi)) { layoff([c], mi); again = true; break; }
+    }
+  }
+  // abwerfen
+  const choices = p.hand.filter(c => !discardCheck(p, c));
+  const c = choices.slice().sort((a, b) => keepValue(p, a) - keepValue(p, b))[0];
+  discardCard(c);
+}
+function playBots() {
+  let guard = 0;
+  while ((S.phase === "draw" || S.phase === "play") && S.players[S.active].ai && guard++ < 4000) botTurn();
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, hand: [], out: false, total: 0, rounds: [], wins: 0 });
+function newState({ roster, mode, options }) {
+  const s = { players: roster.map(newPlayer), deck: [], discard: [], melds: [], active: 0, starter: 0, phase: "draw", took: null, roundNo: 0, last: null,
+    fresh: null, seq: 0, log: [], options: Object.assign({}, DEFAULTS, options) };
+  if (mode !== "online") { S = s; startRound(); playBots(); }
+  return s;
+}
+function onStart(s) { S = s; S.starter = rnd(S.players.length); startRound(); playBots(); }
+const whoActs = () => (S.phase === "draw" || S.phase === "play" ? [S.active] : []);
+
+// ---------- Eingaben ----------
+const mine = () => (S.phase === "draw" || S.phase === "play") && kit.me() === S.active;
+function act(fn) {
+  const seq = S.seq;
+  kit.act(() => { if (!mine() || S.seq !== seq) return false; if (fn() === false) return false; playBots(); });
+}
+function flash(msg) { UI.msg = msg; render(); }
+$("drawpile").addEventListener("click", () => { if (S.phase === "draw") act(() => drawFrom("pile")); });
+$("discard").addEventListener("click", () => { if (S.phase === "draw") act(() => { if (!canTakeDiscard()) return false; drawFrom("discard"); }); });
+$("hand").addEventListener("click", e => {
+  const b = e.target.closest(".card[data-c]");
+  if (!b || b.disabled || !mine() || S.phase !== "play") return;
+  const c = b.dataset.c;
+  UI.sel = UI.sel.includes(c) ? UI.sel.filter(x => x !== c) : [...UI.sel, c];
+  UI.msg = ""; render();
+});
+$("melds").addEventListener("click", e => {
+  const b = e.target.closest(".meld[data-m]");
+  if (!b || b.disabled || !UI.sel.length) return;
+  const mi = +b.dataset.m, ids = UI.sel.slice(), p = S.players[S.active];
+  const err = layoffCheck(p, ids, mi);
+  if (!err) { UI.sel = []; act(() => { if (layoffCheck(S.players[S.active], ids, mi)) return false; layoff(ids, mi); }); return; }
+  if (ids.length === 1 && !swapCheck(p, ids[0], mi)) { UI.sel = []; act(() => { if (swapCheck(S.players[S.active], ids[0], mi)) return false; swapJoker(ids[0], mi); }); return; }
+  flash(err);
+});
+$("actions").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b) return;
+  const a = b.dataset.a, p = S.players[S.active];
+  if (a === "sort") { UI.sortRank = !UI.sortRank; render(); return; }
+  if (a === "clear") { UI.sel = []; UI.msg = ""; render(); return; }
+  if (a === "meld") {
+    const ids = UI.sel.slice();
+    if (!analyze(ids)) { flash("Das ist kein gültiger Satz und keine gültige Folge."); return; }
+    if (!p.out) { UI.stage.push(ids); UI.sel = []; UI.msg = ""; render(); return; }
+    const err = meldCheck(p, [ids]); if (err) { flash(err); return; }
+    UI.sel = []; act(() => { if (meldCheck(S.players[S.active], [ids])) return false; meld([ids]); });
+  }
+  if (a === "unstage") { UI.stage = []; UI.msg = ""; render(); return; }
+  if (a === "commit") {
+    const groups = UI.stage.slice(), err = meldCheck(p, groups);
+    if (err) { flash(err); return; }
+    UI.stage = []; UI.sel = [];
+    act(() => { if (meldCheck(S.players[S.active], groups)) return false; meld(groups); });
+  }
+  if (a === "discard") {
+    const c = UI.sel[0], err = discardCheck(p, c);
+    if (err) { flash(err); return; }
+    UI.sel = []; UI.stage = [];
+    act(() => { if (discardCheck(S.players[S.active], c)) return false; discardCard(c); });
+  }
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-next]")) { const seq = S.seq; kit.act(() => { if (S.phase !== "roundover" || S.seq !== seq || kit.me() < 0) return false; nextRound(); }); }
+  if (e.target.closest("[data-again]")) kit.rematch();
+});
+
+// ---------- Kartengrafik ----------
+const SCOL = { x: "var(--s-x)", p: "var(--s-p)", h: "var(--s-h)", k: "var(--s-k)" };
+function cardSvg(c, rep) {
+  const frame = `<rect x="1.5" y="1.5" width="97" height="137" rx="9" fill="var(--card)" stroke="#cfc6b2" stroke-width="2"/>`;
+  if (isJ(c)) {
+    const hint = rep ? `<text x="50" y="128" text-anchor="middle" font-size="17" fill="#6b5f4a">= ${RANK_SHOW[rankOf(rep)] || rankOf(rep)}</text><use href="#su-${suitOf(rep)}" x="70" y="113" width="17" height="17" fill="${SCOL[suitOf(rep)]}"/>` : "";
+    return `<svg viewBox="0 0 100 140" aria-hidden="true">${frame}<text x="10" y="30" font-size="26" fill="#8a3fc4">J</text>
+      <use href="#su-j" x="22" y="34" width="56" height="56" fill="#f2b84b" stroke="#8a3fc4" stroke-width="4"/><text x="50" y="${rep ? 106 : 118}" text-anchor="middle" font-size="18" fill="#8a3fc4">Joker</text>${hint}</svg>`;
+  }
+  const s = suitOf(c), r = rankOf(c), col = SCOL[s], t = RANK_SHOW[r] || r;
+  const face = ["B", "D", "K"].includes(r);
+  return `<svg viewBox="0 0 100 140" aria-hidden="true">${frame}
+    <text x="${t.length > 1 ? 6 : 9}" y="36" font-size="${t.length > 1 ? 30 : 36}" fill="${col}">${t}</text>
+    <use href="#su-${s}" x="10" y="42" width="24" height="24" fill="${col}"/>
+    ${face ? `<rect x="40" y="58" width="50" height="70" rx="6" fill="${col}" opacity=".12"/><text x="65" y="112" text-anchor="middle" font-size="46" fill="${col}">${t}</text>` : `<use href="#su-${s}" x="40" y="66" width="52" height="52" fill="${col}"/>`}
+  </svg>`;
+}
+const backSvg = () => `<svg viewBox="0 0 100 140" aria-hidden="true"><rect x="1.5" y="1.5" width="97" height="137" rx="9" fill="#f4efe2" stroke="#cfc6b2" stroke-width="2"/><rect x="8" y="8" width="84" height="124" rx="6" fill="url(#rm-back)"/></svg>`;
+const sortHand = h => h.slice().sort(UI.sortRank
+  ? (a, b) => (isJ(a) - isJ(b)) || num(rankOf(a)) - num(rankOf(b)) || SUITS.indexOf(suitOf(a)) - SUITS.indexOf(suitOf(b))
+  : (a, b) => (isJ(a) - isJ(b)) || SUITS.indexOf(suitOf(a)) - SUITS.indexOf(suitOf(b)) || num(rankOf(a)) - num(rankOf(b)));
+
+// ---------- Darstellung ----------
+function rulesHtml() {
+  const o = O();
+  return `<li>Gespielt wird mit zwei Blättern zu je 52 Karten und 6 Jokern. Jeder bekommt 13 Karten. Das Blatt hat vier Farben: Kreuz schwarz, Pik grün, Herz rot, Karo orange.</li>
+    <li>Wer dran ist, nimmt eine Karte vom Stapel${o.ablage === "immer" ? " oder die oberste Karte der Ablage" : " oder, wenn er schon ausgelegt hat, die oberste Karte der Ablage"}. Am Ende des Zugs wird eine Karte abgeworfen. Eine eben von der Ablage genommene Karte darf nicht gleich wieder abgeworfen werden.</li>
+    <li><b>Satz:</b> 3 oder 4 Karten mit gleichem Wert in verschiedenen Farben. <b>Folge:</b> mindestens 3 Karten einer Farbe in lückenloser Reihe. Das Ass liegt unten (A-2-3) oder oben (D-K-A), aber nicht dazwischen (K-A-2).</li>
+    <li>Der <b>Joker</b> ersetzt jede Karte. Jede Kombination braucht mindestens zwei echte Karten.</li>
+    <li><b>Erstes Auslegen:</b> zusammen mindestens <b>${o.min} Punkte</b> aus eigenen Karten (Ass 11, in A-2-3 aber 1; Bube, Dame, König 10; sonst der Zahlenwert; der Joker zählt wie die Karte, die er ersetzt). Danach darfst du in jedem Zug weitere Kombinationen auslegen und an alle Kombinationen auf dem Tisch anlegen${o.joker ? " sowie einen Joker gegen die passende echte Karte tauschen" : ""}.</li>
+    <li>Eine Karte musst du immer zum Abwerfen behalten. Wer seine letzte Karte abwirft, gewinnt die Runde.</li>
+    <li>Die anderen bekommen ihre Handkarten als <b>Minuspunkte</b>: Joker 20, Ass 11, Bilder und 10 je 10, sonst der Zahlenwert. Nach <b>${o.runden} ${o.runden === 1 ? "Runde" : "Runden"}</b> gewinnt, wer am wenigsten Minuspunkte hat.</li>
+    <li>Bedienung: Karten antippen, dann <b>Auslegen</b>, oder eine Kombination auf dem Tisch antippen zum <b>Anlegen</b>${o.joker ? " bzw. zum Joker-Tausch" : ""}. Beim ersten Auslegen sammelst du Kombinationen, bis ${o.min} Punkte zusammen sind.</li>`;
+}
+
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine(), o = O();
+  $("felt").hidden = $("handzone").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = rulesHtml();
+  if (lobby) { $("result").hidden = $("round-panel").hidden = true; $("score").innerHTML = ""; $("score-note").textContent = ""; return; }
+  const key = `${S.seq}:${mi}`;
+  if (UI.key !== key) {
+    const turnChanged = !UI.key || UI.key.split(":")[1] !== String(mi) || !me;
+    UI.key = key; UI.msg = "";
+    const p = S.players[mi];
+    UI.sel = p ? UI.sel.filter(c => p.hand.includes(c)) : [];
+    if (turnChanged || (p && p.out)) UI.stage = [];
+    UI.stage = p ? UI.stage.filter(g => g.every(c => p.hand.includes(c))) : [];
+  }
+  const playing = S.phase === "draw" || S.phase === "play", a = S.players[S.active];
+
+  // Mitspieler
+  $("seats").innerHTML = S.players.map((p, i) => i === mi ? "" : `<div class="seat${playing && i === S.active ? " on" : ""}"><b>${esc(p.name)}</b>
+    <span>${p.hand.length} Karten · ${p.total} Minus</span>${p.out ? '<span class="out">ausgelegt</span>' : ""}</div>`).join("");
+
+  // Stapel und Ablage
+  const canDraw = me && S.phase === "draw";
+  $("drawpile").innerHTML = S.deck.length ? backSvg() : `<span class="empty">leer</span>`;
+  $("drawpile").disabled = !canDraw; $("drawpile").classList.toggle("can", canDraw);
+  $("drawcount").textContent = `Stapel · ${S.deck.length}`;
+  const t = top();
+  $("discard").innerHTML = t ? cardSvg(t) : `<span class="empty">leer</span>`;
+  $("discard").disabled = !(canDraw && canTakeDiscard()); $("discard").classList.toggle("can", canDraw && canTakeDiscard());
+  $("discard").setAttribute("aria-label", t ? `Ablage: ${cardName(t)}` : "Ablage leer");
+
+  // Kombinationen auf dem Tisch
+  const meP = S.players[mi];
+  const tapMeld = me && S.phase === "play" && UI.sel.length && meP && meP.out;
+  $("melds").innerHTML = S.melds.length ? S.melds.map((m, k) => {
+    const can = tapMeld && (!layoffCheck(meP, UI.sel, k) || (UI.sel.length === 1 && !swapCheck(meP, UI.sel[0], k)));
+    const tag = tapMeld ? "button" : "div";
+    return `<${tag} class="meld${can ? " can" : ""}${S.fresh && S.fresh.includes(k) ? " fresh" : ""}"${tapMeld ? ` type="button" data-m="${k}"${can ? "" : " disabled"}` : ""} aria-label="${m.type === "set" ? "Satz" : "Folge"} von ${esc(S.players[m.owner].name)}">${m.cards.map(c => cardSvg(c, m.rep[c])).join("")}</${tag}>`;
+  }).join("") : `<span class="nomelds">Noch liegt nichts auf dem Tisch.</span>`;
+
+  // Statuszeile
+  let st = "";
+  if (playing) {
+    if (!me) st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>${a.ai ? " (Computer)" : ""}.`;
+    else if (S.phase === "draw") st = `<strong>${esc(a.name)}</strong>, nimm eine Karte vom Stapel${canTakeDiscard() ? " oder von der Ablage" : ""}.`;
+    else if (UI.msg) st = `<span class="sk-err">${esc(UI.msg)}</span>`;
+    else if (!meP.out) st = `Lege Kombinationen mit zusammen <strong>${o.min} Punkten</strong> aus oder wirf eine Karte ab.`;
+    else st = "Auslegen, anlegen oder eine Karte abwerfen.";
+  } else if (S.phase === "roundover") st = `Runde ${S.roundNo} ist vorbei.`;
+  else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+
+  // Vorgemerkte Kombinationen fürs erste Auslegen
+  const stg = $("stage");
+  if (me && S.phase === "play" && UI.stage.length) {
+    const sum = UI.stage.reduce((t, g) => t + analyze(g).value, 0);
+    stg.innerHTML = `<p>Vorgemerkt: <b>${sum}</b> von ${o.min} Punkten</p>${UI.stage.map(g => `<div class="meld">${analyze(g).order.map(c => cardSvg(c, analyze(g).rep[c])).join("")}</div>`).join("")}`;
+    stg.hidden = false;
+  } else stg.hidden = true;
+
+  // Hand
+  if (!meP) {
+    $("hand-title").textContent = "Zuschauer"; $("hand-sub").textContent = "";
+    $("hand").innerHTML = `<p class="handnote">Du spielst in diesem Raum nicht mit.</p>`; $("actions").innerHTML = "";
+  } else {
+    $("hand-title").textContent = kit.hotSeat() ? `Karten von ${meP.name}` : "Deine Karten";
+    $("hand-sub").textContent = `${meP.hand.length} Karten · ${handPoints(meP.hand)} Punkte auf der Hand${meP.out ? " · ausgelegt" : ""}`;
+    const staged = new Set(UI.stage.flat()), canSel = me && S.phase === "play";
+    $("hand").innerHTML = sortHand(meP.hand).map(c => {
+      const sel = UI.sel.includes(c), stc = staged.has(c);
+      const isNew = me && S.took && S.took.c === c;
+      return `<button type="button" class="card${sel ? " sel" : ""}${stc ? " staged" : ""}${isNew ? " new" : ""}" data-c="${c}"${canSel && !stc ? "" : " disabled"} aria-label="${cardName(c)}${sel ? ", gewählt" : ""}">${cardSvg(c)}</button>`;
+    }).join("");
+    let acts = "";
+    if (canSel) {
+      const n = UI.sel.length;
+      if (n >= 3) acts += `<button class="btn primary" type="button" data-a="meld">${meP.out ? "Auslegen" : "Vormerken"}</button>`;
+      if (!meP.out && UI.stage.length) {
+        const sum = UI.stage.reduce((t, g) => t + analyze(g).value, 0);
+        acts += `<button class="btn${sum >= o.min ? " primary" : ""}" type="button" data-a="commit"${sum >= o.min ? "" : " disabled"}>Auslegen (${sum})</button><button class="btn" type="button" data-a="unstage">Vormerkung lösen</button>`;
+      }
+      if (n === 1) acts += `<button class="btn" type="button" data-a="discard">Abwerfen</button>`;
+      if (n) acts += `<button class="btn" type="button" data-a="clear">Auswahl aufheben</button>`;
+    }
+    acts += `<button class="btn" type="button" data-a="sort">${UI.sortRank ? "Nach Farbe sortieren" : "Nach Wert sortieren"}</button>`;
+    $("actions").innerHTML = acts;
+  }
+
+  // Runde vorbei
+  const rp = $("round-panel");
+  if ((S.phase === "roundover" || S.phase === "over") && S.last) {
+    const w = S.last.winner;
+    rp.innerHTML = `<h2>Runde ${S.roundNo}: ${w >= 0 ? `${esc(S.players[w].name)} ${vb(S.players[w].name, "bist", "ist")} fertig` : "ohne Sieger"}</h2>
+      <div class="rest">${S.players.map((p, i) => i === w ? "" : `<div class="row"><span class="who">${esc(p.name)}</span><span class="cards">${sortHand(S.last.hands[i]).map(c => cardSvg(c)).join("")}</span><span class="pts">−${handPoints(S.last.hands[i])}</span></div>`).join("")}</div>
+      ${S.phase === "roundover" ? (mi >= 0 ? `<button class="btn primary" type="button" data-next>Nächste Runde</button>` : `<p class="sk-muted">Gleich geht es weiter.</p>`) : ""}`;
+    rp.hidden = false;
+  } else rp.hidden = true;
+
+  // Wertung
+  const nR = Math.max(0, ...S.players.map(p => p.rounds.length));
+  $("score").innerHTML = `<thead><tr><th>Spieler</th>${Array.from({ length: nR }, (_, k) => `<th>R${k + 1}</th>`).join("")}<th>Summe</th></tr></thead><tbody>${S.players.map((p, i) =>
+    `<tr class="${playing && i === S.active ? "on" : ""}"><td>${esc(p.name)}</td>${p.rounds.map(v => `<td class="r${v === 0 ? " win" : ""}">${v}</td>`).join("")}<td class="tot">${p.total}</td></tr>`).join("")}</tbody>`;
+  $("score-note").textContent = `Runde ${Math.max(1, S.roundNo)} von ${o.runden} · erstes Auslegen ab ${o.min} Punkten${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const rk = ranking(), best = rk[0].total, win = rk.filter(p => p.total === best);
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(p => esc(p.name)).join(" und ")}` : `${esc(win[0].name)} ${vb(win[0].name, "gewinnst", "gewinnt")}`}</h2>
+      <p>${S.roundNo} ${S.roundNo === 1 ? "Runde" : "Runden"} gespielt. Wenige Minuspunkte sind gut.</p>
+      <ol class="rank">${rk.map((p, k) => `<li><span>${k + 1}. ${esc(p.name)}</span><span>${p.total} Minuspunkte · ${p.wins}× fertig</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellungen ----------
+const seg = (name, label, items, def) => `<div class="sk-field"><div class="sk-label">${label}</div><div class="sk-seg" role="radiogroup" aria-label="${label}">
+  ${items.map(([v, t, sm]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}"${String(v) === String(def) ? " checked" : ""}>${t}${sm ? `<small>${sm}</small>` : ""}</label>`).join("")}</div></div>`;
+const setup = {
+  html: seg("rm-min", "Erstes Auslegen", [["30", "30 Punkte"], ["40", "40 Punkte", "üblich"], ["0", "Ohne Mindestwert"]], "40")
+    + seg("rm-runden", "Spieldauer", [["1", "1 Runde"], ["3", "3 Runden"], ["5", "5 Runden"]], "3")
+    + seg("rm-ablage", "Von der Ablage nehmen", [["immer", "Immer"], ["aus", "Erst nach dem Auslegen"]], "immer")
+    + `<div class="sk-field"><div class="sk-label">Joker</div><div class="sk-seg"><label><input type="checkbox" id="rm-joker" checked>Joker tauschen<small>echte Karte gegen Joker vom Tisch</small></label></div></div>`,
+  read(root) {
+    const v = n => (root.querySelector(`input[name="${n}"]:checked`) || {}).value;
+    return { min: +(v("rm-min") || 40), runden: +(v("rm-runden") || 3), ablage: v("rm-ablage") || "immer", joker: !!(root.querySelector("#rm-joker") || {}).checked };
+  },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "romme", version: 1, minPlayers: 2, maxPlayers: 6, bots: true, defaultBots: 1, privateHands: true, botNames: BOT_NAMES,
+  setup,
+  defaultOptions: () => Object.assign({}, DEFAULTS),
+  newPlayer, newState, onStart, whoActs, render,
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.deck) && Array.isArray(s.melds) && s.players.every(p => Array.isArray(p.hand)),
+  roomStatus: s => `läuft · Runde ${s.roundNo}`,
+  handoverText: s => s.phase === "draw" ? "Du ziehst eine Karte. Deine Karten siehst du gleich." : "Weiter geht's.",
+  // nur für automatische Tests der Regeln
+  test: { analyze, candidates, bestMelds, meldCheck, meld, layoffCheck, layoff, swapCheck, swapJoker, discardCheck, discardCard, drawFrom, startRound, playBots, botTurn, handPoints, fullDeck, cardSvg, get S() { return S; } },
+});
+kit.start();
+})();
+</script>

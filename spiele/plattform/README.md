@@ -22,6 +22,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Schiffe versenken** | 2 | verdeckte Aufstellung |
 | **Mau-Mau** | 2–6 | Sonderkarten einzeln abschaltbar, Strafpunkte über mehrere Runden |
 | **Kunterbunt** | 2–8 | Ablegespiel im Stil von „Uno“: Aussetzen, Richtungswechsel, +2, Farbwahl, +4; Weitergeben als Hausregel |
+| **Rommé** | 2–6 | zwei Blätter mit 6 Jokern, erstes Auslegen ab 30/40 Punkten, Joker tauschen, vierfarbiges Blatt |
 | **Schafkopf** | 4 | Sauspiel, Wenz, Farbsolo, Abrechnung über die Sitzung; fehlende Spieler übernimmt der Computer |
 
 Voraussetzungen: PHP 8.1 oder neuer, Apache mit `.htaccess` (bei Hetzner Webhosting gegeben).

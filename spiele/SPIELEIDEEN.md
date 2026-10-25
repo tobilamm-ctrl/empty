@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Schafkopf.
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Schafkopf.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
 
 Rechtlich gilt für alle: Spielregeln und Spielprinzipien sind frei. Namen, Grafik, Kartenbilder und
@@ -19,7 +19,7 @@ oder Kartenbild 1:1 kopieren.
 | ✓ | **Mau-Mau im Uno-Stil** → Kunterbunt | 2–8 | fertig | gut | ja | eigenes Kartendesign (Raute statt Oval, Farbe plus Zeichen); „UNO“ ist ein Markenname |
 | ✓ | **Kingdomino** → Kronland | 2–4 | fertig | sehr gut (5×5) | ja | eigene Landschaftsbilder mit Muster; „Kingdomino“ ist ein Markenname |
 | ✓ | **Azul** → Mosaik | 2–4 | fertig | gut | ja | Fliesen mit Farbe und Zeichen; „Azul“ ist ein Markenname |
-| 5 | **Rommé** | 2–4 | mittel–hoch | gut mit sortierter Hand, Sätze untereinander | mittel | Hausregeln als Einstellungen (40 Punkte zum Auslegen, Joker tauschen); kein Rummikub (freies Umbauen am Handy unpraktisch) |
+| ✓ | **Rommé** | 2–6 | fertig | gut mit sortierter Hand, Karten ohne Überlappung | ja | Hausregeln als Einstellungen (30/40 Punkte, Ablage, Joker tauschen) |
 | 6 | **Patchwork** | 2 | mittel–hoch | gut, Drehen/Spiegeln braucht gute Bedienung | mittel | 33 Flicken selbst gestalten |
 | 7 | **Sagrada** | 2–4 | hoch | sehr gut (4×5) | mittel | erst Grundspiel, die 12 Werkzeugkarten danach; Fenstermuster selbst gestalten |
 
