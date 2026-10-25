@@ -6,9 +6,10 @@ declare(strict_types=1);
 
 $CFG = require __DIR__ . '/config.php';
 const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta', 'photos',
-    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games', 'ideas'];
+    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games', 'ideas', 'stamps'];
 const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
+const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Verwalter vergeben sie
 const TOKEN_DAYS = 400;
 const COOKIE = 'lammping';
 
@@ -330,7 +331,7 @@ case 'push':
         foreach ($changes as $c) {
             if (!in_array($c['coll'] ?? '', COLLS, true) || !validId($c['id'] ?? null)) continue;
             if (in_array($c['coll'], CASH_COLLS, true) && !canCash($u)) continue;
-            if (in_array($c['coll'], ADMIN_COLLS, true) && !(int) $u['is_admin']) continue;
+            if ((in_array($c['coll'], ADMIN_COLLS, true) || in_array($c['coll'], ADMIN_WRITE, true)) && !(int) $u['is_admin']) continue;
             $data = $c['data'] ?? null;
             if ($data !== null && !is_array($data)) continue;
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen

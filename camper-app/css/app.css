@@ -1094,3 +1094,55 @@ body.blog-page { padding: 0; }
 .film-ctrl { position: absolute; z-index: 1000; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 10px; }
 .film-van { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
 .film-van .ic { width: 18px; height: 18px; }
+
+/* ---------- Reisepass: Länder (Visa), Traumorte, eigene Stempel, Stempel-Moment ---------- */
+.visa-page { margin-top: 14px; }
+.visa-page .date-head { margin-top: 0; }
+.visas { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px 10px; }
+.visa {
+  all: unset; cursor: pointer; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 10px;
+  color: var(--ink); border: 2.5px solid currentColor; border-radius: 8px; outline: 1.5px solid currentColor; outline-offset: -6px;
+  transform: rotate(var(--rot, 0deg)); text-align: center; opacity: .9;
+}
+.visa .v-flag { font-size: 26px; line-height: 1.1; }
+.visa b { font: 700 14px/1.1 var(--head); text-transform: uppercase; letter-spacing: .03em; }
+.visa small { font: 600 11px var(--body); }
+.visa.big { padding: 16px 22px; min-width: 180px; }
+.visa.big .v-flag { font-size: 40px; }
+.visa.big b { font-size: 18px; }
+.oval { all: unset; cursor: pointer; display: grid; place-items: center; }
+.oval > span {
+  width: 120px; height: 84px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  color: var(--ink); border: 2.5px dashed currentColor; transform: rotate(var(--rot, 0deg)); text-align: center; padding: 6px 10px; box-sizing: border-box; opacity: .9;
+}
+.oval .ic { width: 20px; height: 20px; }
+.oval b { font: 700 11px/1.1 var(--head); max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oval small { font: 600 9px var(--body); }
+.oval.big > span { width: 180px; height: 124px; }
+.oval.big b { font-size: 15px; max-width: 150px; }
+.stamp.own .st-ring { border-style: double; border-width: 5px; box-shadow: none; }
+.stamp.big .st-ring { width: 140px; height: 140px; }
+.stamp.big .st-ring b { font-size: 15px; }
+.stamp.big .st-ring .ic { width: 32px; height: 32px; }
+.open-stamps { margin-top: 16px; }
+.open-stamps summary { font: 600 18px var(--head); color: var(--wood); cursor: pointer; margin-bottom: 12px; }
+.icon-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+.icon-pick input { position: absolute; opacity: 0; }
+.icon-pick span { display: grid; place-items: center; height: 46px; border-radius: 12px; border: 1.5px solid var(--line); color: var(--wood); }
+.icon-pick .ic { width: 24px; height: 24px; }
+.icon-pick input:checked + span { border-color: var(--trip); background: color-mix(in srgb, var(--trip) 14%, var(--surface)); color: var(--ink); }
+.stamp-pop { position: fixed; inset: 0; z-index: 3500; display: grid; place-items: center; padding: 16px; background: rgba(43, 27, 16, .6); }
+.sp-card { width: min(360px, 100%); padding: 22px 18px 18px; border-radius: 22px; background: var(--paper); text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .3); }
+.sp-k { font: 700 22px var(--head); color: var(--wood); margin: 0 0 8px; }
+.sp-stamp { display: grid; place-items: center; min-height: 170px; }
+.sp-stamp > * { animation: stamp-slam .55s cubic-bezier(.2, .9, .3, 1.4) both; }
+@keyframes stamp-slam {
+  0% { opacity: 0; transform: scale(2.6) rotate(-18deg); }
+  60% { opacity: 1; transform: scale(.92) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.sp-t { margin: 10px 0 14px; }
+@media (prefers-reduced-motion: reduce) { .sp-stamp > * { animation: none; } }
+/* Lange Stempelnamen im Ring umbrechen statt überstehen */
+.st-ring b { font-size: 11px; max-width: 84px; overflow-wrap: anywhere; hyphens: auto; }
+.stamp.big .st-ring b { max-width: 116px; }

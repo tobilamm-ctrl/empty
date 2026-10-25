@@ -38,6 +38,9 @@ const ICONS = {
   card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M13 5v14M15.5 9h3M15.5 12h3M6 9h4M6 12h4"/><rect x="16" y="14" width="3" height="3"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
   coin: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9.5a3.5 3.5 0 1 0 0 5M8 11h5M8 13h5"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+  heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+  mountain: '<path d="M2 20 9 7l4 7 3-4 6 10z"/><path d="M7.5 10l1.5 1.5L10.5 10"/>',
   play: '<path d="M8 5v14l11-7z"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
@@ -120,7 +123,7 @@ const SETTLE = 'Ausgleich';
 const S = {
   trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], lists: [], listItems: [], meta: [],
   fuel: [], places: [], checklists: [], checkstate: [], deadlines: [], tracks: [],
-  documents: [], recipes: [], plates: [], games: [], ideas: [],
+  documents: [], recipes: [], plates: [], games: [], ideas: [], stamps: [],
 };
 const WATCHED = Object.keys(S);
 let store = null;
@@ -1306,6 +1309,8 @@ function tripForm(id) {
       <label class="field"><span>Ende</span><input type="date" name="end" value="${t.end || ''}"></label>
     </div>
     <div class="field"><span>Farbe der Reise</span><div class="swatches">${swatches}</div></div>
+    ${members().length > 1 ? `<div class="field"><span>Wer ist dabei? (für den Reisepass)</span><div class="chips wrap">${members().map(m =>
+      `<label class="chip"><input type="checkbox" name="who" value="${m.id}"${!t.members || t.members.includes(m.id) ? ' checked' : ''}><span>${esc(m.name)}</span></label>`).join('')}</div></div>` : ''}
     ${t.id ? `<label class="check"><input type="checkbox" name="archived"${t.archived ? ' checked' : ''}><span>Reise ist abgeschlossen (ins Archiv)</span></label>
     <div class="field"><span>Gefahrene Strecke (GPX)</span>${VIEWS.trackList(t)}</div>` : ''}
     <div class="sheet-foot">
@@ -1915,6 +1920,8 @@ const FORMS = {
       name: form.name.value.trim(), start: form.start.value, end: form.end.value,
       color: form.color.value || nextColor(),
       archived: old ? form.archived.checked : false,
+      // Mitreisende: leer = alle (auch Personen, die später dazukommen)
+      members: form.who && [...form.querySelectorAll('[name=who]:not(:checked)')].length ? [...form.querySelectorAll('[name=who]:checked')].map(c => c.value) : null,
     });
     if (!old) { setTrip(t.id); lastFit = ''; }
     closeSheet();

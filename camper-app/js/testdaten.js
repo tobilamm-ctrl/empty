@@ -199,6 +199,10 @@ export default function installTestdaten(app) {
     save('ideas', { ...D, id: 'demo-idea2', by: other, title: 'Test: Bretagne', where: 'Frankreich, Atlantikküste', season: 'Pfingsten', days: '2 Wochen',
       text: 'Crêpes, Leuchttürme, Ebbe und Flut.', likes: { [other]: true }, notes: [] });
 
+    // Ein eigener Reisepass-Stempel von den Eltern
+    save('stamps', { ...D, id: 'demo-st1', title: 'Test: Mutprobe', note: 'Ganz allein bis zum Gipfelkreuz', icon: 'mountain', color: '#B3261E',
+      date: dayOffset(start + 3), place: 'Monte Baldo', to: members().map(m => m.id) });
+
     // Frist mit Erinnerung
     save('deadlines', { ...D, id: 'demo-d1', title: 'Test: Gasprüfung', due: dayOffset(20), repeat: 24, note: 'Beispiel für die Erinnerung', done: false });
 

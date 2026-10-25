@@ -90,7 +90,7 @@ Einstellungen unter „Abgleich“). Bei geöffneter App gleicht sie etwa alle 1
 ## Updates einspielen
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-19'` hochzählen (z. B. auf `lammping-20`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-20'` hochzählen (z. B. auf `lammping-21`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -188,8 +188,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
     neue Reise; die Notizen landen auf Wunsch als Merkliste in deren Planung.
   - *Währung umrechnen* (in Länderinfos und Kasse): Franken, Kronen, Złoty, Forint und Pfund mit dem
     Tageskurs der EZB, ohne Internet mit dem zuletzt geladenen Kurs.
-  - *Reisepass* (in Spiele & Co): Stempel für erste Nacht, Kilometer, Länder, Fähre, Meer, Gipfel,
-    Museen, Kennzeichen und mehr. Werden automatisch aus euren Einträgen vergeben.
+  - *Reisepass* (in Spiele & Co): ein eigener Pass für jede Person. Über 50 vorgegebene Stempel (Nächte,
+    Kilometer, Länder, Fähre, Meer, Gipfel, Rad, Museen, Kennzeichen, Bingo, Quiz …) kommen automatisch, und
+    zwar aus den Reisen, bei denen die Person dabei war (in der Reise unter „Wer ist dabei?“). Dazu ein
+    Visum-Stempel für jedes neue Land und ein Stempel für jeden Ort mit fünf Sternen. Verwalter vergeben
+    außerdem eigene Stempel mit Name, Symbol, Farbe und Datum. Neue Stempel erscheinen beim nächsten Öffnen
+    mit einer kleinen Stempel-Animation.
   - *Spiele & Co:* neu „Wie lange noch?“ mit Restzeit und Ankunft bis zum nächsten geplanten Ziel oder
     einem gesuchten Ort, groß für die Rückbank. Kennzeichen sammeln (deutsche Kennzeichen mit Stadt/Kreis und internationale,
     mit Rangliste je Reise), Reise-Bingo, Stadt-Land-Fluss mit Zeitlimit, Kennzeichen-Quiz,
