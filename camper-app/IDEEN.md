@@ -25,6 +25,8 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Murmel-Labyrinth:** Handy neigen (Lagesensor wie bei der Wasserwaage), nur in Pausen.
 - **Farben-Merkspiel (wie Senso):** Folge nachtippen, wird immer länger.
 - **Wer ist schneller?** Zwei Spieler, ein Handy, Reaktion auf ein Signal.
+- **Würdest du lieber …?** Zwei lustige Möglichkeiten, alle entscheiden sich und begründen.
+- **Tick-Tack-Bumm:** Kategorie nennen, Handy wandert reihum, nach zufälliger Zeit explodiert die Bombe.
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
@@ -54,3 +56,5 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - Bildschirmzeit-Konto für Kinder
 - Reise-Quiz aus dem eigenen Tagebuch; Kennzeichen-Sätze; Schätz-Duell; Kopfrechen-Rennen; Galgenmännchen; Vier gewinnt und Schiffe versenken
 - Mastermind (Farbcode knacken); Wörter-Gitter (4 × 4 Buchstaben); Puzzle und Schiebepuzzle aus einem Reisefoto
+- Zwei Wahrheiten, eine Lüge; Zungenbrecher-Challenge; Emoji-Rätsel; Wortsalat; Reim-Duell; Zahlen-Jagd; Stellplatz-Quartett;
+  Finde die Unterschiede; Pantomime; Stille Post mit Bildern; Schere-Stein-Papier-Turnier
