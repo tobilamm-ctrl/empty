@@ -93,6 +93,15 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Kontakt zum Campingplatz:** Telefon, Website und Rezeptionszeiten aus OpenStreetMap beim Stellplatz-Eintrag, direkt anrufen.
 - **Stellplatz nach mehreren Punkten bewerten:** Lage, Sauberkeit, Ruhe, Kinderfreundlichkeit, Preis-Leistung; Auswertung in der Statistik.
 - **Reise als eigene Datei sichern:** ganze Reise (Tagebuch, Fotos, Karte) als eine Webseiten-Datei, ohne LAMMping lesbar.
+- **Entwürfe:** angefangene Einträge werden automatisch gemerkt (Tipp neben das Fenster, Anruf, App im Hintergrund beendet);
+  beim nächsten Öffnen „Weiterschreiben?“, beim versehentlichen Schließen kurz „Entwurf gespeichert“.
+- **Schneller Personenwechsel auf einem gemeinsamen Gerät:** oben aufs eigene Bild tippen statt ab- und anmelden, auf Wunsch mit 4-stelliger PIN.
+- **Offline ehrlich anzeigen:** Knöpfe, die Internet brauchen, ohne Netz ausgegraut mit „braucht Internet“.
+- **Foto-Schnellknopf:** Kamera-Knopf neben „+ Eintrag“, nach dem Foto entsteht ein Eintrag mit Uhrzeit, Position und Foto.
+- **Einstellungen übersichtlicher:** Abschnitte einklappbar, kleine Sprungleiste oben.
+- **Reihenfolge im Tagebuch umschaltbar:** neueste oben oder chronologisch ab Tag 1, je Person.
+- **Erste Schritte für neue Familien:** Abhak-Liste auf der Startseite (Reise, Fahrzeug, Mitglieder einladen, App installieren);
+  passt zu „Rechte für mehrere Familien“.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -155,3 +164,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Schlagwörter für Einträge (#Lieblingsessen) mit Filter
 - „Wusstest du?“-Fakt für Kinder; Musikwunsch-Liste; Kasse und Tankbuch als CSV
 - Stimmungsbarometer; Kassenbon fotografieren
+- Profilbilder (Foto oder Emoji) statt nur Namen
