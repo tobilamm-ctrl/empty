@@ -40,6 +40,8 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Reise als Vorlage:** neue Reise aus einer alten mit deren Merk-, Einkaufs-, Pack- und Checklisten.
 - **Tageszusammenfassung zum Teilen:** abends auswählen, was hinein soll (Strecke, Stopps, Highlight, Wetter, Foto …),
   zu jedem gewählten Punkt einen eigenen Satz schreiben, dann per WhatsApp teilen.
+- **Bobbycar für Kinderkonten:** In der Kinderversion (Kinderkonten, einfache Ansicht) fährt in der Kopfzeile statt
+  der V-Klasse ein Bobbycar vor der Landschaft.
 - **Mehrere Fahrzeuge:** Camper, zweites Auto oder Wohnwagen mit eigenem Steckbrief, Fristen und Tankbuch; je Reise wählbar.
 - **Wetter-Bilanz der Reise:** Sonnentage, Regentage, wärmste und kälteste Nacht in der Statistik.
 
