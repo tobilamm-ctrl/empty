@@ -2296,3 +2296,4 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .rider-set { margin-top: 16px; }
 .rider-set h3 { margin: 0 0 4px; font-size: 16px; }
 .rider-set .sub { margin: 0 0 10px; }
+.panel-sub { margin: 18px 0 4px; font-size: 16px; }

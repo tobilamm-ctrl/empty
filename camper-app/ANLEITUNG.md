@@ -143,6 +143,10 @@ Wer oben in der Leiste mitfährt, kann jetzt jede Person leicht selbst aussuchen
 - In den Einstellungen steht die Auswahl unter **Darstellung und Kopfzeile**, direkt unter Hell/Dunkel.
 - Kinder finden sie außerdem wie bisher auf ihrer Startseite. Tippen Kinder eine Figur direkt an, hüpft sie.
 
+Außerdem: Die Dampflok hat jetzt auch Räder unter dem Führerhaus, und der Tender steht auf derselben Schiene. In den
+Einstellungen sind „App installieren“ und „App weitergeben“ zu **App installieren und weitergeben** zusammengelegt
+(Installieren und QR-Code für ein anderes Handy an einer Stelle).
+
 ## Neu in Version 45: Mitfahrer mit mehr Details
 
 Alle Figuren oben in der Leiste sind neu gezeichnet und deutlich detailreicher: Gesichter mit Augenglanz, Fell,
@@ -213,7 +217,7 @@ Rekorde gelten je Person (oben „Es spielt“ wählen).
 - **Reise als eigene Datei** (Reise → Export → „Reise als Datei“): eine einzige Webseiten-Datei mit Karte, allen Tagen,
   Texten und Fotos. Lässt sich ohne LAMMping und ohne Internet in jedem Browser öffnen, z. B. als Sicherung.
 - **QR-Codes:** neben Reiseblog-Links und dem Link für Lieblingsplätze „▦ QR-Code“; in den Einstellungen unter
-  „App weitergeben“ ein QR-Code, mit dem ein anderes Handy LAMMping öffnet.
+  „App installieren und weitergeben“ ein QR-Code, mit dem ein anderes Handy LAMMping öffnet.
 
 ## Neu in Version 40: Fahrzeuge, Reise-Aufbau und Infos aus dem Internet
 

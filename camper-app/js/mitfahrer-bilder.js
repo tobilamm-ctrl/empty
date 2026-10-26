@@ -145,8 +145,9 @@ export const ART = {
     ${[12, 20, 28, 36, 42, 16, 24, 32, 40].map((x, i) => `<circle cx="${x}" cy="${i < 5 ? 28 : 24}" r="${i < 5 ? 4.5 : 4}" fill="#2A1B10" ${O(1.2)}/>`).join('')}
     ${L('M18 22 L20 24 M33 22 L35 23.5', '#8A847A', 1)}
     <rect x="9" y="36" width="36" height="16" rx="1" fill="none" stroke="#E0A21B" stroke-width="1.4"/>
-    ${carWheel(17, 63, 7, '#D63A2F')}${carWheel(37, 63, 7, '#D63A2F')}
-    ${L('M46 52 H56', '#6E665B', 3)}
+    <rect x="8" y="57" width="38" height="5" fill="#D63A2F" ${O(1.6)}/>
+    ${locoWheel(17, 67, 8)}${locoWheel(37, 67, 8)}
+    ${L('M46 58 H56', '#6E665B', 3)}
     <rect x="54" y="14" width="40" height="44" rx="2" fill="#D63A2F" ${O(3)}/>
     <path d="M50 15 Q 74 5 98 15 V18 H50 Z" fill="${DARK}" ${O(2.2)}/>
     <rect x="62" y="21" width="22" height="16" rx="2" fill="${GLASS}" ${O(2)}/>
@@ -164,6 +165,7 @@ export const ART = {
     <rect x="174" y="44" width="10" height="5" rx="2" fill="#9A9184" ${O(1.2)}/>
     <rect x="52" y="54" width="132" height="5" fill="#D63A2F" ${O(2)}/>
     <path d="M174 59 L194 73 H172 Z" fill="#D63A2F" ${O(2.2)}/>${L('M178 61 V72 M183 64 V72 M188 68 V72', '#8E2018', 1.2)}
+    ${locoWheel(66, 67, 8)}${locoWheel(86, 67, 8)}
     ${locoWheel(110, 64, 11)}${locoWheel(136, 64, 11)}${locoWheel(162, 64, 11)}
     <g class="rod"><rect x="106" y="59.5" width="60" height="3.4" rx="1.7" fill="#B8B2A8" ${O(1.2)}/>${[110, 136, 162].map(x => `<circle cx="${x}" cy="61.2" r="2" fill="#6E665B"/>`).join('')}</g>`,
 

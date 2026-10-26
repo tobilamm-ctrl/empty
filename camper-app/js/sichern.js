@@ -5,7 +5,7 @@ import qrcode from '../vendor/qrcode/qrcode.js';
 
 export default function installSichern(app) {
   const { S, LS, ui, VIEWS, ACTIONS, esc, icon, toast, render, openSheet, currentTrip, tripEntries, tripStats, byDate, hasPos,
-    today, fmtDay, fmtTime, fmtRange, fmtKm, TYPES, settingsPanels } = app;
+    today, fmtDay, fmtTime, fmtRange, fmtKm, TYPES } = app;
   const sheetHead = app.sheetHead;
   const dec = (v, n = 1) => Number(v).toLocaleString('de-DE', { minimumFractionDigits: n, maximumFractionDigits: n });
 
@@ -45,10 +45,7 @@ export default function installSichern(app) {
   };
   app.afterDraw.push(addQr);
   new MutationObserver(() => addQr(document.getElementById('sheetBody'))).observe(document.getElementById('sheetBody'), { childList: true, subtree: true });
-  const appUrl = () => location.origin + location.pathname;
-  settingsPanels.push(() => `<section class="panel"><h2>App weitergeben</h2>
-    <p class="sub">Auf einem anderen Handy diesen Code scannen, LAMMping öffnen, anmelden und „Zum Startbildschirm hinzufügen“.</p>
-    <button class="ghost" data-action="qr-show" data-url="${esc(appUrl())}" data-title="LAMMping öffnen">▦ QR-Code für die App</button></section>`);
+  // „App weitergeben“ steht zusammen mit „App installieren“ in den Einstellungen (app.js)
 
   /* ====================================================================== */
   /* Listen ausdrucken                                                       */

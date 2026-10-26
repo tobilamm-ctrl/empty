@@ -1484,8 +1484,11 @@ VIEWS.einstellungen = () => {
     </section>
     ${settingsPanels.map(f => f()).join('')}
     <section class="panel">
-      <h2>App installieren</h2>
+      <h2>App installieren und weitergeben</h2>
       ${installText()}
+      <h3 class="panel-sub">Auf ein anderes Handy</h3>
+      <p class="sub">Dort diesen Code scannen, LAMMping öffnen, anmelden und „Zum Startbildschirm hinzufügen“.</p>
+      <button class="ghost" data-action="qr-show" data-url="${esc(location.origin + location.pathname)}" data-title="LAMMping öffnen">▦ QR-Code für die App</button>
     </section>
     <section class="panel">
       <button class="ghost danger" data-action="logout">Abmelden</button>
