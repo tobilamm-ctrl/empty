@@ -21,17 +21,17 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **🚐 Unterwegs und Planung**
 
-11. Reise-Check für die Route
-12. Spritkosten der geplanten Route
+11. ~~Reise-Check für die Route~~ Erledigt in Lieferung 40.
+12. ~~Spritkosten der geplanten Route~~ Erledigt in Lieferung 40.
 13. ~~Tickets und Reservierungen~~ Erledigt in Lieferung 34.
-14. „Heute geöffnet?“ bei Ausflugszielen
-15. Regentag-Plan
-16. Wassertemperatur am Meer
-17. Kontakt zum Campingplatz
-18. Stellplatz nach mehreren Punkten bewerten
-19. Mehrere Fahrzeuge
-20. Mängelliste fürs Fahrzeug
-21. Reise als Vorlage
+14. ~~„Heute geöffnet?“ bei Ausflugszielen~~ Erledigt in Lieferung 40.
+15. ~~Regentag-Plan~~ Erledigt in Lieferung 40.
+16. ~~Wassertemperatur am Meer~~ Erledigt in Lieferung 40.
+17. ~~Kontakt zum Campingplatz~~ Erledigt in Lieferung 40.
+18. ~~Stellplatz nach mehreren Punkten bewerten~~ Erledigt in Lieferung 40.
+19. ~~Mehrere Fahrzeuge~~ Erledigt in Lieferung 40.
+20. ~~Mängelliste fürs Fahrzeug~~ Erledigt in Lieferung 40.
+21. ~~Reise als Vorlage~~ Erledigt in Lieferung 40.
 22. Gäste ohne eigenes Konto
 
 **👨‍👩‍👧 Familie und Kinder**
@@ -43,7 +43,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 27. Ausmalbild aus einem Foto
 28. ~~Bobbycar für Kinderkonten~~ Erledigt in Lieferung 34.
 29. Ansage bei „Wie lange noch?“
-30. Kurzinfo aus Wikipedia
+30. ~~Kurzinfo aus Wikipedia~~ Erledigt in Lieferung 40.
 31. Medikamenten-Erinnerung
 32. Camping-Freundebuch
 
@@ -120,9 +120,9 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 3. ~~**Karte:**~~ Erledigt in Lieferung 39. 47 Kartenart umschalten → 44 Pins bündeln → 46 Fotos auf der Karte → 43 Liste unter der Karte.
 4. ~~**Bedienung:**~~ Erledigt in Lieferung 39. 67 Bildschirm bleibt an → 64 Einkaufsmodus → 69 Reiter „Heute“ → 68 Dort weitermachen, wo man war →
    60 Schmalere Kopfzeile → 62 Tastenkürzel → 70 Einstellungen übersichtlicher → 71 Offline ehrlich anzeigen → 75 Speicherplatz.
-5. **Fahrzeug und Reise-Aufbau:** 19 Mehrere Fahrzeuge (ändert den Datenaufbau, daher zuerst) → 20 Mängelliste →
+5. ~~**Fahrzeug und Reise-Aufbau:**~~ Erledigt in Lieferung 40. 19 Mehrere Fahrzeuge (ändert den Datenaufbau, daher zuerst) → 20 Mängelliste →
    18 Stellplatz nach mehreren Punkten bewerten → 21 Reise als Vorlage.
-6. **Infos aus dem Internet** (Planung): 12 Spritkosten der Route → 11 Reise-Check → 17 Kontakt zum Campingplatz →
+6. ~~**Infos aus dem Internet**~~ Erledigt in Lieferung 40 (Planung): 12 Spritkosten der Route → 11 Reise-Check → 17 Kontakt zum Campingplatz →
    14 „Heute geöffnet?“ → 16 Wassertemperatur → 30 Wikipedia-Kurzinfo → 15 Regentag-Plan.
 7. **Familie und Kinder:** 29 Ansage bei „Wie lange noch?“ → 25 Wunschzettel → 32 Freundebuch → 26 Reise-Urkunde →
    27 Ausmalbild aus Foto. (31 Medikamenten-Erinnerung kommt mit Paket 10, sie braucht Push-Mitteilungen.)

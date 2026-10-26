@@ -36,11 +36,13 @@ import installHerzen from './herzen.js';
 import installLesen from './lesen.js';
 import installKartenebenen from './kartenebenen.js';
 import installBedienung from './bedienung.js';
+import installFahrzeuge from './fahrzeuge.js';
+import installInfos from './infos.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 39;
+const APP_VERSION = 40;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -362,7 +364,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender', 'heute'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender', 'heute', 'regentag'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -724,7 +726,7 @@ function entryForm(e = {}) {
   const stars = [1, 2, 3, 4, 5].map(n =>
     `<button type="button" class="star${(e.rating || 0) >= n ? ' on' : ''}" data-action="rate" data-v="${n}" aria-label="${n} von 5">★</button>`).join('');
   // Selten Gebrauchtes steht unter „Weitere Angaben“; aufgeklappt, wenn dort schon etwas eingetragen ist
-  const moreOpen = !!(e.cost || e.blogHide || (e.features || []).length || Object.values(e.extra || {}).some(v => v !== '' && v != null && v !== false));
+  const moreOpen = !!(e.cost || e.blogHide || (e.features || []).length || Object.values(e.extra || {}).some(v => v !== '' && v != null && v !== false) || Object.keys(e.ratings || {}).length);
 
   return `<form data-form="entry" data-type="${type}" data-id="${e.id || ''}">
     <div class="sheet-head">
@@ -783,6 +785,7 @@ function entryForm(e = {}) {
       <label class="field"><span>Kosten in €</span><input name="cost" inputmode="decimal" value="${e.cost ? String(e.cost).replace('.', ',') : ''}" placeholder="0"></label>
       ${canCash() ? `<label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>` : ''}
     </div>
+    ${APP.entryMoreFields ? APP.entryMoreFields(e) : ''}
     <label class="check small"><input type="checkbox" name="blogHide"${e.blogHide ? ' checked' : ''}><span>Nicht im Reiseblog zeigen</span></label>
     </details>
     <div class="sheet-foot">
@@ -1401,6 +1404,7 @@ function tripForm(id) {
     ${canCash() ? `<label class="field"><span>Reisebudget in € (optional)</span><input name="budget" inputmode="decimal" value="${t.budget ? String(t.budget).replace('.', ',') : ''}" placeholder="z. B. 1500"></label>` : ''}
     ${members().length > 1 ? `<div class="field"><span>Wer ist dabei? (für den Reisepass)</span><div class="chips wrap">${members().map(m =>
       `<label class="chip"><input type="checkbox" name="who" value="${m.id}"${!t.members || t.members.includes(m.id) ? ' checked' : ''}><span>${esc(m.name)}</span></label>`).join('')}</div></div>` : ''}
+    ${APP.tripFormExtra ? APP.tripFormExtra(t) : ''}
     ${t.id ? `<label class="check"><input type="checkbox" name="archived"${t.archived ? ' checked' : ''}><span>Reise ist abgeschlossen (ins Archiv)</span></label>
     <div class="field"><span>Gefahrene Strecke (GPX)</span>${VIEWS.trackList(t)}</div>` : ''}
     <div class="sheet-foot">
@@ -2020,6 +2024,7 @@ const FORMS = {
       // Mitreisende: leer = alle (auch Personen, die später dazukommen)
       members: form.who && [...form.querySelectorAll('[name=who]:not(:checked)')].length ? [...form.querySelectorAll('[name=who]:checked')].map(c => c.value) : null,
     });
+    if (APP.tripSaved) APP.tripSaved(t, old, form);
     if (!old) { setTrip(t.id); lastFit = ''; }
     closeSheet();
     if (!old) go('tagebuch');
@@ -2269,6 +2274,8 @@ installHerzen(APP);
 installLesen(APP);
 installKartenebenen(APP);
 installBedienung(APP);
+installFahrzeuge(APP);
+installInfos(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

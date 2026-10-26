@@ -74,7 +74,7 @@ export default function installBedienung(app) {
       ${entriesToday.length ? `<section class="panel"><h2>📔 Heute eingetragen</h2><ul class="ledger">${entriesToday.map(e => `<li><button data-action="open-entry" data-id="${e.id}"><span class="txt"><b>${esc(e.title || app.TYPES[e.type].label)}</b>
         <small>${fmtTime(e.date)}${e.place ? ` · ${esc(e.place)}` : ''}</small></span></button></li>`).join('')}</ul></section>` : ''}
       <div class="heute-links">
-        <a class="chip" href="#/wetter">🌤️ Wetter</a><a class="chip" href="#/nochweit">⏱️ Wie lange noch?</a>
+        <a class="chip" href="#/wetter">🌤️ Wetter</a><a class="chip" href="#/regentag">☔ Regentag-Plan</a><a class="chip" href="#/nochweit">⏱️ Wie lange noch?</a>
         ${t ? '<button class="chip" data-action="day-share">📤 Tag teilen</button>' : ''}<a class="chip" href="#/pinnwand">📌 Pinnwand</a>
         ${t ? '<button class="chip" data-action="entry-form">＋ Eintrag</button>' : ''}
       </div>`;

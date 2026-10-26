@@ -3,7 +3,7 @@
 
 export default function installZuladung(app) {
   const { S, VIEWS, ACTIONS, CHANGES, esc, icon, num, pageHead, save, members, go } = app;
-  const vehicle = () => S.meta.find(m => m.id === 'vehicle') || {};
+  const vehicle = () => (app.vehicle ? app.vehicle() : S.meta.find(m => m.id === 'vehicle')) || {};
   const doc = () => S.meta.find(m => m.id === 'payload') || { id: 'payload' };
   const kg = v => `${Math.round(v).toLocaleString('de-DE')} kg`;
   const water = () => { const w = (S.meta.find(m => m.id === 'autarky') || {}).water; return w ? { cap: w.cap || 20, level: w.level } : { cap: 20, level: 20 }; };

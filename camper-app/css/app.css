@@ -1960,3 +1960,71 @@ body.offline .round.needs-net::after, body.offline .icon-btn.needs-net::after { 
 .storage-trips .txt { flex: 1; }
 
 .mapview.list-open .map-actions .round { display: none; }
+
+/* ---------- Version 40: Fahrzeuge, Reise-Aufbau, Infos aus dem Internet ---------- */
+
+.vehicle-chips { margin: 0 0 12px; }
+.vehicle-chips small { font-size: 11px; opacity: .8; }
+.vehicle-trip { margin: -4px 0 12px; }
+.toolbar h2 small { font: 500 14px var(--body); color: var(--muted); margin-left: 6px; }
+
+/* Mängelliste */
+.defects .ledger button { display: flex; align-items: center; gap: 10px; width: 100%; }
+.defects .txt { flex: 1; min-width: 0; }
+.defect-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex: none; }
+.defect-ic { width: 44px; text-align: center; font-size: 24px; flex: none; }
+.defects .done-list { opacity: .6; }
+
+/* Reise als Vorlage */
+details.tpl { margin: 10px 0; padding: 8px 12px; border-radius: 12px; background: var(--mist); }
+details.tpl summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+
+/* Stellplatz nach mehreren Punkten */
+.crit .crit-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.crit-stars { display: inline-flex; }
+.cstar { border: 0; background: none; font-size: 24px; line-height: 1; padding: 2px; color: var(--line, #E2D6C2); cursor: pointer; }
+.cstar.on { color: #C9961A; }
+.crit-view { display: grid; gap: 4px; margin: 10px 0; }
+.crit-view div { display: flex; justify-content: space-between; gap: 10px; }
+.crit-view dd { margin: 0; color: #C9961A; }
+.crit-view dd .off { color: var(--line, #E2D6C2); }
+.crit-view dd small { color: var(--muted); margin-left: 4px; }
+.crit-best { margin: 4px 0 0; padding-left: 22px; }
+.crit-best li { padding: 3px 0; }
+.crit-best small { display: block; color: var(--muted); }
+
+/* Kontakt, Öffnungszeiten, Wikipedia */
+.net-info { margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: var(--mist); }
+.net-info h3 { margin: 0 0 6px; font: 700 16px var(--head); }
+.net-info p { margin: 4px 0; overflow-wrap: anywhere; }
+.net-info .oh small { display: block; color: var(--muted); font-size: 13px; }
+.net-info .small-btn { margin-left: 6px; }
+.wiki { margin-top: 10px; display: flow-root; }
+.wiki img { float: right; width: 96px; height: 96px; object-fit: cover; border-radius: 8px; margin: 0 0 6px 10px; }
+.wiki small { display: block; }
+.oh-badge { display: inline-block; margin: 2px 0 0; padding: 1px 8px; border-radius: 999px; font: 600 12px var(--body); }
+.oh-badge.open { background: color-mix(in srgb, #4F8A3C 15%, transparent); color: #3B6B2C; }
+.oh-badge.closed { background: color-mix(in srgb, #B3261E 14%, transparent); color: #9A2019; }
+
+/* Spritkosten und Reise-Check */
+.fuel-plan .fuel-big { font: 700 24px var(--head); margin: 6px 0 2px; }
+.fuel-adjust summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 6px; }
+.trip-check .rc-list { list-style: none; padding: 0; margin: 8px 0; }
+.trip-check .rc-list li { padding: 2px 0; }
+.trip-check .link.small { font-size: 16px; padding: 0 4px; }
+.trip-check select { max-width: 60%; }
+
+/* Wassertemperatur */
+.sea-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 10px; }
+.sea-list li b { display: block; margin-bottom: 4px; }
+.sea-days { display: flex; gap: 8px; overflow-x: auto; }
+.sea-days span { flex: none; min-width: 52px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, #2E7FB8 12%, transparent); text-align: center; font: 700 16px var(--head); color: #1F5F8B; }
+.sea-days small { display: block; font: 500 11px var(--body); color: var(--muted); }
+
+/* Regentag-Plan */
+.rp-wx { font: 600 18px var(--head); margin: 4px 0 10px; }
+.rp-list li { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.rp-list .txt { flex: 1; min-width: 0; }
+.rp-list .txt b, .rp-list .txt small { display: block; }
+.rp-list .ok { color: #3B6B2C; }
+.rp-list .warn { color: #9A2019; }

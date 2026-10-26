@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-39'` hochzählen (z. B. auf `lammping-40`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-40'` hochzählen (z. B. auf `lammping-41`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,36 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 40: Fahrzeuge, Reise-Aufbau und Infos aus dem Internet
+
+**Fahrzeuge und Reisen:**
+- **Mehrere Fahrzeuge** (Mehr → Fahrzeug → „＋ Fahrzeug“): Camper, Auto, Wohnwagen … jeweils mit eigenem Steckbrief, eigenen
+  Fristen und eigenem Tankbuch. Oben wählt man das Fahrzeug; im Reise-Formular steht, welches Fahrzeug mitfährt (oder auf der
+  Fahrzeug-Seite „Bei … mitnehmen“). Tankstopps aus dem Tagebuch gehören zum Fahrzeug der Reise. Alles Bisherige gehört zum
+  ersten Fahrzeug. Neu im Steckbrief: Art und Verbrauch (solange das Tankbuch ihn noch nicht kennt).
+- **Mängelliste** (Fahrzeug-Seite): Kaputtes mit Foto, Notiz und „muss in die Werkstatt“ notieren, später abhaken. Offene
+  Mängel zeigt die Fahrzeug-Kachel unter Mehr.
+- **Stellplatz genauer bewerten:** Im Stellplatz-Eintrag unter „Weitere Angaben“ Lage, Sauberkeit, Ruhe, Kinderfreundlichkeit
+  und Preis-Leistung mit Sternen; daraus wird die Gesamtwertung vorgeschlagen. Die Statistik zeigt „Stellplätze im Vergleich“
+  mit Durchschnitt und den besten Plätzen.
+- **Reise als Vorlage:** Beim Anlegen einer neuen Reise „Aus einer früheren Reise übernehmen“: offene Listenpunkte, Extra-
+  Packsachen, auf Wunsch geplante Orte, Fahrzeug und Mitreisende.
+
+**Infos aus dem Internet** (alles Geladene bleibt für unterwegs ohne Netz gespeichert):
+- **Spritkosten der geplanten Strecke** (Reise → Planung): Strecke vom letzten Stopp über die geplanten Orte mal Verbrauch
+  (Tankbuch des Reise-Fahrzeugs) mal Preis der letzten Tankstopps, mit Vergleich zum Budget. Werte lassen sich anpassen.
+- **Reise-Check** (Planung): aus den Ländern der Reise Vignetten, Plaketten und Pflichtausstattung zum Abhaken; weitere Länder
+  lassen sich hinzufügen. Angaben ohne Gewähr.
+- **Kontakt zum Campingplatz:** Im Stellplatz-Eintrag und bei gemerkten Orten Telefon (direkt anrufen), Website und
+  Rezeptions- bzw. Öffnungszeiten aus OpenStreetMap.
+- **„Heute geöffnet?“:** Bei Ausflugszielen im Eintrag, im Orts-Fenster und an geplanten Orten (für den geplanten Tag) ein
+  grüner oder roter Hinweis. Saisonzeiten werden nur angezeigt, nicht bewertet.
+- **Wikipedia-Kurzinfo:** bei Sehenswertem und Museen die ersten Sätze und ein Bild aus Wikipedia.
+- **Wassertemperatur** (Wetter-Seite): für Standort, letzten Stellplatz und geplante Orte am Meer, fünf Tage.
+- **Regentag-Plan** (Wetter-Seite und Heute): je nach Vorhersage Ideen bei Regen (Museen, Hallen- und Erlebnisbäder,
+  Indoorspielplätze, Kino …) oder bei Sonne (Strände, Badestellen, Aussichtspunkte, Zoos) im Umkreis von 25 km, dazu
+  passende Orte von eurer Wunschliste. „Merken“ legt einen Ort für die laufende Reise an.
 
 ## Neu in Version 39: Karte und Bedienung
 

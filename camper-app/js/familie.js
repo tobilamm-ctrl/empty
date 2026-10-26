@@ -49,6 +49,7 @@ export default function installFamilie(app) {
     if (r === 'mehr') return simple() ? 'kinder' : r;
     if (ALWAYS.includes(r)) return r;
     if (r === 'rueckblick' || r === 'buch' || r === 'kalender') return app.allowed('tagebuch') ? r : startRoute();
+    if (r === 'regentag') return app.allowed('wetter') ? r : startRoute();
     return app.allowed(r) ? r : startRoute();
   };
 

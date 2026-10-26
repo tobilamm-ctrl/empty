@@ -59,6 +59,7 @@ export default function installMore(app) {
   VIEWS.mehr = () => {
     const due = dueCount();
     const badge = t => (t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>`
+      : t.route === 'fahrzeug' && app.defectCount && app.defectCount() ? `<span class="badge info" title="Offene Mängel">${app.defectCount()}</span>`
       : t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>`
         : t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : '');
     const items = [...(app.barExtras ? app.barExtras() : []), ...available()].map(t => ({ id: t.route, art: t.art, title: label(t), text: t.text, href: `#/${t.route}`, badge: badge(t), fixed: t.route === 'einstellungen' }));
@@ -382,7 +383,7 @@ export default function installMore(app) {
   function saveFuelFromEntry(e, f) {
     const old = S.fuel.find(x => x.entryId === e.id);
     const doc = save('fuel', {
-      ...(old || { id: newId(), by: me(), tripId: e.tripId, entryId: e.id }),
+      ...(old || { id: newId(), by: me(), tripId: e.tripId, entryId: e.id, vehicleId: tripVehicleId() }),
       ...f, date: e.date.slice(0, 10), place: e.place || e.title || '', lat: e.lat, lng: e.lng,
     });
     const linked = S.expenses.find(x => x.fuelId === doc.id);
@@ -526,8 +527,8 @@ export default function installMore(app) {
   /* ---------- Tankbuch ---------- */
 
   // Verbrauch von Vollbetankung zu Vollbetankung
-  function consumption() {
-    const asc = S.fuel.filter(f => f.odo > 0).sort((a, b) => a.odo - b.odo);
+  function consumption(vid = vehicleId()) {
+    const asc = S.fuel.filter(f => f.odo > 0 && vehOf(f) === vid).sort((a, b) => a.odo - b.odo);
     const per = {};
     let last = null, liters = 0, totL = 0, totKm = 0;
     for (const f of asc) {
@@ -544,17 +545,24 @@ export default function installMore(app) {
     }
     return { per, avg: totKm ? totL / totKm * 100 : null };
   }
-  app.fuelAverage = () => consumption().avg;
+  app.fuelAverage = vid => consumption(vid).avg;
+  // Preis pro Liter der letzten Tankstopps dieses Fahrzeugs
+  app.fuelPrice = (vid = vehicleId()) => {
+    const fs = S.fuel.filter(f => vehOf(f) === vid && f.liters > 0 && f.amount > 0).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+    const l = fs.reduce((s, f) => s + f.liters, 0);
+    return l ? fs.reduce((s, f) => s + f.amount, 0) / l : null;
+  };
 
   VIEWS.tank = () => {
-    const list = S.fuel.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.odo || 0) - (a.odo || 0));
+    const mine = S.fuel.filter(f => vehOf(f) === vehicleId());
+    const list = mine.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.odo || 0) - (a.odo || 0));
     const { per, avg } = consumption();
-    const liters = S.fuel.reduce((s, f) => s + (f.liters || 0), 0);
-    const amount = S.fuel.reduce((s, f) => s + (f.amount || 0), 0);
+    const liters = mine.reduce((s, f) => s + (f.liters || 0), 0);
+    const amount = mine.reduce((s, f) => s + (f.amount || 0), 0);
     const perLiter = liters ? amount / liters : null;
-    const odos = S.fuel.map(f => f.odo).filter(Boolean);
+    const odos = mine.map(f => f.odo).filter(Boolean);
     const driven = odos.length > 1 ? Math.max(...odos) - Math.min(...odos) : 0;
-    return `${pageHead('tank', 'Tankbuch')}
+    return `${pageHead('tank', 'Tankbuch', vehicles().length > 1 ? esc(vName(vehicle())) : '')}${vehicleChips(false)}
       ${list.length ? `<section class="ledger-sum">
         <p class="total">${avg ? dec(avg) + ' l' : '–'}<span class="unit"> pro 100 km</span></p>
         <p class="sub">${avg ? 'Durchschnitt von Vollbetankung zu Vollbetankung' : 'Der Verbrauch erscheint ab der zweiten Vollbetankung mit Kilometerstand.'}</p>
@@ -578,7 +586,7 @@ export default function installMore(app) {
     const f = S.fuel.find(x => x.id === id) || { date: today(), full: true };
     const t = currentTrip();
     const linked = f.id && S.expenses.find(x => x.fuelId === f.id);
-    const lastOdo = Math.max(0, ...S.fuel.map(x => x.odo || 0));
+    const lastOdo = Math.max(0, ...S.fuel.filter(x => vehOf(x) === (f.id ? vehOf(f) : vehicleId())).map(x => x.odo || 0));
     openSheet(`<form data-form="fuel" data-id="${f.id || ''}">
       ${sheetHead(f.id ? 'Tankstopp' : 'Tanken')}
       <div class="row2">
@@ -613,7 +621,7 @@ export default function installMore(app) {
     if (liters <= 0 || amount <= 0) return toast('Bitte Liter und Betrag eintragen.');
     const t = currentTrip();
     const f = save('fuel', {
-      ...(old || { id: newId(), by: me(), tripId: t ? t.id : null }),
+      ...(old || { id: newId(), by: me(), tripId: t ? t.id : null, vehicleId: vehicleId() }),
       date: form.date.value, odo: parseInt(form.odo.value.replace(/\D/g, '')) || 0, liters, amount,
       place: form.place.value.trim(), note: form.note.value.trim(), full: form.full.checked,
     });
@@ -717,11 +725,56 @@ export default function installMore(app) {
     ['height', 'Höhe in m', 'z. B. 1,95'], ['width', 'Breite in m', ''], ['length', 'Länge in m', ''],
     ['weight', 'Zulässiges Gesamtgewicht in kg', ''], ['empty', 'Leergewicht fahrbereit in kg', ''],
     ['tireFront', 'Reifendruck vorn in bar', ''], ['tireRear', 'Reifendruck hinten in bar', ''],
-    ['fuelType', 'Kraftstoff', 'z. B. Diesel'], ['tank', 'Tankinhalt in l', ''],
+    ['fuelType', 'Kraftstoff', 'z. B. Diesel'], ['tank', 'Tankinhalt in l', ''], ['consumption', 'Verbrauch in l/100 km (bis das Tankbuch ihn kennt)', 'z. B. 9,5'],
     ['insurer', 'Versicherung', ''], ['policy', 'Versicherungsnummer', ''], ['breakdown', 'Pannenhilfe (Telefon)', ''],
     ['notes', 'Notizen', 'z. B. Maße mit Dachbox, Ersatzschlüssel bei …'],
   ];
-  const vehicle = () => S.meta.find(m => m.id === 'vehicle') || { id: 'vehicle' };
+  // Mehrere Fahrzeuge: das erste heißt weiter „vehicle“, weitere „vehicle_…“. Tankstopps und Fristen ohne
+  // Angabe gehören zum ersten Fahrzeug, so bleiben alte Daten richtig zugeordnet.
+  const KINDS_V = ['Camper', 'Wohnmobil', 'Wohnwagen', 'Auto', 'Motorrad', 'Anhänger'];
+  const vehicles = () => {
+    const list = S.meta.filter(m => m.id === 'vehicle' || m.id.startsWith('vehicle_'));
+    if (!list.some(v => v.id === 'vehicle')) list.unshift({ id: 'vehicle' });
+    return list.sort((a, b) => (a.id === 'vehicle' ? -1 : b.id === 'vehicle' ? 1 : (a.createdAt || 0) - (b.createdAt || 0)));
+  };
+  const vehOf = x => (x && x.vehicleId) || 'vehicle';
+  const exists = id => vehicles().some(v => v.id === id);
+  // Fahrzeug der Reise (für neue Tankstopps aus dem Tagebuch)
+  const tripVehicleId = () => { const t = currentTrip(); return t && t.vehicleId && exists(t.vehicleId) ? t.vehicleId : 'vehicle'; };
+  // Gerade angesehenes Fahrzeug (Fahrzeug-Seite, Tankbuch)
+  const vehicleId = () => { const sel = ui.vehicleSel || LS.get('vehicleSel', null); return sel && exists(sel) ? sel : tripVehicleId(); };
+  const vehicle = () => vehicles().find(v => v.id === vehicleId()) || { id: vehicleId() };
+  const vName = v => v.name || v.model || (v.id === 'vehicle' ? 'Fahrzeug' : v.kind || 'Fahrzeug');
+  Object.assign(app, { vehicles, vehicle, vehicleId, tripVehicleId, vehOf, vName });
+  // Auswahlleiste, wenn es mehr als ein Fahrzeug gibt (Fahrzeug-Seite und Tankbuch)
+  const vehicleChips = (add) => {
+    const vs = vehicles();
+    if (vs.length < 2 && !add) return '';
+    const t = currentTrip();
+    return `<div class="chips list-chips vehicle-chips">${vs.map(v => `<button class="chip${v.id === vehicleId() ? ' on' : ''}" data-action="vehicle-pick" data-id="${v.id}">
+      ${esc(vName(v))}${t && tripVehicleId() === v.id ? ' <small>🚐 Reise</small>' : ''}</button>`).join('')}
+      ${add ? `<button class="chip add" data-action="vehicle-new">${icon('plus')}Fahrzeug</button>` : ''}</div>`;
+  };
+  ACTIONS['vehicle-pick'] = el => { ui.vehicleSel = el.dataset.id; LS.set('vehicleSel', el.dataset.id); render(); };
+  ACTIONS['vehicle-new'] = () => vehicleForm(true);
+  ACTIONS['vehicle-trip'] = () => {
+    const t = currentTrip();
+    if (!t) return;
+    save('trips', { ...t, vehicleId: vehicleId() });
+    toast(`„${vName(vehicle())}“ fährt bei „${t.name}“ mit`);
+  };
+  ACTIONS['vehicle-del'] = el => {
+    const v = vehicles().find(x => x.id === el.dataset.id);
+    if (!v || v.id === 'vehicle') return;
+    const n = S.fuel.filter(f => vehOf(f) === v.id).length + S.deadlines.filter(d => vehOf(d) === v.id).length;
+    if (!confirm(`„${vName(v)}“ löschen?${n ? ` ${n} Tankstopps und Fristen bleiben erhalten und gehören dann zum ersten Fahrzeug.` : ''}`)) return;
+    remove('meta', v.id);
+    S.trips.filter(t => t.vehicleId === v.id).forEach(t => save('trips', { ...t, vehicleId: null }));
+    S.fuel.filter(f => f.vehicleId === v.id).forEach(f => save('fuel', { ...f, vehicleId: null }));
+    S.deadlines.filter(d => d.vehicleId === v.id).forEach(d => save('deadlines', { ...d, vehicleId: null }));
+    ui.vehicleSel = null; LS.set('vehicleSel', null);
+    closeSheet();
+  };
   const REPEATS = [[0, 'einmalig'], [1, 'monatlich'], [3, 'alle 3 Monate'], [6, 'halbjährlich'], [12, 'jährlich'], [24, 'alle 2 Jahre'], [36, 'alle 3 Jahre'], [60, 'alle 5 Jahre']];
   const PRESETS = [['Hauptuntersuchung (TÜV)', 24], ['Ölwechsel', 12], ['Gasprüfung', 24], ['Verbandskasten', 60], ['Vignette', 12], ['Versicherung', 12]];
 
@@ -747,11 +800,14 @@ export default function installMore(app) {
     const v = vehicle();
     const filled = VEHICLE.filter(([k]) => v[k]);
     const payload = num(v.weight) && num(v.empty) ? num(v.weight) - num(v.empty) : 0;
-    const open = openDeadlines();
-    const done = S.deadlines.filter(d => d.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 5);
+    const open = openDeadlines().filter(d => vehOf(d) === v.id);
+    const done = S.deadlines.filter(d => d.done && vehOf(d) === v.id).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 5);
+    const t = currentTrip();
     return `${pageHead('fahrzeug', 'Fahrzeug', v.name ? esc(v.name) + (v.plate ? ', ' + esc(v.plate) : '') : 'Steckbrief und Fristen')}
+      ${vehicleChips(true)}
+      ${t && vehicles().length > 1 && tripVehicleId() !== v.id ? `<p class="vehicle-trip"><button class="ghost small-btn" data-action="vehicle-trip">🚐 Bei „${esc(t.name)}“ mitnehmen</button></p>` : ''}
       <section class="panel">
-        <div class="toolbar"><h2>Steckbrief</h2><button class="ghost" data-action="vehicle-form">${filled.length ? 'Bearbeiten' : 'Ausfüllen'}</button></div>
+        <div class="toolbar"><h2>Steckbrief${v.kind ? ` <small>${esc(v.kind)}</small>` : ''}</h2><button class="ghost" data-action="vehicle-form">${filled.length ? 'Bearbeiten' : 'Ausfüllen'}</button></div>
         ${filled.length ? `<dl class="facts-list">${filled.map(([k, l]) => `<div><dt>${l}</dt><dd>${k === 'breakdown'
           ? `<a href="tel:${esc(v[k].replace(/[^\d+]/g, ''))}">${esc(v[k])}</a>` : esc(v[k])}</dd></div>`).join('')}
           ${payload > 0 ? `<div><dt>Zuladung</dt><dd>${payload.toLocaleString('de-DE')} kg</dd></div>` : ''}</dl>`
@@ -768,13 +824,14 @@ export default function installMore(app) {
       </section>`;
   };
 
-  function vehicleForm() {
-    const v = vehicle();
-    openSheet(`<form data-form="vehicle">${sheetHead('Steckbrief')}
+  function vehicleForm(fresh) {
+    const v = fresh === true ? { id: '' } : vehicle();
+    openSheet(`<form data-form="vehicle" data-id="${v.id}">${sheetHead(v.id ? 'Steckbrief' : 'Neues Fahrzeug')}
+      <div class="field"><span>Art</span><div class="chips wrap">${KINDS_V.map(k => `<label class="chip"><input type="radio" name="kind" value="${k}"${(v.kind || (v.id === 'vehicle' ? 'Camper' : '')) === k ? ' checked' : ''}><span>${k}</span></label>`).join('')}</div></div>
       ${VEHICLE.map(([k, l, ph]) => k === 'notes'
         ? `<label class="field"><span>${l}</span><textarea name="${k}" rows="3" placeholder="${ph}">${esc(v[k])}</textarea></label>`
         : `<label class="field"><span>${l}</span><input name="${k}" value="${esc(v[k])}" placeholder="${ph}"${k === 'breakdown' ? ' type="tel"' : ''}></label>`).join('')}
-      <div class="sheet-foot"><button class="primary">Speichern</button></div></form>`);
+      <div class="sheet-foot">${v.id && v.id !== 'vehicle' ? `<button type="button" class="ghost danger" data-action="vehicle-del" data-id="${v.id}">Löschen</button>` : ''}<button class="primary">Speichern</button></div></form>`);
   }
 
   function deadlineForm(id) {
@@ -794,7 +851,7 @@ export default function installMore(app) {
       </div></form>`);
   }
 
-  ACTIONS['vehicle-form'] = vehicleForm;
+  ACTIONS['vehicle-form'] = () => vehicleForm();
   ACTIONS['deadline-form'] = el => deadlineForm(el.dataset.id);
   ACTIONS['deadline-preset'] = el => {
     const f = el.form;
@@ -812,14 +869,17 @@ export default function installMore(app) {
   };
   ACTIONS['del-deadline'] = el => { if (confirm('Diese Frist löschen?')) { remove('deadlines', el.dataset.id); closeSheet(); } };
   FORMS.vehicle = form => {
-    const v = { ...vehicle() };
+    const id = form.dataset.id || 'vehicle_' + newId();
+    const v = { ...(vehicles().find(x => x.id === id) || { id, createdAt: Date.now() }) };
     VEHICLE.forEach(([k]) => { v[k] = form[k].value.trim(); });
+    v.kind = (form.querySelector('[name=kind]:checked') || {}).value || '';
     save('meta', v);
+    if (!form.dataset.id) { ui.vehicleSel = id; LS.set('vehicleSel', id); }
     closeSheet();
   };
   FORMS.deadline = form => {
     const old = S.deadlines.find(x => x.id === form.dataset.id);
-    save('deadlines', { ...(old || { id: newId(), done: false }), title: form.title.value.trim(), due: form.due.value, repeat: +form.repeat.value, note: form.note.value.trim() });
+    save('deadlines', { ...(old || { id: newId(), done: false, vehicleId: vehicleId() }), title: form.title.value.trim(), due: form.due.value, repeat: +form.repeat.value, note: form.note.value.trim() });
     closeSheet();
   };
 
