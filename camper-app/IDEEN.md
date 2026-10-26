@@ -129,6 +129,11 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 82. Benachrichtigungssymbol an der Kachel „Pinnwand“ (Mehr), wenn dort etwas hängt: kleine Zahl bzw. Punkt mit der
     Anzahl der aktuellen Zettel, wie bei anderen Kacheln mit Zähler. Ggf. auch am Reiter „Mehr“.
+83. Aus anderen Apps in eine bestimmte Reiseidee teilen (Links, Texte, Orte, Fotos). Grundstock gibt es seit Lieferung 34
+    („Mit LAMMping geteilt“ → „Zu den Reiseideen“: neue Idee oder Notiz zu einer der ersten 12 Ideen). Noch offen:
+    alle Ideen mit Suche auswählbar, Link als anklickbarer Link in der Idee, auf echtem Handy prüfen (geht nur mit
+    installierter App; iPhone/Safari unterstützt „Teilen an Web-Apps“ nicht → dort Ersatz: Link kopieren und in der
+    Reiseidee „Aus Zwischenablage einfügen“).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
@@ -156,7 +161,8 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
     76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
    Ohne offene Fragen zuerst möglich: 74 Personenwechsel, 73 App-Sperre, 76 Erste Schritte.
    Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile, 80 Weitere Spiele in der Urlaubswertung,
-   81 Jedes Jahr dasselbe Foto, 82 Symbol an der Pinnwand-Kachel.
+   81 Jedes Jahr dasselbe Foto, 82 Symbol an der Pinnwand-Kachel,
+   83 In eine bestimmte Reiseidee teilen.
 11. **Zum Schluss:** 77 App auf Englisch (erst, wenn keine neuen Funktionen mehr dazukommen).
 
 ## Vorgemerkt (Stand: Lieferung 31)
