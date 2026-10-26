@@ -134,6 +134,11 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
     alle Ideen mit Suche auswählbar, Link als anklickbarer Link in der Idee, auf echtem Handy prüfen (geht nur mit
     installierter App; iPhone/Safari unterstützt „Teilen an Web-Apps“ nicht → dort Ersatz: Link kopieren und in der
     Reiseidee „Aus Zwischenablage einfügen“).
+    Bilder und PDFs: Bilder kommen beim Teilen zwar an, landen aber bisher nur im Tagebuch, bei einer Reiseidee fallen
+    sie weg → künftig als Fotos an der Idee speichern (geht ohne Server). PDFs (z. B. Prospekt, Buchungsbestätigung,
+    Fährticket) nimmt LAMMping noch gar nicht an: Teilen-Menü nur für Bilder freigegeben, Server speichert nur
+    JPEG-Fotos und Sprachnotizen → braucht neue `api/index.php` (PDF speichern, Größengrenze z. B. 10 MB, Vorschau
+    und Öffnen), passt zu Paket 10. Dann auch PDFs an Tickets und Dokumente anhängen.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
