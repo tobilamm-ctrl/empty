@@ -113,7 +113,7 @@ export default function installTeilen(app) {
   };
 
   // Server-Teil prüfen: Verwalter bekommen einen Hinweis, wenn api/index.php nicht zur App passt
-  const NEED = 23;
+  const NEED = 24;
   let checked = false;
   app.chromeHooks.push(() => {
     if (checked || !isAdmin()) return;

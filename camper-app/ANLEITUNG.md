@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-36'` hochzählen (z. B. auf `lammping-37`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-37'` hochzählen (z. B. auf `lammping-38`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,30 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 37: schneller eintragen
+
+**Wichtig:** Diese Version braucht die neue `api/index.php` auf dem Server (für Google-Maps-Kurzlinks).
+
+- **Kürzeres Formular:** Oben stehen Art, Titel, Zeit, Ort, Text, Fotos und Bewertung. Steckbrief, Ausstattung, Kosten und
+  „Nicht im Reiseblog“ liegen unter **„Weitere Angaben“** zum Aufklappen. Ist dort schon etwas eingetragen, ist der
+  Bereich beim Bearbeiten offen.
+- **Schnellauswahl:** „+ Eintrag“ gedrückt halten (am PC: Rechtsklick) öffnet Stellplatz, Tanken, Pause, Sehenswert,
+  Einkauf, Notiz und Foto. Die Position wird gleich gesucht.
+- **Foto-Schnellknopf:** Der Kamera-Knopf über „+ Eintrag“ macht ein Foto, daraus entsteht sofort ein Eintrag mit Uhrzeit,
+  Position und Ortsname. Text und Titel lassen sich später ergänzen. Bei einem Foto aus der Galerie zählen Aufnahmezeit und
+  Ort aus dem Foto.
+- **Google-Maps-Link einfügen:** In Google Maps „Teilen“ → „Link kopieren“, dann im Eintrag ins Feld „Ort“ einfügen (auch
+  bei Orten in den Feldern Name, Suche oder Link). Name und Position werden übernommen, auch bei Kurzlinks (maps.app.goo.gl).
+- **Fotos hineinziehen (PC):** Fotos aus dem Explorer auf ein offenes Eintragsfenster ziehen. Auf das Tagebuch gezogen:
+  ein Foto öffnet einen neuen Eintrag, mehrere werden nach Zeit und Ort in die Einträge einsortiert.
+- **Entwürfe:** Angefangene Einträge werden automatisch gemerkt („Entwurf gespeichert“), auch mit Fotos. Beim nächsten
+  „+ Eintrag“ fragt die App „Weiterschreiben?“, im Tagebuch steht oben ein Hinweis. Entwürfe halten 14 Tage.
+- **Mehrere auf einmal:** In Listen, im Tagebuch und bei den Orten einen Punkt gedrückt halten (am PC auch Strg-Klick),
+  dann weitere antippen. Unten erscheint eine Leiste: abhaken, in eine andere Liste, anheften, in eine andere Reise
+  verschieben (Kosten und Tankstopps wandern mit), als besucht markieren oder löschen. „Fertig“ oder die Zurück-Taste beendet.
+- **Anheften 📌:** Wichtige Tagebuch-Einträge stehen oben unter „Angeheftet“ (im Eintrag „📌 Anheften“).
+  Listenpunkte, Listen und Orte lassen sich in ihrem Fenster anheften und stehen dann ganz oben.
 
 ## Neu in Version 34
 

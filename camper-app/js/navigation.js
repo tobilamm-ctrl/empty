@@ -16,8 +16,15 @@ export default function installNavigation(app) {
     marks.push({ hash: location.hash, kind, fn });
   };
   app.pushBack = fn => push('fn', fn);
+  // Eigener Zurück-Eintrag per Knopf erledigt (z. B. „Fertig“): Verlaufseintrag wieder entfernen
+  app.popBack = () => {
+    const top = marks[marks.length - 1];
+    if (top && top.kind === 'fn' && top.hash === location.hash) { marks.pop(); ignorePop = true; history.back(); }
+  };
   app.onSheetOpen = () => push('sheet');
+  const sheetClosed = app.onSheetClose;      // z. B. Entwürfe (eintragen.js)
   app.onSheetClose = () => {
+    if (sheetClosed) sheetClosed();
     const top = marks[marks.length - 1];
     if (!top || top.kind !== 'sheet' || closingByPop) return;
     marks.pop();

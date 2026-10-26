@@ -30,11 +30,12 @@ import installMitteilen from './mitteilen.js';
 import installTickets from './tickets.js';
 import installLabyrinth from './labyrinth.js';
 import installSprache from './sprache.js';
+import installEintragen from './eintragen.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 36;
+const APP_VERSION = 37;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -679,7 +680,7 @@ function stopItem(e) {
     e.cost ? money(e.cost) : '',
     extraText(e) ? esc(extraText(e)) : '',
   ].filter(Boolean);
-  return `<li class="stop stop-${e.type}">
+  return `<li class="stop stop-${e.type}${e.pinned ? ' pinned' : ''}">
     <button data-action="open-entry" data-id="${e.id}">
       <span class="node">${icon(e.type)}</span>
       <span class="body">
@@ -711,6 +712,8 @@ function entryForm(e = {}) {
     `<label class="chip"><input type="checkbox" name="feat" value="${f}"${(e.features || []).includes(f) ? ' checked' : ''}><span>${f}</span></label>`).join('');
   const stars = [1, 2, 3, 4, 5].map(n =>
     `<button type="button" class="star${(e.rating || 0) >= n ? ' on' : ''}" data-action="rate" data-v="${n}" aria-label="${n} von 5">★</button>`).join('');
+  // Selten Gebrauchtes steht unter „Weitere Angaben“; aufgeklappt, wenn dort schon etwas eingetragen ist
+  const moreOpen = !!(e.cost || e.blogHide || (e.features || []).length || Object.values(e.extra || {}).some(v => v !== '' && v != null && v !== false));
 
   return `<form data-form="entry" data-type="${type}" data-id="${e.id || ''}">
     <div class="sheet-head">
@@ -723,7 +726,25 @@ function entryForm(e = {}) {
       <label class="field"><span>Wann</span><input type="datetime-local" name="date" value="${esc(e.date || nowLocal())}" required></label>
       <label class="field"><span>Ort</span><input name="place" value="${esc(e.place)}" placeholder="Ortsname"></label>
     </div>
-    <div class="field">
+    <label class="field voice-field"><span>Was war los?</span>${APP.voiceBtn ? APP.voiceBtn('text') : ''}<textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
+    <div class="field"><span>Fotos</span>
+      <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
+      <div class="btnrow photo-btns"><label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
+      ${APP.entryFormExtra ? APP.entryFormExtra(e) : ''}</div>
+    </div>
+    <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
+    ${canCash() ? `<div data-show="fuel">
+      <div class="row2">
+        <label class="field"><span>Liter</span><input name="fuelLiters" inputmode="decimal" value="${numVal(fuel.liters)}" placeholder="0,00"></label>
+        <label class="field"><span>Betrag in €</span><input name="fuelAmount" inputmode="decimal" value="${numVal(fuel.amount)}" placeholder="0,00"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Kilometerstand</span><input name="fuelOdo" inputmode="numeric" value="${fuel.odo || ''}"></label>
+        <label class="check"><input type="checkbox" name="fuelFull"${fuel.id ? (fuel.full ? ' checked' : '') : ' checked'}><span>Vollgetankt</span></label>
+      </div>
+      <p class="sub">Mit Liter und Betrag landet der Stopp auch im Tankbuch${currentTrip() ? ' und in der Kasse' : ''}.</p>
+    </div>` : ''}
+    <div class="field pos-field">
       <span>Position</span>
       <input type="hidden" name="lat" value="${e.lat ?? ''}"><input type="hidden" name="lng" value="${e.lng ?? ''}"><input type="hidden" name="acc" value="${e.acc ?? ''}"><input type="hidden" name="country" value="${esc(e.country)}">
       <p class="pos" id="posText">${hasPos(e) ? posLabel(e) : 'Noch keine Position'}</p>
@@ -733,8 +754,7 @@ function entryForm(e = {}) {
       </div>
       <div id="pickMap" class="pick-map" hidden></div>
     </div>
-    <label class="field voice-field"><span>Was war los?</span>${APP.voiceBtn ? APP.voiceBtn('text') : ''}<textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
-    <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
+    <details class="more-fields"${moreOpen ? ' open' : ''}><summary>Weitere Angaben <small class="more-what"></small></summary>
     ${Object.entries(TYPES).filter(([, v]) => v.extras).map(([k, v]) => `<div class="extras" data-extras="${k}">
       ${v.extras.map(f => {
         const val = ((e.type === k && e.extra) || {})[f.key];
@@ -748,27 +768,12 @@ function entryForm(e = {}) {
       ${v.gpx ? `<label class="ghost file">GPX-Strecke der Tour${e.id && S.tracks.some(t => t.entryId === e.id) ? ' ersetzen' : ''}<input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" data-action="hike-gpx"></label><p class="sub" id="hikeInfo"></p>` : ''}
     </div>`).join('')}
     <div class="field" data-show="features"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
-    ${canCash() ? `<div data-show="fuel">
-      <div class="row2">
-        <label class="field"><span>Liter</span><input name="fuelLiters" inputmode="decimal" value="${numVal(fuel.liters)}" placeholder="0,00"></label>
-        <label class="field"><span>Betrag in €</span><input name="fuelAmount" inputmode="decimal" value="${numVal(fuel.amount)}" placeholder="0,00"></label>
-      </div>
-      <div class="row2">
-        <label class="field"><span>Kilometerstand</span><input name="fuelOdo" inputmode="numeric" value="${fuel.odo || ''}"></label>
-        <label class="check"><input type="checkbox" name="fuelFull"${fuel.id ? (fuel.full ? ' checked' : '') : ' checked'}><span>Vollgetankt</span></label>
-      </div>
-      <p class="sub">Mit Liter und Betrag landet der Stopp auch im Tankbuch${currentTrip() ? ' und in der Kasse' : ''}.</p>
-    </div>` : ''}
     <div class="row2" data-show="cost">
       <label class="field"><span>Kosten in €</span><input name="cost" inputmode="decimal" value="${e.cost ? String(e.cost).replace('.', ',') : ''}" placeholder="0"></label>
       ${canCash() ? `<label class="check"><input type="checkbox" name="toKasse" ${isNew || linked ? 'checked' : ''}><span>${linked ? 'Im Kassenbuch' : 'Ins Kassenbuch'}</span></label>` : ''}
     </div>
     <label class="check small"><input type="checkbox" name="blogHide"${e.blogHide ? ' checked' : ''}><span>Nicht im Reiseblog zeigen</span></label>
-    <div class="field"><span>Fotos</span>
-      <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
-      <div class="btnrow photo-btns"><label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
-      ${APP.entryFormExtra ? APP.entryFormExtra(e) : ''}</div>
-    </div>
+    </details>
     <div class="sheet-foot">
       ${isNew ? '' : `<button type="button" class="danger ghost" data-action="del-entry" data-id="${e.id}">Löschen</button>`}
       <button class="primary">Speichern</button>
@@ -783,6 +788,18 @@ function addFormPhoto(p) {
   formPhotos.add.push(p);
   const grid = $('#photoGrid');
   if (grid) grid.innerHTML = photoGrid();
+}
+async function addPhotoFiles(files) {
+  files = files.filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name));
+  if (!files.length) return;
+  toast(files.length > 1 ? `${files.length} Fotos werden verkleinert …` : 'Foto wird verkleinert …');
+  for (const f of files) {
+    try {
+      formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) });
+      const grid = $('#photoGrid');
+      if (grid) grid.innerHTML = photoGrid();
+    } catch { toast('Ein Foto ließ sich nicht lesen.'); }
+  }
 }
 function photoGrid() {
   return [...formPhotos.keep, ...formPhotos.add].map(p =>
@@ -835,6 +852,11 @@ function applyType(form) {
   form.dataset.type = type;
   form.querySelectorAll('[data-show]').forEach(el => { el.hidden = !TYPES[type][el.dataset.show]; });
   form.querySelectorAll('[data-extras]').forEach(el => { el.hidden = el.dataset.extras !== type; });
+  const what = form.querySelector('.more-what');
+  if (what) {
+    const T = TYPES[type];
+    what.textContent = [T.extras ? 'Steckbrief' : '', T.features ? 'Ausstattung' : '', T.cost ? 'Kosten' : '', 'Reiseblog'].filter(Boolean).join(', ');
+  }
 }
 
 function openEntryForm(e, opts = {}) {
@@ -1004,7 +1026,7 @@ function newList(kind, name, tripId) {
 }
 
 function listRow(i) {
-  return `<li class="${i.done ? 'done' : ''}">
+  return `<li class="${i.done ? 'done' : ''}${i.pinned && !i.done ? ' pinned' : ''}">
     <button class="tick" data-action="toggle-item" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="${i.done ? 'Wieder offen' : 'Erledigt'}"></button>
     <button class="txt as-text" data-action="item-sheet" data-id="${i.id}">${esc(i.text)}</button>
     <span class="who" title="${esc(personName(i.by))}">${initial(i.by)}</span>
@@ -1014,7 +1036,7 @@ function listRow(i) {
 // Eine Liste mit Eingabezeile, offen und erledigt (auch in der Reiseplanung verwendet)
 function listBlock(l, kind) {
   const items = l ? itemsOf(l) : [];
-  const open = items.filter(i => !i.done).sort((a, b) => b.createdAt - a.createdAt);
+  const open = items.filter(i => !i.done).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
   const done = items.filter(i => i.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   return `<form class="adder" data-form="list-add" data-list="${l ? l.id : ''}" data-kind="${kind}">
       <input name="text" data-keep="listAdd-${l ? l.id : kind}" placeholder="${KINDS[kind].ph}" autocomplete="off" enterkeyhint="done">
@@ -1027,13 +1049,13 @@ function listBlock(l, kind) {
 
 VIEWS.listen = () => {
   const kind = ui.listTab;
-  const lists = listsOf(kind);
+  const lists = listsOf(kind).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   const cur = currentList(kind);
   const count = k => listsOf(k).reduce((n, l) => n + openCount(l), 0);
   const chips = lists.map(l => {
     const trip = l.tripId && S.trips.find(t => t.id === l.tripId);
     return `<button class="chip${cur && l.id === cur.id ? ' on' : ''}" data-action="list-pick" data-id="${l.id}">
-      ${trip ? `<i class="trip-dot" style="--c:${tripColor(trip)}"></i>` : ''}${esc(l.name)} <small>${openCount(l) || ''}</small></button>`;
+      ${l.pinned ? '📌 ' : ''}${trip ? `<i class="trip-dot" style="--c:${tripColor(trip)}"></i>` : ''}${esc(l.name)} <small>${openCount(l) || ''}</small></button>`;
   }).join('');
   const trip = cur && cur.tripId && S.trips.find(t => t.id === cur.tripId);
   return `${pageHead('listen', 'Listen')}
@@ -1056,6 +1078,7 @@ function listForm(id, kind, tripId) {
     <label class="field"><span>Name</span><input name="name" value="${esc(l.name)}" required placeholder="${l.kind === 'einkauf' ? 'z. B. Wochenmarkt oder Baumarkt' : 'z. B. Vorbereitung oder Ideen'}"></label>
     <label class="field"><span>Gehört zur Reise</span><select name="tripId"><option value="">Keiner bestimmten Reise</option>
       ${trips.map(t => `<option value="${t.id}"${t.id === l.tripId ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+    <label class="check"><input type="checkbox" name="pinned"${l.pinned ? ' checked' : ''}><span>📌 Anheften (steht dann ganz vorne)</span></label>
     <div class="sheet-foot">
       ${l.id ? `<button type="button" class="ghost danger" data-action="del-list" data-id="${l.id}" data-n="${n}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
@@ -1074,6 +1097,7 @@ function itemSheet(id) {
     <div class="sheet-head"><h2>Eintrag</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <label class="field"><span>Text</span><input name="text" value="${esc(i.text)}" required></label>
     <label class="field"><span>Liste</span><select name="listId">${group('einkauf')}${group('merken')}</select></label>
+    <label class="check"><input type="checkbox" name="pinned"${i.pinned ? ' checked' : ''}><span>📌 Anheften (steht oben in der Liste)</span></label>
     <p class="sub">Eingetragen von ${esc(personName(i.by))}${i.movedFrom ? `, verschoben aus „${esc(i.movedFrom)}“` : ''}</p>
     <div class="sheet-foot">
       <button type="button" class="ghost danger" data-action="del-item" data-id="${i.id}">Löschen</button>
@@ -1933,7 +1957,7 @@ const FORMS = {
     const old = S.lists.find(l => l.id === form.dataset.id);
     const l = save('lists', {
       ...(old || { id: newId(), kind: form.dataset.kind, createdAt: Date.now(), order: listsOf(form.dataset.kind).length }),
-      name: form.name.value.trim(), tripId: form.tripId.value || null,
+      name: form.name.value.trim(), tripId: form.tripId.value || null, pinned: form.pinned.checked,
     });
     if (!old) LS.set('list.' + l.kind, l.id);
     closeSheet();
@@ -1943,7 +1967,7 @@ const FORMS = {
     const target = S.lists.find(l => l.id === form.listId.value);
     const from = S.lists.find(l => l.id === itemListId(i));
     const moved = target && from && target.id !== from.id;
-    save('listItems', { ...i, text: form.text.value.trim(), listId: target.id, list: target.kind, movedFrom: moved ? from.name : i.movedFrom || '' });
+    save('listItems', { ...i, text: form.text.value.trim(), listId: target.id, list: target.kind, movedFrom: moved ? from.name : i.movedFrom || '', pinned: form.pinned.checked });
     closeSheet();
     if (moved) toast(`Verschoben nach „${target.name}“`);
   },
@@ -2066,14 +2090,7 @@ document.addEventListener('change', async ev => {
   if (el.dataset.action === 'add-photos') {
     const files = [...el.files];
     el.value = '';
-    toast(files.length > 1 ? `${files.length} Fotos werden verkleinert …` : 'Foto wird verkleinert …');
-    for (const f of files) {
-      try {
-        formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) });
-        const grid = $('#photoGrid');
-        if (grid) grid.innerHTML = photoGrid();
-      } catch { toast('Ein Foto ließ sich nicht lesen.'); }
-    }
+    await addPhotoFiles(files);
   }
   if (el.dataset.action === 'import' && el.files[0]) { importAll(el.files[0]); el.value = ''; }
   if (CHANGES[el.dataset.action]) CHANGES[el.dataset.action](el);
@@ -2200,7 +2217,7 @@ const APP = {
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
-  setSimulator: f => { simulatedPos = f; }, addFormPhoto,
+  setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,
   get map() { return map; },
   ensureMap,
 };
@@ -2234,6 +2251,7 @@ installMitteilen(APP);
 installTickets(APP);
 installLabyrinth(APP);
 installSprache(APP);
+installEintragen(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

@@ -1700,3 +1700,63 @@ body.kid-mode .vklasse.bobbycar { display: block; }
   color: #A4462B; font: 700 12px var(--body); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
 .dir-arrow { background: none; border: 0; }
 .dir-arrow svg { width: 24px; height: 24px; margin: -2px; display: block; fill: #fff; stroke: #A4462B; stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
+
+/* ---------- Version 37: Eintragen ---------- */
+
+/* Kürzeres Formular: Seltenes unter „Weitere Angaben“ */
+.more-fields { margin: 14px 0 4px; border-top: 1px solid var(--line, #E2D6C2); padding-top: 8px; }
+.more-fields > summary { cursor: pointer; padding: 8px 0; font: 600 16px var(--head); color: var(--ink); list-style: none; }
+.more-fields > summary::-webkit-details-marker { display: none; }
+.more-fields > summary::before { content: '▸'; display: inline-block; width: 18px; transition: transform .15s; }
+.more-fields[open] > summary::before { transform: rotate(90deg); }
+.more-fields .more-what { font: 400 13px var(--body); color: var(--muted); margin-left: 4px; }
+.pos-field .pos { margin: 2px 0 6px; }
+
+/* Schnellauswahl am „+ Eintrag“-Knopf */
+.fab-fan { position: fixed; z-index: 60; display: grid; gap: 8px; justify-items: end; animation: fanIn .15s ease-out; }
+.fab-fan button, .fab-fan label { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px 0 12px; border-radius: 999px; border: 0;
+  background: var(--card, #fff); color: var(--ink); font: 600 16px var(--head); box-shadow: 0 4px 14px rgba(58, 38, 23, .25); cursor: pointer; }
+.fab-fan .ic { width: 22px; height: 22px; }
+@keyframes fanIn { from { opacity: 0; transform: translateY(10px); } }
+
+/* Foto-Schnellknopf (über dem Mikrofon oder direkt über „+ Eintrag“) */
+.fab.fab-photo { bottom: calc(var(--bottom) + 84px); padding: 0; width: 56px; justify-content: center; cursor: pointer;
+  background: var(--card, #fff); color: var(--ink); border: 2px solid color-mix(in srgb, var(--trip) 70%, transparent); }
+.fab.fab-photo.above-voice { bottom: calc(var(--bottom) + 152px); }
+
+/* Fotos hineinziehen */
+body.dropping #sheet[open], body.dropping main { outline: 3px dashed var(--trip); outline-offset: -6px; }
+body.dropping::after { content: 'Fotos hier loslassen'; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2000;
+  padding: 14px 22px; border-radius: 14px; background: var(--trip); color: #fff; font: 700 20px var(--head); pointer-events: none; }
+
+/* Entwürfe */
+.draft-banner { display: flex; align-items: center; gap: 10px; width: 100%; margin: 12px 0; padding: 10px 14px; border-radius: 12px; cursor: pointer; text-align: left;
+  border: 2px dashed color-mix(in srgb, var(--trip) 50%, transparent); background: color-mix(in srgb, var(--trip) 6%, var(--card, #fff)); color: var(--ink); font: inherit; }
+.draft-banner > span:nth-child(1) { flex: 1; }
+.draft-banner b, .draft-banner small { display: block; }
+.draft-banner small { color: var(--muted); }
+
+/* Anheften */
+.pinned-entries { margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: #FFF4B8; color: #3A2617; }
+.pinned-entries h3 { margin: 0 0 6px; font: 700 15px var(--head); }
+.pinned-entries ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pinned-entries button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 4px 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.pinned-entries b, .pinned-entries small { display: block; }
+.pinned-entries small { opacity: .75; }
+.stop.pinned .body > strong::after { content: ' 📌'; }
+.checklist li.pinned .txt::before { content: '📌 '; }
+
+/* Mehrere auf einmal */
+body.selecting .checklist > li, body.selecting .timeline .stop, body.selecting .places .place-row { -webkit-user-select: none; user-select: none; }
+.checklist > li, .timeline .stop, .places .place-row { -webkit-touch-callout: none; }
+.sel-on { background: color-mix(in srgb, var(--trip) 16%, transparent) !important; border-radius: 10px; box-shadow: inset 4px 0 0 var(--trip); }
+.sel-bar { position: fixed; left: 0; right: 0; bottom: var(--bottom); z-index: 900; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 10px 14px; background: var(--card, #fff); box-shadow: 0 -4px 16px rgba(58, 38, 23, .2); }
+.sel-bar > b { font: 700 16px var(--head); flex: 1; }
+.sel-bar .sel-acts { order: 3; width: 100%; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.sel-bar .sel-acts button { flex: none; white-space: nowrap; }
+.sel-bar button { min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line, #E2D6C2); background: none; font: 600 14px var(--body); color: var(--ink); cursor: pointer; }
+.sel-bar button.danger { color: var(--danger); }
+.sel-bar button.primary { background: var(--trip); color: #fff; border: 0; }
+body.selecting .fab { display: none; }
+.pos-field .btnrow .ghost { min-height: 40px; font-size: 15px; padding: 0 14px; }

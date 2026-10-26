@@ -58,7 +58,8 @@ export default function installMitteilen(app) {
     const hls = S.games.filter(g => g.kind === 'highlight' && g.tripId === t.id && g.day === d && (g.text || g.emoji));
     const q = S.games.find(g => g.id === `qotd_${t.id}_${d}`);
     const photos = es.flatMap(e => e.photos || []);
-    const p = stay || st.stops.filter(e => e.date.slice(0, 10) <= d).pop();
+    const withPos = e => e && typeof e.lat === 'number' && typeof e.lng === 'number';
+    const p = withPos(stay) ? stay : st.stops.filter(e => withPos(e) && e.date.slice(0, 10) <= d).pop();
     const w = p ? LS.get(`wxd.${p.lat.toFixed(1)},${p.lng.toFixed(1)}.${d}`, null) : null;
     const n = st.firstDay ? Math.round((new Date(d + 'T12:00') - new Date(st.firstDay + 'T12:00')) / DAY) + 1 : null;
     return { es, dist, stay, stops, hls, q, photos, w, n };

@@ -11,7 +11,7 @@ const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
 const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
 const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Verwalter vergeben sie
 const TOKEN_DAYS = 400;
-const API_VERSION = 23;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 24;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -392,6 +392,31 @@ case 'photo':
     header('Content-Length: ' . filesize($path));
     readfile($path);
     exit;
+
+/* ----- Google-Maps-Kurzlink auflösen (der Browser darf fremden Weiterleitungen nicht folgen) ----- */
+
+case 'maplink':
+    requireUser();
+    $url = trim((string) ($_GET['u'] ?? ''));
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    // Nur Kurzlinks von Google, damit der Server nicht beliebige Adressen abruft
+    if (!preg_match('~^https://~', $url) || !in_array($host, ['maps.app.goo.gl', 'goo.gl', 'g.co'], true)) fail('Kein Google-Maps-Kurzlink');
+    for ($i = 0; $i < 6; $i++) {
+        $ctx = stream_context_create(['http' => ['method' => 'GET', 'follow_location' => 0, 'timeout' => 6, 'ignore_errors' => true,
+            'header' => "User-Agent: Mozilla/5.0 LAMMping\r\nAccept-Language: de\r\n"]]);
+        $headers = @get_headers($url, true, $ctx);
+        if (!$headers) fail('Der Link ließ sich nicht öffnen.');
+        $loc = $headers['Location'] ?? $headers['location'] ?? null;
+        if (is_array($loc)) $loc = end($loc);
+        if (!$loc) break;
+        $next = strpos($loc, 'http') === 0 ? $loc : 'https://' . $host . '/' . ltrim($loc, '/');
+        if (!preg_match('~^https://([a-z0-9-]+\.)*(google\.[a-z.]+|goo\.gl|g\.co)(/|$)~i', $next)) break;
+        $url = $next;
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        // Zustimmungsseite: das eigentliche Ziel steht im Parameter „continue“
+        if (strpos($host, 'consent.') === 0) { parse_str((string) parse_url($url, PHP_URL_QUERY), $qs); if (!empty($qs['continue'])) $url = $qs['continue']; break; }
+    }
+    out(['url' => $url]);
 
 /* ----- Reiseblog: geheimer Link zum Lesen (für Großeltern & Co.) ----- */
 

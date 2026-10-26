@@ -78,7 +78,7 @@ export default function installMore(app) {
     return `<li class="place-row">
       <span class="node-mini" style="--c:${trip ? tripColor(trip) : 'var(--wood)'}">${kindIcon(p.kind)}</span>
       <button class="as-text body" data-action="place-form" data-id="${p.id}">
-        <strong>${esc(p.name)}</strong><small>${esc(meta.join(', '))}</small>
+        <strong>${p.pinned ? '📌 ' : ''}${esc(p.name)}</strong><small>${esc(meta.join(', '))}</small>
       </button>
       ${hasPos(p) ? `<button class="icon-btn small" data-action="place-on-map" data-id="${p.id}" aria-label="Auf der Karte">${icon('pin')}</button>` : ''}
     </li>`;
@@ -91,7 +91,7 @@ export default function installMore(app) {
       favorit: S.places.filter(p => p.fav),
       reisen: S.places.filter(p => p.tripId && !p.fav),
     };
-    const sorted = groups[tab].slice().sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
+    const sorted = groups[tab].slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
     let body;
     if (tab === 'reisen') {
       const byTrip = sortTrips(S.trips).map(t => ({ t, ps: tripPlaces(t).filter(p => !p.fav) })).filter(x => x.ps.length);
@@ -154,6 +154,7 @@ export default function installMore(app) {
       <div class="field"><span>Bewertung</span><input type="hidden" name="rating" value="${p.rating || 0}"><div class="stars">${starBtns}</div></div>
       <div class="field only-stellplatz"><span>Ausstattung</span><div class="chips wrap">${feats}</div></div>
       <label class="check"><input type="checkbox" name="fav"${p.fav ? ' checked' : ''}><span>Lieblingsplatz</span></label>
+      <label class="check"><input type="checkbox" name="pinned"${p.pinned ? ' checked' : ''}><span>📌 Anheften (steht oben in der Liste)</span></label>
       ${p.tripId ? `<label class="check"><input type="checkbox" name="done"${p.done ? ' checked' : ''}><span>Schon besucht</span></label>` : ''}
       <div class="sheet-foot">
         ${p.id ? `<button type="button" class="ghost danger" data-action="del-place" data-id="${p.id}">Löschen</button>` : ''}
@@ -227,7 +228,7 @@ export default function installMore(app) {
       lat: isFinite(lat) ? lat : null, lng: isFinite(lng) ? lng : null, country: fd.get('country') || '',
       tripId: fd.get('tripId') || null, planDate: fd.get('planDate') || '',
       rating: +fd.get('rating') || 0, features: kind === 'stellplatz' ? fd.getAll('feat') : [],
-      fav: !!fd.get('fav'), done: !!fd.get('done'),
+      fav: !!fd.get('fav'), done: !!fd.get('done'), pinned: !!fd.get('pinned'),
     });
     closeSheet();
     toast(old ? 'Gespeichert' : 'Ort gemerkt');

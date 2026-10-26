@@ -14,6 +14,7 @@ export default function installFotos(app) {
 
   /* ---------- EXIF lesen (nur JPEG; Aufnahmezeit und GPS) ---------- */
 
+  app.readExif = file => readExif(file);
   async function readExif(file) {
     try {
       const v = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
@@ -78,26 +79,29 @@ export default function installFotos(app) {
     const t = tripById(el.dataset.id);
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
-    input.onchange = async () => {
-      const files = [...input.files].slice(0, 60);
-      if (!files.length) return;
-      openSheet(`<div>${sheetHead('Fotos einsortieren')}<p class="sub">${files.length} Fotos werden gelesen …</p></div>`);
-      const entries = S.entries.filter(e => e.tripId === t.id);
-      const photos = [];
-      for (const file of files) {
-        const ex = await readExif(file);
-        let thumb = '';
-        try { thumb = await shrink(file, 360, 0.7); } catch { continue; }   // Format, das der Browser nicht lesen kann
-        const ph = { file, thumb, date: ex.date || localStamp(file.lastModified), exactTime: !!ex.date, lat: ex.lat, lng: ex.lng };
-        ph.target = suggest(ph, entries);
-        photos.push(ph);
-      }
-      photos.sort((a, b) => a.date.localeCompare(b.date));
-      batch = { t, photos };
-      showBatch();
-    };
+    input.onchange = () => importFiles(t, [...input.files]);
     input.click();
   };
+  // Auch für Fotos, die am PC auf das Tagebuch gezogen werden (eintragen.js)
+  app.importPhotos = files => { const t = app.currentTrip(); if (t) importFiles(t, files); };
+  async function importFiles(t, all) {
+    const files = all.slice(0, 60);
+    if (!files.length) return;
+    openSheet(`<div>${sheetHead('Fotos einsortieren')}<p class="sub">${files.length} Fotos werden gelesen …</p></div>`);
+    const entries = S.entries.filter(e => e.tripId === t.id);
+    const photos = [];
+    for (const file of files) {
+      const ex = await readExif(file);
+      let thumb = '';
+      try { thumb = await shrink(file, 360, 0.7); } catch { continue; }   // Format, das der Browser nicht lesen kann
+      const ph = { file, thumb, date: ex.date || localStamp(file.lastModified), exactTime: !!ex.date, lat: ex.lat, lng: ex.lng };
+      ph.target = suggest(ph, entries);
+      photos.push(ph);
+    }
+    photos.sort((a, b) => a.date.localeCompare(b.date));
+    batch = { t, photos };
+    showBatch();
+  }
 
   function showBatch() {
     const { t, photos } = batch;

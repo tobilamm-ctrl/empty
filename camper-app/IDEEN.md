@@ -71,14 +71,14 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 **✏️ Eintragen**
 
 48. ~~Sprach-Schnelleintrag für Beifahrer~~ Erledigt in Lieferung 34.
-49. Schnellauswahl am „+ Eintrag“-Knopf
-50. Kürzeres Formular „Neuer Eintrag“
-51. Entwürfe
-52. Foto-Schnellknopf
-53. Google-Maps-Link einfügen
-54. Fotos am PC hineinziehen
-55. Mehrere auf einmal
-56. Anheften
+49. ~~Schnellauswahl am „+ Eintrag“-Knopf~~ Erledigt in Lieferung 37.
+50. ~~Kürzeres Formular „Neuer Eintrag“~~ Erledigt in Lieferung 37.
+51. ~~Entwürfe~~ Erledigt in Lieferung 37.
+52. ~~Foto-Schnellknopf~~ Erledigt in Lieferung 37.
+53. ~~Google-Maps-Link einfügen~~ Erledigt in Lieferung 37.
+54. ~~Fotos am PC hineinziehen~~ Erledigt in Lieferung 37.
+55. ~~Mehrere auf einmal~~ Erledigt in Lieferung 37.
+56. ~~Anheften~~ Erledigt in Lieferung 37.
 
 **👆 Bedienung und Layout**
 
@@ -113,7 +113,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
 
-1. **Eintragen** (Eintrags-Formular): 50 Kürzeres Formular → 49 Schnellauswahl am „+“-Knopf → 52 Foto-Schnellknopf →
+1. ~~**Eintragen**~~ Erledigt in Lieferung 37 (Eintrags-Formular): 50 Kürzeres Formular → 49 Schnellauswahl am „+“-Knopf → 52 Foto-Schnellknopf →
    53 Google-Maps-Link einfügen → 54 Fotos am PC hineinziehen → 55 Mehrere auf einmal → 51 Entwürfe → 56 Anheften.
 2. **Tagebuch ansehen:** 66 Reihenfolge umschaltbar → 65 Sprungleiste → 63 Foto-Vollbild → 45 Kleine Tageskarte →
    24 Herzen und Kommentare → 38 Kalender-Ansicht → 39 Als Buch lesen.
