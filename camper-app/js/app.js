@@ -34,7 +34,7 @@ import installSprache from './sprache.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 34;
+const APP_VERSION = 35;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2196,6 +2196,7 @@ const APP = {
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
+  refit: () => { lastFit = null; },
   mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,

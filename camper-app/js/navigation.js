@@ -204,13 +204,79 @@ export default function installNavigation(app) {
     openEntry(el);
   };
 
+  /* ---------- Karte folgt beim Scrollen dem Tagebuch ---------- */
+
+  // Die Karte zeigt die Stopps, die rechts gerade zu sehen sind, und hebt deren Strecke hervor
+  const followOn = () => LS.get('splitFollow', true) !== false;
+  let follow = null, followKey = '', moved = false, ticking = false;
+  const layer = () => { if (!follow && app.map && window.L) follow = L.layerGroup().addTo(app.map); return follow; };
+  const clearFollow = () => { if (follow) follow.clearLayers(); followKey = ''; };
+  const withPos = e => e && typeof e.lat === 'number' && typeof e.lng === 'number';
+  function visibleStops() {
+    const top = (document.querySelector('.topbar') || {}).offsetHeight || 0;
+    const bottom = innerHeight - ((document.querySelector('.tabbar') || {}).offsetHeight || 0);
+    return [...document.querySelectorAll('#view .stop [data-action=open-entry]')].filter(b => {
+      const r = b.getBoundingClientRect();
+      return r.bottom > top + 20 && r.top < bottom - 20;
+    }).map(b => b.dataset.id);
+  }
+  function updateFollow(force) {
+    ticking = false;
+    if (!document.body.classList.contains('split') || ui.route !== 'tagebuch' || !followOn() || !app.map || !layer()) return;
+    const t = app.currentTrip();
+    if (!t) return;
+    const all = app.tripEntries(t).filter(withPos).sort(app.byDate);
+    const ids = new Set(visibleStops());
+    const seen = all.filter(e => ids.has(e.id));
+    // Ganz oben (Heute-Karte) oder nichts mit Position im Bild: ganze Reise
+    const key = seen.length && scrollY > 80 ? seen.map(e => e.id).join() : 'ganz';
+    if (key === followKey && !force) return;
+    followKey = key;
+    follow.clearLayers();
+    if (key === 'ganz') {
+      if (moved && all.length) { app.map.flyToBounds(all.map(e => [e.lat, e.lng]), { padding: [40, 40], maxZoom: 13, duration: 0.6 }); moved = false; }
+      return;
+    }
+    // Den Weg vom Stopp davor mitzeigen, damit man sieht, woher die Fahrt kam
+    const i0 = all.indexOf(seen[0]);
+    const part = (i0 > 0 ? [all[i0 - 1]] : []).concat(all.slice(i0, all.indexOf(seen[seen.length - 1]) + 1));
+    const ll = part.map(e => [e.lat, e.lng]);
+    const color = '#E4572E';   // Korallrot hebt sich von der Reisefarbe ab
+    if (ll.length > 1) {
+      L.polyline(ll, { color: '#fff', weight: 11, opacity: 0.85, interactive: false }).addTo(follow);
+      L.polyline(ll, { color, weight: 6, opacity: 0.95, interactive: false }).addTo(follow);
+    }
+    seen.forEach(e => L.circleMarker([e.lat, e.lng], { radius: 17, color, weight: 3, fill: false, interactive: false, className: 'follow-ring' }).addTo(follow));
+    moved = true;
+    const view = seen.map(e => [e.lat, e.lng]);
+    if (view.length === 1) app.map.flyTo(view[0], Math.max(app.map.getZoom(), 12), { duration: 0.6 });
+    else app.map.flyToBounds(view, { padding: [60, 60], maxZoom: 14, duration: 0.6 });
+  }
+  addEventListener('scroll', () => { if (!ticking && document.body.classList.contains('split')) { ticking = true; setTimeout(() => requestAnimationFrame(() => updateFollow()), 120); } }, { passive: true });
+  app.afterDraw.push(() => setTimeout(() => updateFollow(true), 60));
+  // Maus über einem Eintrag: auf der Karte kurz markieren
+  let hoverMark = null;
+  document.addEventListener('mouseover', ev => {
+    if (!document.body.classList.contains('split') || !follow) return;
+    const b = ev.target.closest && ev.target.closest('#view .stop [data-action=open-entry]');
+    const e = b && S.entries.find(x => x.id === b.dataset.id);
+    if (hoverMark) { follow.removeLayer(hoverMark); hoverMark = null; }
+    if (withPos(e)) hoverMark = L.circleMarker([e.lat, e.lng], { radius: 24, color: '#E4572E', weight: 4, fill: false, interactive: false }).addTo(follow);
+  });
+  // Zurück auf die große Karte: wieder die ganze Reise zeigen
+  app.chromeHooks.push(() => {
+    if (ui.route !== 'tagebuch' && moved) { clearFollow(); moved = false; if (app.refit) app.refit(); }
+  });
+
   /* ---------- Einstellungen ---------- */
 
   settingsPanels.push(() => `<section class="panel">
     <h2>Bedienung</h2>
     <label class="check"><input type="checkbox" data-action="nav-swipe"${swipeOn() ? ' checked' : ''}><span>Zwischen den Reitern der unteren Leiste wischen</span></label>
     <label class="check"><input type="checkbox" data-action="nav-split"${splitPref() ? ' checked' : ''}><span>Am großen Bildschirm Karte neben dem Tagebuch zeigen</span></label>
+    <label class="check"><input type="checkbox" data-action="nav-follow"${followOn() ? ' checked' : ''}><span>Karte folgt beim Scrollen den Einträgen im Tagebuch</span></label>
     <p class="sub">Die untere Leiste stellst du unter „Mehr“ → „Kacheln anordnen“ zusammen.</p></section>`);
   app.CHANGES['nav-swipe'] = el => LS.set('swipeTabs', el.checked);
   app.CHANGES['nav-split'] = el => { LS.set('splitView', el.checked); render(); };
+  app.CHANGES['nav-follow'] = el => { LS.set('splitFollow', el.checked); if (!el.checked) clearFollow(); };
 }
