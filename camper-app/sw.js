@@ -1,6 +1,6 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'lammping-32';
+const VERSION = 'lammping-33';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/kacheln.js', 'js/mehr.js', 'js/kartenedit.js', 'js/testdaten.js', 'js/extras.js', 'js/spiele.js', 'js/kfz.js', 'js/ideen.js', 'js/export.js', 'js/unterwegs.js', 'js/teilen.js', 'js/fotos.js', 'js/reisepass.js', 'js/packhilfe.js', 'js/familie.js', 'js/film.js', 'js/alltag.js', 'js/zeitachse.js', 'js/welt.js', 'js/flaggen.js', 'js/auswertung.js', 'js/abenteuer.js', 'js/weitergeben.js', 'js/draussen.js', 'js/zuladung.js', 'js/stellplatz.js', 'js/familienrat.js', 'js/fahrspiele.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
@@ -11,7 +11,8 @@ const PHOTOS = 'lammping-photos';
 const MAX_TILES = 6000;            // angesehene Kartenteile bleiben für unterwegs ohne Netz erhalten
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' umgeht den Browser-Zwischenspeicher, sonst landen beim Update alte Dateien im neuen Speicher
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -62,8 +63,8 @@ self.addEventListener('fetch', e => {
   const lib = url.hostname.endsWith('fonts.googleapis.com') || url.hostname === 'fonts.gstatic.com';
   if (!own && !lib) return; // Ortsnamen und Navigation: immer direkt ins Netz
 
-  // App-Dateien: Netz zuerst, damit Updates sofort ankommen; offline aus dem Speicher
-  e.respondWith(fetch(req).then(res => {
+  // App-Dateien: Netz zuerst (immer beim Server nachfragen), damit Updates sofort ankommen; offline aus dem Speicher
+  e.respondWith(fetch(own ? new Request(req, { cache: 'no-cache' }) : req).then(res => {
     if (res.ok || res.type === 'opaque') {
       const copy = res.clone();
       caches.open(VERSION).then(c => c.put(req, copy));

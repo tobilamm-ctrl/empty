@@ -29,7 +29,7 @@ import installFahrspiele from './fahrspiele.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 32;
+const APP_VERSION = 33;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2123,6 +2123,7 @@ async function sendAuth(form, action, body) {
 
 async function start() {
   render();
+  if (LS.get('updated', null)) { LS.set('updated', null); setTimeout(() => toast(`LAMMping ist jetzt auf Version ${APP_VERSION}.`), 800); }
   let s;
   try {
     s = await api('me');
@@ -2159,7 +2160,20 @@ async function start() {
   onHash();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      // Beim Öffnen und beim Zurückkehren in die App nach einer neuen Version fragen
+      reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+    }).catch(() => {});
+    // Neue Version übernommen: einmal neu laden, damit alle Dateien zusammenpassen
+    let reloaded = false;
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded || document.querySelector('#sheet[open]')) return;
+      reloaded = true;
+      LS.set('updated', APP_VERSION);
+      location.reload();
+    });
   }
 }
 

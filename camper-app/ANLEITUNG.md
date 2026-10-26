@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-32'` hochzählen (z. B. auf `lammping-33`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-33'` hochzählen (z. B. auf `lammping-34`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -118,6 +118,11 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 
 ## Gut zu wissen
 
+- **Handy zeigt eine alte Version:** Die Versionsnummer steht unten in den Einstellungen. Ab Version 33 fragt die App bei
+  jedem Öffnen nach einer neuen Version, lädt sie selbst und meldet „LAMMping ist jetzt auf Version …“. Wichtig dafür ist
+  die Datei `.htaccess` im App-Ordner: Sie beginnt mit einem Punkt und wird von manchen FTP-Programmen versteckt –
+  beim Hochladen mitkopieren. Hängt ein Handy trotzdem fest: App ganz schließen (aus der Liste der offenen Apps
+  wischen) und zweimal neu öffnen.
 - **Fotos:** Die App verkleinert Fotos schon auf dem Handy auf Full HD (längste Seite 1920 Pixel, meist 0,4–0,8 MB).
   Das spart Datenvolumen und Platz in den Sicherungen; die Originale bleiben in der Galerie des Handys.
 - **Impressum und Datenschutz:** Für eine rein private, passwortgeschützte Seite für die Familie ist kein
