@@ -77,6 +77,12 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Pins bündeln:** nahe Pins beim Herauszoomen als Kreis mit Zahl.
 - **Kleine Tageskarte im Tagebuch:** unter jeder Tagesüberschrift Strecke und Stopps des Tages, Tipp öffnet die große Karte.
 - **Dort weitermachen, wo man war:** beim Wiederöffnen die zuletzt offene Seite (Spiel, Liste) statt der Startseite.
+- **Familien-Pinnwand:** kurze Nachrichten für alle („Bin duschen, 20 Min.“, „Brötchen bestellt“), verschwinden nach einem Tag.
+- **Anheften:** wichtige Einträge, Listen oder Orte mit einer Nadel oben festmachen.
+- **QR-Code zum Teilen:** Reiseblog, Lieblingsplätze oder App-Link als QR-Code auf dem Bildschirm.
+- **Ansage bei „Wie lange noch?“:** Handy sagt die Restzeit laut an, auf Wunsch alle 15 Minuten.
+- **Listen ausdrucken:** Pack-, Einkaufs- und Checklisten als Druckseite mit Kästchen.
+- **Kalender-Ansicht:** Monatskalender mit Reisetagen (Farbe der Reise, kleines Foto), Tipp öffnet den Tag im Tagebuch.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -136,3 +142,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Suche über alles; Wischgesten im Tagebuch (Tage) und in Listen (abhaken/löschen); Rückgängig statt Nachfrage; Fahrmodus
 - Schnelle Zeitwahl (jetzt, vor 1 Std., gestern Abend); Vorschläge beim Tippen; kurze Hilfe pro Seite; Sonnenlicht-Modus
 - Lange drücken für ein Menü an Einträgen; Eintrag duplizieren („Nochmal hier“); Einkaufsliste nach Supermarkt-Abteilungen
+- Schlagwörter für Einträge (#Lieblingsessen) mit Filter
