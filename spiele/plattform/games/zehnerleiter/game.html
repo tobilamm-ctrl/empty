@@ -1,0 +1,785 @@
+<title>Zehnerleiter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Kartenspiel nach dem Prinzip „Phase 10“: Tisch mit Mitspielern (Phase, Karten), Stapel, Ablage und den
+   ausgelegten Gruppen; darunter die eigene Phase als Aufgabe mit Feldern und die Hand ohne Überlappung */
+:root {
+  color-scheme: dark;
+  --table: #0f1517;
+  --sheet: #172126;
+  --sheet-2: #22313a;
+  --ink: #eef5f6;
+  --muted: #9db3ba;
+  --accent: #ff8a5c;
+  --tile-ink: #172126;
+  --red: #e5604f;
+  --green: #79c27b;
+  --felt: #1f5c58;
+  --felt-dark: #123a37;
+  --card: #fffdf7;
+  --c-r: #d23b33;   /* Rot, Zeichen Kreis */
+  --c-b: #2a68cc;   /* Blau, Zeichen Tropfen */
+  --c-g: #23874a;   /* Grün, Zeichen Dreieck */
+  --c-y: #c98600;   /* Gelb, Zeichen Stern */
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --cw: 56px;     /* Kartenbreite in der Hand */
+  --mw: 34px;     /* Kartenbreite auf dem Tisch */
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+main.game { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { main.game { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.col { display: grid; gap: 18px; min-width: 0; }
+svg text { font-family: var(--font-display); }
+
+/* ---------- Tisch ---------- */
+.felt {
+  background: radial-gradient(ellipse at 50% 30%, var(--felt) 0%, var(--felt-dark) 100%);
+  border-radius: 22px; padding: 14px; display: grid; gap: 12px; min-width: 0;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.45);
+}
+.seats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.seat { background: rgba(0,0,0,.25); border-radius: 10px; padding: 5px 10px; font-size: 13px; display: grid; justify-items: center; }
+.seat.on { box-shadow: 0 0 0 3px var(--accent); }
+.seat b { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat span { color: color-mix(in srgb, var(--ink) 70%, var(--felt)); font-variant-numeric: tabular-nums; }
+.seat .out { color: var(--green); font-weight: 800; }
+.mid { display: flex; gap: 18px; justify-content: center; align-items: flex-end; }
+.pile { display: grid; gap: 4px; justify-items: center; }
+.pile .lbl { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 70%, var(--felt)); white-space: nowrap; }
+.stack { width: 64px; height: 90px; border: 0; padding: 0; background: none; border-radius: 7px; position: relative; }
+.stack svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
+button.stack { cursor: pointer; }
+button.stack:disabled { cursor: default; }
+button.stack.can { box-shadow: 0 0 0 3px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pile .lbl.by { color: var(--accent); }
+.stack.from:not(.can) { box-shadow: 0 0 0 3px #fff; }
+.stack .empty { position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,.3); border-radius: 7px; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; }
+.melds { display: flex; flex-wrap: wrap; gap: 8px 10px; justify-content: center; min-height: 40px; }
+.meld { border: 0; background: rgba(0,0,0,.22); border-radius: 9px; padding: 5px 6px 5px calc(6px + var(--mw) * .55); display: flex; min-height: 44px; align-items: center; }
+.meld svg { width: var(--mw); height: calc(var(--mw) * 1.4); margin-left: calc(var(--mw) * -.55); display: block; filter: drop-shadow(-1px 1px 1px rgba(0,0,0,.35)); }
+button.meld { cursor: pointer; }
+button.meld.can { box-shadow: 0 0 0 3px var(--accent); background: color-mix(in srgb, var(--accent) 22%, rgba(0,0,0,.2)); }
+button.meld:disabled { cursor: default; }
+.meld.fresh { box-shadow: 0 0 0 2px #fff; }
+.nomelds { color: color-mix(in srgb, var(--ink) 60%, var(--felt)); font-size: 13px; }
+.status { text-align: center; min-height: 1.5em; margin: 0; font-size: 16px; }
+.status strong { color: var(--accent); }
+.status .sk-err { display: block; }
+
+/* ---------- Hand ---------- */
+.handzone { background: var(--sheet); border-radius: 18px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.handzone h2 { font-family: var(--font-display); font-weight: 400; font-size: 18px; margin: 0; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.handzone h2 small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
+.task { display: grid; gap: 8px; background: rgba(255,138,92,.07); border: 1px dashed var(--accent); border-radius: 12px; padding: 10px; }
+.task h3 { margin: 0; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.task h3 small { color: var(--muted); font-weight: 600; }
+.slot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; background: rgba(0,0,0,.22); border-radius: 10px; padding: 6px 8px; min-height: 56px; }
+.slot .lab { font-size: 13px; font-weight: 800; }
+.slot .lab small { display: block; color: var(--muted); font-weight: 600; }
+.slot .lab.ok { color: var(--green); }
+.slot .cards { display: flex; padding-left: calc(var(--mw) * .55); grid-column: 1 / -1; min-height: 0; }
+.slot .cards:empty { display: none; }
+.slot .cards svg { width: var(--mw); height: calc(var(--mw) * 1.4); margin-left: calc(var(--mw) * -.55); }
+.slot .btns { display: flex; gap: 6px; }
+.seat .ph { color: var(--accent); font-weight: 800; }
+.skipbox { display: grid; gap: 8px; justify-items: center; background: rgba(0,0,0,.25); border-radius: 12px; padding: 10px; }
+.skipbox p { margin: 0; font-weight: 800; }
+.meld .who { font-size: 11px; font-weight: 800; color: var(--ink); margin-right: 6px; writing-mode: horizontal-tb; white-space: nowrap; align-self: center; order: -1; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: rgba(242,184,75,.08); border: 1px dashed var(--accent); border-radius: 12px; padding: 8px; }
+.stage .meld { background: rgba(0,0,0,.25); }
+.stage p { margin: 0; width: 100%; text-align: center; font-size: 14px; }
+.hand { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding-top: 10px; }
+.card { width: var(--cw); aspect-ratio: 100 / 140; border: 0; padding: 0; background: none; border-radius: 7px; position: relative; transition: transform .12s ease; cursor: pointer; }
+.card svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.card.sel { transform: translateY(-10px); }
+.card.sel svg { border-radius: 7px; box-shadow: 0 0 0 3px var(--accent); }
+.card.new::after { content: "neu"; position: absolute; top: -16px; left: 2px; font-size: 11px; font-weight: 800; color: var(--accent); }
+.card:disabled { cursor: default; }
+.card.staged { opacity: .25; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn { min-height: 44px; }
+.handnote { text-align: center; color: var(--muted); margin: 10px 0; }
+
+/* ---------- Seitenleiste ---------- */
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+.result p { margin: 0 0 10px; }
+.rank { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; background: var(--sheet-2); border-radius: 8px; padding: 6px 10px; }
+.rank li:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+.rest { display: grid; gap: 8px; margin: 0 0 12px; }
+.rest .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--sheet-2); border-radius: 10px; padding: 6px 10px; }
+.rest .who { min-width: 80px; font-weight: 800; }
+.rest .pts { margin-left: auto; font-family: var(--font-display); font-size: 18px; }
+.rest .cards { display: flex; padding-left: 16px; flex-wrap: wrap; }
+.rest .cards svg { width: 30px; height: 42px; margin-left: -16px; }
+table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.score th, .score td { padding: 5px 6px; text-align: center; border-bottom: 1px solid var(--sheet-2); white-space: nowrap; }
+.score th:first-child, .score td:first-child { text-align: left; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.score thead th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.score td.r { color: var(--muted); }
+.score td.r.win { color: var(--green); font-weight: 800; }
+.score td.tot { font-family: var(--font-display); font-size: 18px; }
+.score tr.on td:first-child { color: var(--accent); }
+.score-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  :root { --cw: min(48px, calc((100vw - 100px) / 7)); --mw: 34px; }
+  .felt { padding: 10px 8px; border-radius: 18px; }
+  .handzone { padding: 10px 8px; }
+  .hand { gap: 5px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<style>
+.grp { display: grid; gap: 2px; justify-items: center; }
+.grp small { font-size: 11px; font-weight: 800; color: color-mix(in srgb, var(--ink) 75%, var(--felt)); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp small b { color: var(--ink); }
+.phases { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; font-size: 13.5px; color: var(--muted); }
+.phases li.now { color: var(--accent); font-weight: 800; }
+</style>
+
+<!-- Farbzeichen (zusätzlich zur Farbe), Joker, Aussetzen und Kartenrücken -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="zl-r" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></symbol>
+    <symbol id="zl-y" viewBox="0 0 100 100"><path d="M50 4 61 36 95 37 68 57 78 90 50 70 22 90 32 57 5 37 39 36Z"/></symbol>
+    <symbol id="zl-g" viewBox="0 0 100 100"><path d="M50 8 94 88H6Z"/></symbol>
+    <symbol id="zl-b" viewBox="0 0 100 100"><path d="M50 4C66 30 86 48 86 66a36 36 0 0 1-72 0C14 48 34 30 50 4Z"/></symbol>
+    <pattern id="zl-back" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <rect width="14" height="14" fill="#1f5c58"/><path d="M0 7h14" stroke="#2b7a74" stroke-width="3"/><circle cx="7" cy="7" r="2" fill="#ff8a5c"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Zehner<span>leiter</span></h1>
+      <div class="sub">Zehn Phasen nacheinander schaffen, als Erster die Hand leeren</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+
+  <main class="game">
+    <div class="col">
+      <section class="panel sk-lobby" data-sk-lobby hidden></section>
+      <section class="felt" id="felt" aria-label="Tisch">
+        <div class="seats" id="seats"></div>
+        <div class="mid">
+          <div class="pile"><button type="button" class="stack" id="drawpile" aria-label="Vom Stapel ziehen"></button><span class="lbl" id="drawcount">Stapel</span></div>
+          <div class="pile"><button type="button" class="stack" id="discard" aria-label="Von der Ablage nehmen"></button><span class="lbl" id="discard-lbl">Ablage</span></div>
+        </div>
+        <div class="melds" id="melds"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="skipbox" id="skipbox" hidden></div>
+      </section>
+      <section class="handzone" id="handzone" aria-label="Deine Karten">
+        <h2><span id="hand-title">Deine Karten</span><small id="hand-sub"></small></h2>
+        <div class="task" id="task" hidden></div>
+        <div class="hand" id="hand"></div>
+        <div class="actions" id="actions"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel" id="round-panel" hidden></section>
+      <section class="panel">
+        <h2>Phasen und Minuspunkte</h2>
+        <table class="score" id="score"></table>
+        <p class="score-note" id="score-note"></p>
+      </section>
+      <section class="panel">
+        <h2>Verlauf</h2>
+        <ul class="log" id="log"></ul>
+      </section>
+      <section class="panel rules">
+        <details>
+          <summary>Spielregeln</summary>
+          <ul id="rules-list"></ul>
+        </details>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Karten ----------
+// Zahlenkarte = Farbe + Zahl + Kopie, z. B. "r7.0" (Rot 7), "b12.1"; Joker "j.0" bis "j.7"; Aussetzen "s.0" bis "s.3".
+// Farben: r Rot (Kreis), y Gelb (Stern), g Grün (Dreieck), b Blau (Tropfen)
+const COLS = ["r", "y", "g", "b"];
+const CNAME = { r: "Rot", y: "Gelb", g: "Grün", b: "Blau" };
+const isJ = c => c[0] === "j";
+const isS = c => c[0] === "s";
+const colOf = c => c[0];
+const numOf = c => parseInt(c.slice(1), 10);
+const penalty = c => isJ(c) ? 25 : isS(c) ? 15 : numOf(c) >= 10 ? 10 : 5;
+const handPoints = h => h.reduce((a, c) => a + penalty(c), 0);
+const cardName = c => isJ(c) ? "Joker" : isS(c) ? "Aussetzen" : `${CNAME[colOf(c)]} ${numOf(c)}`;
+function fullDeck() {
+  const d = [];
+  for (const f of COLS) for (let n = 1; n <= 12; n++) for (const k of [0, 1]) d.push(`${f}${n}.${k}`);
+  for (let k = 0; k < 8; k++) d.push("j." + k);
+  for (let k = 0; k < 4; k++) d.push("s." + k);
+  return d;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------- Phasen ----------
+// Gruppe: set = gleiche Zahl, run = Zahlenfolge (Farbe egal), col = gleiche Farbe; n = mindestens so viele Karten
+const PHASES = [
+  [["set", 3], ["set", 3]], [["set", 3], ["run", 4]], [["set", 4], ["run", 4]], [["run", 7]], [["run", 8]],
+  [["run", 9]], [["set", 4], ["set", 4]], [["col", 7]], [["set", 5], ["set", 2]], [["set", 5], ["set", 3]]];
+const SETNAME = { 2: "Zwilling", 3: "Drilling", 4: "Vierling", 5: "Fünfling" };
+const groupName = ([t, n]) => t === "set" ? (SETNAME[n] || `${n} Gleiche`) : t === "run" ? `${n}er-Folge` : `${n} einer Farbe`;
+const groupHint = ([t, n]) => t === "set" ? `${n} Karten mit gleicher Zahl` : t === "run" ? `${n} Zahlen in lückenloser Folge, Farbe egal` : `${n} Karten derselben Farbe`;
+const phaseText = k => PHASES[k - 1].map(groupName).join(" + ");
+
+// Ist das eine gültige Gruppe? → { order, rep (Joker → Zahl bzw. Farbe) } oder null. min = Mindestzahl Karten
+function analyze(type, ids, min) {
+  if (ids.length < min || ids.some(isS)) return null;
+  const nat = ids.filter(c => !isJ(c)), jok = ids.filter(isJ);
+  if (!nat.length) return null;                           // nie nur Joker
+  if (type === "set") {
+    const n = numOf(nat[0]);
+    if (!nat.every(c => numOf(c) === n)) return null;
+    const rep = {}; jok.forEach(j => { rep[j] = String(n); });
+    return { order: [...nat.sort((a, b) => COLS.indexOf(colOf(a)) - COLS.indexOf(colOf(b))), ...jok], rep };
+  }
+  if (type === "col") {
+    const f = colOf(nat[0]);
+    if (!nat.every(c => colOf(c) === f)) return null;
+    const rep = {}; jok.forEach(j => { rep[j] = CNAME[f]; });
+    return { order: [...nat.sort((a, b) => numOf(a) - numOf(b)), ...jok], rep };
+  }
+  // Folge: Zahlen verschieden, Lücken und Ränder mit Jokern, 1 bis 12 ohne Übergang
+  const pairs = nat.map(c => [numOf(c), c]).sort((a, b) => a[0] - b[0]);
+  if (new Set(pairs.map(p => p[0])).size !== pairs.length) return null;
+  let lo = pairs[0][0], hi = pairs[pairs.length - 1][0], extra = jok.length - (hi - lo + 1 - pairs.length);
+  if (extra < 0) return null;
+  while (extra > 0 && hi < 12) { hi++; extra--; }
+  while (extra > 0 && lo > 1) { lo--; extra--; }
+  if (extra > 0) return null;
+  const order = [], rep = {}, js = jok.slice();
+  for (let v = lo; v <= hi; v++) { const p = pairs.find(q => q[0] === v); if (p) order.push(p[1]); else { const j = js.shift(); order.push(j); rep[j] = String(v); } }
+  return { order, rep };
+}
+
+const DEFAULTS = { kurz: false, wahl: true };
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi"];
+
+let S, kit;
+const UI = { sel: [], stage: [], key: "", sortNum: false, skipFor: null, msg: "" };
+const O = () => Object.assign({}, DEFAULTS, S.options || {});
+const maxPhase = () => (O().kurz ? 5 : 10);
+const vb = (name, du, er) => (name === "Du" ? du : er);
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 100); };
+const pname = i => `<b>${esc(S.players[i].name)}</b>`;
+const top = () => S.discard[S.discard.length - 1];
+const reqOf = p => PHASES[p.phase - 1];
+
+// ---------- Ablauf (verändert nur S, läuft über kit.act) ----------
+function startRound() {
+  S.roundNo++;
+  S.deck = shuffle(fullDeck());
+  S.players.forEach(p => { p.hand = S.deck.splice(0, 10); p.done = false; p.skipNext = false; });
+  S.discard = [S.deck.pop()]; S.by = null;
+  S.groups = []; S.active = S.starter; S.phase = "draw"; S.took = null; S.fresh = null; S.last = null; S.seq++;
+  log(`<b>Runde ${S.roundNo}</b>: 10 Karten für jeden. ${pname(S.active)} ${vb(S.players[S.active].name, "beginnst", "beginnt")}.`);
+  if (isS(top())) { log(`Die erste Karte der Ablage ist Aussetzen: ${pname(S.active)} ${vb(S.players[S.active].name, "setzt", "setzt")} aus.`); S.active = nextActive(S.active); }
+}
+function reshuffle() {
+  if (S.discard.length < 2) return false;
+  const keep = S.discard.pop(); S.deck = shuffle(S.discard); S.discard = [keep];
+  log("Der Stapel ist leer. Die Ablage wird gemischt.");
+  return true;
+}
+const canTakeDiscard = () => S.discard.length > 0 && !isS(top());
+function drawFrom(src) {
+  const i = S.active, p = S.players[i];
+  if (src === "pile") {
+    if (!S.deck.length && !reshuffle()) { log("Es gibt keine Karte mehr zum Ziehen. Die Runde endet ohne Sieger."); endRound(-1); return; }
+    const c = S.deck.pop(); p.hand.push(c); S.took = { src, c };
+    log(`${pname(i)} ${vb(p.name, "ziehst", "zieht")} vom Stapel.`);
+  } else {
+    const c = S.discard.pop(); p.hand.push(c); S.took = { src, c }; S.by = null;
+    log(`${pname(i)} ${vb(p.name, "nimmst", "nimmt")} ${cardName(c)} von der Ablage.`);
+  }
+  S.phase = "play"; S.seq++;
+}
+const handHas = (p, ids) => ids.every(c => p.hand.includes(c)) && new Set(ids).size === ids.length;
+function removeFromHand(p, ids) { for (const c of ids) p.hand.splice(p.hand.indexOf(c), 1); }
+// Phase auslegen: alle Gruppen der Phase auf einmal
+function phaseCheck(p, groups) {
+  const req = reqOf(p);
+  if (p.done) return "Deine Phase liegt schon.";
+  if (groups.length !== req.length) return "Es fehlen noch Gruppen.";
+  if (!handHas(p, groups.flat())) return "Diese Karten hast du nicht.";
+  for (let k = 0; k < req.length; k++) if (!analyze(req[k][0], groups[k], req[k][1])) return `${groupName(req[k])}: ${groupHint(req[k])}.`;
+  return null;
+}
+function layPhase(groups) {
+  const i = S.active, p = S.players[i], req = reqOf(p);
+  removeFromHand(p, groups.flat());
+  S.fresh = [];
+  groups.forEach((g, k) => { const a = analyze(req[k][0], g, req[k][1]); S.groups.push({ type: req[k][0], cards: a.order, rep: a.rep, owner: i, label: groupName(req[k]) }); S.fresh.push(S.groups.length - 1); });
+  p.done = true; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "legst", "legt")} Phase ${p.phase} aus (${phaseText(p.phase)}).`);
+  if (!p.hand.length) wentOut(i);
+}
+function layoffCheck(p, ids, gi) {
+  const g = S.groups[gi];
+  if (!p.done) return "Anlegen darfst du erst, wenn deine Phase liegt.";
+  if (!g || !handHas(p, ids)) return "Diese Karten hast du nicht.";
+  return analyze(g.type, [...g.cards, ...ids], 1) ? null : "Die Karten passen nicht an diese Gruppe.";
+}
+function layoff(ids, gi) {
+  const i = S.active, p = S.players[i], g = S.groups[gi], a = analyze(g.type, [...g.cards, ...ids], 1);
+  removeFromHand(p, ids);
+  g.cards = a.order; g.rep = a.rep; S.fresh = [gi]; S.seq++;
+  log(`${pname(i)} ${vb(p.name, "legst", "legt")} ${ids.length === 1 ? cardName(ids[0]) : ids.length + " Karten"} bei ${esc(S.players[g.owner].name)} an.`);
+  if (!p.hand.length) wentOut(i);
+}
+function discardCheck(p, c, target) {
+  if (!p.hand.includes(c)) return "Diese Karte hast du nicht.";
+  if (isS(c) && O().wahl && S.players.length > 2 && (target == null || target === S.active || !S.players[target] || S.players[target].skipNext)) return "Wähle, wer aussetzen soll.";
+  return null;
+}
+// nächster Spieler, wer ein Aussetzen offen hat, wird übersprungen
+function nextActive(i) {
+  let j = (i + 1) % S.players.length, guard = 0;
+  while (S.players[j].skipNext && guard++ < S.players.length) {
+    S.players[j].skipNext = false;
+    log(`${pname(j)} ${vb(S.players[j].name, "setzt", "setzt")} aus.`);
+    j = (j + 1) % S.players.length;
+  }
+  return j;
+}
+function discardCard(c, target) {
+  const i = S.active, p = S.players[i];
+  removeFromHand(p, [c]); S.discard.push(c); S.by = i; S.seq++; S.took = null;
+  if (isS(c)) {
+    const t = O().wahl && S.players.length > 2 ? target : (i + 1) % S.players.length;
+    S.players[t].skipNext = true;
+    log(`${pname(i)} ${vb(p.name, "wirfst", "wirft")} Aussetzen ab: ${pname(t)} ${vb(S.players[t].name, "musst", "muss")} aussetzen.`);
+  } else log(`${pname(i)} ${vb(p.name, "wirfst", "wirft")} ${cardName(c)} ab.`);
+  if (!p.hand.length) { wentOut(i); return; }
+  S.active = nextActive(i); S.phase = "draw";
+}
+function wentOut(i) {
+  log(`${pname(i)} ${vb(S.players[i].name, "hast", "hat")} keine Karten mehr und ${vb(S.players[i].name, "beendest", "beendet")} Runde ${S.roundNo}.`);
+  endRound(i);
+}
+function endRound(winner) {
+  S.last = { winner, hands: S.players.map(p => p.hand.slice()), done: S.players.map(p => p.done), phases: S.players.map(p => p.phase) };
+  S.players.forEach((p, i) => {
+    const pts = handPoints(p.hand); p.rounds.push(pts); p.total += pts;
+    if (p.done) { if (p.phase === maxPhase()) p.finished = true; else p.phase++; }
+  });
+  S.seq++;
+  const fin = S.players.filter(p => p.finished);
+  S.phase = fin.length ? "over" : "roundover";
+  S.players.forEach(p => { if (S.last.done[S.players.indexOf(p)] && !p.finished) log(`${pname(S.players.indexOf(p))} ${vb(p.name, "bist", "ist")} jetzt in Phase ${p.phase}.`); });
+  if (fin.length) { const w = ranking()[0]; log(`<b>Spielende.</b> ${pname(S.players.indexOf(w))} ${vb(w.name, "hast", "hat")} alle ${maxPhase()} Phasen mit den wenigsten Minuspunkten (${w.total}).`); }
+}
+// wer alle Phasen geschafft hat, steht vorn; darunter weniger Minuspunkte, dann weitere Phase
+const ranking = () => S.players.slice().sort((a, b) => (b.finished - a.finished) || (a.finished ? a.total - b.total : (b.phase - a.phase) || (a.total - b.total)));
+function nextRound() { S.starter = (S.starter + 1) % S.players.length; startRound(); playBots(); }
+
+// ---------- Computer-Gegner ----------
+// Möglichkeiten je Gruppe: welche echten Karten der Hand passen, wie viele fehlen
+function options(hand, [type, n]) {
+  const nat = hand.filter(c => !isJ(c) && !isS(c)), out = [];
+  if (type === "set") for (let v = 1; v <= 12; v++) { const cs = nat.filter(c => numOf(c) === v).slice(0, n); if (cs.length) out.push({ ids: cs, miss: n - cs.length }); }
+  if (type === "col") for (const f of COLS) { const cs = nat.filter(c => colOf(c) === f).sort((a, b) => penalty(b) - penalty(a)).slice(0, n); if (cs.length) out.push({ ids: cs, miss: n - cs.length }); }
+  if (type === "run") for (let s = 1; s + n - 1 <= 12; s++) {
+    const cs = []; for (let v = s; v < s + n; v++) { const c = nat.find(x => numOf(x) === v); if (c) cs.push(c); }
+    if (cs.length) out.push({ ids: cs, miss: n - cs.length });
+  }
+  return out.sort((a, b) => a.miss - b.miss);
+}
+// bester Plan für die Phase: wie viele Karten fehlen (Joker zählen schon mit)
+function plan(hand, req) {
+  const jok = hand.filter(isJ);
+  let best = null;
+  const o1 = options(hand, req[0]).slice(0, 14);
+  for (const a of o1) {
+    if (req.length === 1) { const miss = a.miss; if (!best || miss < best.miss) best = { groups: [a.ids], misses: [a.miss], miss }; continue; }
+    const rest = hand.filter(c => !a.ids.includes(c));
+    const b = options(rest, req[1])[0];
+    if (!b) continue;
+    const miss = a.miss + b.miss;
+    if (!best || miss < best.miss) best = { groups: [a.ids, b.ids], misses: [a.miss, b.miss], miss };
+  }
+  if (!best) return { miss: 99, need: 99 };
+  return { ...best, need: Math.max(0, best.miss - jok.length) };
+}
+// Phase mit Jokern auffüllen, wenn es reicht
+function phaseNow(p) {
+  const req = reqOf(p), pl = plan(p.hand, req);
+  if (!pl.groups || pl.need > 0) return null;
+  const jok = p.hand.filter(isJ), groups = pl.groups.map((g, k) => [...g, ...jok.splice(0, pl.misses[k])]);
+  return phaseCheck(p, groups) ? null : groups;
+}
+function keepValue(p, c) {
+  if (isJ(c)) return 100;
+  if (isS(c)) return -50;                                   // Aussetzen gleich nutzen
+  if (p.done) return S.groups.some(g => analyze(g.type, [...g.cards, c], 1)) ? 50 : -penalty(c);
+  const now = plan(p.hand, reqOf(p)).need, without = plan(p.hand.filter(x => x !== c), reqOf(p)).need;
+  return (without - now) * 20 - penalty(c) / 5 + Math.random() * 0.3;
+}
+// Ziel für Aussetzen: wer am weitesten ist (Phase, dann wenige Karten)
+function skipTarget(i) {
+  const cand = S.players.map((p, k) => k).filter(k => k !== i && !S.players[k].skipNext);
+  return cand.sort((a, b) => S.players[b].phase - S.players[a].phase || S.players[a].hand.length - S.players[b].hand.length)[0];
+}
+function botTurn() {
+  const i = S.active, p = S.players[i];
+  if (S.phase === "draw") {
+    const t = top();
+    let take = false;
+    if (t && canTakeDiscard()) {
+      if (isJ(t)) take = true;
+      else if (p.done) take = S.groups.some(g => analyze(g.type, [...g.cards, t], 1));
+      else take = plan([...p.hand, t], reqOf(p)).need < plan(p.hand, reqOf(p)).need;
+    }
+    drawFrom(take ? "discard" : "pile");
+    return;
+  }
+  if (!p.done) { const g = phaseNow(p); if (g) layPhase(g); if (S.phase !== "play") return; }
+  if (p.done) {
+    let again = true;
+    while (again && S.phase === "play") {
+      again = false;
+      for (const c of p.hand.slice()) {
+        if (isS(c)) continue;
+        for (let gi = 0; gi < S.groups.length; gi++) if (p.hand.includes(c) && !layoffCheck(p, [c], gi)) { layoff([c], gi); again = true; break; }
+        if (S.phase !== "play") return;
+      }
+    }
+  }
+  if (S.phase !== "play") return;
+  const c = p.hand.slice().sort((a, b) => keepValue(p, a) - keepValue(p, b))[0];
+  discardCard(c, isS(c) ? skipTarget(i) : null);
+}
+const botPending = () => (S.phase === "draw" || S.phase === "play") && S.players[S.active].ai;
+function playBots() {
+  if (kit.paced()) return;
+  let guard = 0;
+  while (botPending() && guard++ < 4000) botTurn();
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, hand: [], phase: 1, done: false, finished: false, skipNext: false, total: 0, rounds: [] });
+function newState({ roster, mode, options }) {
+  const s = { players: roster.map(newPlayer), deck: [], discard: [], groups: [], active: 0, starter: 0, phase: "draw", took: null, by: null, roundNo: 0, last: null,
+    fresh: null, seq: 0, log: [], options: Object.assign({}, DEFAULTS, options) };
+  if (mode !== "online") { S = s; startRound(); playBots(); }
+  return s;
+}
+function onStart(s) { S = s; S.players.forEach(p => Object.assign(p, newPlayer(p))); S.starter = rnd(S.players.length); startRound(); playBots(); }
+const whoActs = () => (S.phase === "draw" || S.phase === "play" ? [S.active] : []);
+
+// ---------- Eingaben ----------
+const mine = () => (S.phase === "draw" || S.phase === "play") && kit.me() === S.active;
+function act(fn) {
+  const seq = S.seq;
+  kit.act(() => { if (!mine() || S.seq !== seq) return false; if (fn() === false) return false; playBots(); });
+}
+function flash(msg) { UI.msg = msg; render(); }
+$("drawpile").addEventListener("click", () => { if (S.phase === "draw") act(() => drawFrom("pile")); });
+$("discard").addEventListener("click", () => { if (S.phase === "draw") act(() => { if (!canTakeDiscard()) return false; drawFrom("discard"); }); });
+$("hand").addEventListener("click", e => {
+  const b = e.target.closest(".card[data-c]");
+  if (!b || b.disabled || !mine() || S.phase !== "play") return;
+  const c = b.dataset.c;
+  UI.sel = UI.sel.includes(c) ? UI.sel.filter(x => x !== c) : [...UI.sel, c];
+  UI.msg = ""; UI.skipFor = null; render();
+});
+$("melds").addEventListener("click", e => {
+  const b = e.target.closest(".meld[data-m]");
+  if (!b || b.disabled || !UI.sel.length) return;
+  const gi = +b.dataset.m, ids = UI.sel.slice(), err = layoffCheck(S.players[S.active], ids, gi);
+  if (err) { flash(err); return; }
+  UI.sel = []; act(() => { if (layoffCheck(S.players[S.active], ids, gi)) return false; layoff(ids, gi); });
+});
+$("task").addEventListener("click", e => {
+  const b = e.target.closest("[data-slot]");
+  if (!b) return;
+  const k = +b.dataset.slot, p = S.players[S.active];
+  if (b.dataset.do === "put") { UI.stage[k] = [...(UI.stage[k] || []), ...UI.sel]; UI.sel = []; }
+  if (b.dataset.do === "clear") UI.stage[k] = [];
+  if (b.dataset.do === "lay") {
+    const groups = reqOf(p).map((_, j) => UI.stage[j] || []), err = phaseCheck(p, groups);
+    if (err) { flash(err); return; }
+    UI.stage = []; UI.sel = [];
+    act(() => { if (phaseCheck(S.players[S.active], groups)) return false; layPhase(groups); });
+    return;
+  }
+  UI.msg = ""; render();
+});
+$("actions").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b) return;
+  const a = b.dataset.a, p = S.players[S.active];
+  if (a === "sort") { UI.sortNum = !UI.sortNum; render(); return; }
+  if (a === "clear") { UI.sel = []; UI.msg = ""; UI.skipFor = null; render(); return; }
+  if (a === "discard") {
+    const c = UI.sel[0];
+    if (isS(c) && O().wahl && S.players.length > 2) { UI.skipFor = c; render(); return; }
+    const err = discardCheck(p, c, null); if (err) { flash(err); return; }
+    UI.sel = []; UI.stage = [];
+    act(() => { if (discardCheck(S.players[S.active], c, null)) return false; discardCard(c, null); });
+  }
+});
+$("skipbox").addEventListener("click", e => {
+  const b = e.target.closest("[data-target]");
+  if (!b) return;
+  if (b.dataset.target === "x") { UI.skipFor = null; render(); return; }
+  const c = UI.skipFor, t = +b.dataset.target;
+  UI.skipFor = null; UI.sel = []; UI.stage = [];
+  act(() => { if (discardCheck(S.players[S.active], c, t)) return false; discardCard(c, t); });
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-next]")) { const seq = S.seq; kit.act(() => { if (S.phase !== "roundover" || S.seq !== seq || kit.me() < 0) return false; nextRound(); }); }
+  if (e.target.closest("[data-again]")) kit.rematch();
+});
+
+// ---------- Kartengrafik ----------
+const CCOL = { r: "var(--c-r)", y: "var(--c-y)", g: "var(--c-g)", b: "var(--c-b)" };
+function cardSvg(c, rep) {
+  const frame = fill => `<rect x="1.5" y="1.5" width="97" height="137" rx="9" fill="${fill}" stroke="#cfc6b2" stroke-width="2"/>`;
+  if (isJ(c)) {
+    const hint = rep ? `<text x="50" y="128" text-anchor="middle" font-size="17" fill="#6b5f4a">= ${esc(rep)}</text>` : "";
+    return `<svg viewBox="0 0 100 140" aria-hidden="true">${frame("#fffdf7")}      <g>${COLS.map((f, k) => `<rect x="${8 + k * 21}" y="8" width="21" height="10" fill="${CCOL[f]}"/>`).join("")}</g>
+      <use href="#zl-y" x="22" y="30" width="56" height="56" fill="#ff8a5c" stroke="#7a2e14" stroke-width="3"/>
+      <text x="50" y="${rep ? 106 : 116}" text-anchor="middle" font-size="20" fill="#7a2e14">Joker</text>${hint}</svg>`;
+  }
+  if (isS(c)) return `<svg viewBox="0 0 100 140" aria-hidden="true">${frame("#22262b")}
+    <circle cx="50" cy="62" r="28" fill="none" stroke="#fff" stroke-width="8"/><path d="M30 82 70 42" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+    <text x="50" y="118" text-anchor="middle" font-size="15" fill="#fff">Aussetzen</text></svg>`;
+  const f = colOf(c), n = numOf(c), col = CCOL[f];
+  return `<svg viewBox="0 0 100 140" aria-hidden="true">${frame("#fffdf7")}<rect x="6" y="6" width="88" height="128" rx="7" fill="none" stroke="${col}" stroke-width="5"/>
+    <text x="${n >= 10 ? 10 : 13}" y="35" font-size="${n >= 10 ? 26 : 30}" fill="${col}">${n}</text>
+    <use href="#zl-${f}" x="12" y="41" width="20" height="20" fill="${col}"/>
+    <text x="58" y="${n >= 10 ? 104 : 108}" text-anchor="middle" font-size="${n >= 10 ? 46 : 58}" fill="${col}">${n}</text>
+    ${n === 6 || n === 9 ? `<rect x="46" y="114" width="24" height="4" rx="2" fill="${col}"/>` : ""}</svg>`;
+}
+const backSvg = () => `<svg viewBox="0 0 100 140" aria-hidden="true"><rect x="1.5" y="1.5" width="97" height="137" rx="9" fill="#f4efe2" stroke="#cfc6b2" stroke-width="2"/><rect x="8" y="8" width="84" height="124" rx="6" fill="url(#zl-back)"/><text x="50" y="82" text-anchor="middle" font-size="34" fill="#fff">10</text></svg>`;
+const sortKey = c => (isJ(c) ? 1000 : isS(c) ? 2000 : 0);
+const sortHand = h => h.slice().sort(UI.sortNum
+  ? (a, b) => sortKey(a) - sortKey(b) || numOf(a) - numOf(b) || COLS.indexOf(colOf(a)) - COLS.indexOf(colOf(b))
+  : (a, b) => sortKey(a) - sortKey(b) || COLS.indexOf(colOf(a)) - COLS.indexOf(colOf(b)) || numOf(a) - numOf(b));
+
+// ---------- Darstellung ----------
+function rulesHtml() {
+  const o = O();
+  return `<li>108 Karten: die Zahlen 1 bis 12 in vier Farben je zweimal (Rot ● Kreis, Gelb ★ Stern, Grün ▲ Dreieck, Blau 💧 Tropfen), dazu 8 Joker und 4 Aussetzen-Karten. Jeder bekommt 10 Karten.</li>
+    <li>Jeder arbeitet sich durch ${o.kurz ? "5" : "10"} Phasen, immer in dieser Reihenfolge:<ol class="phases">${PHASES.slice(0, maxPhase()).map((ph, k) => `<li>${ph.map(groupName).join(" + ")}</li>`).join("")}</ol></li>
+    <li><b>Drilling, Vierling …</b>: Karten mit gleicher Zahl. <b>Folge</b>: Zahlen ohne Lücke, Farbe egal (nach 12 kommt nicht wieder 1). <b>Einer Farbe</b>: Karten derselben Farbe.</li>
+    <li>Wer dran ist, nimmt eine Karte vom Stapel oder von der Ablage (Aussetzen-Karten nicht) und wirft am Ende eine ab.</li>
+    <li>Die eigene Phase wird <b>auf einmal und vollständig</b> ausgelegt. Danach darf man in jedem Zug Karten an alle ausgelegten Gruppen anlegen, auch bei den anderen.</li>
+    <li>Der <b>Joker</b> ersetzt jede Zahl und jede Farbe; jede Gruppe braucht aber mindestens eine echte Karte.</li>
+    <li><b>Aussetzen</b>: Wer sie abwirft, ${o.wahl ? "wählt, wer" : "lässt den Nächsten"} das nächste Mal aussetzen${o.wahl ? " muss" : ""}.</li>
+    <li>Wer keine Karten mehr hat, beendet die Runde. Wer seine Phase geschafft hat, macht die nächste; die anderen wiederholen sie. Minuspunkte für Karten auf der Hand: 1–9 je 5, 10–12 je 10, Aussetzen 15, Joker 25.</li>
+    <li>Das Spiel endet nach der Runde, in der jemand Phase ${maxPhase()} schafft. Von denen gewinnt, wer am wenigsten Minuspunkte hat.</li>`;
+}
+function render() {
+  const lobby = S.phase === "lobby", mi = kit.me(), me = mine();
+  $("felt").hidden = $("handzone").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = rulesHtml();
+  if (lobby) { $("result").hidden = $("round-panel").hidden = true; $("score").innerHTML = ""; $("score-note").textContent = ""; return; }
+  const key = `${S.seq}:${mi}`;
+  if (UI.key !== key) {
+    const turnChanged = !UI.key || UI.key.split(":")[1] !== String(mi) || !me;
+    UI.key = key; UI.msg = ""; UI.skipFor = null;
+    const p = S.players[mi];
+    UI.sel = p ? UI.sel.filter(c => p.hand.includes(c)) : [];
+    if (turnChanged || (p && p.done)) UI.stage = [];
+    UI.stage = p ? UI.stage.map(g => (g || []).filter(c => p.hand.includes(c))) : [];
+  }
+  const playing = S.phase === "draw" || S.phase === "play", a = S.players[S.active], meP = S.players[mi];
+
+  // Mitspieler
+  $("seats").innerHTML = S.players.map((p, i) => i === mi ? "" : `<div class="seat${playing && i === S.active ? " on" : ""}"><b>${esc(p.name)}</b>
+    <span class="ph">Phase ${p.phase}${p.done ? " ✓" : ""}</span><span>${p.hand.length} Karten · ${p.total} Minus</span>${p.skipNext ? '<span class="out" style="color:var(--red)">setzt aus</span>' : ""}</div>`).join("");
+
+  // Stapel und Ablage
+  const canDraw = me && S.phase === "draw";
+  $("drawpile").innerHTML = S.deck.length ? backSvg() : `<span class="empty">leer</span>`;
+  $("drawpile").disabled = !canDraw; $("drawpile").classList.toggle("can", canDraw);
+  $("drawcount").textContent = `Stapel · ${S.deck.length}`;
+  const t = top();
+  $("discard").innerHTML = t ? cardSvg(t) : `<span class="empty">leer</span>`;
+  $("discard").disabled = !(canDraw && canTakeDiscard()); $("discard").classList.toggle("can", canDraw && canTakeDiscard());
+  $("discard").setAttribute("aria-label", t ? `Ablage: ${cardName(t)}` : "Ablage leer");
+  const by = t && S.by != null && S.players[S.by] ? S.by : -1;
+  $("discard-lbl").innerHTML = by >= 0 ? `von ${S.players[by].name === "Du" ? "dir" : esc(S.players[by].name)}` : "Ablage";
+  $("discard-lbl").classList.toggle("by", by >= 0 && by !== mi);
+  $("discard").classList.toggle("from", by >= 0 && by !== mi);
+
+  // Gruppen auf dem Tisch
+  const tapMeld = me && S.phase === "play" && UI.sel.length && meP && meP.done;
+  $("melds").innerHTML = S.groups.length ? S.groups.map((g, k) => {
+    const can = tapMeld && !layoffCheck(meP, UI.sel, k), tag = tapMeld ? "button" : "div";
+    return `<div class="grp"><small><b>${esc(S.players[g.owner].name)}</b> · ${g.label}</small><${tag} class="meld${can ? " can" : ""}${S.fresh && S.fresh.includes(k) ? " fresh" : ""}"${tapMeld ? ` type="button" data-m="${k}"${can ? "" : " disabled"}` : ""} aria-label="${g.label} von ${esc(S.players[g.owner].name)}">${g.cards.map(c => cardSvg(c, g.rep[c])).join("")}</${tag}></div>`;
+  }).join("") : `<span class="nomelds">Noch hat niemand seine Phase ausgelegt.</span>`;
+
+  // Statuszeile
+  let st = "";
+  if (playing) {
+    if (!me) st = mi < 0 ? `Du schaust zu. <strong>${esc(a.name)}</strong> ist dran.` : `Warte auf <strong>${esc(a.name)}</strong>${a.ai ? " (Computer)" : ""}.`;
+    else if (S.phase === "draw") st = `<strong>${esc(a.name)}</strong>, nimm eine Karte vom Stapel${canTakeDiscard() ? " oder von der Ablage" : ""}.`;
+    else if (UI.msg) st = `<span class="sk-err">${esc(UI.msg)}</span>`;
+    else if (!meP.done) st = `Lege Phase ${meP.phase} aus (<strong>${phaseText(meP.phase)}</strong>) oder wirf eine Karte ab.`;
+    else st = "Anlegen oder eine Karte abwerfen.";
+  } else if (S.phase === "roundover") st = `Runde ${S.roundNo} ist vorbei.`;
+  else if (S.phase === "over") st = "Das Spiel ist vorbei.";
+  if (kit.error) st += `<span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+
+  // Aussetzen: wen?
+  const sb = $("skipbox");
+  if (me && UI.skipFor) {
+    const cand = S.players.map((p, k) => k).filter(k => k !== S.active && !S.players[k].skipNext);
+    sb.innerHTML = `<p>Wer soll aussetzen?</p><div class="actions">${cand.map(k => `<button class="btn primary" type="button" data-target="${k}">${esc(S.players[k].name)} <small>(Phase ${S.players[k].phase})</small></button>`).join("")}
+      <button class="btn" type="button" data-target="x">Doch nicht</button></div>`;
+    sb.hidden = false;
+  } else sb.hidden = true;
+
+  // eigene Phase als Aufgabe
+  const task = $("task");
+  if (meP && me && S.phase === "play" && !meP.done) {
+    const req = reqOf(meP), n = UI.sel.length;
+    const allOk = req.every((r, k) => analyze(r[0], UI.stage[k] || [], r[1]));
+    task.innerHTML = `<h3><span>Phase ${meP.phase}: ${phaseText(meP.phase)}</span><small>Karten wählen, dann „hierhin“</small></h3>
+      ${req.map((r, k) => { const g = UI.stage[k] || [], ok = !!analyze(r[0], g, r[1]);
+        return `<div class="slot"><span class="lab${ok ? " ok" : ""}">${groupName(r)}${ok ? " ✓" : ""}<small>${groupHint(r)} · ${g.length} von ${r[1]}</small></span>
+          <span class="btns">${n ? `<button class="btn small" type="button" data-slot="${k}" data-do="put">hierhin</button>` : ""}${g.length ? `<button class="btn small" type="button" data-slot="${k}" data-do="clear">leeren</button>` : ""}</span>
+          <div class="cards">${(analyze(r[0], g, r[1]) || { order: g }).order.map(c => cardSvg(c)).join("")}</div></div>`; }).join("")}
+      <button class="btn${allOk ? " primary" : ""}" type="button" data-slot="0" data-do="lay"${allOk ? "" : " disabled"}>Phase auslegen</button>`;
+    task.hidden = false;
+  } else task.hidden = true;
+
+  // Hand
+  if (!meP) {
+    $("hand-title").textContent = "Zuschauer"; $("hand-sub").textContent = "";
+    $("hand").innerHTML = `<p class="handnote">Du spielst in diesem Raum nicht mit.</p>`; $("actions").innerHTML = "";
+  } else {
+    $("hand-title").textContent = kit.hotSeat() ? `Karten von ${meP.name}` : "Deine Karten";
+    $("hand-sub").textContent = `Phase ${meP.phase}${meP.done ? " ✓ liegt" : ""} · ${meP.hand.length} Karten · ${handPoints(meP.hand)} Minus auf der Hand`;
+    const staged = new Set(UI.stage.flat()), canSel = me && S.phase === "play";
+    $("hand").innerHTML = sortHand(meP.hand).map(c => {
+      const sel = UI.sel.includes(c), stc = staged.has(c), isNew = me && S.took && S.took.c === c;
+      return `<button type="button" class="card${sel ? " sel" : ""}${stc ? " staged" : ""}${isNew ? " new" : ""}" data-c="${c}"${canSel && !stc ? "" : " disabled"} aria-label="${cardName(c)}${sel ? ", gewählt" : ""}">${cardSvg(c)}</button>`;
+    }).join("");
+    let acts = "";
+    if (canSel) {
+      const n = UI.sel.length;
+      if (n === 1) acts += `<button class="btn" type="button" data-a="discard">Abwerfen</button>`;
+      if (n) acts += `<button class="btn" type="button" data-a="clear">Auswahl aufheben</button>`;
+    }
+    acts += `<button class="btn" type="button" data-a="sort">${UI.sortNum ? "Nach Farbe sortieren" : "Nach Zahl sortieren"}</button>`;
+    $("actions").innerHTML = acts;
+  }
+
+  // Runde vorbei
+  const rp = $("round-panel");
+  if ((S.phase === "roundover" || S.phase === "over") && S.last) {
+    const w = S.last.winner;
+    rp.innerHTML = `<h2>Runde ${S.roundNo}: ${w >= 0 ? `${esc(S.players[w].name)} ${vb(S.players[w].name, "bist", "ist")} fertig` : "ohne Sieger"}</h2>
+      <div class="rest">${S.players.map((p, i) => `<div class="row"><span class="who">${esc(p.name)}<br><small class="sk-muted">${S.last.done[i] ? `Phase ${S.last.phases[i]} ✓` : `Phase ${S.last.phases[i]} nicht geschafft`}</small></span><span class="cards">${sortHand(S.last.hands[i]).map(c => cardSvg(c)).join("")}</span><span class="pts">${S.last.hands[i].length ? "−" + handPoints(S.last.hands[i]) : "0"}</span></div>`).join("")}</div>
+      ${S.phase === "roundover" ? (mi >= 0 ? `<button class="btn primary" type="button" data-next>Nächste Runde</button>` : `<p class="sk-muted">Gleich geht es weiter.</p>`) : ""}`;
+    rp.hidden = false;
+  } else rp.hidden = true;
+
+  // Wertung
+  $("score").innerHTML = `<thead><tr><th>Spieler</th><th>Phase</th><th>Runden</th><th>Minus</th></tr></thead><tbody>${S.players.map((p, i) =>
+    `<tr class="${playing && i === S.active ? "on" : ""}"><td>${esc(p.name)}</td><td>${p.finished ? "fertig ✓" : p.phase + (p.done ? " ✓" : "")}</td><td class="r">${p.rounds.join(" · ") || "–"}</td><td class="tot">${p.total}</td></tr>`).join("")}</tbody>`;
+  $("score-note").textContent = `Runde ${Math.max(1, S.roundNo)} · ${maxPhase()} Phasen${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
+
+  // Ergebnis
+  const res = $("result");
+  if (S.phase === "over") {
+    const rk = ranking(), w = rk[0], win = rk.filter(p => p.finished && p.total === w.total);
+    const again = kit.online() && !kit.isHost()
+      ? `<p class="sk-muted">Ein neues Spiel kann ${esc((S.players.find(p => p.id === S.host) || {}).name || "der Gastgeber")} starten.</p>`
+      : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${win.length > 1 ? `Gleichstand: ${win.map(p => esc(p.name)).join(" und ")}` : `${esc(w.name)} ${vb(w.name, "gewinnst", "gewinnt")}`}</h2>
+      <p>${S.roundNo} Runden gespielt. Wer alle ${maxPhase()} Phasen geschafft hat, steht vorn; dann zählen wenige Minuspunkte.</p>
+      <ol class="rank">${rk.map((p, k) => `<li><span>${k + 1}. ${esc(p.name)}</span><span>${p.finished ? "alle Phasen" : `Phase ${p.phase}`} · ${p.total} Minus</span></li>`).join("")}</ol>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Einstellungen ----------
+const chk = (id, t, sm, on) => `<label><input type="checkbox" id="${id}"${on ? " checked" : ""}>${t}<small>${sm}</small></label>`;
+const setup = {
+  html: `<div class="sk-field"><div class="sk-label">Spieldauer</div><div class="sk-seg" role="radiogroup" aria-label="Spieldauer">
+      <label><input type="radio" name="zl-dauer" id="zl-dauer-10" value="10" checked>Alle 10 Phasen<small>übliche Länge</small></label>
+      <label><input type="radio" name="zl-dauer" id="zl-dauer-5" value="5">Kurz<small>nur Phasen 1 bis 5</small></label></div></div>
+    <div class="sk-field"><div class="sk-label">Aussetzen</div><div class="sk-seg">${chk("zl-wahl", "Selbst wählen", "wer aussetzen muss (sonst der Nächste)", true)}</div></div>`,
+  read(root) {
+    const v = (root.querySelector('input[name="zl-dauer"]:checked') || {}).value;
+    return { kurz: v === "5", wahl: !!(root.querySelector("#zl-wahl") || {}).checked };
+  },
+};
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "zehnerleiter", version: 1, minPlayers: 2, maxPlayers: 6, bots: true, defaultBots: 2, privateHands: true, botNames: BOT_NAMES,
+  setup,
+  defaultOptions: () => Object.assign({}, DEFAULTS),
+  newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep: () => botTurn(), moveSound: "card",
+  // wer als Nächstes dran ist: Aussetzen berücksichtigen
+  nextUp: (s, a) => { let j = (a + 1) % s.players.length, g = 0; while (s.players[j].skipNext && g++ < s.players.length) j = (j + 1) % s.players.length; return j; },
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.deck) && Array.isArray(s.groups) && s.players.every(p => Array.isArray(p.hand)),
+  roomStatus: s => `läuft · Runde ${s.roundNo}`,
+  handoverText: s => s.phase === "draw" ? "Du ziehst eine Karte. Deine Karten siehst du gleich." : "Weiter geht's.",
+  // nur für automatische Tests der Regeln
+  test: { analyze, phaseCheck, layPhase, layoffCheck, layoff, discardCheck, discardCard, drawFrom, startRound, endRound, playBots, botTurn, plan, phaseNow, handPoints, fullDeck, cardSvg, ranking, PHASES, get S() { return S; } },
+});
+kit.start();
+})();
+</script>

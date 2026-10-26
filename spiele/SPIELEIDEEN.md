@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Schafkopf, Farbreihen (Prinzip „Qwixx“).
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Zehnerleiter (Prinzip „Phase 10“), Schafkopf, Farbreihen (Prinzip „Qwixx“).
 Außerdem der **Punkteblock** zum Mitschreiben bei Spielen auf dem Tisch und draußen: Qwirkle, Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel, UNO, Scrabble, Take That, allgemein.
 Weitere mögliche Blöcke: Schafkopf-Abrechnung (echte Karten), Watten, Doppelkopf, Skat, Carcassonne-Schlusswertung.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).

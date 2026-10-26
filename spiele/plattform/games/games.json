@@ -105,6 +105,13 @@
     "color": "#f2b84b"
   },
   {
+    "id": "zehnerleiter",
+    "title": "Zehnerleiter",
+    "description": "Zehn Phasen nacheinander schaffen: Drillinge, Folgen, eine Farbe. Mit Jokern und Aussetzen. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–6 Spieler · ca. 45 Minuten",
+    "color": "#ff8a5c"
+  },
+  {
     "id": "muehle",
     "title": "Mühle",
     "description": "Der Brettspielklassiker mit neun Steinen. Zu zweit an einem Gerät, gegen den Computer oder online.",
