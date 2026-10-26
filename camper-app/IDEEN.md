@@ -2,6 +2,113 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
+## Nummerierte Übersicht der Merkliste
+
+Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weiter unten).
+
+**🎲 Spiele**
+
+1. Umriss-Quiz
+2. Wo liegt das?
+3. Hauptstädte-Quiz
+4. Kniffel mit Punkteblock
+5. Punkteblock für eigene Spiele
+6. Murmel-Labyrinth
+7. Farben-Merkspiel (wie Senso)
+8. Wer ist schneller?
+9. Würdest du lieber …?
+10. Tick-Tack-Bumm
+
+**🚐 Unterwegs und Planung**
+
+11. Reise-Check für die Route
+12. Spritkosten der geplanten Route
+13. Tickets und Reservierungen
+14. „Heute geöffnet?“ bei Ausflugszielen
+15. Regentag-Plan
+16. Wassertemperatur am Meer
+17. Kontakt zum Campingplatz
+18. Stellplatz nach mehreren Punkten bewerten
+19. Mehrere Fahrzeuge
+20. Mängelliste fürs Fahrzeug
+21. Reise als Vorlage
+22. Gäste ohne eigenes Konto
+
+**👨‍👩‍👧 Familie und Kinder**
+
+23. Familien-Pinnwand
+24. Herzen und Kommentare bei Einträgen
+25. Wunschzettel der Kinder
+26. Reise-Urkunde für Kinder
+27. Ausmalbild aus einem Foto
+28. Bobbycar für Kinderkonten
+29. Ansage bei „Wie lange noch?“
+30. Kurzinfo aus Wikipedia
+31. Medikamenten-Erinnerung
+32. Camping-Freundebuch
+
+**📸 Teilen und Erinnern**
+
+33. Tageszusammenfassung zum Teilen
+34. „Teilen mit LAMMping“ (auch in die Reiseideen)
+35. QR-Code zum Teilen
+36. Gästebuch im Reiseblog
+37. Wetter-Bilanz der Reise
+38. Kalender-Ansicht
+39. Tagebuch als Buch lesen
+40. Jedes Jahr dasselbe Foto
+41. Reise als eigene Datei sichern
+42. Listen ausdrucken
+
+**🗺️ Karte**
+
+43. Liste unter der Karte
+44. Pins bündeln
+45. Kleine Tageskarte im Tagebuch
+46. Fotos auf der Karte
+47. Kartenart umschalten
+
+**✏️ Eintragen**
+
+48. Sprach-Schnelleintrag für Beifahrer
+49. Schnellauswahl am „+ Eintrag“-Knopf
+50. Kürzeres Formular „Neuer Eintrag“
+51. Entwürfe
+52. Foto-Schnellknopf
+53. Google-Maps-Link einfügen
+54. Fotos am PC hineinziehen
+55. Mehrere auf einmal
+56. Anheften
+
+**👆 Bedienung und Layout**
+
+57. Zurück-Taste am Android-Handy
+58. Wischen zwischen den Reitern
+59. Untere Leiste selbst zusammenstellen
+60. Kopfzeile wird beim Scrollen schmaler
+61. PC- und Tablet-Ansicht in zwei Spalten
+62. Tastenkürzel am PC
+63. Foto-Vollbild
+64. Einkaufsmodus
+65. Sprungleiste im Tagebuch
+66. Reihenfolge im Tagebuch umschaltbar
+67. Bildschirm bleibt an
+68. Dort weitermachen, wo man war
+69. Eigener Reiter „Heute“
+70. Einstellungen übersichtlicher
+71. Offline ehrlich anzeigen
+
+**🔒 System und Sicherheit**
+
+72. Erinnerungen als Mitteilung (Push)
+73. App-Sperre mit Fingerabdruck oder PIN
+74. Schneller Personenwechsel auf einem gemeinsamen Gerät
+75. Speicherplatz-Übersicht
+76. Erste Schritte für neue Familien
+77. App auf Englisch
+
+78. Rechte für mehrere Familien (für später, siehe eigener Abschnitt)
+
 ## Vorgemerkt (Stand: Lieferung 31)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
