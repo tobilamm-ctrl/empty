@@ -38,6 +38,27 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Ausmalbild aus einem Foto:** Malvorlage mit schwarzen Linien zum Ausdrucken.
 - **Wetter-Bilanz der Reise:** Sonnentage, Regentage, wärmste und kälteste Nacht in der Statistik.
 
+## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
+
+Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Urlaubsgruppen) gründen, deren Inhalte Tobi nicht sieht.
+
+- Heute: Daten sind je Crew getrennt (requireCrew), aber es gibt nur einen globalen „Verwalter“. Er sieht in der Verwaltung alle Konten
+  und Crews, kann sich in jede Crew eintragen, und die Sicherung zum Herunterladen enthält alle Crews.
+- Vorschlag, drei Rollen:
+  - **Super-Admin:** Konten anlegen und löschen, Passwörter zurücksetzen, Recht „darf eigene Crews gründen“ vergeben.
+    Fremde Crews höchstens mit Name und Mitgliederzahl, kein Beitritt, keine Inhalte.
+  - **Crew-Leiter (pro Crew):** Gründer automatisch. Mitglieder einladen, Rechte in der Crew (Kasse, Kinder-Freigaben, Stempel,
+    Reiseblog, Dokumente), weitere Crew-Leiter ernennen.
+  - **Mitglied:** wie heute.
+- Umstellung: Bestehende Crews bleiben, Tobi wird dort Crew-Leiter. Heutige Verwalter-Rechte werden pro Crew.
+  Sicherung zum Herunterladen nur noch mit eigenen Crews. Neue `api/index.php` (Server-Teil) nötig.
+- Grenze: Die Datenbank liegt auf Tobis Webspace. Die App zeigt fremde Crews nicht, gegen direkten Datenbankzugriff
+  hülfe nur Verschlüsselung auf den Geräten (sehr großer Umbau).
+- Noch offen:
+  1. Wer legt Konten an: nur der Super-Admin, oder auch Crew-Leiter für ihre Leute (z. B. Kinder)?
+  2. Wie kommt man in eine Crew: Crew-Leiter trägt Anmeldenamen ein, oder Einladungslink mit Selbst-Registrierung?
+  3. Was sieht der Super-Admin von fremden Crews: gar nichts oder Name und Mitgliederzahl?
+
 ## Früher vorgeschlagen, noch nicht ausgewählt
 
 - Wetterwarnung (Sturm, Gewitter, Starkregen am Stellplatz oder nächsten Ziel)
