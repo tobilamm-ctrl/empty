@@ -167,6 +167,12 @@ table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabu
 .grp { display: grid; gap: 2px; justify-items: center; }
 .grp small { font-size: 11px; font-weight: 800; color: color-mix(in srgb, var(--ink) 75%, var(--felt)); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grp small b { color: var(--ink); }
+.goal { background: color-mix(in srgb, var(--accent) 14%, var(--sheet-2)); border-radius: 12px; padding: 10px 12px; box-shadow: inset 4px 0 0 var(--accent); display: grid; gap: 4px; }
+.goal .t { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.goal .g { font-family: var(--font-display); font-size: 20px; line-height: 1.15; }
+.goal ul { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.goal .done { color: var(--green); font-weight: 800; }
+.seat .goaltxt { font-size: 11.5px; color: color-mix(in srgb, var(--ink) 75%, var(--felt)); max-width: 150px; text-align: center; line-height: 1.2; }
 .phases { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; font-size: 13.5px; color: var(--muted); }
 .phases li.now { color: var(--accent); font-weight: 800; }
 </style>
@@ -210,6 +216,7 @@ table.score { border-collapse: collapse; width: 100%; font-variant-numeric: tabu
       </section>
       <section class="handzone" id="handzone" aria-label="Deine Karten">
         <h2><span id="hand-title">Deine Karten</span><small id="hand-sub"></small></h2>
+        <div class="goal" id="goal" hidden></div>
         <div class="task" id="task" hidden></div>
         <div class="hand" id="hand"></div>
         <div class="actions" id="actions"></div>
@@ -270,7 +277,7 @@ const PHASES = [
   [["run", 9]], [["set", 4], ["set", 4]], [["col", 7]], [["set", 5], ["set", 2]], [["set", 5], ["set", 3]]];
 const SETNAME = { 2: "Zwilling", 3: "Drilling", 4: "Vierling", 5: "Fünfling" };
 const groupName = ([t, n]) => t === "set" ? (SETNAME[n] || `${n} Gleiche`) : t === "run" ? `${n}er-Folge` : `${n} einer Farbe`;
-const groupHint = ([t, n]) => t === "set" ? `${n} Karten mit gleicher Zahl` : t === "run" ? `${n} Zahlen in lückenloser Folge, Farbe egal` : `${n} Karten derselben Farbe`;
+const groupHint = ([t, n]) => t === "set" ? `${n} Karten mit gleicher Zahl` : t === "run" ? `${n} Zahlen in lückenloser Folge, Farbe egal${wrapRuns() ? ", nach 12 geht es mit 1 weiter" : ""}` : `${n} Karten derselben Farbe`;
 const phaseText = k => PHASES[k - 1].map(groupName).join(" + ");
 
 // Ist das eine gültige Gruppe? → { order, rep (Joker → Zahl bzw. Farbe) } oder null. min = Mindestzahl Karten
@@ -290,20 +297,26 @@ function analyze(type, ids, min) {
     const rep = {}; jok.forEach(j => { rep[j] = CNAME[f]; });
     return { order: [...nat.sort((a, b) => numOf(a) - numOf(b)), ...jok], rep };
   }
-  // Folge: Zahlen verschieden, Lücken und Ränder mit Jokern, 1 bis 12 ohne Übergang
-  const pairs = nat.map(c => [numOf(c), c]).sort((a, b) => a[0] - b[0]);
-  if (new Set(pairs.map(p => p[0])).size !== pairs.length) return null;
-  let lo = pairs[0][0], hi = pairs[pairs.length - 1][0], extra = jok.length - (hi - lo + 1 - pairs.length);
-  if (extra < 0) return null;
-  while (extra > 0 && hi < 12) { hi++; extra--; }
-  while (extra > 0 && lo > 1) { lo--; extra--; }
-  if (extra > 0) return null;
-  const order = [], rep = {}, js = jok.slice();
-  for (let v = lo; v <= hi; v++) { const p = pairs.find(q => q[0] === v); if (p) order.push(p[1]); else { const j = js.shift(); order.push(j); rep[j] = String(v); } }
-  return { order, rep };
+  // Folge: Zahlen verschieden, Lücken und Ränder mit Jokern. Ohne Übergang 1 bis 12; mit Übergang geht es
+  // nach 12 mit 1 weiter (z. B. 11-12-1-2). Dafür wird jeder mögliche Anfang s ausprobiert.
+  if (new Set(nat.map(numOf)).size !== nat.length || ids.length > 12) return null;
+  for (const s of wrapRuns() ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [1]) {
+    const pos = v => (v - s + 12) % 12;                    // Platz in der Folge ab s
+    const pairs = nat.map(c => [pos(numOf(c)), c]).sort((a, b) => a[0] - b[0]);
+    let lo = pairs[0][0], hi = pairs[pairs.length - 1][0], extra = jok.length - (hi - lo + 1 - pairs.length);
+    if (extra < 0) continue;
+    while (extra > 0 && hi < 11) { hi++; extra--; }
+    while (extra > 0 && lo > 0) { lo--; extra--; }
+    if (extra > 0) continue;
+    const order = [], rep = {}, js = jok.slice();
+    for (let q = lo; q <= hi; q++) { const p = pairs.find(x => x[0] === q); if (p) order.push(p[1]); else { const j = js.shift(); order.push(j); rep[j] = String((s - 1 + q) % 12 + 1); } }
+    return { order, rep };
+  }
+  return null;
 }
 
-const DEFAULTS = { kurz: false, wahl: true };
+const DEFAULTS = { kurz: false, wahl: true, wrap: true };
+const wrapRuns = () => !!(S && S.options && S.options.wrap);
 const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole", "Pia", "Rudi"];
 
 let S, kit;
@@ -430,8 +443,8 @@ function options(hand, [type, n]) {
   const nat = hand.filter(c => !isJ(c) && !isS(c)), out = [];
   if (type === "set") for (let v = 1; v <= 12; v++) { const cs = nat.filter(c => numOf(c) === v).slice(0, n); if (cs.length) out.push({ ids: cs, miss: n - cs.length }); }
   if (type === "col") for (const f of COLS) { const cs = nat.filter(c => colOf(c) === f).sort((a, b) => penalty(b) - penalty(a)).slice(0, n); if (cs.length) out.push({ ids: cs, miss: n - cs.length }); }
-  if (type === "run") for (let s = 1; s + n - 1 <= 12; s++) {
-    const cs = []; for (let v = s; v < s + n; v++) { const c = nat.find(x => numOf(x) === v); if (c) cs.push(c); }
+  if (type === "run") for (let s = 1; s <= (wrapRuns() ? 12 : 13 - n); s++) {
+    const cs = []; for (let k = 0; k < n; k++) { const v = (s - 1 + k) % 12 + 1, c = nat.find(x => numOf(x) === v); if (c) cs.push(c); }
     if (cs.length) out.push({ ids: cs, miss: n - cs.length });
   }
   return out.sort((a, b) => a.miss - b.miss);
@@ -614,7 +627,7 @@ function rulesHtml() {
   const o = O();
   return `<li>108 Karten: die Zahlen 1 bis 12 in vier Farben je zweimal (Rot ● Kreis, Gelb ★ Stern, Grün ▲ Dreieck, Blau 💧 Tropfen), dazu 8 Joker und 4 Aussetzen-Karten. Jeder bekommt 10 Karten.</li>
     <li>Jeder arbeitet sich durch ${o.kurz ? "5" : "10"} Phasen, immer in dieser Reihenfolge:<ol class="phases">${PHASES.slice(0, maxPhase()).map((ph, k) => `<li>${ph.map(groupName).join(" + ")}</li>`).join("")}</ol></li>
-    <li><b>Drilling, Vierling …</b>: Karten mit gleicher Zahl. <b>Folge</b>: Zahlen ohne Lücke, Farbe egal (nach 12 kommt nicht wieder 1). <b>Einer Farbe</b>: Karten derselben Farbe.</li>
+    <li><b>Drilling, Vierling …</b>: Karten mit gleicher Zahl. <b>Folge</b>: Zahlen ohne Lücke, Farbe egal (${o.wrap ? "nach 12 geht es mit 1 weiter, z. B. 11-12-1-2" : "nach 12 kommt nicht wieder 1"}). <b>Einer Farbe</b>: Karten derselben Farbe.</li>
     <li>Wer dran ist, nimmt eine Karte vom Stapel oder von der Ablage (Aussetzen-Karten nicht) und wirft am Ende eine ab.</li>
     <li>Die eigene Phase wird <b>auf einmal und vollständig</b> ausgelegt. Danach darf man in jedem Zug Karten an alle ausgelegten Gruppen anlegen, auch bei den anderen.</li>
     <li>Der <b>Joker</b> ersetzt jede Zahl und jede Farbe; jede Gruppe braucht aber mindestens eine echte Karte.</li>
@@ -641,7 +654,7 @@ function render() {
 
   // Mitspieler
   $("seats").innerHTML = S.players.map((p, i) => i === mi ? "" : `<div class="seat${playing && i === S.active ? " on" : ""}"><b>${esc(p.name)}</b>
-    <span class="ph">Phase ${p.phase}${p.done ? " ✓" : ""}</span><span>${p.hand.length} Karten · ${p.total} Minus</span>${p.skipNext ? '<span class="out" style="color:var(--red)">setzt aus</span>' : ""}</div>`).join("");
+    <span class="ph">Phase ${p.phase}${p.done ? " ✓" : ""}</span><span class="goaltxt">${p.finished ? "alle geschafft" : phaseText(p.phase)}</span><span>${p.hand.length} Karten · ${p.total} Minus</span>${p.skipNext ? '<span class="out" style="color:var(--red)">setzt aus</span>' : ""}</div>`).join("");
 
   // Stapel und Ablage
   const canDraw = me && S.phase === "draw";
@@ -685,6 +698,18 @@ function render() {
       <button class="btn" type="button" data-target="x">Doch nicht</button></div>`;
     sb.hidden = false;
   } else sb.hidden = true;
+
+  // Ziel der eigenen Phase, immer sichtbar (außer wenn gerade die Felder zum Auslegen offen sind)
+  const goal = $("goal"), taskOpen = meP && me && S.phase === "play" && !meP.done;
+  if (meP && (playing || S.phase === "roundover") && !taskOpen) {
+    const req = reqOf(meP);
+    goal.innerHTML = meP.done
+      ? `<span class="t">Dein Ziel</span><span class="g">Phase ${meP.phase}: ${phaseText(meP.phase)} <span class="done">✓ liegt</span></span>
+        <ul><li>Lege Karten bei allen ausgelegten Gruppen an und wirf ab, bis deine Hand leer ist.</li><li>In der nächsten Runde kommt Phase ${Math.min(meP.phase + 1, maxPhase())}${meP.phase >= maxPhase() ? " – du bist dann fertig" : `: ${phaseText(meP.phase + 1)}`}.</li></ul>`
+      : `<span class="t">Dein Ziel</span><span class="g">Phase ${meP.phase} von ${maxPhase()}: ${phaseText(meP.phase)}</span>
+        <ul>${req.map(r => `<li><b>${groupName(r)}</b>: ${groupHint(r)}</li>`).join("")}</ul>`;
+    goal.hidden = false;
+  } else goal.hidden = true;
 
   // eigene Phase als Aufgabe
   const task = $("task");
@@ -735,7 +760,7 @@ function render() {
   // Wertung
   $("score").innerHTML = `<thead><tr><th>Spieler</th><th>Phase</th><th>Runden</th><th>Minus</th></tr></thead><tbody>${S.players.map((p, i) =>
     `<tr class="${playing && i === S.active ? "on" : ""}"><td>${esc(p.name)}</td><td>${p.finished ? "fertig ✓" : p.phase + (p.done ? " ✓" : "")}</td><td class="r">${p.rounds.join(" · ") || "–"}</td><td class="tot">${p.total}</td></tr>`).join("")}</tbody>`;
-  $("score-note").textContent = `Runde ${Math.max(1, S.roundNo)} · ${maxPhase()} Phasen${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
+  $("score-note").textContent = `Runde ${Math.max(1, S.roundNo)} · ${maxPhase()} Phasen${O().wrap ? " · Folgen über 12 hinaus" : ""}${kit.online() && kit.roomId() ? ` · Raum ${kit.roomId()}` : ""}`;
 
   // Ergebnis
   const res = $("result");
@@ -757,10 +782,10 @@ const setup = {
   html: `<div class="sk-field"><div class="sk-label">Spieldauer</div><div class="sk-seg" role="radiogroup" aria-label="Spieldauer">
       <label><input type="radio" name="zl-dauer" id="zl-dauer-10" value="10" checked>Alle 10 Phasen<small>übliche Länge</small></label>
       <label><input type="radio" name="zl-dauer" id="zl-dauer-5" value="5">Kurz<small>nur Phasen 1 bis 5</small></label></div></div>
-    <div class="sk-field"><div class="sk-label">Aussetzen</div><div class="sk-seg">${chk("zl-wahl", "Selbst wählen", "wer aussetzen muss (sonst der Nächste)", true)}</div></div>`,
+    <div class="sk-field"><div class="sk-label">Hausregeln</div><div class="sk-seg">${chk("zl-wahl", "Aussetzen selbst wählen", "sonst immer der Nächste", true)}${chk("zl-wrap", "Folge über 12 hinaus", "nach 12 geht es mit 1 weiter (11-12-1-2)", true)}</div></div>`,
   read(root) {
     const v = (root.querySelector('input[name="zl-dauer"]:checked') || {}).value;
-    return { kurz: v === "5", wahl: !!(root.querySelector("#zl-wahl") || {}).checked };
+    return { kurz: v === "5", wahl: !!(root.querySelector("#zl-wahl") || {}).checked, wrap: !!(root.querySelector("#zl-wrap") || {}).checked };
   },
 };
 

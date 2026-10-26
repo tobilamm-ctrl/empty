@@ -24,7 +24,7 @@ Enthalten (jeweils an einem Gerät mit Weitergeben, gegen Computer-Gegner und on
 | **Mau-Mau** | 2–6 | Sonderkarten einzeln abschaltbar, Strafpunkte über mehrere Runden |
 | **Kunterbunt** | 2–8 | Ablegespiel im Stil von „Uno“: Aussetzen, Richtungswechsel, +2, Farbwahl, +4; Weitergeben als Hausregel |
 | **Rommé** | 2–6 | zwei Blätter mit 6 Jokern, erstes Auslegen ab 30/40 Punkten, Joker tauschen, vierfarbiges Blatt |
-| **Zehnerleiter** | 2–6 | Kartenspiel nach dem Prinzip „Phase 10“: zehn Phasen (oder kurz fünf), Joker, Aussetzen mit Wahl |
+| **Zehnerleiter** | 2–6 | Kartenspiel nach dem Prinzip „Phase 10“: zehn Phasen (oder kurz fünf), Joker, Aussetzen mit Wahl, Folgen wahlweise über 12 hinaus |
 | **Schafkopf** | 4 | Sauspiel, Wenz, Farbsolo, Abrechnung über die Sitzung; fehlende Spieler übernimmt der Computer |
 | **Punkteblock** | 2–8 | kein Spiel, sondern ein Zettel für Spiele auf dem Tisch und draußen: Qwirkle, Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel, UNO (zwei Zählweisen), Scrabble, Take That oder allgemein; ein Gerät für alle |
 
