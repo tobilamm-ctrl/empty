@@ -20,7 +20,7 @@ export default function installFamilie(app) {
   // Vorschlag für Kinder: alles zum Mitmachen und Anschauen, ohne Verwaltung und Organisation
   const KIDS = ['karte', 'tagebuch', 'album', 'wetter', 'laender', 'statistik', 'kochen', 'ideen', 'spiel:nochweit', 'spiel:reisepass',
     'spiel:kennzeichen', 'spiel:laenderkz', 'spiel:bingo', 'spiel:slf', 'spiel:quiz', 'spiel:sticker', 'spiel:brettspiele', 'spiel:tiere', 'spiel:rallye',
-    'spiel:farben', 'spiel:abc', 'spiel:werbinich', 'spiel:tabu', 'spiel:flaggen', 'spiel:memory', 'spiel:sudoku', 'spiel:maler', 'spiel:ttt', 'spiel:story', 'abstimmung', 'urlaubsgeld'];
+    'spiel:farben', 'spiel:abc', 'spiel:werbinich', 'spiel:tabu', 'spiel:flaggen', 'spiel:memory', 'spiel:sudoku', 'spiel:maler', 'spiel:ttt', 'spiel:story', 'spiel:labyrinth', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto'];
 
   app.allowed = key => {
     const a = user().areas;
@@ -30,7 +30,7 @@ export default function installFamilie(app) {
     return a.includes(key);
   };
   const simple = () => !!user().simple;
-  const ALWAYS = ['einstellungen', 'verwaltung', 'kinder', 'loading', 'login', 'setup', 'reset', 'nocrew', 'offline'];
+  const ALWAYS = ['einstellungen', 'verwaltung', 'kinder', 'loading', 'login', 'setup', 'reset', 'nocrew', 'offline', 'teilen'];
 
   // Erste Seite des Kontos: eigene Wahl, sonst Kinder-Start, sonst Karte (oder das erste Erlaubte)
   function startRoute() {
@@ -54,6 +54,8 @@ export default function installFamilie(app) {
 
   // Reiterleiste: nur freigegebene Reiter; Kinder-Ansicht mit „Start“ statt „Mehr“
   chromeHooks.push(tab => {
+    // Kinder-Konten: in der Kopfzeile fährt ein Bobbycar statt des Campers
+    document.body.classList.toggle('kid-mode', simple());
     document.querySelectorAll('.tabbar a').forEach(a => {
       const t = a.dataset.tab;
       a.hidden = t === 'kinder' ? !simple() : t === 'mehr' ? simple() : !app.allowed(t);

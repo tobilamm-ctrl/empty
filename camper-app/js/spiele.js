@@ -82,7 +82,7 @@ export default function installSpiele(app) {
   const GAME_SEPS = { auto: 'Unterwegs im Auto', raten: 'Raten und Erzählen', knobeln: 'Knobeln für Pausen und Abende', sammeln: 'Sammeln und Erinnern' };
   const GAME_ORDER = ['sep:auto', 'nochweit', 'kennzeichen', 'laenderkz', 'quiz', 'bingo', 'farben', 'abc', 'tiere',
     'sep:raten', 'werbinich', 'tabu', 'slf', 'story', 'maler',
-    'sep:knobeln', 'flaggen', 'sudoku', 'memory', 'ttt', 'brettspiele',
+    'sep:knobeln', 'labyrinth', 'flaggen', 'sudoku', 'memory', 'ttt', 'brettspiele',
     'sep:sammeln', 'reisepass', 'rallye', 'sticker'];
   // Auch die Kinder-Startseite zeigt die Spiele in dieser Reihenfolge
   app.sortGames = () => {

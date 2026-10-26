@@ -30,6 +30,9 @@ export default function installMore(app) {
     { route: 'wasserwaage', art: 'wasserwaage', title: 'Wasserwaage', text: 'Camper gerade stellen' },
     { route: 'abstimmung', art: 'abstimmung', title: 'Abstimmung', text: 'Die Familie entscheidet' },
     { route: 'urlaubsgeld', art: 'urlaubsgeld', title: 'Urlaubsgeld', text: 'Taschengeld der Kinder' },
+    { route: 'pinnwand', art: 'pinnwand', title: 'Pinnwand', text: 'Kurze Nachrichten an alle' },
+    { route: 'tickets', art: 'tickets', title: 'Tickets', text: 'Fähre, Campingplatz, Eintritt' },
+    { route: 'reisefoto', art: 'reisefoto', title: 'Unser Reisefoto', text: 'Jede Fahrt dasselbe Motiv' },
     { route: 'statistik', art: 'statistik', title: 'Statistik', text: 'Eure Reisen in Zahlen' },
     { route: 'wetter', art: 'wetter', title: 'Wetter', text: 'Vorhersage für Standort und Ziele' },
     { route: 'rubbelkarte', art: 'rubbelkarte', title: 'Rubbelkarte', text: 'Wo wart ihr schon überall?' },
@@ -56,7 +59,7 @@ export default function installMore(app) {
     const badge = t => (t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>`
       : t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>`
         : t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : '');
-    const items = available().map(t => ({ id: t.route, art: t.art, title: label(t), text: t.text, href: `#/${t.route}`, badge: badge(t), fixed: t.route === 'einstellungen' }));
+    const items = [...(app.barExtras ? app.barExtras() : []), ...available()].map(t => ({ id: t.route, art: t.art, title: label(t), text: t.text, href: `#/${t.route}`, badge: badge(t), fixed: t.route === 'einstellungen' }));
     const editing = ui.boardEdit === 'mehr';
     return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${app.board.view({ key: 'mehr', items })}`;
   };

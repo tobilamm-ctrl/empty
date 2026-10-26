@@ -91,5 +91,23 @@
         }
       ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./teilen-ziel/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "fotos",
+          "accept": [
+            "image/*"
+          ]
+        }
+      ]
+    }
+  }
 }

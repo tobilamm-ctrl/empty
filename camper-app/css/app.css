@@ -1588,3 +1588,106 @@ hr.tile-sep.line { margin: 14px 0; border: 0; border-top: 2px solid var(--line);
 .tiles.editing .tile b { font-size: 14px; }
 .tiles.editing .tile .eye { width: 34px; height: 34px; }
 .tiles.size-klein .tile b, .tiles.size-mittel .tile b, .tiles.editing .tile b { hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
+
+/* ---------- Version 34: Navigation, Pinnwand, Teilen, Reisefoto, Tickets, Labyrinth, Sprache, Bobbycar ---------- */
+
+/* Eigene untere Leiste: Bereiche aus „Mehr“ mit ihrem Bild */
+.tabbar svg use { stroke-width: initial; }
+.bar-edit .bar-chip { gap: 6px; }
+.bar-edit .bar-x { border: 0; background: none; padding: 0 0 0 4px; font-size: 18px; line-height: 1; color: inherit; cursor: pointer; }
+.bar-edit .bar-fixed { opacity: .65; }
+
+/* Großer Bildschirm: Karte links, Tagebuch rechts */
+@media (min-width: 1100px) {
+  body.split .mapview { right: auto; width: 46vw; }
+  body.split main { margin-left: 46vw; max-width: none; padding-left: 28px; padding-right: 28px; }
+  body.split main > * { max-width: 760px; }
+  body.split .fab { right: 24px; }
+}
+
+/* Pinnwand */
+.pin-form { display: flex; gap: 8px; margin-bottom: 12px; }
+.pin-form input { flex: 1; min-width: 0; }
+.pins { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.pins li { position: relative; padding: 12px 34px 10px 14px; background: #FFF4B8; color: #3A2617; border-radius: 4px 4px 14px 4px;
+  box-shadow: 0 3px 8px rgba(58, 38, 23, .18); transform: rotate(-1deg); }
+.pins li:nth-child(2n) { transform: rotate(1.2deg); background: #DFF1D8; }
+.pins li:nth-child(3n) { background: #FBE0D5; }
+.pins li::before { content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #D63A2F; box-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.pins li b { display: block; font: 700 14px var(--head); }
+.pins li span { display: block; font-size: 16px; }
+.pins li small { display: block; font-size: 12px; opacity: .7; margin-top: 4px; }
+.pins li .icon-btn { position: absolute; top: 4px; right: 2px; color: #3A2617; }
+.pins.small { grid-template-columns: 1fr; gap: 6px; margin: 10px 0 6px; }
+.pins.small li { transform: none; padding: 6px 32px 6px 10px; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
+.pins.small li::before { display: none; }
+.pins.small li b, .pins.small li span, .pins.small li small { display: inline; margin: 0; }
+.pins.small li b::after { content: ':'; }
+.pins.small li span { font-size: 15px; }
+.pins.small li .icon-btn { top: 50%; transform: translateY(-50%); }
+.today-mit { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
+.today-mit .ic { width: 18px; height: 18px; margin-right: 5px; vertical-align: -3px; }
+.kids-pins { margin: 16px 0; }
+
+/* Tag teilen */
+.ds-part { margin: 10px 0; }
+.ds-part textarea { width: 100%; margin-top: 4px; }
+.pc-photos { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; }
+.pc-photos img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; display: block; }
+.pc-photos label { position: relative; flex: none; cursor: pointer; }
+.pc-photos label input { position: absolute; opacity: 0; }
+.pc-photos label:has(input:checked) img, .pc-photos label.no-photo:has(input:checked) span { outline: 3px solid var(--trip); outline-offset: 1px; }
+.pc-photos .no-photo span { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 8px; background: var(--mist); color: var(--muted); }
+
+/* Geteilt aus einer anderen App */
+.shared p { margin: 6px 0; overflow-wrap: anywhere; }
+.share-dest { display: grid; gap: 10px; margin: 16px 0; }
+.share-dest .ic { margin-right: 6px; }
+
+/* Reisefoto */
+.rf-motiv { font: 600 18px var(--head); margin: 0 0 10px; }
+.rf-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 16px 0; }
+.rf-grid figure { margin: 0; background: var(--card, #fff); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(58, 38, 23, .12); }
+.rf-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.rf-grid figcaption { padding: 8px 10px; }
+.rf-grid figcaption b, .rf-grid figcaption small { display: block; }
+.rf-grid figcaption small { color: var(--muted); }
+
+/* Tickets */
+.tickets .tk-ic { font-size: 26px; width: 36px; text-align: center; flex: none; }
+.tickets button { display: flex; align-items: center; gap: 10px; width: 100%; }
+.tickets .txt { flex: 1; min-width: 0; }
+.old-tickets { margin-top: 16px; color: var(--muted); }
+.old-tickets summary { cursor: pointer; padding: 6px 0; }
+.ticket-view .tk-when { font-size: 17px; }
+.ticket-view .tk-when b { color: #A86F00; margin-left: 6px; }
+.tk-number { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 12px; border-radius: 10px; background: var(--mist); }
+.tk-number span { width: 100%; font-size: 13px; color: var(--muted); }
+.tk-number b { font: 700 22px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
+.tk-img { width: 100%; border-radius: 10px; margin: 10px 0; background: #fff; }
+.today-tickets { margin-top: 8px; display: grid; gap: 2px; }
+.today-tickets .as-text { font-size: 15px; }
+
+/* Murmel-Labyrinth */
+.lab-canvas { display: block; width: 100%; max-width: min(440px, var(--lab-w, 440px)); margin: 8px auto; border-radius: 12px; touch-action: none; box-shadow: 0 0 0 6px #8A5A2B, 0 8px 20px rgba(58, 38, 23, .35); }
+.lab-hint { text-align: center; }
+.lab-tracks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.lab-tracks button { display: grid; gap: 2px; padding: 12px 6px; border-radius: 12px; border: 2px solid var(--line, #E2D6C2); background: var(--card, #fff); cursor: pointer; font: inherit; color: inherit; }
+.lab-tracks button.done { border-color: color-mix(in srgb, #4F8A3C 60%, transparent); background: color-mix(in srgb, #4F8A3C 10%, var(--card, #fff)); }
+.lab-tracks small { color: var(--muted); }
+.lab-win { text-align: center; }
+
+/* Sprach-Schnelleintrag */
+.fab.fab-voice { bottom: calc(var(--bottom) + 84px); padding: 0; width: 56px; justify-content: center; background: var(--card, #fff); color: var(--ink); border: 2px solid color-mix(in srgb, var(--trip) 70%, transparent); }
+.voice-sheet { text-align: center; }
+.voice-orb { display: inline-grid; place-items: center; width: 96px; height: 96px; margin: 12px auto; border-radius: 50%; border: 0; background: var(--trip); color: #fff; cursor: pointer; }
+.voice-orb .ic { width: 42px; height: 42px; }
+.voice-orb.on { animation: voicePulse 1.4s ease-in-out infinite; }
+@keyframes voicePulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--trip) 45%, transparent); } 50% { box-shadow: 0 0 0 18px transparent; } }
+.voice-live { font: 600 20px var(--head); min-height: 2.6em; }
+
+/* Bobbycar für Kinder-Konten */
+.vklasse.bobbycar { display: none; color: #6B4226; }
+body.kid-mode .vklasse:not(.bobbycar) { display: none; }
+body.kid-mode .vklasse.bobbycar { display: block; }
+.eta-van .bobbycar { display: block; }

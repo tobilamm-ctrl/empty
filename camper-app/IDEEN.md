@@ -13,7 +13,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 3. Hauptstädte-Quiz
 4. Kniffel mit Punkteblock
 5. Punkteblock für eigene Spiele
-6. Murmel-Labyrinth
+6. ~~Murmel-Labyrinth~~ Erledigt in Lieferung 34.
 7. Farben-Merkspiel (wie Senso)
 8. Wer ist schneller?
 9. Würdest du lieber …?
@@ -23,7 +23,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 11. Reise-Check für die Route
 12. Spritkosten der geplanten Route
-13. Tickets und Reservierungen
+13. ~~Tickets und Reservierungen~~ Erledigt in Lieferung 34.
 14. „Heute geöffnet?“ bei Ausflugszielen
 15. Regentag-Plan
 16. Wassertemperatur am Meer
@@ -36,12 +36,12 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **👨‍👩‍👧 Familie und Kinder**
 
-23. Familien-Pinnwand
+23. ~~Familien-Pinnwand~~ Erledigt in Lieferung 34.
 24. Herzen und Kommentare bei Einträgen
 25. Wunschzettel der Kinder
 26. Reise-Urkunde für Kinder
 27. Ausmalbild aus einem Foto
-28. Bobbycar für Kinderkonten
+28. ~~Bobbycar für Kinderkonten~~ Erledigt in Lieferung 34.
 29. Ansage bei „Wie lange noch?“
 30. Kurzinfo aus Wikipedia
 31. Medikamenten-Erinnerung
@@ -49,14 +49,14 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **📸 Teilen und Erinnern**
 
-33. Tageszusammenfassung zum Teilen
-34. „Teilen mit LAMMping“ (auch in die Reiseideen)
+33. ~~Tageszusammenfassung zum Teilen~~ Erledigt in Lieferung 34.
+34. ~~„Teilen mit LAMMping“ (auch in die Reiseideen)~~ Erledigt in Lieferung 34.
 35. QR-Code zum Teilen
 36. Gästebuch im Reiseblog
 37. Wetter-Bilanz der Reise
 38. Kalender-Ansicht
 39. Tagebuch als Buch lesen
-40. Jedes Jahr dasselbe Foto
+40. ~~Jedes Mal dasselbe Foto (bei jeder Fahrt)~~ Erledigt in Lieferung 34.
 41. Reise als eigene Datei sichern
 42. Listen ausdrucken
 
@@ -70,7 +70,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **✏️ Eintragen**
 
-48. Sprach-Schnelleintrag für Beifahrer
+48. ~~Sprach-Schnelleintrag für Beifahrer~~ Erledigt in Lieferung 34.
 49. Schnellauswahl am „+ Eintrag“-Knopf
 50. Kürzeres Formular „Neuer Eintrag“
 51. Entwürfe
@@ -82,11 +82,11 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **👆 Bedienung und Layout**
 
-57. Zurück-Taste am Android-Handy
-58. Wischen zwischen den Reitern
-59. Untere Leiste selbst zusammenstellen
+57. ~~Zurück-Taste am Android-Handy~~ Erledigt in Lieferung 34.
+58. ~~Wischen zwischen den Reitern~~ Erledigt in Lieferung 34.
+59. ~~Untere Leiste selbst zusammenstellen~~ Erledigt in Lieferung 34.
 60. Kopfzeile wird beim Scrollen schmaler
-61. PC- und Tablet-Ansicht in zwei Spalten
+61. ~~PC- und Tablet-Ansicht in zwei Spalten~~ Erledigt in Lieferung 34.
 62. Tastenkürzel am PC
 63. Foto-Vollbild
 64. Einkaufsmodus

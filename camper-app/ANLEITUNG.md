@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-33'` hochzählen (z. B. auf `lammping-34`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-34'` hochzählen (z. B. auf `lammping-35`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,31 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 34
+
+- **Zurück-Taste (Android):** schließt offene Fenster, verlässt ein Spiel oder das Anordnen und geht zur vorherigen Seite.
+- **Wischen:** Auf den Hauptseiten mit dem Finger nach links oder rechts wischen wechselt zum nächsten Reiter
+  (nicht auf der Karte; abschaltbar unter Einstellungen → Bedienung).
+- **Untere Leiste selbst zusammenstellen:** Mehr → „Kacheln anordnen“ → „Untere Leiste“. Bis zu 4 Reiter, z. B. Tickets statt
+  Boxen & Fächer. Was aus der Leiste fliegt, erscheint als Kachel unter „Mehr“. Jede Person hat ihre eigene Leiste.
+- **PC und Tablet:** Ab 1100 Pixel Breite steht die Karte links und das Tagebuch rechts (abschaltbar unter Bedienung).
+- **Pinnwand** (Mehr): kurze Nachrichten an alle („Bin duschen“, „Essen ist fertig!“), einen Tag lang sichtbar,
+  auch in der Heute-Karte und auf der Kinder-Startseite.
+- **Tag teilen** (Heute-Karte): Punkte des Tages auswählen (Strecke, Stellplatz, Highlights …), jeden Satz selbst
+  umschreiben, eigenen Satz und ein Foto dazu, dann per WhatsApp & Co. verschicken.
+- **Teilen mit LAMMping:** In Google Maps, der Galerie oder im Browser „Teilen“ → LAMMping wählen (nur bei
+  installierter App). Dann entscheiden: ins Tagebuch, auf die Wunschliste (mit Position aus dem Kartenlink) oder zu
+  den Reiseideen, als neue Idee oder als Notiz zu einer bestehenden.
+- **Unser Reisefoto** (Mehr): bei jeder Fahrt ein Foto mit demselben Motiv; alle Fotos nebeneinander. Die Heute-Karte
+  erinnert, solange das Foto der laufenden Reise fehlt.
+- **Tickets** (Mehr): Fähre, Campingplatz, Eintritt, Vignette mit Datum, Uhrzeit, Buchungsnummer und Bild vom QR-Code,
+  auch ohne Netz. In den 2 Tagen davor steht ein Countdown in der Heute-Karte („in 2 Std. 15 Min.“).
+- **Murmel-Labyrinth** (Spiele, Knobeln): Handy neigen, Kugel zum Stern rollen. 4 Stufen (Leicht bis Profi) mit je
+  6 festen Bahnen und Bestzeiten je Person. Ohne Neigungssensor mit dem Finger ziehen oder mit den Pfeiltasten.
+- **Sprach-Schnelleintrag:** Mikrofon-Knopf über „+ Eintrag“ im Tagebuch. Zum Beispiel „Tankstopp, 45 Liter,
+  78 Euro 50“ oder „Stellplatz Seeblick, 25 Euro, vier Sterne“ – der Eintrag öffnet sich ausgefüllt zum Prüfen.
+- **Bobbycar:** In Kinderkonten (einfache Ansicht) fährt oben ein Bobbycar statt des Campers.
 
 ## Bereiche im Überblick
 
