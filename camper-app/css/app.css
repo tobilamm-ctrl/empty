@@ -1691,3 +1691,12 @@ hr.tile-sep.line { margin: 14px 0; border: 0; border-top: 2px solid var(--line);
 body.kid-mode .vklasse:not(.bobbycar) { display: none; }
 body.kid-mode .vklasse.bobbycar { display: block; }
 .eta-van .bobbycar { display: block; }
+
+/* Karte folgt dem Tagebuch: Tagesbeginn als ausgefüllter Kreis mit Nummer */
+.day-start { background: none; border: 0; }
+.day-start b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #E4572E; color: #fff;
+  font: 700 15px var(--head); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); box-sizing: border-box; }
+.day-start span { position: absolute; left: 34px; top: 5px; white-space: nowrap; padding: 1px 7px; border-radius: 10px; background: #fff;
+  color: #A4462B; font: 700 12px var(--body); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.dir-arrow { background: none; border: 0; }
+.dir-arrow svg { width: 24px; height: 24px; margin: -2px; display: block; fill: #fff; stroke: #A4462B; stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); }

@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-35'` hochzählen (z. B. auf `lammping-36`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-36'` hochzählen (z. B. auf `lammping-37`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -146,7 +146,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **PC und Tablet:** Ab 1100 Pixel Breite steht die Karte links und das Tagebuch rechts (abschaltbar unter Bedienung).
   Ab Version 35 folgt die Karte beim Scrollen: Sie zeigt die Stopps, die rechts gerade zu sehen sind, und hebt deren
   Strecke in Korallrot hervor. Mit der Maus über einem Eintrag wird er auf der Karte markiert. Ganz oben zeigt sie
-  wieder die ganze Reise (ebenfalls unter Bedienung abschaltbar).
+  wieder die ganze Reise (ebenfalls unter Bedienung abschaltbar). Ab Version 36: Jeder Tag beginnt mit einem ausgefüllten
+  Kreis mit Tagesnummer, die Fahrt über Nacht zum nächsten Tag ist gestrichelt, und kleine Pfeile zeigen die Fahrtrichtung.
 - **Pinnwand** (Mehr): kurze Nachrichten an alle („Bin duschen“, „Essen ist fertig!“), einen Tag lang sichtbar,
   auch in der Heute-Karte und auf der Kinder-Startseite.
 - **Tag teilen** (Heute-Karte): Punkte des Tages auswählen (Strecke, Stellplatz, Highlights …), jeden Satz selbst

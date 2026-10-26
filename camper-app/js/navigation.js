@@ -242,11 +242,46 @@ export default function installNavigation(app) {
     const part = (i0 > 0 ? [all[i0 - 1]] : []).concat(all.slice(i0, all.indexOf(seen[seen.length - 1]) + 1));
     const ll = part.map(e => [e.lat, e.lng]);
     const color = '#E4572E';   // Korallrot hebt sich von der Reisefarbe ab
-    if (ll.length > 1) {
-      L.polyline(ll, { color: '#fff', weight: 11, opacity: 0.85, interactive: false }).addTo(follow);
-      L.polyline(ll, { color, weight: 6, opacity: 0.95, interactive: false }).addTo(follow);
+    // Strecke je Tag durchgezogen; der Wechsel über Nacht (vom Stellplatz zum nächsten Tag) gestrichelt
+    const day = e => e.date.slice(0, 10);
+    for (let i = 1; i < part.length; i++) {
+      const seg = [[part[i - 1].lat, part[i - 1].lng], [part[i].lat, part[i].lng]];
+      const night = day(part[i - 1]) !== day(part[i]);
+      L.polyline(seg, { color: '#fff', weight: night ? 8 : 11, opacity: 0.85, interactive: false }).addTo(follow);
+      L.polyline(seg, { color, weight: night ? 4 : 6, opacity: 0.95, dashArray: night ? '2 10' : null, interactive: false }).addTo(follow);
     }
+    // Fahrtrichtung: kleine Pfeile auf längeren Abschnitten, erst wenn die Karte angekommen ist
+    let drawn = false;
+    const arrows = () => {
+      if (drawn || followKey !== key || !follow) return;
+      drawn = true;
+      for (let i = 1; i < part.length; i++) {
+        const a = app.map.latLngToLayerPoint([part[i - 1].lat, part[i - 1].lng]), b = app.map.latLngToLayerPoint([part[i].lat, part[i].lng]);
+        const len = a.distanceTo(b);
+        if (len < 70) continue;
+        const deg = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+        // Lange Abschnitte bekommen mehrere Pfeile, etwa alle 160 Pixel
+        const k = Math.min(4, Math.max(1, Math.floor(len / 160)));
+        for (let j = 1; j <= k; j++) {
+          const f = j / (k + 1);
+          const ll = app.map.layerPointToLatLng(L.point(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f));
+          L.marker(ll, { interactive: false, keyboard: false, zIndexOffset: 600,
+            icon: L.divIcon({ className: 'dir-arrow', html: `<svg viewBox="0 0 20 20" style="transform:rotate(${deg.toFixed(0)}deg)"><path d="M5 4l10 6-10 6 3-6z"/></svg>`, iconSize: [20, 20], iconAnchor: [10, 10] }) }).addTo(follow);
+        }
+      }
+    };
+    app.map.once('moveend', () => setTimeout(arrows, 30));
+    setTimeout(arrows, 1200);   // falls die Karte schon an der richtigen Stelle war
     seen.forEach(e => L.circleMarker([e.lat, e.lng], { radius: 17, color, weight: 3, fill: false, interactive: false, className: 'follow-ring' }).addTo(follow));
+    // Beginn eines Tages: ausgefüllter Kreis mit der Tagesnummer
+    const first = app.tripStats(t).firstDay;
+    part.forEach((e, i) => {
+      const prev = i ? part[i - 1] : all[all.indexOf(e) - 1];
+      if (prev && day(prev) === day(e)) return;
+      const n = first ? Math.round((new Date(day(e) + 'T12:00') - new Date(first + 'T12:00')) / 864e5) + 1 : 0;
+      L.marker([e.lat, e.lng], { interactive: false, zIndexOffset: 800, keyboard: false,
+        icon: L.divIcon({ className: 'day-start', html: `<b>${n > 0 ? n : '•'}</b><span>${n > 0 ? `Tag ${n}` : app.fmtShort(day(e))}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(follow);
+    });
     moved = true;
     const view = seen.map(e => [e.lat, e.lng]);
     if (view.length === 1) app.map.flyTo(view[0], Math.max(app.map.getZoom(), 12), { duration: 0.6 });

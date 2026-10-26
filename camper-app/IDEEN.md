@@ -109,6 +109,31 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 78. Rechte für mehrere Familien (für später, siehe eigener Abschnitt)
 
+## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
+
+Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
+
+1. **Eintragen** (Eintrags-Formular): 50 Kürzeres Formular → 49 Schnellauswahl am „+“-Knopf → 52 Foto-Schnellknopf →
+   53 Google-Maps-Link einfügen → 54 Fotos am PC hineinziehen → 55 Mehrere auf einmal → 51 Entwürfe → 56 Anheften.
+2. **Tagebuch ansehen:** 66 Reihenfolge umschaltbar → 65 Sprungleiste → 63 Foto-Vollbild → 45 Kleine Tageskarte →
+   24 Herzen und Kommentare → 38 Kalender-Ansicht → 39 Als Buch lesen.
+3. **Karte:** 47 Kartenart umschalten → 44 Pins bündeln → 46 Fotos auf der Karte → 43 Liste unter der Karte.
+4. **Bedienung:** 67 Bildschirm bleibt an → 64 Einkaufsmodus → 69 Reiter „Heute“ → 68 Dort weitermachen, wo man war →
+   60 Schmalere Kopfzeile → 62 Tastenkürzel → 70 Einstellungen übersichtlicher → 71 Offline ehrlich anzeigen → 75 Speicherplatz.
+5. **Fahrzeug und Reise-Aufbau:** 19 Mehrere Fahrzeuge (ändert den Datenaufbau, daher zuerst) → 20 Mängelliste →
+   18 Stellplatz nach mehreren Punkten bewerten → 21 Reise als Vorlage.
+6. **Infos aus dem Internet** (Planung): 12 Spritkosten der Route → 11 Reise-Check → 17 Kontakt zum Campingplatz →
+   14 „Heute geöffnet?“ → 16 Wassertemperatur → 30 Wikipedia-Kurzinfo → 15 Regentag-Plan.
+7. **Familie und Kinder:** 29 Ansage bei „Wie lange noch?“ → 25 Wunschzettel → 32 Freundebuch → 26 Reise-Urkunde →
+   27 Ausmalbild aus Foto. (31 Medikamenten-Erinnerung kommt mit Paket 10, sie braucht Push-Mitteilungen.)
+8. **Teilen, Drucken, Sichern:** 37 Wetter-Bilanz → 42 Listen ausdrucken → 41 Reise als eigene Datei → 35 QR-Code.
+9. **Spiele** (jederzeit dazwischen): 3 Hauptstädte → 1 Umriss-Quiz → 2 Wo liegt das? (nutzen die Länderdaten der
+   Rubbelkarte); 5 Punkteblock → 4 Kniffel; 7 Senso, 8 Wer ist schneller?, 9 Würdest du lieber …?, 10 Tick-Tack-Bumm.
+10. **Server und Konten** (jeweils neue `api/index.php`): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
+    74 Schneller Personenwechsel → 73 App-Sperre → 22 Gäste ohne Konto → 36 Gästebuch im Reiseblog →
+    76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
+11. **Zum Schluss:** 77 App auf Englisch (erst, wenn keine neuen Funktionen mehr dazukommen).
+
 ## Vorgemerkt (Stand: Lieferung 31)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
