@@ -1,6 +1,6 @@
 // Offline-Speicher: App-Dateien, Schriften, angesehene Fotos und Kartenkacheln.
 // Nach Änderungen an der App die Versionsnummer erhöhen, damit Handys die neuen Dateien laden.
-const VERSION = 'lammping-45';
+const VERSION = 'lammping-46';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/kacheln.js', 'js/mehr.js', 'js/kartenedit.js', 'js/testdaten.js', 'js/extras.js', 'js/spiele.js', 'js/kfz.js', 'js/ideen.js', 'js/export.js', 'js/unterwegs.js', 'js/teilen.js', 'js/fotos.js', 'js/reisepass.js', 'js/packhilfe.js', 'js/familie.js', 'js/film.js', 'js/alltag.js', 'js/zeitachse.js', 'js/welt.js', 'js/flaggen.js', 'js/auswertung.js', 'js/abenteuer.js', 'js/weitergeben.js', 'js/draussen.js', 'js/zuladung.js', 'js/stellplatz.js', 'js/familienrat.js', 'js/fahrspiele.js', 'js/navigation.js', 'js/mitteilen.js', 'js/tickets.js', 'js/labyrinth.js', 'js/sprache.js', 'js/eintragen.js', 'js/fotoansicht.js', 'js/herzen.js', 'js/lesen.js', 'js/kartenebenen.js', 'js/bedienung.js', 'js/fahrzeuge.js', 'js/infos.js', 'js/familienleben.js', 'js/sichern.js', 'vendor/qrcode/qrcode.js', 'js/spielekiste.js', 'js/mitfahrer.js', 'js/mitfahrer-bilder.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',

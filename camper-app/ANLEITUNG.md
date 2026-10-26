@@ -136,6 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 46: Mitfahrer auch für Erwachsene schnell aussuchen
+
+Wer oben in der Leiste mitfährt, kann jetzt jede Person leicht selbst aussuchen:
+- **Tipp auf die Landschaft oben** (rechts neben dem Reisenamen) öffnet die Auswahl, für Erwachsene und Kinder.
+- In den Einstellungen steht die Auswahl unter **Darstellung und Kopfzeile**, direkt unter Hell/Dunkel.
+- Kinder finden sie außerdem wie bisher auf ihrer Startseite. Tippen Kinder eine Figur direkt an, hüpft sie.
+
 ## Neu in Version 45: Mitfahrer mit mehr Details
 
 Alle Figuren oben in der Leiste sind neu gezeichnet und deutlich detailreicher: Gesichter mit Augenglanz, Fell,

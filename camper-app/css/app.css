@@ -2291,3 +2291,8 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .rider-opt { min-height: 104px; }
 .rider-opt .rider, .rider-opt .rider.air { --rh: 48px !important; height: 48px; }
 .rider-now.kids .rider { height: 40px; }
+/* Version 46: Mitfahrer-Auswahl auch für Erwachsene leicht erreichbar */
+.landscape.pickable { pointer-events: auto; cursor: pointer; }
+.rider-set { margin-top: 16px; }
+.rider-set h3 { margin: 0 0 4px; font-size: 16px; }
+.rider-set .sub { margin: 0 0 10px; }

@@ -30,7 +30,7 @@ const GROUPS = [['fahr', 'Fahrzeuge'], ['luft', 'In der Luft'], ['tier', 'Tiere'
 const MAX = 6;
 
 export default function installMitfahrer(app) {
-  const { S, ACTIONS, esc, me, save, toast, openSheet, chromeHooks, settingsPanels, VIEWS } = app;
+  const { S, ACTIONS, esc, me, save, toast, openSheet, chromeHooks, VIEWS } = app;
   const sheetHead = app.sheetHead;
   const scenery = document.querySelector('.scenery');
   if (!scenery) return;
@@ -95,11 +95,26 @@ export default function installMitfahrer(app) {
   };
 
   const preview = () => { const list = chosen(); return list.length ? list.map(id => svg(byId(id), ' still')).join('') : '<span class="sub">Niemand – die Landschaft ist leer.</span>'; };
-  settingsPanels.push(() => `<section class="panel">
-      <h2>Kopfzeile</h2>
-      <p class="sub">Wer oben durch die Landschaft fährt. Du kannst mehrere aussuchen.</p>
-      <button class="rider-now" data-action="riders-pick">${preview()}<b>Aussuchen</b></button>
-    </section>`);
+  // Einstellungen: direkt unter „Darstellung“ (Hell/Dunkel), damit es auch Erwachsene leicht finden
+  const settings = VIEWS.einstellungen;
+  VIEWS.einstellungen = () => {
+    const html = settings();
+    const i = html.indexOf('<h2>Darstellung</h2>');
+    const j = i < 0 ? -1 : html.indexOf('</section>', i);
+    const part = `<div class="rider-set"><h3>Wer fährt oben mit?</h3>
+      <p class="sub">Fahrzeuge, Tiere oder etwas, das fliegt – auch mehrere gleichzeitig. Tipp auch einfach oben auf die Landschaft.</p>
+      <button class="rider-now" data-action="riders-pick">${preview()}<b>Aussuchen</b></button></div>`;
+    return j < 0 ? html : (html.slice(0, j) + part + html.slice(j)).replace('<h2>Darstellung</h2>', '<h2>Darstellung und Kopfzeile</h2>');
+  };
+
+  // Tipp auf die Landschaft oben öffnet für alle die Auswahl
+  const land = scenery.querySelector('.landscape');
+  if (land) {
+    land.classList.add('pickable');
+    land.setAttribute('role', 'button');
+    land.setAttribute('aria-label', 'Aussuchen, wer oben mitfährt');
+    land.addEventListener('click', () => ACTIONS['riders-pick']());
+  }
 
   // Kinder-Startseite: eigene Kachel zum Aussuchen
   const kids = VIEWS.kinder;
