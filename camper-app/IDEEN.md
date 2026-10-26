@@ -109,6 +109,14 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 78. Rechte für mehrere Familien (für später, siehe eigener Abschnitt)
 
+**🚗 Kopfzeile**
+
+79. Weitere Mitfahrer für die Kopfzeile (Lieferung 44/45 hat 18). Ideen: Fahrzeuge wie Polizeiauto, Krankenwagen,
+    Bagger, Müllauto, Bus, Motorrad, Roller, Wohnmobil mit Wohnwagen, Rennwagen, Eiswagen, Hubschrauber, Flugzeug mit
+    Banner, Rakete, Zeppelin, Drachen (Kinderspielzeug); Tiere wie Pferd, Kuh, Ente mit Küken, Katze, Fuchs,
+    Eichhörnchen, Schildkröte, Pinguin, Elefant, Einhorn, Storch, Biene, Fledermaus (nachts?). Neue Figur =
+    Zeichnung in `js/mitfahrer-bilder.js` plus eine Zeile in `js/mitfahrer.js`, kein Server nötig.
+
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
 Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
@@ -132,6 +140,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 10. **Server und Konten** (jeweils neue `api/index.php`): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
     74 Schneller Personenwechsel → 73 App-Sperre → 22 Gäste ohne Konto → 36 Gästebuch im Reiseblog →
     76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
+   Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile.
 11. **Zum Schluss:** 77 App auf Englisch (erst, wenn keine neuen Funktionen mehr dazukommen).
 
 ## Vorgemerkt (Stand: Lieferung 31)
