@@ -2271,3 +2271,23 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
   .rider { animation: none !important; transform: translateX(calc((var(--scene-w, 300px) - 80px) * (1 - var(--off, 0)))); }
   .rider * { animation: none !important; }
 }
+/* Version 45: mehr Bewegung für die Mitfahrer */
+.rider .flag { transform-box: fill-box; transform-origin: 0 50%; animation: flagWave .4s ease-in-out infinite alternate; }
+@keyframes flagWave { from { transform: skewY(-8deg) scaleX(.9); } to { transform: skewY(8deg) scaleX(1.05); } }
+.rider .rod { animation: rod calc(.6s / var(--spd, 1)) linear infinite; }
+@keyframes rod { 0% { transform: translate(3px, 0); } 25% { transform: translate(0, 3px); } 50% { transform: translate(-3px, 0); } 75% { transform: translate(0, -3px); } 100% { transform: translate(3px, 0); } }
+.rider .flame { transform-box: fill-box; transform-origin: 50% 100%; animation: flame .3s ease-in-out infinite alternate; }
+@keyframes flame { from { transform: scale(.7, .6); } to { transform: scale(1.1, 1.2); } }
+.rider .beam { animation: beam 1.6s ease-in-out infinite; opacity: .2; }
+@keyframes beam { 50% { opacity: .45; } }
+.rider .wave-arm { animation: waveArm .5s ease-in-out infinite alternate; }
+@keyframes waveArm { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+.rider .trail { animation: trail .6s linear infinite; }
+@keyframes trail { to { stroke-dashoffset: 6; } }
+.rider .waves.slow { animation-duration: 1.7s; }
+.rider .pant { transform-box: fill-box; transform-origin: 50% 0; animation: pant .3s ease-in-out infinite alternate; }
+@keyframes pant { to { transform: scaleY(.6); } }
+.rider.r-boot { overflow: hidden; }
+.rider-opt { min-height: 104px; }
+.rider-opt .rider, .rider-opt .rider.air { --rh: 48px !important; height: 48px; }
+.rider-now.kids .rider { height: 40px; }

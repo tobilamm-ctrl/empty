@@ -136,6 +136,15 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 45: Mitfahrer mit mehr Details
+
+Alle Figuren oben in der Leiste sind neu gezeichnet und deutlich detailreicher: Gesichter mit Augenglanz, Fell,
+Muster und Schatten, echte Radfelgen mit Bolzen und Speichen. Neue kleine Bewegungen: Fahrradwimpel flattert,
+Kurbel und Pedale drehen sich, Treibstange der Dampflok läuft mit, Brennerflamme des Ballons flackert, im Ballon
+winkt jemand, der Außerirdische im Ufo winkt, der Lichtstrahl pulsiert, der Hund hechelt und wedelt, das Schaf trägt
+ein Glöckchen, der Hase eine Karotte, der Igel einen Apfel und die Schnecke eine Blume. Die Auswahl zeigt die Figuren
+größer.
+
 ## Neu in Version 44: Wer fährt oben mit?
 
 Oben in der Leiste können jetzt neben der V-Klasse und dem Bobbycar viele weitere Figuren durch die Landschaft
