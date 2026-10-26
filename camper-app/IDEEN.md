@@ -83,6 +83,12 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Ansage bei „Wie lange noch?“:** Handy sagt die Restzeit laut an, auf Wunsch alle 15 Minuten.
 - **Listen ausdrucken:** Pack-, Einkaufs- und Checklisten als Druckseite mit Kästchen.
 - **Kalender-Ansicht:** Monatskalender mit Reisetagen (Farbe der Reise, kleines Foto), Tipp öffnet den Tag im Tagebuch.
+- **Herzen und Kommentare bei Einträgen:** alle können auf Tagebucheinträge mit ❤️ reagieren oder kurz kommentieren.
+- **Gästebuch im Reiseblog:** Oma, Opa und Freunde hinterlassen Grüße, die Familie liest sie in der App (neuer Server-Teil).
+- **Wunschzettel der Kinder:** drei Wünsche pro Kind vor der Reise, abhaken mit Datum und Foto, wenn sie in Erfüllung gehen.
+- **Kurzinfo aus Wikipedia:** bei Sehenswürdigkeiten und Museen die ersten Sätze und ein Bild aus Wikipedia.
+- **Regentag-Plan:** bei Regen passende Ziele aus Wunschliste und Umgebung (Museum, Hallenbad, Indoor-Spielplatz),
+  bei Sonne Badestellen und Wanderungen.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -143,3 +149,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Schnelle Zeitwahl (jetzt, vor 1 Std., gestern Abend); Vorschläge beim Tippen; kurze Hilfe pro Seite; Sonnenlicht-Modus
 - Lange drücken für ein Menü an Einträgen; Eintrag duplizieren („Nochmal hier“); Einkaufsliste nach Supermarkt-Abteilungen
 - Schlagwörter für Einträge (#Lieblingsessen) mit Filter
+- „Wusstest du?“-Fakt für Kinder; Musikwunsch-Liste; Kasse und Tankbuch als CSV
