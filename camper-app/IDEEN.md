@@ -45,6 +45,16 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Mehrere Fahrzeuge:** Camper, zweites Auto oder Wohnwagen mit eigenem Steckbrief, Fristen und Tankbuch; je Reise wählbar.
 - **Wetter-Bilanz der Reise:** Sonnentage, Regentage, wärmste und kälteste Nacht in der Statistik.
 
+**Neu vorgemerkt (Bedienung und Layout):**
+
+- **Zurück-Taste am Android-Handy:** schließt zuerst ein offenes Fenster, dann zurück zur vorherigen Seite, statt die App zu schließen.
+- **Schnellauswahl am „+ Eintrag“-Knopf:** gedrückt halten öffnet einen Fächer mit den häufigsten Arten (Stellplatz, Tanken, Pause, Foto).
+- **Untere Leiste selbst zusammenstellen:** jede Person wählt ihre 4–5 Reiter. Was dadurch unten wegfällt (z. B. Boxen & Fächer),
+  erscheint automatisch als Kachel unter „Mehr“ (anordnen, ausblenden, Gruppen wie die übrigen Kacheln).
+- **Kopfzeile wird beim Scrollen schmaler:** Landschaft schrumpft beim Herunterscrollen zur schmalen Leiste, kommt beim Hochscrollen wieder.
+- **PC- und Tablet-Ansicht in zwei Spalten:** links Karte, rechts Tagebuch; Tipp auf einen Eintrag zeigt ihn auf der Karte.
+- **Tastenkürzel am PC:** N neuer Eintrag, / Suche, 1–5 Reiter, Esc Fenster schließen.
+
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
 Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Urlaubsgruppen) gründen, deren Inhalte Tobi nicht sieht.
@@ -100,3 +110,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Sonnen-Kompass zum Einparken; Toilette und Grauwasser in der Autarkie; Lärm-Messer; Taschenlampe mit Rotlicht; Küchenwecker;
   Standort per SMS; Mit Hund unterwegs; Schulferien-Kalender; Konvoi-Modus
 - „Angekommen“-Nachricht; Foto des Tages; Rubbelkarte als Poster; größere Schrift
+- Suche über alles; Wischgesten im Tagebuch (Tage) und in Listen (abhaken/löschen); Rückgängig statt Nachfrage; Fahrmodus
