@@ -167,7 +167,7 @@ export default function installAbenteuer(app) {
     try {
       const id = newId();
       const thumb = await shrink(f, 360, 0.7);
-      save('photos', { id, tripId: r.tripId, data: await shrink(f, 1600, 0.78) });
+      save('photos', { id, tripId: r.tripId, data: await shrink(f, 1920, 0.78) });
       const shots = { ...(r.shots || {}), [el.dataset.i]: { id, thumb, at: Date.now() } };
       const all = Object.keys(shots).length === r.tasks.length;
       save('games', { ...r, shots, doneAt: all ? Date.now() : null });

@@ -29,7 +29,7 @@ import installFahrspiele from './fahrspiele.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 31;
+const APP_VERSION = 32;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2059,7 +2059,7 @@ document.addEventListener('change', async ev => {
     toast(files.length > 1 ? `${files.length} Fotos werden verkleinert …` : 'Foto wird verkleinert …');
     for (const f of files) {
       try {
-        formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1600, 0.78) });
+        formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) });
         const grid = $('#photoGrid');
         if (grid) grid.innerHTML = photoGrid();
       } catch { toast('Ein Foto ließ sich nicht lesen.'); }

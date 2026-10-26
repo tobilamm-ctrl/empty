@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-31'` hochzählen (z. B. auf `lammping-32`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-32'` hochzählen (z. B. auf `lammping-33`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -118,6 +118,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 
 ## Gut zu wissen
 
+- **Fotos:** Die App verkleinert Fotos schon auf dem Handy auf Full HD (längste Seite 1920 Pixel, meist 0,4–0,8 MB).
+  Das spart Datenvolumen und Platz in den Sicherungen; die Originale bleiben in der Galerie des Handys.
 - **Impressum und Datenschutz:** Für eine rein private, passwortgeschützte Seite für die Familie ist kein
   Impressum nötig, und die DSGVO greift bei rein familiärer Nutzung nicht. Suchmaschinen sind über
   `robots.txt` und `noindex` ausgesperrt.

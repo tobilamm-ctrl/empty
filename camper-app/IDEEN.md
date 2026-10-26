@@ -36,6 +36,11 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Medikamenten-Erinnerung:** z. B. 3 × täglich für 7 Tage, in der Heute-Karte zum Abhaken.
 - **Camping-Freundebuch:** Familien, die ihr unterwegs kennenlernt, mit Steckbrief, Kontakt, Foto und Stellplatz.
 - **Ausmalbild aus einem Foto:** Malvorlage mit schwarzen Linien zum Ausdrucken.
+- **Sprach-Schnelleintrag für Beifahrer:** „Tankstopp, 45 Liter, 78 Euro“ sagen, die App legt den passenden Eintrag mit allen Feldern an.
+- **Reise als Vorlage:** neue Reise aus einer alten mit deren Merk-, Einkaufs-, Pack- und Checklisten.
+- **Tageszusammenfassung zum Teilen:** abends auswählen, was hinein soll (Strecke, Stopps, Highlight, Wetter, Foto …),
+  zu jedem gewählten Punkt einen eigenen Satz schreiben, dann per WhatsApp teilen.
+- **Mehrere Fahrzeuge:** Camper, zweites Auto oder Wohnwagen mit eigenem Steckbrief, Fristen und Tankbuch; je Reise wählbar.
 - **Wetter-Bilanz der Reise:** Sonnentage, Regentage, wärmste und kälteste Nacht in der Statistik.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
@@ -92,3 +97,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Fristen nach Kilometern; Mitbringsel-Liste; Kartengrüße-Liste; Spiele-Meisterschaft
 - Sonnen-Kompass zum Einparken; Toilette und Grauwasser in der Autarkie; Lärm-Messer; Taschenlampe mit Rotlicht; Küchenwecker;
   Standort per SMS; Mit Hund unterwegs; Schulferien-Kalender; Konvoi-Modus
+- „Angekommen“-Nachricht; Foto des Tages; Rubbelkarte als Poster; größere Schrift
