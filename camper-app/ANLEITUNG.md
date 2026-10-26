@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-40'` hochzählen (z. B. auf `lammping-41`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-41'` hochzählen (z. B. auf `lammping-42`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,30 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 41: Familie, Kinder, Teilen, Drucken, Sichern
+
+**Familie und Kinder:**
+- **Ansage bei „Wie lange noch?“:** „🔊 Ansagen“ liest Restzeit, Strecke und Ankunft vor; auf Wunsch alle 15 Minuten,
+  solange die Seite offen ist (der Bildschirm bleibt dort an).
+- **Wunschzettel** (Mehr und Kinder-Startseite): drei Wünsche je Person für die Reise. Geht ein Wunsch in Erfüllung:
+  ☆ antippen, Datum und Foto dazu.
+- **Freundebuch** (Mehr und Kinder-Startseite): Familien von unterwegs mit Kindern, Wohnort, Kontakt, Steckbrief, Foto und
+  „Wo kennengelernt“ (der letzte Stellplatz ist vorgeschlagen). „Ins Adressbuch“ speichert eine Kontaktdatei (vCard).
+- **Reise-Urkunde** (Wunschzettel oder Reise → Export): Urkunde zum Drucken mit Kilometern, Tagen, Stellplätzen, Ländern,
+  entdeckten Tieren, Stempeln, erfüllten Wünschen, Foto und Unterschriftszeile. Querformat drucken.
+- **Ausmalbild:** Im Foto-Vollbild „🖍️ Ausmalbild“ antippen. Aus dem Foto wird eine Malvorlage mit schwarzen Linien;
+  Linienzahl und -stärke lassen sich einstellen. Drucken oder als Bild speichern.
+
+**Teilen, Drucken, Sichern:**
+- **Wetter-Bilanz** (Statistik, für die aktuelle Reise): Sonnen- und Regentage, Regenmenge, wärmster Tag, kälteste Nacht
+  und das Wetter jedes Tages (Daten von Open-Meteo, braucht einmal Internet).
+- **Listen ausdrucken:** „Drucken“ oben in Listen (aktuelle Liste), Boxen & Fächer (Packliste mit Boxen, Eingepacktes
+  angekreuzt) und Checklisten. Zweispaltig mit Kästchen zum Abhaken.
+- **Reise als eigene Datei** (Reise → Export → „Reise als Datei“): eine einzige Webseiten-Datei mit Karte, allen Tagen,
+  Texten und Fotos. Lässt sich ohne LAMMping und ohne Internet in jedem Browser öffnen, z. B. als Sicherung.
+- **QR-Codes:** neben Reiseblog-Links und dem Link für Lieblingsplätze „▦ QR-Code“; in den Einstellungen unter
+  „App weitergeben“ ein QR-Code, mit dem ein anderes Handy LAMMping öffnet.
 
 ## Neu in Version 40: Fahrzeuge, Reise-Aufbau und Infos aus dem Internet
 

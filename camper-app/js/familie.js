@@ -20,7 +20,7 @@ export default function installFamilie(app) {
   // Vorschlag für Kinder: alles zum Mitmachen und Anschauen, ohne Verwaltung und Organisation
   const KIDS = ['karte', 'tagebuch', 'album', 'wetter', 'laender', 'statistik', 'kochen', 'ideen', 'spiel:nochweit', 'spiel:reisepass',
     'spiel:kennzeichen', 'spiel:laenderkz', 'spiel:bingo', 'spiel:slf', 'spiel:quiz', 'spiel:sticker', 'spiel:brettspiele', 'spiel:tiere', 'spiel:rallye',
-    'spiel:farben', 'spiel:abc', 'spiel:werbinich', 'spiel:tabu', 'spiel:flaggen', 'spiel:memory', 'spiel:sudoku', 'spiel:maler', 'spiel:ttt', 'spiel:story', 'spiel:labyrinth', 'heute', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto'];
+    'spiel:farben', 'spiel:abc', 'spiel:werbinich', 'spiel:tabu', 'spiel:flaggen', 'spiel:memory', 'spiel:sudoku', 'spiel:maler', 'spiel:ttt', 'spiel:story', 'spiel:labyrinth', 'heute', 'wunschzettel', 'freunde', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto'];
 
   app.allowed = key => {
     const a = user().areas;

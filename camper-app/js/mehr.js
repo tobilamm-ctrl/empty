@@ -31,6 +31,8 @@ export default function installMore(app) {
     { route: 'wasserwaage', art: 'wasserwaage', title: 'Wasserwaage', text: 'Camper gerade stellen' },
     { route: 'abstimmung', art: 'abstimmung', title: 'Abstimmung', text: 'Die Familie entscheidet' },
     { route: 'urlaubsgeld', art: 'urlaubsgeld', title: 'Urlaubsgeld', text: 'Taschengeld der Kinder' },
+    { route: 'wunschzettel', art: 'wunschzettel', title: 'Wunschzettel', text: 'Drei Wünsche für die Reise' },
+    { route: 'freunde', art: 'freunde', title: 'Freundebuch', text: 'Familien von unterwegs' },
     { route: 'pinnwand', art: 'pinnwand', title: 'Pinnwand', text: 'Kurze Nachrichten an alle' },
     { route: 'tickets', art: 'tickets', title: 'Tickets', text: 'Fähre, Campingplatz, Eintritt' },
     { route: 'reisefoto', art: 'reisefoto', title: 'Unser Reisefoto', text: 'Jede Fahrt dasselbe Motiv' },

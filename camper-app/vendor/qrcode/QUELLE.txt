@@ -1,0 +1,5 @@
+QR Code Generator for JavaScript, Version 1.4.4 (npm-Paket qrcode-generator)
+Copyright (c) 2009 Kazuhiko Arase, https://github.com/kazuhikoarase/qrcode-generator
+Lizenz: MIT (https://opensource.org/licenses/MIT)
+Für LAMMping als ES-Modul angepasst: der UMD-Block am Ende wurde durch „export default qrcode;“ ersetzt.
+„QR Code“ ist eine eingetragene Marke der DENSO WAVE INCORPORATED.

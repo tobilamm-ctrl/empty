@@ -2028,3 +2028,80 @@ details.tpl summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .rp-list .txt b, .rp-list .txt small { display: block; }
 .rp-list .ok { color: #3B6B2C; }
 .rp-list .warn { color: #9A2019; }
+
+/* ---------- Version 41: Familie, Kinder, Teilen, Drucken, Sichern ---------- */
+
+.eta-speak { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 12px 0; }
+
+/* Wunschzettel */
+.wish-card h2 { margin-top: 0; }
+.wish-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; }
+.wish-list li { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+.wish-list li .txt { flex: 1; }
+.wish-list li .txt small { display: block; font-size: 13px; color: var(--muted); }
+.wish-list li.done .txt b { text-decoration: line-through; text-decoration-color: #C9961A; }
+.wish-list img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; }
+.wish-tick { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #C9961A; background: none; color: #C9961A; font-size: 22px; cursor: pointer; flex: none; }
+.wish-ok { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #C9961A; color: #fff; font-size: 20px; flex: none; }
+.wish-card.small li { font-size: 15px; }
+.wish-big { font: 700 22px var(--head); text-align: center; margin: 10px 0; }
+
+/* Freundebuch */
+.friend-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 14px 0; }
+.friend-card { display: grid; gap: 4px; justify-items: center; padding: 12px; border-radius: 14px; border: 1px solid var(--line, #E2D6C2); background: var(--card, #fff);
+  color: var(--ink); font: inherit; text-align: center; cursor: pointer; }
+.friend-card img, .friend-ph { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; font-size: 40px; background: var(--mist); }
+.friend-card small { color: var(--muted); }
+.friend-photo { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; }
+
+/* Ausmalbild */
+.coloring canvas { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line, #E2D6C2); background: #fff; }
+
+/* QR-Code */
+.qr-box { display: grid; place-items: center; padding: 14px; background: #fff; border-radius: 14px; margin: 8px auto; max-width: 320px; }
+.qr-box .qr { width: 100%; height: auto; max-width: 280px; }
+.qr-url { text-align: center; overflow-wrap: anywhere; }
+
+/* Listen drucken */
+.print-btn { margin: -6px 0 12px; }
+
+/* Wetter-Bilanz */
+.wxb-big { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; text-align: center; }
+.wxb-big b { display: block; font: 700 22px var(--head); }
+.wxb-big small { color: var(--muted); }
+.wxb-strip { display: flex; gap: 4px; overflow-x: auto; padding: 4px 0; }
+.wxb-strip span { flex: none; display: grid; justify-items: center; min-width: 34px; font-size: 12px; }
+.wxb-strip .ic.wx { width: 24px; height: 24px; }
+
+/* Druckseiten: Urkunde, Listen, Ausmalbild */
+#printDoc .cert { width: 100%; }
+.cert-frame { position: relative; margin: 0 auto; max-width: 980px; padding: 34px 50px; border: 10px double #6B4226; border-radius: 18px; text-align: center; color: #3A2617; font-family: Georgia, serif; }
+.cert-sheep { position: absolute; top: 18px; left: 26px; width: 90px; height: 70px; color: #6B4226; }
+.cert-kicker { margin: 0; letter-spacing: .3em; text-transform: uppercase; font-size: 14px; color: #8A6A4A; }
+.cert h1 { font: 700 54px/1.1 var(--head, sans-serif); margin: 6px 0; color: #A4462B; }
+.cert-for { margin: 6px 0 0; font-style: italic; }
+.cert-name { font: 700 40px var(--head, sans-serif); margin: 2px 0 8px; border-bottom: 2px solid #E8DCC7; display: inline-block; padding: 0 30px 4px; }
+.cert-text { font-size: 19px; }
+.cert-body { display: flex; align-items: center; justify-content: center; gap: 30px; margin: 16px 0; }
+.cert-body img { width: 300px; max-height: 220px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.cert-facts { list-style: none; padding: 0; margin: 0; text-align: left; font-size: 19px; }
+.cert-facts b { color: #A4462B; font-size: 24px; }
+.cert-flags { font-size: 16px; }
+.cert-flags img { width: 22px; height: auto; vertical-align: -3px; }
+.cert-sign { display: flex; justify-content: space-around; margin-top: 30px; font-size: 14px; color: #8A6A4A; }
+.cert-sign div { display: grid; gap: 4px; min-width: 240px; }
+.cert-sign span { border-bottom: 1px solid #6B4226; height: 36px; }
+.list-print header { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #E8DCC7; margin-bottom: 10px; }
+.list-print h1 { margin: 0; font: 700 28px var(--head, sans-serif); }
+.list-print header p { margin: 0; color: #8A6A4A; }
+.list-print h2 { font: 700 17px var(--head, sans-serif); margin: 14px 0 4px; break-after: avoid; }
+.list-print ul { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 30px; }
+.list-print li { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; break-inside: avoid; font-size: 15px; }
+.list-print li .pb { flex: none; width: 16px; height: 16px; border: 1.5px solid #333; border-radius: 3px; margin-top: 2px; }
+.list-print li.done { color: #888; }
+.list-print li.done .pb { background: linear-gradient(45deg, transparent 45%, #333 45%, #333 55%, transparent 55%); }
+.list-print section { break-inside: avoid-page; }
+.list-print footer { margin-top: 20px; font-size: 12px; color: #8A6A4A; }
+.coloring-print { text-align: center; }
+.coloring-print img { max-width: 100%; max-height: 95vh; }
+.coloring-print p { font-size: 11px; color: #999; }

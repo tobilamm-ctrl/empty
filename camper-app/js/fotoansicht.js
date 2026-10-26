@@ -70,7 +70,8 @@ export default function installFotoansicht(app) {
     [st.index - 1, st.index + 1].forEach(i => { const q = st.list[i]; if (q) app.store().get('photos', q.id).then(d => { if (d && d.data) new Image().src = d.data; }).catch(() => {}); });
     const e = p.entryId && S.entries.find(x => x.id === p.entryId);
     box.querySelector('.pv-cap').innerHTML = `${e ? `<b>${esc(e.title || TYPES[e.type].label)}</b><small>${fmtDay(e.date.slice(0, 10))}, ${fmtTime(e.date)}${e.place ? ` · ${esc(e.place)}` : ''}</small>` : ''}
-      <span class="pv-n">${st.index + 1} / ${st.list.length}</span>${e && ui.route !== 'buch' ? `<button class="link" data-pv="entry">Zum Eintrag</button>` : ''}`;
+      <span class="pv-n">${st.index + 1} / ${st.list.length}</span>${e && ui.route !== 'buch' ? `<button class="link" data-pv="entry">Zum Eintrag</button>` : ''}
+      ${app.coloring ? `<button class="link" data-action="col-from-viewer" data-id="${p.id}">🖍️ Ausmalbild</button>` : ''}`;
     box.querySelector('.pv-prev').hidden = st.index === 0;
     box.querySelector('.pv-next').hidden = st.index === st.list.length - 1;
   }

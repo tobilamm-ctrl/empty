@@ -38,27 +38,27 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 23. ~~Familien-Pinnwand~~ Erledigt in Lieferung 34.
 24. ~~Herzen und Kommentare bei Einträgen~~ Erledigt in Lieferung 38.
-25. Wunschzettel der Kinder
-26. Reise-Urkunde für Kinder
-27. Ausmalbild aus einem Foto
+25. ~~Wunschzettel der Kinder~~ Erledigt in Lieferung 41.
+26. ~~Reise-Urkunde für Kinder~~ Erledigt in Lieferung 41.
+27. ~~Ausmalbild aus einem Foto~~ Erledigt in Lieferung 41.
 28. ~~Bobbycar für Kinderkonten~~ Erledigt in Lieferung 34.
-29. Ansage bei „Wie lange noch?“
+29. ~~Ansage bei „Wie lange noch?“~~ Erledigt in Lieferung 41.
 30. ~~Kurzinfo aus Wikipedia~~ Erledigt in Lieferung 40.
 31. Medikamenten-Erinnerung
-32. Camping-Freundebuch
+32. ~~Camping-Freundebuch~~ Erledigt in Lieferung 41.
 
 **📸 Teilen und Erinnern**
 
 33. ~~Tageszusammenfassung zum Teilen~~ Erledigt in Lieferung 34.
 34. ~~„Teilen mit LAMMping“ (auch in die Reiseideen)~~ Erledigt in Lieferung 34.
-35. QR-Code zum Teilen
+35. ~~QR-Code zum Teilen~~ Erledigt in Lieferung 41.
 36. Gästebuch im Reiseblog
-37. Wetter-Bilanz der Reise
+37. ~~Wetter-Bilanz der Reise~~ Erledigt in Lieferung 41.
 38. ~~Kalender-Ansicht~~ Erledigt in Lieferung 38.
 39. ~~Tagebuch als Buch lesen~~ Erledigt in Lieferung 38.
 40. ~~Jedes Mal dasselbe Foto (bei jeder Fahrt)~~ Erledigt in Lieferung 34.
-41. Reise als eigene Datei sichern
-42. Listen ausdrucken
+41. ~~Reise als eigene Datei sichern~~ Erledigt in Lieferung 41.
+42. ~~Listen ausdrucken~~ Erledigt in Lieferung 41.
 
 **🗺️ Karte**
 
@@ -124,9 +124,9 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
    18 Stellplatz nach mehreren Punkten bewerten → 21 Reise als Vorlage.
 6. ~~**Infos aus dem Internet**~~ Erledigt in Lieferung 40 (Planung): 12 Spritkosten der Route → 11 Reise-Check → 17 Kontakt zum Campingplatz →
    14 „Heute geöffnet?“ → 16 Wassertemperatur → 30 Wikipedia-Kurzinfo → 15 Regentag-Plan.
-7. **Familie und Kinder:** 29 Ansage bei „Wie lange noch?“ → 25 Wunschzettel → 32 Freundebuch → 26 Reise-Urkunde →
+7. ~~**Familie und Kinder:**~~ Erledigt in Lieferung 41. 29 Ansage bei „Wie lange noch?“ → 25 Wunschzettel → 32 Freundebuch → 26 Reise-Urkunde →
    27 Ausmalbild aus Foto. (31 Medikamenten-Erinnerung kommt mit Paket 10, sie braucht Push-Mitteilungen.)
-8. **Teilen, Drucken, Sichern:** 37 Wetter-Bilanz → 42 Listen ausdrucken → 41 Reise als eigene Datei → 35 QR-Code.
+8. ~~**Teilen, Drucken, Sichern:**~~ Erledigt in Lieferung 41. 37 Wetter-Bilanz → 42 Listen ausdrucken → 41 Reise als eigene Datei → 35 QR-Code.
 9. **Spiele** (jederzeit dazwischen): 3 Hauptstädte → 1 Umriss-Quiz → 2 Wo liegt das? (nutzen die Länderdaten der
    Rubbelkarte); 5 Punkteblock → 4 Kniffel; 7 Senso, 8 Wer ist schneller?, 9 Würdest du lieber …?, 10 Tick-Tack-Bumm.
 10. **Server und Konten** (jeweils neue `api/index.php`): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →

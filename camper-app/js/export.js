@@ -326,6 +326,8 @@ ${trks}
     setTimeout(() => { document.title = old; }, 1000);
   }
   app.printHtml = printHtml;
+  // Karte der Reise als fertiges Bild (für „Reise als eigene Datei“ in sichern.js)
+  app.tripMapHtml = t => { const { lines, marks, color } = mapData(t); return staticMap(lines, marks, color); };
 
   app.exportGpx = gpx;
 }
