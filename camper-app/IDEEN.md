@@ -68,6 +68,15 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Bildschirm bleibt an:** bei „Wie lange noch?“, Wasserwaage, Rezepten beim Kochen und Spielen (Wake Lock).
 - **Erinnerungen als Mitteilung (Push):** Fristen, neue Abstimmung, Dienst heute, Medikamente; auch bei geschlossener App.
   iPhone nur bei installierter App; braucht neuen Server-Teil.
+- **„Teilen mit LAMMping“ (Share Target):** aus Google Maps, Galerie oder Browser über „Teilen“ an LAMMping schicken
+  (installierte App). Danach fragt die App, wohin: heutiger Eintrag, Wunschliste oder **Reiseideen** (neue Idee oder als Notiz/Link
+  an eine bestehende Idee), damit sich Vorschläge für die nächste Reise sammeln lassen.
+- **Google-Maps-Link einfügen:** kopierten Link ins Ortsfeld einfügen, Name und Position werden übernommen.
+- **Fotos am PC hineinziehen:** Dateien aus dem Explorer direkt auf das Eintragsfenster ziehen.
+- **Liste unter der Karte:** hochziehbare Leiste mit den Einträgen des Tages, Tipp springt zur Stelle.
+- **Pins bündeln:** nahe Pins beim Herauszoomen als Kreis mit Zahl.
+- **Kleine Tageskarte im Tagebuch:** unter jeder Tagesüberschrift Strecke und Stopps des Tages, Tipp öffnet die große Karte.
+- **Dort weitermachen, wo man war:** beim Wiederöffnen die zuletzt offene Seite (Spiel, Liste) statt der Startseite.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -126,3 +135,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - „Angekommen“-Nachricht; Foto des Tages; Rubbelkarte als Poster; größere Schrift
 - Suche über alles; Wischgesten im Tagebuch (Tage) und in Listen (abhaken/löschen); Rückgängig statt Nachfrage; Fahrmodus
 - Schnelle Zeitwahl (jetzt, vor 1 Std., gestern Abend); Vorschläge beim Tippen; kurze Hilfe pro Seite; Sonnenlicht-Modus
+- Lange drücken für ein Menü an Einträgen; Eintrag duplizieren („Nochmal hier“); Einkaufsliste nach Supermarkt-Abteilungen
