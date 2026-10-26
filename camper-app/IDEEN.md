@@ -125,6 +125,11 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 81. Jedes Jahr dasselbe Foto: festes Erinnerungsmotiv, die App erinnert daran und zeigt die Jahre nebeneinander
     (früher vorgeschlagen, jetzt auf der Liste).
 
+**📌 Hinweise**
+
+82. Benachrichtigungssymbol an der Kachel „Pinnwand“ (Mehr), wenn dort etwas hängt: kleine Zahl bzw. Punkt mit der
+    Anzahl der aktuellen Zettel, wie bei anderen Kacheln mit Zähler. Ggf. auch am Reiter „Mehr“.
+
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
 Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
@@ -151,7 +156,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
     76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
    Ohne offene Fragen zuerst möglich: 74 Personenwechsel, 73 App-Sperre, 76 Erste Schritte.
    Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile, 80 Weitere Spiele in der Urlaubswertung,
-   81 Jedes Jahr dasselbe Foto.
+   81 Jedes Jahr dasselbe Foto, 82 Symbol an der Pinnwand-Kachel.
 11. **Zum Schluss:** 77 App auf Englisch (erst, wenn keine neuen Funktionen mehr dazukommen).
 
 ## Vorgemerkt (Stand: Lieferung 31)
