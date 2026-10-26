@@ -109,6 +109,10 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **„Heute geöffnet?“ bei Ausflugszielen:** Öffnungszeiten aus OpenStreetMap bei Wunschliste und Planung, Warnung bei Ruhetag.
 - **Tagebuch als Buch lesen:** Leseansicht mit schöner Schrift, großen Fotos, ein Tag pro Seite zum Blättern.
 - **Eigener Reiter „Heute“:** Wetter, Sonne, Gezeiten, nächstes Ziel, Dienste, Abstimmungen, Frage des Tages, Tickets auf einer Seite.
+- **Fotos auf der Karte:** Ebene mit Vorschaubildern an den Aufnahmeorten, Tipp öffnet das Foto.
+- **Kartenart umschalten:** Wanderkarte mit Höhenlinien und Luftbild zusätzlich zur normalen Karte.
+- **Gäste ohne eigenes Konto:** z. B. Oma für eine Woche oder befreundete Familie; bei „Wer ist dabei?“, Kasse und Reisepass.
+- **Jedes Jahr dasselbe Foto:** festes Erinnerungsmotiv, App erinnert daran und zeigt die Jahre nebeneinander.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -173,3 +177,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Stimmungsbarometer; Kassenbon fotografieren
 - Profilbilder (Foto oder Emoji) statt nur Namen
 - Waschtag-Rechner; Restzeit-Leiste oben
+- Rückwärts planen („Wann müssen wir los?“); Haushüter-Zettel; Reise-Rekorde
