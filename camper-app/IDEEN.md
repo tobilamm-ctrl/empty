@@ -117,6 +117,14 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
     Eichhörnchen, Schildkröte, Pinguin, Elefant, Einhorn, Storch, Biene, Fledermaus (nachts?). Neue Figur =
     Zeichnung in `js/mitfahrer-bilder.js` plus eine Zeile in `js/mitfahrer.js`, kein Server nötig.
 
+**🎲 Spiele und Erinnerungen**
+
+80. Weitere Spiele in der Urlaubswertung (Punkteblock, Lieferung 43): Tick-Tack-Bumm und „Wer ist schneller?“ speichern
+    noch keine Sieger für die Familie, die Quiz-Spiele (Hauptstädte, Umriss, Wo liegt das?, Farben-Merkspiel) nur
+    Rekorde je Person und Handy. Idee: Sieger bzw. bester Wert der Reise je Person zählt mit.
+81. Jedes Jahr dasselbe Foto: festes Erinnerungsmotiv, die App erinnert daran und zeigt die Jahre nebeneinander
+    (früher vorgeschlagen, jetzt auf der Liste).
+
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
 Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
@@ -137,10 +145,13 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 8. ~~**Teilen, Drucken, Sichern:**~~ Erledigt in Lieferung 41. 37 Wetter-Bilanz → 42 Listen ausdrucken → 41 Reise als eigene Datei → 35 QR-Code.
 9. ~~**Spiele**~~ Erledigt in Lieferung 42 (jederzeit dazwischen): 3 Hauptstädte → 1 Umriss-Quiz → 2 Wo liegt das? (nutzen die Länderdaten der
    Rubbelkarte); 5 Punkteblock → 4 Kniffel; 7 Senso, 8 Wer ist schneller?, 9 Würdest du lieber …?, 10 Tick-Tack-Bumm.
-10. **Server und Konten** (jeweils neue `api/index.php`): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
+10. **Server und Konten** (jeweils neue `api/index.php`; vor Push ein kleines Prüfskript schicken, ob der Webspace
+    OpenSSL für Push-Mitteilungen hat): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
     74 Schneller Personenwechsel → 73 App-Sperre → 22 Gäste ohne Konto → 36 Gästebuch im Reiseblog →
     76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
-   Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile.
+   Ohne offene Fragen zuerst möglich: 74 Personenwechsel, 73 App-Sperre, 76 Erste Schritte.
+   Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile, 80 Weitere Spiele in der Urlaubswertung,
+   81 Jedes Jahr dasselbe Foto.
 11. **Zum Schluss:** 77 App auf Englisch (erst, wenn keine neuen Funktionen mehr dazukommen).
 
 ## Vorgemerkt (Stand: Lieferung 31)
@@ -253,7 +264,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 - **Fotos auf der Karte:** Ebene mit Vorschaubildern an den Aufnahmeorten, Tipp öffnet das Foto.
 - **Kartenart umschalten:** Wanderkarte mit Höhenlinien und Luftbild zusätzlich zur normalen Karte.
 - **Gäste ohne eigenes Konto:** z. B. Oma für eine Woche oder befreundete Familie; bei „Wer ist dabei?“, Kasse und Reisepass.
-- **Jedes Jahr dasselbe Foto:** festes Erinnerungsmotiv, App erinnert daran und zeigt die Jahre nebeneinander.
+- ~~**Jedes Jahr dasselbe Foto**~~ jetzt Punkt 81.
 - **App-Sperre mit Fingerabdruck oder PIN:** für die ganze App oder nur Dokumente und Kasse.
 - **Speicherplatz-Übersicht:** Platz von Fotos und Daten je Reise; alte Reisen vom Handy entfernen (bleiben auf dem Server).
 - **App auf Englisch:** Sprachauswahl für befreundete Familien; großer Umbau (alle Texte), passt zu „Rechte für mehrere Familien“.
