@@ -102,6 +102,13 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Reihenfolge im Tagebuch umschaltbar:** neueste oben oder chronologisch ab Tag 1, je Person.
 - **Erste Schritte für neue Familien:** Abhak-Liste auf der Startseite (Reise, Fahrzeug, Mitglieder einladen, App installieren);
   passt zu „Rechte für mehrere Familien“.
+- **Tickets und Reservierungen:** je Reise Fähre, Campingplatz, Eintritt, Vignette mit Datum, Buchungsnummer, QR/PDF als Bild,
+  offline; Countdown („Fähre in 2 Std. 15 Min.“) in der Heute-Karte.
+- **Mängelliste fürs Fahrzeug:** unterwegs Kaputtes mit Foto notieren, zu Hause oder in der Werkstatt abarbeiten.
+- **Wassertemperatur am Meer:** auf der Wetterseite für die nächsten Tage (Open-Meteo Marine).
+- **„Heute geöffnet?“ bei Ausflugszielen:** Öffnungszeiten aus OpenStreetMap bei Wunschliste und Planung, Warnung bei Ruhetag.
+- **Tagebuch als Buch lesen:** Leseansicht mit schöner Schrift, großen Fotos, ein Tag pro Seite zum Blättern.
+- **Eigener Reiter „Heute“:** Wetter, Sonne, Gezeiten, nächstes Ziel, Dienste, Abstimmungen, Frage des Tages, Tickets auf einer Seite.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -165,3 +172,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - „Wusstest du?“-Fakt für Kinder; Musikwunsch-Liste; Kasse und Tankbuch als CSV
 - Stimmungsbarometer; Kassenbon fotografieren
 - Profilbilder (Foto oder Emoji) statt nur Namen
+- Waschtag-Rechner; Restzeit-Leiste oben
