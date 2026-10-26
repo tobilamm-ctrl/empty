@@ -54,6 +54,10 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Kopfzeile wird beim Scrollen schmaler:** Landschaft schrumpft beim Herunterscrollen zur schmalen Leiste, kommt beim Hochscrollen wieder.
 - **PC- und Tablet-Ansicht in zwei Spalten:** links Karte, rechts Tagebuch; Tipp auf einen Eintrag zeigt ihn auf der Karte.
 - **Tastenkürzel am PC:** N neuer Eintrag, / Suche, 1–5 Reiter, Esc Fenster schließen.
+- **Wischen zwischen den Reitern der unteren Leiste:** von rechts nach links = nächster Reiter (Tagebuch → Listen → Boxen → Mehr),
+  zurück entsprechend; Reihenfolge wie die (ggf. eigene) untere Leiste. Seite folgt dem Finger und rastet ein.
+  Nicht auf der Karte (dort nur auf der Kopfzeile), nicht am Bildschirmrand (Zurück-Geste), nicht auf Chip-Leisten,
+  Kachel-Ziehen, Malflächen, Spielen, in Fenstern und auf Unterseiten. In den Einstellungen abschaltbar.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
