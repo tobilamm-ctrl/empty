@@ -86,7 +86,8 @@ export default function installNavigation(app) {
         ${tabs.map(k => `<a href="#/${k}" data-tab="${k}">${tabIcon(k)}<span>${esc(label(k))}</span></a>`).join('')}
         <a href="#/mehr" data-tab="mehr">${CORE_SVG.mehr}<span>Mehr</span></a>`;
     }
-    const cur = tabs.includes(ui.route) ? ui.route : ui.route === 'kinder' ? 'kinder' : 'mehr';
+    const route = ['buch', 'kalender'].includes(ui.route) && tabs.includes('tagebuch') ? 'tagebuch' : ui.route;
+    const cur = tabs.includes(route) ? route : route === 'kinder' ? 'kinder' : 'mehr';
     bar.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.tab === cur));
   });
 

@@ -39,6 +39,7 @@ export default function installMore(app) {
     { route: 'laender', art: 'laender', title: 'Länderinfos', text: 'Maut, Tempo, Pflichtausstattung' },
     { route: 'dokumente', art: 'dokumente', title: 'Dokumente & Notfall', text: 'Ausweise, Kontakte, Notruf', alt: 'Notfall' },
     { route: 'album', art: 'album', title: 'Fotoalbum', text: 'Galerie und Jahresrückblick' },
+    { route: 'kalender', art: 'kalender', title: 'Kalender', text: 'Alle Reisetage auf einen Blick' },
     { route: 'kochen', art: 'kochen', title: 'Kochen', text: 'Rezepte und Einkaufsliste' },
     { route: 'autarkie', art: 'autarkie', title: 'Autarkie', text: 'Wasser, Gas und Strom' },
     { route: 'dienste', art: 'dienste', title: 'Camper-Dienste', text: 'Wer ist heute dran?' },

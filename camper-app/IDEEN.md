@@ -37,7 +37,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 **👨‍👩‍👧 Familie und Kinder**
 
 23. ~~Familien-Pinnwand~~ Erledigt in Lieferung 34.
-24. Herzen und Kommentare bei Einträgen
+24. ~~Herzen und Kommentare bei Einträgen~~ Erledigt in Lieferung 38.
 25. Wunschzettel der Kinder
 26. Reise-Urkunde für Kinder
 27. Ausmalbild aus einem Foto
@@ -54,8 +54,8 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 35. QR-Code zum Teilen
 36. Gästebuch im Reiseblog
 37. Wetter-Bilanz der Reise
-38. Kalender-Ansicht
-39. Tagebuch als Buch lesen
+38. ~~Kalender-Ansicht~~ Erledigt in Lieferung 38.
+39. ~~Tagebuch als Buch lesen~~ Erledigt in Lieferung 38.
 40. ~~Jedes Mal dasselbe Foto (bei jeder Fahrt)~~ Erledigt in Lieferung 34.
 41. Reise als eigene Datei sichern
 42. Listen ausdrucken
@@ -64,7 +64,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 43. Liste unter der Karte
 44. Pins bündeln
-45. Kleine Tageskarte im Tagebuch
+45. ~~Kleine Tageskarte im Tagebuch~~ Erledigt in Lieferung 38.
 46. Fotos auf der Karte
 47. Kartenart umschalten
 
@@ -88,10 +88,10 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 60. Kopfzeile wird beim Scrollen schmaler
 61. ~~PC- und Tablet-Ansicht in zwei Spalten~~ Erledigt in Lieferung 34.
 62. Tastenkürzel am PC
-63. Foto-Vollbild
+63. ~~Foto-Vollbild~~ Erledigt in Lieferung 38.
 64. Einkaufsmodus
-65. Sprungleiste im Tagebuch
-66. Reihenfolge im Tagebuch umschaltbar
+65. ~~Sprungleiste im Tagebuch~~ Erledigt in Lieferung 38.
+66. ~~Reihenfolge im Tagebuch umschaltbar~~ Erledigt in Lieferung 38.
 67. Bildschirm bleibt an
 68. Dort weitermachen, wo man war
 69. Eigener Reiter „Heute“
@@ -115,7 +115,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 
 1. ~~**Eintragen**~~ Erledigt in Lieferung 37 (Eintrags-Formular): 50 Kürzeres Formular → 49 Schnellauswahl am „+“-Knopf → 52 Foto-Schnellknopf →
    53 Google-Maps-Link einfügen → 54 Fotos am PC hineinziehen → 55 Mehrere auf einmal → 51 Entwürfe → 56 Anheften.
-2. **Tagebuch ansehen:** 66 Reihenfolge umschaltbar → 65 Sprungleiste → 63 Foto-Vollbild → 45 Kleine Tageskarte →
+2. ~~**Tagebuch ansehen:**~~ Erledigt in Lieferung 38. 66 Reihenfolge umschaltbar → 65 Sprungleiste → 63 Foto-Vollbild → 45 Kleine Tageskarte →
    24 Herzen und Kommentare → 38 Kalender-Ansicht → 39 Als Buch lesen.
 3. **Karte:** 47 Kartenart umschalten → 44 Pins bündeln → 46 Fotos auf der Karte → 43 Liste unter der Karte.
 4. **Bedienung:** 67 Bildschirm bleibt an → 64 Einkaufsmodus → 69 Reiter „Heute“ → 68 Dort weitermachen, wo man war →

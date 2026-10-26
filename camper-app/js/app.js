@@ -31,11 +31,14 @@ import installTickets from './tickets.js';
 import installLabyrinth from './labyrinth.js';
 import installSprache from './sprache.js';
 import installEintragen from './eintragen.js';
+import installFotoansicht from './fotoansicht.js';
+import installHerzen from './herzen.js';
+import installLesen from './lesen.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 37;
+const APP_VERSION = 38;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -348,7 +351,7 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "zuladung": 1.812, "wasserwaage": 1.869, "abstimmung": 1.826, "urlaubsgeld": 1.846, "dienste": 1.866, "pinnwand": 1.855, "tickets": 1.839, "reisefoto": 1.846, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "zuladung": 1.812, "wasserwaage": 1.869, "abstimmung": 1.826, "urlaubsgeld": 1.846, "dienste": 1.866, "pinnwand": 1.855, "tickets": 1.839, "reisefoto": 1.846, "kalender": 1.84, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
@@ -357,7 +360,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -645,7 +648,10 @@ VIEWS.tagebuch = () => {
   </div>`;
   if (mode === 'planung') return `${installHint()}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
   const filter = ui.diaryFilter;
-  const list = st.es.filter(e => filter === 'alle' || e.type === filter || TYPES[e.type].group === filter).sort(byDate).reverse();
+  // Reihenfolge je Person: neueste oben oder ab Tag 1 (lesen.js schaltet um)
+  const newest = LS.get('diaryOrder', 'neu') !== 'alt';
+  const list = st.es.filter(e => filter === 'alle' || e.type === filter || TYPES[e.type].group === filter).sort(byDate);
+  if (newest) list.reverse();
 
   const label = f => ({ alle: 'Alles', erleben: 'Erleben', unterwegs: 'Unterwegs' })[f] || TYPES[f].many;
   const chips = ['alle', 'stellplatz', 'erleben', 'unterwegs', 'notiz'].map(f =>
@@ -655,8 +661,9 @@ VIEWS.tagebuch = () => {
   list.forEach(e => (days[e.date.slice(0, 10)] ||= []).push(e));
   const timeline = Object.entries(days).map(([day, es]) => {
     const n = st.firstDay ? Math.round((dayDate(day) - dayDate(st.firstDay)) / 864e5) + 1 : null;
-    return `<li class="day">
+    return `<li class="day" id="day-${day}" data-day="${day}">
       <h2><span>${n && n > 0 ? 'Tag ' + n : fmtDay(day)}</span>${n && n > 0 ? `<small>${fmtDay(day)}</small>` : ''}${APP.dayExtras ? APP.dayExtras(day, t) : ''}</h2>
+      ${APP.dayMap ? APP.dayMap(t, day) : ''}
       ${APP.dayHighlights ? APP.dayHighlights(t, day) : ''}
       <ol>${es.map(stopItem).join('')}</ol>
     </li>`;
@@ -664,6 +671,7 @@ VIEWS.tagebuch = () => {
 
   return `${installHint()}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
     <div class="chips diary-chips">${chips}</div>
+    ${APP.diaryTools && list.length ? APP.diaryTools(t, st, Object.keys(days)) : ''}
     <button class="fab" data-action="entry-form" aria-label="Neuer Eintrag">${icon('plus')}<span>Eintrag</span></button>
     ${list.length
       ? `<ol class="timeline">${timeline}</ol>`
@@ -673,7 +681,7 @@ VIEWS.tagebuch = () => {
 function stopItem(e) {
   // Erstes Foto groß wie im Fotobuch, weitere klein darunter
   const [first, ...rest] = e.photos || [];
-  const thumbs = rest.slice(0, 4).map(p => `<img src="${p.thumb}" alt="">`).join('');
+  const thumbs = rest.slice(0, 4).map(p => `<img data-photo="${p.id}" src="${p.thumb}" alt="">`).join('');
   const bits = [
     e.place ? esc(e.place) : '',
     e.rating ? '★'.repeat(e.rating) : '',
@@ -692,6 +700,7 @@ function stopItem(e) {
         ${thumbs ? `<span class="thumbs">${thumbs}${e.photos.length > 5 ? `<b>+${e.photos.length - 5}</b>` : ''}</span>` : ''}
       </span>
     </button>
+    ${APP.stopExtra ? APP.stopExtra(e) : ''}
   </li>`;
 }
 
@@ -2252,6 +2261,9 @@ installTickets(APP);
 installLabyrinth(APP);
 installSprache(APP);
 installEintragen(APP);
+installFotoansicht(APP);
+installHerzen(APP);
+installLesen(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

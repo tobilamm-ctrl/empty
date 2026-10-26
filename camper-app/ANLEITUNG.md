@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-37'` hochzählen (z. B. auf `lammping-38`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-38'` hochzählen (z. B. auf `lammping-39`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,25 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 38: Tagebuch ansehen
+
+- **Werkzeugleiste im Tagebuch** (unter den Filtern):
+  - „↓ Neueste oben“ / „↑ Ab Tag 1“ schaltet die Reihenfolge um (für jede Person eigen).
+  - „🗺️ Tageskarten“ blendet unter jeder Tagesüberschrift eine kleine Karte mit Strecke und Stopps des Tages ein oder aus
+    (gestrichelt: vom Übernachtungsplatz davor). Ein Tipp auf die Tageskarte zeigt den Tag auf der großen Karte.
+  - „📅 Kalender“ und „📖 Als Buch“ (siehe unten).
+- **Sprungleiste:** „Tag 1 · Tag 2 · …“ bleibt beim Scrollen oben stehen und zeigt, wo man gerade ist. Ein Tipp springt zum Tag.
+- **Foto-Vollbild:** Ein Tipp auf ein Foto (im Tagebuch, im Eintrag, im Buch) öffnet es groß. Wischen zum nächsten Foto,
+  im Tagebuch über alle Einträge hinweg; mit zwei Fingern oder Doppeltipp zoomen; am PC Pfeiltasten, Mausrad und Esc.
+  „Zum Eintrag“ öffnet den passenden Eintrag. Den Eintrag selbst öffnet man jetzt über Titel oder Text.
+- **Herzen und Kommentare:** Unter jedem Eintrag 🤍 für ein Herz und 💬 für Kommentare; der letzte Kommentar steht als
+  Vorschau daneben. Im Eintrag sieht man, wer ein Herz gegeben hat, und kann kommentieren (eigene Kommentare löschen).
+- **Kalender** (auch unter Mehr): alle Reisetage eines Jahres in der Farbe der Reise, mit kleinem Foto des Tages.
+  Ein Tipp öffnet den Tag im Tagebuch.
+- **Als Buch lesen:** Titelseite mit Foto (das Reisefoto, sonst das erste Foto), ein Tag pro Seite mit Tageskarte, großen
+  Fotos und schöner Schrift, am Ende eine Schlussseite. Blättern mit ‹ ›, Wischen, Pfeiltasten oder über die Seitenauswahl.
+  Das Buch öffnet beim Tag, der im Tagebuch gerade zu sehen war, und merkt sich die Seite.
 
 ## Neu in Version 37: schneller eintragen
 

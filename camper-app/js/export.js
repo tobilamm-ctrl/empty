@@ -315,7 +315,9 @@ ${trks}
     if (!doc) { doc = document.createElement('div'); doc.id = 'printDoc'; document.body.appendChild(doc); }
     doc.innerHTML = html;
     document.body.classList.add('printing');
-    await Promise.all([...doc.querySelectorAll('img')].map(img => img.decode().catch(() => {})));
+    // Bilder sofort laden (nicht erst, wenn sie ins Bild kommen) und höchstens 8 Sekunden warten
+    doc.querySelectorAll('img[loading=lazy]').forEach(img => { img.loading = 'eager'; });
+    await Promise.race([Promise.all([...doc.querySelectorAll('img')].map(img => img.decode().catch(() => {}))), new Promise(r => setTimeout(r, 8000))]);
     const done = () => { document.body.classList.remove('printing'); window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
     const old = document.title;
