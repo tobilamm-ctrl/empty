@@ -210,6 +210,8 @@ export default function installFamilienleben(app) {
     const animals = S.games.filter(g => g.kind === 'animal' && g.by === pid && g.tripId === t.id).length;
     const stamps = (S.stamps || []).filter(s => (s.to || []).includes(pid) && s.date >= (t.start || st.firstDay || '') && s.date <= end).length;
     const wishes = (wishDoc(t, pid).wishes || []).filter(w => w.done).length;
+    // Spielesiege aus Punkteblock und Kniffel (spielekiste.js)
+    const gw = app.gameStandings ? (app.gameStandings(t.id).rows.find(r => r.name === name) || {}).wins || 0 : 0;
     const rf = S.games.find(g => g.id === `reisefoto_${t.id}`);
     const firstPh = tripEntries(t).slice().sort(byDate).find(e => (e.photos || []).length);
     const ph = rf ? rf.photoId : firstPh ? firstPh.photos[0].id : null;
@@ -217,7 +219,8 @@ export default function installFamilienleben(app) {
     try { if (ph) { const p = await app.store().get('photos', ph); if (p && p.data) src = p.data; } } catch { /* Vorschaubild reicht */ }
     const facts = [st.dist ? [fmtKm(st.dist), 'unterwegs'] : null, st.days ? [st.days, st.days === 1 ? 'Tag' : 'Tage'] : null, st.nights ? [st.nights, st.nights === 1 ? 'Stellplatz' : 'Stellplätze'] : null,
       ccs.length ? [ccs.length, ccs.length === 1 ? 'Land' : 'Länder'] : null, animals ? [animals, animals === 1 ? 'Tier entdeckt' : 'Tiere entdeckt'] : null,
-      stamps ? [stamps, stamps === 1 ? 'Stempel' : 'Stempel'] : null, wishes ? [wishes, wishes === 1 ? 'Wunsch erfüllt' : 'Wünsche erfüllt'] : null].filter(Boolean);
+      stamps ? [stamps, stamps === 1 ? 'Stempel' : 'Stempel'] : null, wishes ? [wishes, wishes === 1 ? 'Wunsch erfüllt' : 'Wünsche erfüllt'] : null,
+      gw ? [gw, gw === 1 ? 'Spiel gewonnen' : 'Spiele gewonnen'] : null].filter(Boolean);
     const html = `<article class="cert">
       <div class="cert-frame">
         <svg class="cert-sheep" aria-hidden="true"><use href="#schaf"/></svg>

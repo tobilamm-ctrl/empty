@@ -4,7 +4,7 @@
 import { flagImg } from './flaggen.js';
 
 export default function installSpielekiste(app) {
-  const { S, LS, ui, ACTIONS, FORMS, esc, icon, newId, save, remove, toast, render, members, me, personName, km, openSheet, closeSheet } = app;
+  const { S, LS, ui, ACTIONS, FORMS, esc, icon, newId, save, remove, toast, render, members, me, personName, km, openSheet, closeSheet, currentTrip } = app;
   const sheetHead = app.sheetHead;
   const player = () => (app.player ? app.player() : me());
   const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
@@ -216,14 +216,59 @@ export default function installSpielekiste(app) {
   const totals = b => b.players.map((_, i) => b.rounds.reduce((s, r) => s + (+r[i] || 0), 0));
   const leader = b => { const t = totals(b); const v = b.low ? Math.min(...t) : Math.max(...t); return t.map((x, i) => (x === v && b.rounds.length ? i : -1)).filter(i => i >= 0); };
   const PRESETS_B = [['Uno', true], ['Rommé', true], ['Mölkky', false], ['Boule', false], ['Wizard', false], ['Skat', false], ['Phase 10', true], ['Eigenes Spiel', false]];
+  // Zu welcher Reise gehört ein Block? Neue Blöcke merken sich die Reise, ältere werden über das Datum zugeordnet
+  const dayOf = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  function tripOfBlock(b) {
+    if (b.tripId) return b.tripId;
+    const d = dayOf(b.at || 0);
+    const t = S.trips.find(x => x.start && x.start <= d && (x.end || app.today()) >= d);
+    return t ? t.id : null;
+  }
+  const scopeBlocks = tripId => blocks().filter(b => !tripId || tripOfBlock(b) === tripId);
+
+  // Gesamtwertung: beendete Spiele, Siege je Person (bei Gleichstand zählt der Sieg für alle Führenden)
+  function standings(list) {
+    const ppl = {}, games = {};
+    list.filter(b => b.done && b.rounds.length).forEach(b => {
+      const l = leader(b), t = totals(b);
+      const g = games[b.name] = games[b.name] || { n: 0, wins: {}, top: null };
+      g.n++;
+      b.players.forEach((p, i) => {
+        const r = ppl[p] = ppl[p] || { name: p, played: 0, wins: 0 };
+        r.played++;
+        if (l.includes(i)) { r.wins++; g.wins[p] = (g.wins[p] || 0) + 1; }
+        // Höchstwert je Spiel (bei „wenigste Punkte gewinnen“ ohne Sinn)
+        if (!b.low && (!g.top || t[i] > g.top.v)) g.top = { v: t[i], name: p };
+      });
+    });
+    const rows = Object.values(ppl).sort((a, b) => b.wins - a.wins || b.wins / b.played - a.wins / a.played || a.name.localeCompare(b.name));
+    return { rows, games: Object.entries(games).sort((a, b) => b[1].n - a[1].n) };
+  }
+  function standingsView() {
+    const t = currentTrip();
+    const scope = t && ui.blockScope !== 'all' ? t.id : null;
+    const { rows, games } = standings(scopeBlocks(scope));
+    const meName = personName(player());
+    return `<section class="leader block-stats"><h3 class="date-head">Wertung ${scope ? `für „${esc(t.name)}“` : 'aller Reisen'}</h3>
+      ${t ? `<div class="chips"><button class="chip${scope ? ' on' : ''}" data-action="block-scope" data-s="trip">Diese Reise</button><button class="chip${scope ? '' : ' on'}" data-action="block-scope" data-s="all">Alle Reisen</button></div>` : ''}
+      ${rows.length ? `<ol>${rows.map((r, i) => `<li class="${r.name === meName ? 'me' : ''}"><span>${esc(r.name)}${r.wins && r.wins === rows[0].wins ? ' 👑' : ''}</span><b>${r.wins}</b><small>${r.wins === 1 ? 'Sieg' : 'Siege'} · ${r.played} ${r.played === 1 ? 'Spiel' : 'Spiele'}</small></li>`).join('')}</ol>
+        <p class="block-games-h">Je Spiel</p><ul class="block-games">${games.map(([name, g]) => { const w = Object.entries(g.wins).sort((a, b) => b[1] - a[1]);
+          return `<li><b>${esc(name)}</b> <small>${g.n}×</small><span>${w.map(([p, n]) => `${esc(p)} ${n}`).join(' · ')}${g.top ? `<small> · Höchstwert ${g.top.v} (${esc(g.top.name)})</small>` : ''}</span></li>`; }).join('')}</ul>`
+        : `<p class="sub">Noch keine beendeten Spiele${scope ? ' auf dieser Reise' : ''}. Beendete Punkteblöcke und Kniffel-Partien zählen hier mit.</p>`}</section>`;
+  }
+  ACTIONS['block-scope'] = el => { ui.blockScope = el.dataset.s; render(); };
+  app.gameStandings = tripId => standings(scopeBlocks(tripId));
+
   function blockView() {
     const open = ui.block && S.games.find(g => g.id === ui.block);
     if (!open) {
-      const list = blocks();
+      const t = currentTrip();
+      const list = scopeBlocks(t && ui.blockScope !== 'all' ? t.id : null);
       return `<p>Für Kartenspiele, Mölkky oder Boule: Runden eintragen, LAMMping rechnet und zeigt, wer vorne liegt.</p>
         <button class="primary" data-action="block-new">${icon('plus')}Neuer Punkteblock</button>
+        ${standingsView()}
         ${list.length ? `<ul class="ledger">${list.slice(0, 20).map(b => { const t = totals(b), l = leader(b); return `<li><button data-action="block-open" data-id="${b.id}">
-          <span class="txt"><b>${esc(b.name)}</b><small>${new Date(b.at).toLocaleDateString('de-DE')} · ${b.rounds.length} Runden${b.done && l.length ? ` · gewonnen: ${l.map(i => esc(b.players[i])).join(', ')}` : ''}</small></span>
+          <span class="txt"><b>${esc(b.name)}</b><small>${new Date(b.at).toLocaleDateString('de-DE')} · ${b.rounds.length} ${b.rounds.length === 1 ? 'Runde' : 'Runden'}${b.done && l.length ? ` · gewonnen: ${l.map(i => esc(b.players[i])).join(', ')}` : ''}</small></span>
           <span class="amt">${t.join(' : ')}</span></button></li>`; }).join('')}</ul>` : ''}`;
     }
     const b = open, t = totals(b), l = leader(b);
@@ -248,7 +293,7 @@ export default function installSpielekiste(app) {
   FORMS['block-new'] = form => {
     const players = [...[...form.querySelectorAll('[name=who]:checked')].map(c => c.value), ...form.more.value.split(',').map(x => x.trim()).filter(Boolean)];
     if (players.length < 1) return toast('Bitte Mitspieler auswählen.');
-    const b = save('games', { id: newId(), kind: 'block', by: me(), at: Date.now(), name: form.name.value.trim() || 'Spiel', low: form.low.checked, goal: +form.goal.value || 0, players, rounds: [], done: false });
+    const b = save('games', { id: newId(), kind: 'block', by: me(), at: Date.now(), tripId: (currentTrip() || {}).id || null, name: form.name.value.trim() || 'Spiel', low: form.low.checked, goal: +form.goal.value || 0, players, rounds: [], done: false });
     ui.block = b.id;
     closeSheet();
     render();
@@ -303,7 +348,8 @@ export default function installSpielekiste(app) {
       const res = g.players.map(x => [x.name, total(x.card)]).sort((a, b) => b[1] - a[1]);
       return `<div class="quiz-end"><p class="win">${esc(res[0][0])} gewinnt mit ${res[0][1]} Punkten! 🎲</p>
         <ol class="kn-res">${res.map(([n, v]) => `<li>${esc(n)}: <b>${v}</b></li>`).join('')}</ol>
-        <button class="primary" data-action="kn-reset">Neues Spiel</button></div>`;
+        <button class="primary" data-action="kn-reset">Neues Spiel</button>
+        <button class="link" data-action="game-open" data-g="block">Urlaubswertung ansehen</button></div>`;
     }
     return `<p class="plate-progress"><b>${esc(p.name)}</b> ist dran · noch ${3 - g.rolls} ${3 - g.rolls === 1 ? 'Wurf' : 'Würfe'}</p>
       <div class="kn-dice">${g.dice.map((v, i) => `<button class="kn-die${g.held[i] ? ' held' : ''}" data-action="kn-hold" data-i="${i}"${g.rolls === 0 ? ' disabled' : ''} aria-label="Würfel ${v}${g.held[i] ? ', festgehalten' : ''}">${g.rolls ? die(v) : die(0)}</button>`).join('')}</div>
@@ -336,7 +382,7 @@ export default function installSpielekiste(app) {
     g.turn = (g.turn + 1) % g.players.length;
     g.rolls = 0; g.held = [false, false, false, false, false];
     const done = g.players.every(x => Object.keys(x.card).length === CATS.length);
-    if (done) save('games', { id: newId(), kind: 'block', by: me(), at: Date.now(), name: 'Kniffel', low: false, players: g.players.map(x => x.name), rounds: [g.players.map(x => total(x.card))], done: true });
+    if (done) save('games', { id: newId(), kind: 'block', by: me(), at: Date.now(), tripId: (currentTrip() || {}).id || null, name: 'Kniffel', low: false, players: g.players.map(x => x.name), rounds: [g.players.map(x => total(x.card))], done: true });
     setKn(g);
   };
   ACTIONS['kn-reset'] = () => { if (!kn() || kn().players.every(x => Object.keys(x.card).length === CATS.length) || confirm('Spiel abbrechen?')) setKn(null); };

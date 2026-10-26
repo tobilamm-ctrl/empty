@@ -136,6 +136,17 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 43: Urlaubswertung bei den Spielen
+
+Im **Punkteblock** steht über den Partien jetzt eine **Wertung**: Siege und gespielte Partien je Person, darunter je
+Spiel, wer wie oft gewonnen hat (bei Spielen mit „meiste Punkte gewinnen“ auch der Höchstwert, z. B. bei Kniffel).
+Umschalten zwischen **Diese Reise** und **Alle Reisen**; auch die Liste der Partien folgt dieser Auswahl.
+- Gezählt werden beendete Punkteblöcke und fertig gespielte Kniffel-Partien; bei Gleichstand bekommen alle Führenden
+  den Sieg.
+- Ältere Partien ordnet LAMMping über das Datum der passenden Reise zu.
+- Nach einer Kniffel-Partie führt „Urlaubswertung ansehen“ direkt dorthin, und die **Reise-Urkunde** nennt die
+  gewonnenen Spiele.
+
 ## Neu in Version 42: Spielekiste
 
 Neun neue Spiele unter Spiele & Co (alle ohne Internet):

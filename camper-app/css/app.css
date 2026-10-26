@@ -2186,3 +2186,14 @@ img.fl.big, .fl.big { width: 96px; height: auto; border-radius: 6px; box-shadow:
 .bm-boom { display: grid; justify-items: center; font-size: 120px; line-height: 1; color: #B3261E; animation: bmBoom .5s ease-out; }
 .bm-boom b { font: 800 54px var(--head); }
 @keyframes bmBoom { from { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.2); } }
+
+/* Version 43: Urlaubswertung im Punkteblock */
+.block-stats .chips { margin: 0 0 8px; }
+.block-games { list-style: none; margin: 10px 0 14px; padding: 0; }
+.block-games li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.block-games li > span { flex-basis: 100%; font-size: 15px; }
+.block-games small { color: var(--muted); }
+.leader .block-games li { counter-increment: none; border-bottom: 1px solid var(--line); }
+.leader .block-games li::before { content: none; }
+.leader .block-games li b { font: 700 17px var(--head); }
+.block-games-h { margin: 14px 0 0; font-size: 14px; color: var(--muted); font-weight: 700; }
