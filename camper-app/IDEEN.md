@@ -113,6 +113,9 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Kartenart umschalten:** Wanderkarte mit Höhenlinien und Luftbild zusätzlich zur normalen Karte.
 - **Gäste ohne eigenes Konto:** z. B. Oma für eine Woche oder befreundete Familie; bei „Wer ist dabei?“, Kasse und Reisepass.
 - **Jedes Jahr dasselbe Foto:** festes Erinnerungsmotiv, App erinnert daran und zeigt die Jahre nebeneinander.
+- **App-Sperre mit Fingerabdruck oder PIN:** für die ganze App oder nur Dokumente und Kasse.
+- **Speicherplatz-Übersicht:** Platz von Fotos und Daten je Reise; alte Reisen vom Handy entfernen (bleiben auf dem Server).
+- **App auf Englisch:** Sprachauswahl für befreundete Familien; großer Umbau (alle Texte), passt zu „Rechte für mehrere Familien“.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -178,3 +181,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Profilbilder (Foto oder Emoji) statt nur Namen
 - Waschtag-Rechner; Restzeit-Leiste oben
 - Rückwärts planen („Wann müssen wir los?“); Haushüter-Zettel; Reise-Rekorde
+- Rückbank-Knöpfe (Pipi, Hunger, Mir ist schlecht); Reiseblog-Benachrichtigung per E-Mail; Filter bei der Stellplatzsuche
