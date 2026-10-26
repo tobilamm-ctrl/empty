@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-41'` hochzählen (z. B. auf `lammping-42`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-42'` hochzählen (z. B. auf `lammping-43`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,19 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 42: Spielekiste
+
+Neun neue Spiele unter Spiele & Co (alle ohne Internet):
+- **Unterwegs im Auto:** *Würdest du lieber …?* (zwei Möglichkeiten, reihum abstimmen, dann erzählen, warum) und
+  *Tick-Tack-Bumm* (Thema nennen, Handy weitergeben, nach geheimer Zeit platzt die Bombe; wer verliert, wird gezählt).
+- **Raten:** *Hauptstädte-Quiz* (Land → Hauptstadt oder umgekehrt, Europa oder Welt), *Umriss-Quiz* (Land an der Form
+  erkennen, Tipp zeigt die Flagge) und *Wo liegt das?* (Ort auf der Europakarte antippen, bis zu 1000 Punkte je Ort).
+- **Knobeln:** *Farben-Merkspiel* (wie Senso, mit Tönen), *Wer ist schneller?* (zwei Spieler an einem Handy, erster auf
+  „JETZT!“ gewinnt, bis 5 Punkte), *Kniffel* (fünf Würfel, festhalten, Punktezettel für alle; das Ergebnis landet im
+  Punkteblock) und *Punkteblock* (Uno, Rommé, Mölkky, Boule …: Runden eintragen, Summen, Punkteziel, Sieger; für alle
+  Geräte der Familie sichtbar).
+Rekorde gelten je Person (oben „Es spielt“ wählen).
 
 ## Neu in Version 41: Familie, Kinder, Teilen, Drucken, Sichern
 

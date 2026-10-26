@@ -8,16 +8,16 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **🎲 Spiele**
 
-1. Umriss-Quiz
-2. Wo liegt das?
-3. Hauptstädte-Quiz
-4. Kniffel mit Punkteblock
-5. Punkteblock für eigene Spiele
+1. ~~Umriss-Quiz~~ Erledigt in Lieferung 42.
+2. ~~Wo liegt das?~~ Erledigt in Lieferung 42.
+3. ~~Hauptstädte-Quiz~~ Erledigt in Lieferung 42.
+4. ~~Kniffel mit Punkteblock~~ Erledigt in Lieferung 42.
+5. ~~Punkteblock für eigene Spiele~~ Erledigt in Lieferung 42.
 6. ~~Murmel-Labyrinth~~ Erledigt in Lieferung 34.
-7. Farben-Merkspiel (wie Senso)
-8. Wer ist schneller?
-9. Würdest du lieber …?
-10. Tick-Tack-Bumm
+7. ~~Farben-Merkspiel (wie Senso)~~ Erledigt in Lieferung 42.
+8. ~~Wer ist schneller?~~ Erledigt in Lieferung 42.
+9. ~~Würdest du lieber …?~~ Erledigt in Lieferung 42.
+10. ~~Tick-Tack-Bumm~~ Erledigt in Lieferung 42.
 
 **🚐 Unterwegs und Planung**
 
@@ -127,7 +127,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 7. ~~**Familie und Kinder:**~~ Erledigt in Lieferung 41. 29 Ansage bei „Wie lange noch?“ → 25 Wunschzettel → 32 Freundebuch → 26 Reise-Urkunde →
    27 Ausmalbild aus Foto. (31 Medikamenten-Erinnerung kommt mit Paket 10, sie braucht Push-Mitteilungen.)
 8. ~~**Teilen, Drucken, Sichern:**~~ Erledigt in Lieferung 41. 37 Wetter-Bilanz → 42 Listen ausdrucken → 41 Reise als eigene Datei → 35 QR-Code.
-9. **Spiele** (jederzeit dazwischen): 3 Hauptstädte → 1 Umriss-Quiz → 2 Wo liegt das? (nutzen die Länderdaten der
+9. ~~**Spiele**~~ Erledigt in Lieferung 42 (jederzeit dazwischen): 3 Hauptstädte → 1 Umriss-Quiz → 2 Wo liegt das? (nutzen die Länderdaten der
    Rubbelkarte); 5 Punkteblock → 4 Kniffel; 7 Senso, 8 Wer ist schneller?, 9 Würdest du lieber …?, 10 Tick-Tack-Bumm.
 10. **Server und Konten** (jeweils neue `api/index.php`): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
     74 Schneller Personenwechsel → 73 App-Sperre → 22 Gäste ohne Konto → 36 Gästebuch im Reiseblog →

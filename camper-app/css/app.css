@@ -2105,3 +2105,84 @@ details.tpl summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .coloring-print { text-align: center; }
 .coloring-print img { max-width: 100%; max-height: 95vh; }
 .coloring-print p { font-size: 11px; color: #999; }
+
+/* ---------- Version 42: Spielekiste ---------- */
+
+/* Quiz (Hauptstädte, Umriss) */
+.quiz-q { display: grid; justify-items: center; gap: 6px; margin: 14px 0; text-align: center; }
+.quiz-q b { font: 700 26px var(--head); }
+.quiz-q span { color: var(--muted); }
+img.fl.big, .fl.big { width: 96px; height: auto; border-radius: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.quiz-opts button { min-height: 64px; padding: 8px; border-radius: 14px; border: 2px solid var(--line, #E2D6C2); background: var(--card, #fff); color: var(--ink);
+  font: 600 17px var(--body); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.quiz-opts button .fl { width: 28px; height: auto; }
+.quiz-opts button.right { border-color: #4F8A3C; background: color-mix(in srgb, #4F8A3C 15%, var(--card, #fff)); }
+.quiz-opts button.wrong { border-color: #B3261E; background: color-mix(in srgb, #B3261E 12%, var(--card, #fff)); }
+.quiz-opts button:disabled { cursor: default; color: var(--ink); }
+.quiz-shape { display: grid; place-items: center; padding: 10px; border-radius: 16px; background: var(--mist); }
+.outline-svg { width: 100%; max-width: 360px; height: auto; }
+.quiz-hint { text-align: center; }
+.quiz-end { text-align: center; padding: 20px 0; }
+
+/* Wo liegt das? */
+.wl-q { font-size: 20px; text-align: center; margin: 6px 0 10px; }
+.wl-map { display: block; width: 100%; height: auto; border-radius: 12px; cursor: crosshair; touch-action: manipulation; }
+.wl-res { text-align: center; font-size: 18px; }
+
+/* Punkteblock und Kniffel */
+.block-table, .kn-card { overflow-x: auto; margin: 10px 0; }
+.block-table table, .kn-card table { border-collapse: collapse; width: 100%; font-size: 16px; }
+.block-table th, .block-table td, .kn-card th, .kn-card td { padding: 6px 8px; border-bottom: 1px solid var(--line, #E2D6C2); text-align: center; white-space: nowrap; }
+.block-table td:first-child, .kn-card td:first-child { text-align: left; color: var(--muted); }
+.block-table tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
+.lead { color: var(--trip); font-weight: 700; }
+.block-round { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; align-items: end; }
+.block-round button { grid-column: 1 / -1; }
+.kn-dice { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
+.kn-die { width: 58px; height: 58px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; transition: transform .15s; }
+.kn-die svg { width: 100%; height: 100%; }
+.kn-die.held { transform: translateY(-8px); color: var(--trip); }
+.kn-die.held svg rect { fill: color-mix(in srgb, var(--trip) 15%, #fff); }
+.kn-roll { display: block; margin: 0 auto 8px; min-width: 180px; }
+.kn-pick { min-width: 40px; padding: 4px 8px; border-radius: 8px; border: 1px dashed var(--trip); background: color-mix(in srgb, var(--trip) 8%, transparent); color: var(--trip); font-weight: 700; cursor: pointer; }
+.kn-card tr.sum td { font-weight: 700; color: var(--ink); background: var(--mist); }
+.kn-res { display: inline-block; text-align: left; font-size: 18px; }
+
+/* Farben-Merkspiel */
+.senso { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(92vw, 380px); aspect-ratio: 1; margin: 12px auto; }
+.senso .pad { border: 0; background: var(--c); opacity: .55; cursor: pointer; transition: opacity .08s, transform .08s; }
+.senso .pad:nth-child(1) { border-radius: 100% 0 0 0; } .senso .pad:nth-child(2) { border-radius: 0 100% 0 0; }
+.senso .pad:nth-child(3) { border-radius: 0 0 0 100%; } .senso .pad:nth-child(4) { border-radius: 0 0 100% 0; }
+.senso .pad.lit, .senso .pad:active { opacity: 1; transform: scale(1.03); box-shadow: 0 0 24px var(--c); }
+.ss-mid { position: absolute; left: 50%; top: 50%; width: 34%; height: 34%; transform: translate(-50%, -50%); border-radius: 50%; border: 6px solid var(--paper, #FBF6EC);
+  background: var(--ink); color: var(--paper, #FBF6EC); font: 700 20px var(--head); cursor: pointer; }
+
+/* Wer ist schneller? */
+.rx { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; height: min(62vh, 560px); margin: 8px 0; }
+.rx-half { border: 0; border-radius: 18px; display: grid; place-items: center; align-content: center; gap: 4px; background: #B3261E; color: #fff; font: 700 18px var(--head); cursor: pointer; touch-action: manipulation; }
+.rx-half.top { transform: rotate(180deg); }
+.rx-half.go { background: #4F8A3C; }
+.rx-half.done { background: var(--ink); }
+.rx-half b { font-size: 44px; }
+.rx-half i { font-style: normal; font-size: 24px; }
+
+/* Würdest du lieber …? */
+.wyr-q { text-align: center; font: 700 20px var(--head); }
+.wyr { display: grid; gap: 8px; }
+.wyr-a, .wyr-b { min-height: 110px; padding: 14px; border-radius: 18px; border: 0; color: #3A2617; font: inherit; cursor: pointer; display: grid; place-items: center; gap: 4px; text-align: center; }
+.wyr-a { background: #FBE0D5; } .wyr-b { background: #DFF1D8; }
+.wyr b { font: 700 21px var(--head); }
+.wyr span { font-weight: 700; } .wyr small { color: #6B4226; }
+.wyr-or { text-align: center; font: 700 15px var(--head); color: var(--muted); }
+
+/* Tick-Tack-Bumm */
+.bm-topic { display: grid; justify-items: center; gap: 4px; padding: 16px; margin: 12px 0; border-radius: 16px; background: var(--mist); text-align: center; }
+.bm-topic small { color: var(--muted); } .bm-topic b { font: 700 24px var(--head); }
+.bm-go { display: block; margin: 0 auto; min-width: 240px; min-height: 60px; font-size: 19px; }
+.bm-bomb { font-size: 140px; text-align: center; line-height: 1.2; }
+.bm-bomb.beat { animation: bmBeat .18s ease-out; }
+@keyframes bmBeat { 50% { transform: scale(1.12); } }
+.bm-boom { display: grid; justify-items: center; font-size: 120px; line-height: 1; color: #B3261E; animation: bmBoom .5s ease-out; }
+.bm-boom b { font: 800 54px var(--head); }
+@keyframes bmBoom { from { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.2); } }
