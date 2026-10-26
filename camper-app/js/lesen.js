@@ -14,21 +14,37 @@ export default function installLesen(app) {
   /* Werkzeugleiste im Tagebuch: Sprungleiste, Reihenfolge, Kalender, Buch    */
   /* ====================================================================== */
 
-  app.diaryTools = (t, st, days) => {
+  app.diaryTools = (t, st, days, f = {}) => {
     const newest = LS.get('diaryOrder', 'neu') !== 'alt';
     const maps = LS.get('dayMaps', true) !== false;
+    const filter = f.filter || 'alle';
+    // Eine Zeile: Filter, Reihenfolge, Tageskarten und Kalender (die beiden letzten nur als Symbol)
     // Sprungleiste nicht einpacken, sonst bleibt sie beim Scrollen nicht oben stehen
     return `<div class="diary-btns">
+        ${f.chips ? `<button class="chip${filter !== 'alle' ? ' on' : ''}" data-action="diary-filter-open" aria-expanded="${!!ui.filterOpen}">${f.label ? f.label(filter) : 'Alles'} ▾</button>` : ''}
         <button class="chip" data-action="diary-order" title="Reihenfolge umschalten">${newest ? '↓ Neueste oben' : '↑ Ab Tag 1'}</button>
-        <button class="chip${maps ? ' on' : ''}" data-action="day-maps" aria-pressed="${maps}">🗺️ Tageskarten</button>
-        <a class="chip" href="#/kalender">📅 Kalender</a>
-        <a class="chip" href="#/buch">📖 Als Buch</a>
+        <button class="chip icon-chip${maps ? ' on' : ''}" data-action="day-maps" aria-pressed="${maps}" title="Tageskarten ein/aus" aria-label="Tageskarten">🗺️</button>
+        <a class="chip icon-chip" href="#/kalender" title="Kalender" aria-label="Kalender">📅</a>
       </div>
-      ${days.length > 1 ? `<nav class="day-jump" data-noswipe aria-label="Zu einem Tag springen">${days.map(d => {
+      ${f.chips && ui.filterOpen ? `<div class="chips diary-chips filter-pop">${f.chips}</div>` : ''}
+      ${days.length ? `<nav class="day-jump" data-noswipe aria-label="Zu einem Tag springen">
+        <button class="jetzt" data-action="day-now" title="${newest ? 'Ganz nach oben zum neuesten Eintrag' : 'Zum neuesten Eintrag'}">${newest ? '⤒' : '⤓'} Jetzt</button>${days.map(d => {
         const n = dayNo(st, d);
         return `<button data-action="day-jump" data-day="${d}" title="${esc(fmtDay(d))}">${n > 0 ? `Tag ${n}` : fmtDay(d).split(',')[1] || d}</button>`;
       }).join('')}</nav>` : ''}`;
   };
+  ACTIONS['diary-filter-open'] = () => { ui.filterOpen = !ui.filterOpen; render(); };
+  const pickFilter = ACTIONS['diary-filter'];
+  ACTIONS['diary-filter'] = el => { ui.filterOpen = false; pickFilter(el); };
+  // „Jetzt“: neueste oben → ganz nach oben, sonst zum letzten Tag ganz unten
+  ACTIONS['day-now'] = () => {
+    if (LS.get('diaryOrder', 'neu') !== 'alt') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    const last = [...document.querySelectorAll('.timeline > li.day')].pop();
+    if (last) window.scrollTo({ top: last.getBoundingClientRect().bottom + scrollY - innerHeight + 80, behavior: 'smooth' });
+  };
+  // „Als Buch“ gehört zu „Nach der Reise“
+  if (app.tripTools) app.tripTools.push(() => ({ order: 4.5, action: 'open-buch', icon: 'card', label: 'Als Buch', title: 'Als Buch lesen', desc: 'Seite für Seite, mit Fotos und Karte', later: true }));
+  ACTIONS['open-buch'] = () => go('buch');
   ACTIONS['diary-order'] = () => { LS.set('diaryOrder', LS.get('diaryOrder', 'neu') === 'alt' ? 'neu' : 'alt'); render(); window.scrollTo(0, 0); };
   ACTIONS['day-maps'] = () => { LS.set('dayMaps', LS.get('dayMaps', true) === false); render(); };
   function jumpTo(d) {

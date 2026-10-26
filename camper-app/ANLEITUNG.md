@@ -136,6 +136,20 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 47: Tagebuch aufgeräumt
+
+Über dem Tagebuch ist es übersichtlicher:
+- **Obere Leiste:** nur noch Starten/Beenden bzw. Weiter, Fotos, Packliste und **Nach der Reise**. Unter „Nach der
+  Reise“ liegen Rückblick, Als Buch lesen, Export, Packliste auswerten und Ins Archiv legen. Ist die Reise beendet, ist
+  der Knopf farbig hervorgehoben.
+- **Eine Zeile darunter:** Filter (**Alles ▾**, aufklappen für Stellplätze, Erleben, Unterwegs, Notizen), Neueste oben,
+  🗺️ Tageskarten ein/aus und 📅 Kalender.
+- **⤒ Jetzt** steht immer links in der mitlaufenden Tagesleiste: ein Tipp führt ganz nach oben zum neuesten Eintrag
+  (bei „Ab Tag 1“ ganz nach unten).
+- **Packliste: nächstes Mal:** feste Liste unter Listen › Merken (angeheftet, nicht löschbar). Unterwegs gleich
+  eintragen, was fehlt; darunter steht, was nie gebraucht wurde. Beim nächsten Packen erinnert LAMMping daran. Der
+  Knopf „Packliste“ über dem Tagebuch öffnet sie direkt; „Packliste auswerten“ nach der Reise schreibt ebenfalls hinein.
+
 ## Neu in Version 46: Mitfahrer auch für Erwachsene schnell aussuchen
 
 Wer oben in der Leiste mitfährt, kann jetzt jede Person leicht selbst aussuchen:

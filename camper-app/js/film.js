@@ -5,7 +5,7 @@ export default function installFilm(app) {
   const { S, ACTIONS, esc, icon, fmtDay, fmtKm, km, tripStats, tripColor, TYPES } = app;
 
   // Knopf in der Leiste über dem Tagebuch, sobald es mindestens zwei Orte gibt
-  app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 4, action: 'film', icon: 'film', label: 'Rückblick', title: 'Reise-Rückblick als Film' } : null));
+  app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 4, action: 'film', icon: 'film', label: 'Rückblick', title: 'Rückblick', desc: 'Die Reise als kleiner Film', later: true } : null));
 
   let film = null;
   ACTIONS.film = el => {

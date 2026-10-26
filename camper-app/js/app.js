@@ -46,7 +46,7 @@ import installMitfahrer from './mitfahrer.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 46;
+const APP_VERSION = 47;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -678,8 +678,7 @@ VIEWS.tagebuch = () => {
   }).join('');
 
   return `${installHint()}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
-    <div class="chips diary-chips">${chips}</div>
-    ${APP.diaryTools && list.length ? APP.diaryTools(t, st, Object.keys(days)) : ''}
+    ${APP.diaryTools ? (st.es.length ? APP.diaryTools(t, st, Object.keys(days), { chips, filter, label }) : '') : `<div class="chips diary-chips">${chips}</div>`}
     <button class="fab" data-action="entry-form" aria-label="Neuer Eintrag">${icon('plus')}<span>Eintrag</span></button>
     ${list.length
       ? `<ol class="timeline">${timeline}</ol>`
@@ -1098,7 +1097,7 @@ function listForm(id, kind, tripId) {
       ${trips.map(t => `<option value="${t.id}"${t.id === l.tripId ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
     <label class="check"><input type="checkbox" name="pinned"${l.pinned ? ' checked' : ''}><span>📌 Anheften (steht dann ganz vorne)</span></label>
     <div class="sheet-foot">
-      ${l.id ? `<button type="button" class="ghost danger" data-action="del-list" data-id="${l.id}" data-n="${n}">Löschen</button>` : ''}
+      ${l.id && !l.fixed ? `<button type="button" class="ghost danger" data-action="del-list" data-id="${l.id}" data-n="${n}">Löschen</button>` : ''}
       <button class="primary">Speichern</button>
     </div>
   </form>`);
@@ -1862,6 +1861,7 @@ const ACTIONS = {
   'list-form': el => listForm(el.dataset.id, el.dataset.kind, el.dataset.trip),
   'item-sheet': el => itemSheet(el.dataset.id),
   'del-list': el => {
+    if ((S.lists.find(l => l.id === el.dataset.id) || {}).fixed) return;
     const n = +el.dataset.n;
     if (!confirm(n ? `Liste mit ${n} Einträgen löschen?` : 'Liste löschen?')) return;
     S.listItems.filter(i => itemListId(i) === el.dataset.id).forEach(i => remove('listItems', i.id));
