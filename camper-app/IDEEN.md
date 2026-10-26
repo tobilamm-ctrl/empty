@@ -89,6 +89,10 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - **Kurzinfo aus Wikipedia:** bei Sehenswürdigkeiten und Museen die ersten Sätze und ein Bild aus Wikipedia.
 - **Regentag-Plan:** bei Regen passende Ziele aus Wunschliste und Umgebung (Museum, Hallenbad, Indoor-Spielplatz),
   bei Sonne Badestellen und Wanderungen.
+- **Reise-Urkunde für Kinder:** zum Ausdrucken, mit Kilometern, Ländern, Tieren, Stempeln, Foto und Unterschrift der Eltern.
+- **Kontakt zum Campingplatz:** Telefon, Website und Rezeptionszeiten aus OpenStreetMap beim Stellplatz-Eintrag, direkt anrufen.
+- **Stellplatz nach mehreren Punkten bewerten:** Lage, Sauberkeit, Ruhe, Kinderfreundlichkeit, Preis-Leistung; Auswertung in der Statistik.
+- **Reise als eigene Datei sichern:** ganze Reise (Tagebuch, Fotos, Karte) als eine Webseiten-Datei, ohne LAMMping lesbar.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -150,3 +154,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
 - Lange drücken für ein Menü an Einträgen; Eintrag duplizieren („Nochmal hier“); Einkaufsliste nach Supermarkt-Abteilungen
 - Schlagwörter für Einträge (#Lieblingsessen) mit Filter
 - „Wusstest du?“-Fakt für Kinder; Musikwunsch-Liste; Kasse und Tankbuch als CSV
+- Stimmungsbarometer; Kassenbon fotografieren
