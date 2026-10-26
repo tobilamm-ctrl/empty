@@ -58,6 +58,16 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
   zurück entsprechend; Reihenfolge wie die (ggf. eigene) untere Leiste. Seite folgt dem Finger und rastet ein.
   Nicht auf der Karte (dort nur auf der Kopfzeile), nicht am Bildschirmrand (Zurück-Geste), nicht auf Chip-Leisten,
   Kachel-Ziehen, Malflächen, Spielen, in Fenstern und auf Unterseiten. In den Einstellungen abschaltbar.
+- **Foto-Vollbild:** Tipp auf ein Foto öffnet es bildschirmfüllend; wischen zum nächsten (auch über Einträge hinweg), mit zwei Fingern zoomen.
+- **Kürzeres Formular „Neuer Eintrag“:** oben Art, Titel, Ort, Text, Fotos; Kosten, Ausstattung, „Nicht im Reiseblog“ usw.
+  unter „Weitere Angaben“ zum Aufklappen.
+- **Einkaufsmodus:** große Häkchen, Bildschirm bleibt im Laden an, Erledigtes rutscht nach unten.
+- **Mehrere auf einmal:** Listenpunkte, Einträge oder Orte gedrückt halten und weitere antippen; dann gemeinsam abhaken,
+  verschieben oder löschen.
+- **Sprungleiste im Tagebuch:** „Tag 1 · Tag 2 · …“ oben, ein Tipp springt zum Tag.
+- **Bildschirm bleibt an:** bei „Wie lange noch?“, Wasserwaage, Rezepten beim Kochen und Spielen (Wake Lock).
+- **Erinnerungen als Mitteilung (Push):** Fristen, neue Abstimmung, Dienst heute, Medikamente; auch bei geschlossener App.
+  iPhone nur bei installierter App; braucht neuen Server-Teil.
 
 ## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
 
@@ -115,3 +125,4 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
   Standort per SMS; Mit Hund unterwegs; Schulferien-Kalender; Konvoi-Modus
 - „Angekommen“-Nachricht; Foto des Tages; Rubbelkarte als Poster; größere Schrift
 - Suche über alles; Wischgesten im Tagebuch (Tage) und in Listen (abhaken/löschen); Rückgängig statt Nachfrage; Fahrmodus
+- Schnelle Zeitwahl (jetzt, vor 1 Std., gestern Abend); Vorschläge beim Tippen; kurze Hilfe pro Seite; Sonnenlicht-Modus
