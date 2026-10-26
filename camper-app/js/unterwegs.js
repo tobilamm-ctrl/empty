@@ -262,7 +262,7 @@ export default function installUnterwegs(app) {
     if (!e || !e.target) return `${pageHead('spiele', 'Wie lange noch?', 'Für alle auf der Rückbank')}${etaPicker()}`;
     if (!e.at) updateEta();
     const p = e.start && e.dist != null ? Math.min(1, Math.max(0, 1 - e.dist / e.start)) : 0;
-    const van = (document.querySelector(document.body.classList.contains('kid-mode') ? '.bobbycar' : '.vklasse:not(.bobbycar)') || {}).outerHTML || '';
+    const van = app.riderSvg ? app.riderSvg() : (document.querySelector(document.body.classList.contains('kid-mode') ? '.bobbycar' : '.vklasse:not(.bobbycar)') || {}).outerHTML || '';
     const arrive = e.min != null ? new Date(Date.now() + e.min * 60000 - (Date.now() - e.at)) : null;
     const episodes = e.min != null ? Math.max(0, Math.round(e.min / 25)) : 0;
     return `${pageHead('spiele', 'Wie lange noch?', `Bis ${esc(e.target.name)}`)}

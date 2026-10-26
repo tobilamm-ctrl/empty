@@ -136,6 +136,21 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 44: Wer fährt oben mit?
+
+Oben in der Leiste können jetzt neben der V-Klasse und dem Bobbycar viele weitere Figuren durch die Landschaft
+fahren, fliegen oder laufen. Jede bewegt sich auf ihre Art:
+- **Fahrzeuge:** V-Klasse, Bobbycar, Fahrrad (Beine treten), Traktor und Dampflok (mit Rauchwölkchen), Feuerwehr (mit
+  Blaulicht), Segelboot (schaukelt auf Wellen).
+- **In der Luft:** Heißluftballon, Ufo (mit blinkenden Lichtern), Papierflieger, Vogel und Schmetterling (flattern).
+  Was fliegt, bleibt über der Landschaft und deckt den Reisenamen nicht zu.
+- **Tiere:** LAMMping-Schaf, Hund (wedelt), Hase (hoppelt), Schnecke (ganz langsam), Dino, Igel.
+
+Bis zu sechs Figuren gleichzeitig, jede mit eigenem Tempo. Aussuchen geht für Kinder auf ihrer Startseite unter „Oben
+in der Leiste“ und für alle in den Einstellungen unter „Kopfzeile“. Die Auswahl gilt je Person auf allen ihren
+Geräten. Kinder können die Figuren oben antippen, dann hüpfen sie. „Wie lange noch?“ zeigt die erste ausgesuchte
+Figur. Wer nichts aussucht, sieht wie bisher die V-Klasse (Kinder das Bobbycar).
+
 ## Neu in Version 43: Urlaubswertung bei den Spielen
 
 Im **Punkteblock** steht über den Partien jetzt eine **Wertung**: Siege und gespielte Partien je Person, darunter je

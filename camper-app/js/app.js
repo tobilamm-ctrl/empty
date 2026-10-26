@@ -41,11 +41,12 @@ import installInfos from './infos.js';
 import installFamilienleben from './familienleben.js';
 import installSichern from './sichern.js';
 import installSpielekiste from './spielekiste.js';
+import installMitfahrer from './mitfahrer.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 43;
+const APP_VERSION = 44;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2282,6 +2283,7 @@ installInfos(APP);
 installFamilienleben(APP);
 installSichern(APP);
 installSpielekiste(APP);
+installMitfahrer(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 
