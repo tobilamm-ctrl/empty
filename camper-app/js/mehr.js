@@ -26,10 +26,10 @@ export default function installMore(app) {
     { route: 'orte', art: 'orte', title: 'Orte', text: 'Lieblingsplätze und Wunschliste' },
     { route: 'checklisten', art: 'check', title: 'Checklisten', text: 'Abfahrt und Ankunft' },
     { route: 'fahrzeug', art: 'fahrzeug', title: 'Fahrzeug', text: 'Steckbrief und Fristen' },
-    { route: 'zuladung', art: 'fahrzeug', title: 'Zuladung', text: 'Wie viel darf noch rein?' },
-    { route: 'wasserwaage', art: 'fahrzeug', title: 'Wasserwaage', text: 'Camper gerade stellen' },
-    { route: 'abstimmung', art: 'ideen', title: 'Abstimmung', text: 'Die Familie entscheidet' },
-    { route: 'urlaubsgeld', art: 'kasse', title: 'Urlaubsgeld', text: 'Taschengeld der Kinder' },
+    { route: 'zuladung', art: 'zuladung', title: 'Zuladung', text: 'Wie viel darf noch rein?' },
+    { route: 'wasserwaage', art: 'wasserwaage', title: 'Wasserwaage', text: 'Camper gerade stellen' },
+    { route: 'abstimmung', art: 'abstimmung', title: 'Abstimmung', text: 'Die Familie entscheidet' },
+    { route: 'urlaubsgeld', art: 'urlaubsgeld', title: 'Urlaubsgeld', text: 'Taschengeld der Kinder' },
     { route: 'statistik', art: 'statistik', title: 'Statistik', text: 'Eure Reisen in Zahlen' },
     { route: 'wetter', art: 'wetter', title: 'Wetter', text: 'Vorhersage für Standort und Ziele' },
     { route: 'rubbelkarte', art: 'rubbelkarte', title: 'Rubbelkarte', text: 'Wo wart ihr schon überall?' },
@@ -38,7 +38,7 @@ export default function installMore(app) {
     { route: 'album', art: 'album', title: 'Fotoalbum', text: 'Galerie und Jahresrückblick' },
     { route: 'kochen', art: 'kochen', title: 'Kochen', text: 'Rezepte und Einkaufsliste' },
     { route: 'autarkie', art: 'autarkie', title: 'Autarkie', text: 'Wasser, Gas und Strom' },
-    { route: 'dienste', art: 'check', title: 'Camper-Dienste', text: 'Wer ist heute dran?' },
+    { route: 'dienste', art: 'dienste', title: 'Camper-Dienste', text: 'Wer ist heute dran?' },
     { route: 'spiele', art: 'spiele', title: 'Spiele & Co', text: 'Kennzeichen, Bingo, Quiz' },
     { route: 'ideen', art: 'ideen', title: 'Reiseideen', text: 'Wohin als Nächstes?' },
     { route: 'reiseblog', art: 'reiseblog', title: 'Reiseblog', text: 'Zum Mitlesen für Oma und Opa', admin: true },
@@ -47,132 +47,18 @@ export default function installMore(app) {
   ];
 
   app.TILES = TILES;
-  // Eigene Reihenfolge und ausgeblendete Kacheln je Person (wird mit der Crew abgeglichen)
-  const tileKey = () => 'tiles_' + me();
-  const tilePrefs = () => S.meta.find(m => m.id === tileKey()) || { id: tileKey(), order: [], hidden: [] };
   const available = () => TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route)));
-  function ordered() {
-    const o = tilePrefs().order || [];
-    const pos = t => (o.includes(t.route) ? o.indexOf(t.route) : 1000 + TILES.indexOf(t));
-    return available().sort((a, b) => pos(a) - pos(b));
-  }
   const label = t => (t.alt && !(app.session().user.isAdmin) ? t.alt : t.title);
 
+  // Kacheln über die gemeinsame Tafel (kacheln.js): Reihenfolge, Trennlinien, Ausblenden, Größe
   VIEWS.mehr = () => {
     const due = dueCount();
-    const hidden = tilePrefs().hidden || [];
-    if (ui.tileEdit) {
-      setTimeout(() => dragTiles(document.getElementById('tileGrid')), 0);
-      return `${pageHead('mehr', 'Mehr', 'Reihenfolge und Auswahl festlegen')}
-        <p class="sub">Kachel kurz gedrückt halten und an die neue Stelle ziehen (mit der Maus einfach ziehen). Mit dem Auge aus- oder einblenden. Das gilt nur für dich, auf allen deinen Geräten.</p>
-        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button><button class="ghost" data-action="tile-reset">Zurücksetzen</button></div>
-        <nav class="tiles editing" id="tileGrid">${ordered().map(t => `<div class="tile${hidden.includes(t.route) ? ' off' : ''}" data-r="${t.route}">
-          ${art(t.art)}<b>${esc(label(t))}</b>
-          ${t.route === 'einstellungen' ? '' : `<button class="icon-btn small eye" data-action="tile-hide" data-r="${t.route}" aria-pressed="${!hidden.includes(t.route)}" aria-label="${hidden.includes(t.route) ? 'Einblenden' : 'Ausblenden'}">${icon(hidden.includes(t.route) ? 'eyeoff' : 'eye')}</button>`}
-          <span class="grip" aria-hidden="true">⠿</span>
-        </div>`).join('')}</nav>
-        <div class="btnrow"><button class="primary" data-action="tile-edit">Fertig</button></div>`;
-    }
-    const shown = ordered().filter(t => !hidden.includes(t.route));
-    const nHidden = ordered().length - shown.length;
-    return `${pageHead('mehr', 'Mehr')}
-      <nav class="tiles" aria-label="Weitere Bereiche">${shown.map(t => `<a class="tile" href="#/${t.route}">
-        ${art(t.art)}<b>${label(t)}</b><small>${t.text}</small>
-        ${t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>` : ''}
-        ${t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>` : ''}
-        ${t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : ''}
-      </a>`).join('')}</nav>
-      <p class="sub tile-edit-link"><button class="link" data-action="tile-edit">Kacheln anordnen${nHidden ? ` (${nHidden} ausgeblendet)` : ''}</button></p>`;
-  };
-  ACTIONS['tile-edit'] = () => { ui.tileEdit = !ui.tileEdit; render(); window.scrollTo(0, 0); };
-  const saveOrder = list => {
-    // Nicht verfügbare Kacheln (z. B. Kasse ohne Freigabe) behalten ihren Platz am Ende
-    const rest = (tilePrefs().order || []).filter(r => !list.includes(r));
-    save('meta', { ...tilePrefs(), order: [...list, ...rest] });
-  };
-
-  // Ziehen zum Anordnen: am Handy nach kurzem Halten (sonst scrollt die Seite), mit der Maus sofort
-  let drag = null, wait = null, scroll = null;
-  const stopWait = () => { if (wait) clearTimeout(wait.t); wait = null; };
-  const place = (x, y) => {
-    const t = drag.tile;
-    t.style.transform = '';
-    const r = t.getBoundingClientRect();
-    t.style.transform = `translate(${x - drag.gx - r.left}px, ${y - drag.gy - r.top}px) scale(1.05)`;
-  };
-  // Hat die App inzwischen neu gezeichnet, mit der neuen Kachel weitermachen
-  const relink = () => {
-    if (drag.tile.isConnected) return true;
-    const grid = document.getElementById('tileGrid');
-    const tile = grid && grid.querySelector(`.tile[data-r="${drag.tile.dataset.r}"]`);
-    if (!tile) return false;
-    tile.classList.add('dragging'); grid.classList.add('is-dragging');
-    Object.assign(drag, { tile, grid });
-    return true;
-  };
-  const moveTo = (x, y) => {
-    if (!relink()) return;
-    drag.x = x; drag.y = y;
-    const over = document.elementFromPoint(x, y);
-    const target = over && over.closest('#tileGrid .tile');
-    if (target && target !== drag.tile && target.parentElement === drag.grid) {
-      const tiles = [...drag.grid.children];
-      drag.grid.insertBefore(drag.tile, tiles.indexOf(target) < tiles.indexOf(drag.tile) ? target : target.nextSibling);
-    }
-    place(x, y);
-  };
-  const begin = (tile, x, y) => {
-    const r = tile.getBoundingClientRect();
-    drag = { tile, grid: tile.parentElement, gx: x - r.left, gy: y - r.top, x, y };
-    tile.classList.add('dragging');
-    drag.grid.classList.add('is-dragging');
-    if (navigator.vibrate) navigator.vibrate(25);
-    // Am Rand des Bildschirms mitscrollen
-    scroll = setInterval(() => {
-      const edge = drag.y < 90 ? -14 : drag.y > innerHeight - 110 ? 14 : 0;
-      if (edge) { window.scrollBy(0, edge); moveTo(drag.x, drag.y); }
-    }, 30);
-  };
-  const endDrag = () => {
-    stopWait();
-    if (!drag) return;
-    clearInterval(scroll);
-    relink();
-    const { tile, grid } = drag;
-    tile.classList.remove('dragging');
-    tile.style.transform = '';
-    grid.classList.remove('is-dragging');
-    drag = null;
-    saveOrder([...grid.children].map(t => t.dataset.r));
-  };
-  window.addEventListener('pointermove', ev => {
-    if (wait && Math.hypot(ev.clientX - wait.x, ev.clientY - wait.y) > 8) stopWait();
-    if (drag) { ev.preventDefault(); moveTo(ev.clientX, ev.clientY); }
-  }, { passive: false });
-  window.addEventListener('pointerup', endDrag);
-  window.addEventListener('pointercancel', endDrag);
-  // Während des Ziehens darf die Seite nicht scrollen
-  window.addEventListener('touchmove', ev => { if (drag) ev.preventDefault(); }, { passive: false });
-  app.holdDraw = () => !!drag;
-  function dragTiles(grid) {
-    if (!grid || grid.dataset.drag) return;
-    grid.dataset.drag = '1';
-    grid.addEventListener('pointerdown', ev => {
-      const tile = ev.target.closest('.tile');
-      if (!tile || ev.target.closest('button') || ev.button > 0) return;
-      const x = ev.clientX, y = ev.clientY;
-      if (ev.pointerType === 'mouse') { ev.preventDefault(); begin(tile, x, y); return; }
-      wait = { x, y, t: setTimeout(() => { wait = null; begin(tile, x, y); }, 280) };
-    });
-    grid.addEventListener('contextmenu', ev => ev.preventDefault());
-  }
-  ACTIONS['tile-hide'] = el => {
-    const p = tilePrefs(), h = p.hidden || [], r = el.dataset.r;
-    save('meta', { ...p, hidden: h.includes(r) ? h.filter(x => x !== r) : [...h, r] });
-  };
-  ACTIONS['tile-reset'] = () => {
-    if (!confirm('Reihenfolge und Auswahl auf den Anfang zurücksetzen?')) return;
-    save('meta', { id: tileKey(), order: [], hidden: [] });
+    const badge = t => (t.route === 'fahrzeug' && due.n ? `<span class="badge${due.over ? '' : ' soon'}" title="Fristen fällig">${due.n}</span>`
+      : t.route === 'ideen' && app.ideaCount && app.ideaCount() ? `<span class="badge info" title="Offene Ideen">${app.ideaCount()}</span>`
+        : t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : '');
+    const items = available().map(t => ({ id: t.route, art: t.art, title: label(t), text: t.text, href: `#/${t.route}`, badge: badge(t), fixed: t.route === 'einstellungen' }));
+    const editing = ui.boardEdit === 'mehr';
+    return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${app.board.view({ key: 'mehr', items })}`;
   };
 
   /* ---------- Orte: Wunschliste, Lieblingsplätze, für Reisen vorgemerkt ---------- */

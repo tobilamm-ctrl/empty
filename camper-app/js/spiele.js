@@ -58,18 +58,36 @@ export default function installSpiele(app) {
         <button class="link back" data-action="game-open" data-g="">Zurück zu allen Spielen</button>
         ${g === 'sticker' || g === 'brettspiele' || (app.noPlayerBar || []).includes(g) ? '' : playerBar()}${GAME_VIEWS[g]()}`;
     }
-    // Brettspiele öffnet Spieleabend direkt in einem eigenen Fenster
+    // Kacheln über die gemeinsame Tafel (kacheln.js); Brettspiele öffnet Spieleabend direkt in einem eigenen Fenster
     const p = portal();
-    const tile = (k, t, s, extra = '') => `${gameArt(k)}<b>${t}</b><small>${s}</small>${extra}`;
-    return `${pageHead('spiele', 'Spiele & Co', 'Für unterwegs, gegeneinander')}
-      <nav class="game-tiles">
-        ${ok('nochweit') ? `<a class="game-tile wide" href="#/nochweit">${tile('nochweit', 'Wie lange noch?', 'Restzeit bis zum Ziel, groß für die Rückbank')}</a>` : ''}
-        ${ok('reisepass') ? `<a class="game-tile wide pass" href="#/reisepass">${tile('reisepass', 'Reisepass', 'Stempel für eure Camper-Erlebnisse', app.stampCount ? `<span class="score">${app.stampCount()}</span>` : '')}</a>` : ''}
-        ${GAMES.filter(([k]) => ok(k)).map(([k, t, s]) => k === 'brettspiele' && p.url
-          ? `<a class="game-tile" href="${esc(p.url)}" target="_blank" rel="noopener">${tile(k, t, `${esc(p.name)}, online`, `<span class="open-ic">${icon('open')}</span>`)}</a>`
-          : `<button class="game-tile" data-action="game-open" data-g="${k}">${tile(k, t, s, scoreHint(k))}</button>`).join('')}
-      </nav>
-      ${app.session().user.isAdmin ? '<button class="link" data-action="portal-form">Spieleportal einstellen</button>' : ''}`;
+    const items = [];
+    if (ok('nochweit')) items.push({ id: 'nochweit', title: 'Wie lange noch?', text: 'Restzeit bis zum Ziel, groß für die Rückbank', href: '#/nochweit', wide: true });
+    if (ok('reisepass')) items.push({ id: 'reisepass', title: 'Reisepass', text: 'Stempel für eure Camper-Erlebnisse', href: '#/reisepass', wide: true, cls: 'pass',
+      badge: app.stampCount ? `<span class="score">${app.stampCount()}</span>` : '' });
+    GAMES.filter(([k]) => ok(k)).forEach(([k, t, s]) => items.push(k === 'brettspiele' && p.url
+      ? { id: k, title: t, text: `${p.name}, online`, href: esc(p.url), external: true, badge: `<span class="open-ic">${icon('open')}</span>` }
+      : { id: k, title: t, text: s, action: 'game-open', data: `data-g="${k}"`, badge: scoreHint(k) }));
+    items.forEach(i => { i.icon = gameArt(i.id); });
+    const large = i => {
+      const tag = i.href ? 'a' : 'button';
+      const attrs = i.href ? `href="${i.href}"${i.external ? ' target="_blank" rel="noopener"' : ''}` : `data-action="${i.action}" ${i.data}`;
+      return `<${tag} class="game-tile${i.wide ? ' wide' : ''}${i.cls ? ' ' + i.cls : ''}" ${attrs}>${i.icon}<b>${esc(i.title)}</b><small>${esc(i.text)}</small>${i.badge || ''}</${tag}>`;
+    };
+    return `${pageHead('spiele', 'Spiele & Co', ui.boardEdit === 'spiele' ? 'Reihenfolge und Auswahl festlegen' : 'Für unterwegs, gegeneinander')}
+      ${app.board.view({ key: 'spiele', items, large, defaultOrder: GAME_ORDER, defaultSeps: GAME_SEPS, editLabel: 'Spiele anordnen',
+        gridClass: size => (size === 'gross' ? 'game-tiles' : `tiles game-board size-${size}`) })}
+      ${app.session().user.isAdmin && ui.boardEdit !== 'spiele' ? '<button class="link" data-action="portal-form">Spieleportal einstellen</button>' : ''}`;
+  };
+  // Grundordnung mit Gruppen (jede Person kann sie unter „Spiele anordnen“ ändern)
+  const GAME_SEPS = { auto: 'Unterwegs im Auto', raten: 'Raten und Erzählen', knobeln: 'Knobeln für Pausen und Abende', sammeln: 'Sammeln und Erinnern' };
+  const GAME_ORDER = ['sep:auto', 'nochweit', 'kennzeichen', 'laenderkz', 'quiz', 'bingo', 'farben', 'abc', 'tiere',
+    'sep:raten', 'werbinich', 'tabu', 'slf', 'story', 'maler',
+    'sep:knobeln', 'flaggen', 'sudoku', 'memory', 'ttt', 'brettspiele',
+    'sep:sammeln', 'reisepass', 'rallye', 'sticker'];
+  // Auch die Kinder-Startseite zeigt die Spiele in dieser Reihenfolge
+  app.sortGames = () => {
+    const pos = k => { const i = GAME_ORDER.indexOf(k); return i < 0 ? 999 : i; };
+    GAMES.sort((a, b) => pos(a[0]) - pos(b[0]));
   };
   ACTIONS['game-open'] = el => { ui.game = el.dataset.g || null; render(); window.scrollTo(0, 0); };
 

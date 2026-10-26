@@ -34,14 +34,14 @@ export default function installZuladung(app) {
   VIEWS.zuladung = () => {
     const c = calc();
     if (!c.max || !c.empty) {
-      return `${pageHead('fahrzeug', 'Zuladung', 'Wie viel darf noch rein?')}
+      return `${pageHead('zuladung', 'Zuladung', 'Wie viel darf noch rein?')}
         <p class="hint">Tragt im Fahrzeug-Steckbrief das zulässige Gesamtgewicht und das Leergewicht fahrbereit ein (steht im Fahrzeugschein unter F.2 und G).</p>
         <button class="primary" data-action="zl-vehicle">Zum Steckbrief</button>`;
     }
     const pct = c.total / c.max;
     const cls = pct > 1 ? 'over' : pct > 0.95 ? 'tight' : 'ok';
     const inp = (action, key, val, ph = '0') => `<input class="kg" inputmode="decimal" data-action="${action}" data-k="${esc(key)}" value="${val ? String(val).replace('.', ',') : ''}" placeholder="${ph}">`;
-    return `${pageHead('fahrzeug', 'Zuladung', `${esc(c.v.name || 'Camper')}: ${kg(c.max)} zulässig`)}
+    return `${pageHead('zuladung', 'Zuladung', `${esc(c.v.name || 'Camper')}: ${kg(c.max)} zulässig`)}
       <section class="panel payload ${cls}">
         <div class="pl-bar"><span style="width:${Math.min(100, pct * 100)}%"></span><i style="left:${Math.min(100, c.empty / c.max * 100)}%"></i></div>
         <p class="pl-big">${c.left >= 0 ? `Noch <b>${kg(c.left)}</b> frei` : `<b>${kg(-c.left)} zu schwer!</b>`}</p>

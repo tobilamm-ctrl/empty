@@ -1223,12 +1223,6 @@ body.blog-page { padding: 0; }
 .blog-greeting { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--trip) 10%, var(--surface)); font-size: 17px; }
 
 /* ---------- Mehr: Kacheln anordnen ---------- */
-.tile-order { list-style: none; margin: 12px 0; padding: 0; }
-.tile-order li { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); }
-.tile-order .art { height: 36px; width: auto; flex: none; color: var(--wood); }
-.tile-order b { flex: 1; font: 600 16px var(--head); min-width: 0; }
-.tile-order li.off b, .tile-order li.off .art { opacity: .4; }
-.tile-order .eye[aria-pressed="false"] { color: var(--muted); }
 .tile-edit-link { text-align: center; margin: 14px 0 0; }
 
 /* ---------- Google-Zeitachse importieren ---------- */
@@ -1537,16 +1531,6 @@ dialog.draw::backdrop { background: rgba(43, 27, 16, .6); }
 .sd-pad button { min-height: 52px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); font: 600 24px var(--head); color: var(--ink); }
 .sd-pad button:disabled { opacity: .4; }
 
-/* ---------- Mehr-Kacheln anordnen: Ziehen ---------- */
-.tiles.editing { margin: 12px 0 14px; }
-.tiles.editing .tile { position: relative; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: pan-y; border-style: dashed; }
-.tiles.editing .tile small { display: none; }
-.tiles.editing .tile.off .art, .tiles.editing .tile.off b { opacity: .35; }
-.tiles.editing .tile .eye { position: absolute; top: 4px; right: 4px; }
-.tiles.editing .tile .eye[aria-pressed="false"] { color: var(--muted); }
-.tiles.editing .grip { position: absolute; top: 6px; left: 10px; color: var(--muted); font-size: 18px; line-height: 1; }
-.tiles.editing .tile.dragging { z-index: 20; cursor: grabbing; pointer-events: none; border-style: solid; border-color: var(--trip); box-shadow: 0 12px 28px rgba(58, 38, 23, .28); background: var(--surface); }
-.tiles.is-dragging .tile:not(.dragging) { transition: transform .15s; }
 
 /* ---------- Montagsmaler, Tic-Tac-Toe, Geschichten-Würfel ---------- */
 .ml-pad { display: block; width: 100%; aspect-ratio: 9 / 7; background: #fff; border-radius: 14px; border: 2px solid var(--line); touch-action: none; }
@@ -1564,3 +1548,43 @@ dialog.draw::backdrop { background: rgba(43, 27, 16, .6); }
 img.fl { display: inline-block; height: 1em; width: 1.333em; vertical-align: -0.14em; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); object-fit: cover; }
 .fq-flag .fq-img { width: min(240px, 70vw); height: auto; aspect-ratio: 4 / 3; border-radius: 10px; box-shadow: 0 4px 14px rgba(58, 38, 23, .2), 0 0 0 1px rgba(0, 0, 0, .1); }
 .fq-flag { line-height: 0; }
+
+/* ---------- Kachel-Tafeln: Größen mittel und klein, Trennlinien, Anordnen ---------- */
+.tiles.size-mittel, .tiles.size-klein { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+.tiles.size-mittel .tile, .tiles.size-klein .tile { flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; font: inherit; text-align: left; }
+.tiles.size-klein .tile { gap: 8px; padding: 6px 10px; border-radius: 12px; }
+.tiles .tile .ico, .tiles .tile .game-art { flex: none; color: var(--wood); margin: 0; }
+.tiles.size-mittel .tile .ico { width: 46px; height: 40px; }
+.tiles.size-klein .tile .ico { width: 30px; height: 26px; }
+.tiles.size-mittel .tile .game-art { width: 50px; height: 38px; }
+.tiles.size-klein .tile .game-art { width: 34px; height: 26px; }
+.tiles .tile .tx { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tiles.size-mittel .tile b { font-size: 16px; line-height: 1.15; }
+.tiles.size-mittel .tile small { font-size: 12px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tiles.size-klein .tile b { font-size: 15px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tiles.size-mittel .tile .badge, .tiles.size-klein .tile .badge { position: static; margin-left: auto; flex: none; }
+.tiles.game-board .tile .score { position: static; margin-left: auto; font: 700 16px var(--head); color: var(--trip); flex: none; }
+.tiles.game-board .tile .open-ic { position: static; margin-left: auto; color: var(--muted); }
+.tiles.game-board .tile .open-ic .ic { width: 16px; height: 16px; }
+.tiles + .tiles, .game-tiles + .game-tiles { margin-top: 8px; }
+h2.tile-sep { margin: 20px 0 8px; padding-bottom: 4px; font: 600 18px var(--head); color: var(--wood); border-bottom: 2px solid var(--line); }
+h2.tile-sep:first-child { margin-top: 4px; }
+hr.tile-sep.line { margin: 14px 0; border: 0; border-top: 2px solid var(--line); }
+.tiles.editing { margin: 12px 0 14px; }
+.tiles.editing .tile { position: relative; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: pan-y; border-style: dashed; min-height: 44px; }
+.tiles.editing .tile.off .ico, .tiles.editing .tile.off b, .tiles.editing .tile.off .game-art { opacity: .35; }
+.tiles.editing .tile .eye { flex: none; margin-left: auto; }
+.tiles.editing .tile .eye[aria-pressed="false"] { color: var(--muted); }
+.tiles.editing .grip { color: var(--muted); font-size: 18px; line-height: 1; flex: none; }
+.tiles.editing .sep-edit { grid-column: 1 / -1; border-style: solid; border-width: 0 0 2px; border-radius: 0; background: transparent; padding: 6px 2px; }
+.tiles.editing .sep-edit input { flex: 1; min-width: 0; border: 0; background: transparent; font: 600 17px var(--head); color: var(--wood); padding: 6px 4px; }
+.tiles.editing .sep-edit input::placeholder { color: var(--muted); font-weight: 400; }
+.tiles.editing .tile.dragging { z-index: 20; cursor: grabbing; pointer-events: none; border-style: solid; border-color: var(--trip); box-shadow: 0 12px 28px rgba(58, 38, 23, .28); background: var(--surface); }
+.board-size { max-width: 360px; }
+/* Kleine Kacheln und Anordnen: lange Namen dürfen zweizeilig werden statt abgeschnitten */
+.tiles.size-klein .tile b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; }
+.tiles.editing .tile:not(.sep-edit) .grip { display: none; }
+.tiles.editing .tile { gap: 6px; padding: 6px 4px 6px 8px; }
+.tiles.editing .tile b { font-size: 14px; }
+.tiles.editing .tile .eye { width: 34px; height: 34px; }
+.tiles.size-klein .tile b, .tiles.size-mittel .tile b, .tiles.editing .tile b { hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }

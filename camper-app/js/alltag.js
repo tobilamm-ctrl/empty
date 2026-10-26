@@ -116,12 +116,12 @@ export default function installAlltag(app) {
 
   VIEWS.dienste = () => {
     const t = currentTrip();
-    if (!t) return `${pageHead('check', 'Camper-Dienste')}<p class="hint">Legt zuerst eine Reise an.</p>`;
+    if (!t) return `${pageHead('dienste', 'Camper-Dienste')}<p class="hint">Legt zuerst eine Reise an.</p>`;
     const d = ui.dutyDay || today();
     const list = plan(t, d);
     const pts = points(t);
     const board = crew(t).map(m => ({ m, n: pts[m.id] || 0 })).sort((a, b) => b.n - a.n);
-    return `${pageHead('check', 'Camper-Dienste', 'Jeden Tag reihum, wer hilft, sammelt Punkte')}
+    return `${pageHead('dienste', 'Camper-Dienste', 'Jeden Tag reihum, wer hilft, sammelt Punkte')}
       <div class="chips list-chips">${[-1, 0, 1].map(k => { const x = shift(today(), k); return `<button class="chip${x === d ? ' on' : ''}" data-action="duty-day" data-day="${x}">${k === 0 ? 'Heute' : k < 0 ? 'Gestern' : 'Morgen'}</button>`; }).join('')}</div>
       <ul class="duties">${list.map(x => `<li class="${x.done ? 'done' : ''}">
         <button class="tick" data-action="duty-done" data-l="${esc(x.label)}" data-day="${d}" aria-pressed="${!!x.done}" aria-label="Erledigt"></button>

@@ -2,7 +2,7 @@
 
 Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. Erledigtes wird hier gestrichen.
 
-## Vorgemerkt (Stand: Lieferung 29)
+## Vorgemerkt (Stand: Lieferung 31)
 
 - ~~**Rubbelkarte:** Weltkarte mit allen bereisten Ländern, auch Regionen, für alle Kontinente.~~ Erledigt in Lieferung 26.
 - ~~**Höhenprofil für Touren** mit Höhen-Stempeln im Reisepass.~~ Erledigt in Lieferung 26.
@@ -14,6 +14,7 @@ Ideen, die die Familie ausgewählt hat und die später umgesetzt werden sollen. 
 - ~~Wasserwaage, Feiertage im Reiseland, Familien-Abstimmung, Urlaubsgeld, Vorfreude-Countdown, Frage des Tages,
   Autofarben-Wette, Schilder-Alphabet, Wer bin ich?, Tabu, Flaggen-Quiz, Reise-Memory, Sudoku.~~ Erledigt in Lieferung 28.
 - ~~Montagsmaler, Tic-Tac-Toe, Geschichten-Würfel; Mehr-Kacheln durch Ziehen anordnen.~~ Erledigt in Lieferung 29.
+- ~~Kachelgröße als Einstellung, eigene Symbole, Trennlinien für Mehr und Spiele, Spiele in Gruppen.~~ Erledigt in Lieferung 31.
 
 **Neu vorgemerkt (Spiele):**
 

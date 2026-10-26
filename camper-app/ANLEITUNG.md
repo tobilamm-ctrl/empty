@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-30'` hochzählen (z. B. auf `lammping-31`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-31'` hochzählen (z. B. auf `lammping-32`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -202,7 +202,7 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Fähre, Werkstatt und Wäsche landen eingetragene Kosten automatisch in der Kasse (mit
   passender Kategorie). Die Filter im Tagebuch: Stellplätze, Erleben, Unterwegs, Notizen. In jedem Eintrag
   können Kinder ein Bild malen (wird wie ein Foto gespeichert) und Sprachnotizen aufnehmen (bis zwei Minuten).
-- **Mehr:** Unten auf der Seite „Kacheln anordnen“: Kacheln kurz gedrückt halten und an die neue Stelle ziehen (mit der Maus einfach ziehen), mit dem Auge ausblenden, für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
+- **Mehr:** Unten auf der Seite „Kacheln anordnen“: Kacheln kurz gedrückt halten und an die neue Stelle ziehen (mit der Maus einfach ziehen), mit dem Auge ausblenden, mit „Trennlinie“ eigene Gruppen mit Namen bilden und die Größe der Kacheln wählen (groß, mittel oder klein). Dasselbe gibt es unter „Spiele & Co“ mit „Spiele anordnen“; die Spiele sind dort schon in Gruppen sortiert (Unterwegs im Auto, Raten und Erzählen, Knobeln, Sammeln und Erinnern), für jede Person einzeln. Kasse, Tankbuch (Verbrauch von Vollbetankung zu Vollbetankung), Orte
   (Wunschliste, Lieblingsplätze, Geplantes), Checklisten (Abfahrt, Ankunft), Fahrzeug
   (Steckbrief und Fristen mit Erinnerung), Statistik (mit Jahresvergleich: Kilometer, Nächte, Tage, Länder,
   Reisen und Kosten pro Jahr), Reisen und Archiv, Einstellungen, außerdem:

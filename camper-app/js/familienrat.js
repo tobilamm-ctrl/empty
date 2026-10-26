@@ -49,7 +49,7 @@ export default function installFamilienrat(app) {
 
   VIEWS.abstimmung = () => {
     const list = polls();
-    return `${pageHead('ideen', 'Abstimmung', 'Die Familie entscheidet gemeinsam')}
+    return `${pageHead('abstimmung', 'Abstimmung', 'Die Familie entscheidet gemeinsam')}
       ${members().length > 1 ? `<div class="chips list-chips player-bar"><span class="sub">Ich stimme ab als:</span>${members().map(m =>
         `<button class="chip${m.id === voter() ? ' on' : ''}" data-action="poll-as" data-id="${m.id}">${esc(m.name)}</button>`).join('')}</div>` : ''}
       <button class="primary" data-action="poll-form">${icon('plus')}Neue Abstimmung</button>
@@ -110,14 +110,14 @@ export default function installFamilienrat(app) {
 
   VIEWS.urlaubsgeld = () => {
     const t = currentTrip();
-    if (!t) return `${pageHead('kasse', 'Urlaubsgeld')}<p class="hint">Legt zuerst eine Reise an.</p>`;
+    if (!t) return `${pageHead('urlaubsgeld', 'Urlaubsgeld')}<p class="hint">Legt zuerst eine Reise an.</p>`;
     const lc = localCur(t);
     const kids = crew(t);
     const pid = kids.some(m => m.id === ui.walletFor) ? ui.walletFor : (kids.find(m => m.id === me()) || kids[0] || {}).id;
     const w = wallet(t, pid);
     const bal = balance(w);
     const tx = (w.tx || []).slice().sort((a, b) => b.at - a.at);
-    return `${pageHead('kasse', 'Urlaubsgeld', `Taschengeld für „${esc(t.name)}“`)}
+    return `${pageHead('urlaubsgeld', 'Urlaubsgeld', `Taschengeld für „${esc(t.name)}“`)}
       <div class="chips list-chips">${kids.map(m => { const b = balance(wallet(t, m.id)); return `<button class="chip${m.id === pid ? ' on' : ''}" data-action="wallet-for" data-id="${m.id}">${esc(m.name)} <small>${money(b)}</small></button>`; }).join('')}</div>
       <section class="panel wallet">
         <p class="wl-k">${esc(personName(pid))} hat noch</p>

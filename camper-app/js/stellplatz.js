@@ -17,7 +17,7 @@ export default function installStellplatz(app) {
   VIEWS.wasserwaage = () => {
     const c = levelCfg();
     setTimeout(update, 0);
-    return `${pageHead('fahrzeug', 'Wasserwaage', 'Camper gerade stellen')}
+    return `${pageHead('wasserwaage', 'Wasserwaage', 'Camper gerade stellen')}
       <p class="sub">Handy flach auf den Boden in die Mitte des Campers legen, die <b>Oberkante zeigt nach vorn</b> (in Fahrtrichtung).</p>
       <section class="panel level">
         <div class="lv-wrap">
