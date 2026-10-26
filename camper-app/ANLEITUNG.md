@@ -97,7 +97,7 @@ Einstellungen („Version NN“) – so seht ihr, ob das Handy schon die neueste
 antworten mit „Unbekannte Aktion“.
 
 Neue Dateien hochladen, dabei **`api/config.php` und den Ordner `api/data` nicht
-überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-38'` hochzählen (z. B. auf `lammping-39`), damit die
+überschreiben**. In `sw.js` die Zeile `const VERSION = 'lammping-39'` hochzählen (z. B. auf `lammping-40`), damit die
 Handys die neue Version laden.
 
 ## Sicherung
@@ -135,6 +135,35 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Position übernehmt. Die Karte selbst kommt ebenfalls von OpenStreetMap.
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
+
+## Neu in Version 39: Karte und Bedienung
+
+**Karte** (Ebenen-Knopf auf der Karte):
+- **Kartenart:** Normal, Wanderkarte mit Höhenlinien (OpenTopoMap) oder Luftbild (Esri). Angesehene Ausschnitte bleiben
+  auch ohne Netz gespeichert.
+- **Pins bündeln:** Beim Herauszoomen werden nahe Pins zu einem Kreis mit Zahl. Ein Tipp zoomt hinein; liegen die Pins
+  übereinander, erscheint eine Liste. Lässt sich abschalten.
+- **Fotos auf der Karte:** Vorschaubilder an den Orten der Einträge (Zahl = Anzahl Fotos). Ein Tipp öffnet das Vollbild.
+- **Liste unter der Karte:** Unten steht „Tag 4 · 6 Stopps“. Antippen oder hochziehen öffnet die Stopps des Tages, ‹ › wechselt
+  den Tag, die Karte zeigt den Tag. Ein Tipp auf einen Stopp springt dorthin.
+
+**Bedienung:**
+- **Heute** (Kachel unter Mehr, auch als Reiter in der unteren Leiste wählbar): Heute-Karte mit Wetter, Sonne, Zielen,
+  Diensten, Pinnwand und Tickets, dazu offene Abstimmungen, heutige Einträge und Abkürzungen. Ohne laufende Reise: Countdown
+  bis zur nächsten Reise.
+- **Bildschirm bleibt an** bei „Wie lange noch?“, Wasserwaage, Kochen, Spielen und im Einkaufsmodus.
+- **Einkaufsmodus** (Listen → Einkaufen → „🛒 Einkaufsmodus“): große Häkchen, abgehakte Punkte rutschen nach unten, Bildschirm
+  bleibt an. „Fertig“ beendet ihn.
+- **Dort weitermachen, wo man war:** Wird die App innerhalb von 12 Stunden wieder geöffnet, geht es auf der letzten Seite
+  (auch im Spiel) an derselben Stelle weiter.
+- **Schmalere Kopfzeile:** Beim Herunterscrollen gleitet die obere Zeile weg, beim Hochscrollen kommt sie wieder.
+- **Tastenkürzel am PC:** N neuer Eintrag, / Eingabefeld, 1–5 Reiter, H Heute, K Kalender, B Buch, ? Übersicht, Esc schließt.
+- **Einstellungen:** Abschnitte sind eingeklappt; oben eine Sprungleiste. „Alle aufklappen“ merkt sich die Wahl.
+- **Offline ehrlich:** Ohne Netz sind Knöpfe, die Internet brauchen (z. B. „Was ist in der Nähe?“, Ortssuche, Reiseblog),
+  ausgegraut mit „braucht Internet“.
+- **Speicherplatz** (Einstellungen → Komfort): wie viel LAMMping belegt, Fotos je Reise, Kartenausschnitte. Fotos einer Reise
+  lassen sich vom Handy entfernen (sie bleiben auf dem Server), Kartenausschnitte löschen.
+- Neuer Abschnitt **Komfort** in den Einstellungen: Bildschirm anlassen, dort weitermachen, Kopfzeile verkleinern.
 
 ## Neu in Version 38: Tagebuch ansehen
 

@@ -351,6 +351,16 @@
 <circle cx="492" cy="362" r="7"/><circle cx="568" cy="362" r="7"/><circle cx="606" cy="362" r="7"/>
 <circle cx="492" cy="399" r="7"/><circle cx="530" cy="399" r="7"/><circle cx="568" cy="399" r="7"/></g>
 <circle cx="530" cy="362" r="17" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/></symbol>
+<symbol id="b-heute" viewBox="-6 120 673 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
+<circle cx="548" cy="300" r="52" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M548 215 v-26 M548 411 v0 M463 300 h-26 M633 300 h26 M488 240 l-18 -18 M608 240 l18 -18 M488 360 l-18 18 M608 360 l18 18" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+<path d="M452 455 Q 500 380 548 400 Q 600 375 640 455" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530 300 q8 10 18 0 M560 300 q8 10 18 0" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/></symbol>
+<symbol id="p-heute" viewBox="405 179 286 286">
+<circle cx="548" cy="300" r="52" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M548 215 v-26 M548 411 v0 M463 300 h-26 M633 300 h26 M488 240 l-18 -18 M608 240 l18 -18 M488 360 l-18 18 M608 360 l18 18" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+<path d="M452 455 Q 500 380 548 400 Q 600 375 640 455" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530 300 q8 10 18 0 M560 300 q8 10 18 0" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/></symbol>
 <symbol id="b-mehr" viewBox="-6 120 639 350"><use href="#schaf" x="-6" y="-6" width="516" height="406" transform="translate(0 129) scale(0.84)"/>
 <path d="M470 260 Q 470 200 545 200 Q 625 200 625 260 Q 625 320 545 320 L505 320 L480 350 L485 315 Q 470 300 470 260 Z" fill="var(--paper, #FBF6EC)" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="510" cy="262" r="10" fill="currentColor"/><circle cx="548" cy="262" r="10" fill="currentColor"/><circle cx="586" cy="262" r="10" fill="currentColor"/></symbol>

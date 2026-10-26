@@ -62,11 +62,11 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **🗺️ Karte**
 
-43. Liste unter der Karte
-44. Pins bündeln
+43. ~~Liste unter der Karte~~ Erledigt in Lieferung 39.
+44. ~~Pins bündeln~~ Erledigt in Lieferung 39.
 45. ~~Kleine Tageskarte im Tagebuch~~ Erledigt in Lieferung 38.
-46. Fotos auf der Karte
-47. Kartenart umschalten
+46. ~~Fotos auf der Karte~~ Erledigt in Lieferung 39.
+47. ~~Kartenart umschalten~~ Erledigt in Lieferung 39.
 
 **✏️ Eintragen**
 
@@ -85,25 +85,25 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 57. ~~Zurück-Taste am Android-Handy~~ Erledigt in Lieferung 34.
 58. ~~Wischen zwischen den Reitern~~ Erledigt in Lieferung 34.
 59. ~~Untere Leiste selbst zusammenstellen~~ Erledigt in Lieferung 34.
-60. Kopfzeile wird beim Scrollen schmaler
+60. ~~Kopfzeile wird beim Scrollen schmaler~~ Erledigt in Lieferung 39.
 61. ~~PC- und Tablet-Ansicht in zwei Spalten~~ Erledigt in Lieferung 34.
-62. Tastenkürzel am PC
+62. ~~Tastenkürzel am PC~~ Erledigt in Lieferung 39.
 63. ~~Foto-Vollbild~~ Erledigt in Lieferung 38.
-64. Einkaufsmodus
+64. ~~Einkaufsmodus~~ Erledigt in Lieferung 39.
 65. ~~Sprungleiste im Tagebuch~~ Erledigt in Lieferung 38.
 66. ~~Reihenfolge im Tagebuch umschaltbar~~ Erledigt in Lieferung 38.
-67. Bildschirm bleibt an
-68. Dort weitermachen, wo man war
-69. Eigener Reiter „Heute“
-70. Einstellungen übersichtlicher
-71. Offline ehrlich anzeigen
+67. ~~Bildschirm bleibt an~~ Erledigt in Lieferung 39.
+68. ~~Dort weitermachen, wo man war~~ Erledigt in Lieferung 39.
+69. ~~Eigener Reiter „Heute“~~ Erledigt in Lieferung 39.
+70. ~~Einstellungen übersichtlicher~~ Erledigt in Lieferung 39.
+71. ~~Offline ehrlich anzeigen~~ Erledigt in Lieferung 39.
 
 **🔒 System und Sicherheit**
 
 72. Erinnerungen als Mitteilung (Push)
 73. App-Sperre mit Fingerabdruck oder PIN
 74. Schneller Personenwechsel auf einem gemeinsamen Gerät
-75. Speicherplatz-Übersicht
+75. ~~Speicherplatz-Übersicht~~ Erledigt in Lieferung 39.
 76. Erste Schritte für neue Familien
 77. App auf Englisch
 
@@ -117,8 +117,8 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
    53 Google-Maps-Link einfügen → 54 Fotos am PC hineinziehen → 55 Mehrere auf einmal → 51 Entwürfe → 56 Anheften.
 2. ~~**Tagebuch ansehen:**~~ Erledigt in Lieferung 38. 66 Reihenfolge umschaltbar → 65 Sprungleiste → 63 Foto-Vollbild → 45 Kleine Tageskarte →
    24 Herzen und Kommentare → 38 Kalender-Ansicht → 39 Als Buch lesen.
-3. **Karte:** 47 Kartenart umschalten → 44 Pins bündeln → 46 Fotos auf der Karte → 43 Liste unter der Karte.
-4. **Bedienung:** 67 Bildschirm bleibt an → 64 Einkaufsmodus → 69 Reiter „Heute“ → 68 Dort weitermachen, wo man war →
+3. ~~**Karte:**~~ Erledigt in Lieferung 39. 47 Kartenart umschalten → 44 Pins bündeln → 46 Fotos auf der Karte → 43 Liste unter der Karte.
+4. ~~**Bedienung:**~~ Erledigt in Lieferung 39. 67 Bildschirm bleibt an → 64 Einkaufsmodus → 69 Reiter „Heute“ → 68 Dort weitermachen, wo man war →
    60 Schmalere Kopfzeile → 62 Tastenkürzel → 70 Einstellungen übersichtlicher → 71 Offline ehrlich anzeigen → 75 Speicherplatz.
 5. **Fahrzeug und Reise-Aufbau:** 19 Mehrere Fahrzeuge (ändert den Datenaufbau, daher zuerst) → 20 Mängelliste →
    18 Stellplatz nach mehreren Punkten bewerten → 21 Reise als Vorlage.

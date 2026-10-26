@@ -8,7 +8,7 @@ export default function installLesen(app) {
   const dayNo = (st, d) => (st.firstDay ? Math.round((new Date(d + 'T12:00') - new Date(st.firstDay + 'T12:00')) / 864e5) + 1 : 0);
   const withPos = e => e && typeof e.lat === 'number' && typeof e.lng === 'number';
   const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
-  const topOffset = () => ((document.querySelector('.topbar') || {}).offsetHeight || 0) + 54;
+  const topOffset = () => { const tb = document.querySelector('.topbar'); return (tb ? tb.getBoundingClientRect().bottom : 0) + 54; };
 
   /* ====================================================================== */
   /* Werkzeugleiste im Tagebuch: Sprungleiste, Reihenfolge, Kalender, Buch    */

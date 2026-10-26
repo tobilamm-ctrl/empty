@@ -21,6 +21,7 @@ export default function installMore(app) {
   /* ---------- Mehr ---------- */
 
   const TILES = [
+    { route: 'heute', art: 'heute', title: 'Heute', text: 'Alles für den Tag auf einer Seite' },
     { route: 'kasse', art: 'kasse', title: 'Kasse', text: 'Ausgaben und Abrechnung', cash: true },
     { route: 'tank', art: 'tank', title: 'Tankbuch', text: 'Tanken und Verbrauch', cash: true },
     { route: 'orte', art: 'orte', title: 'Orte', text: 'Lieblingsplätze und Wunschliste' },

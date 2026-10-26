@@ -34,11 +34,13 @@ import installEintragen from './eintragen.js';
 import installFotoansicht from './fotoansicht.js';
 import installHerzen from './herzen.js';
 import installLesen from './lesen.js';
+import installKartenebenen from './kartenebenen.js';
+import installBedienung from './bedienung.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 38;
+const APP_VERSION = 39;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -351,7 +353,7 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "zuladung": 1.812, "wasserwaage": 1.869, "abstimmung": 1.826, "urlaubsgeld": 1.846, "dienste": 1.866, "pinnwand": 1.855, "tickets": 1.839, "reisefoto": 1.846, "kalender": 1.84, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "zuladung": 1.812, "wasserwaage": 1.869, "abstimmung": 1.826, "urlaubsgeld": 1.846, "dienste": 1.866, "pinnwand": 1.855, "tickets": 1.839, "reisefoto": 1.846, "kalender": 1.84, "heute": 1.923, "mehr": 1.826};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
@@ -360,7 +362,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender', 'heute'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -476,7 +478,7 @@ function ensureMap() {
   if (map) return;
   map = L.map('map', { zoomControl: false }).setView([48.1, 11.6], 6);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+    maxZoom: 19, lpBase: 'normal',     // Kartenart (kartenebenen.js tauscht sie aus)
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
   routeLayer = L.layerGroup().addTo(map);
@@ -2228,6 +2230,7 @@ const APP = {
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,
   get map() { return map; },
+  get routeLayer() { return routeLayer; },
   ensureMap,
 };
 installKacheln(APP);
@@ -2264,6 +2267,8 @@ installEintragen(APP);
 installFotoansicht(APP);
 installHerzen(APP);
 installLesen(APP);
+installKartenebenen(APP);
+installBedienung(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

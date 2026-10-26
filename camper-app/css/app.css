@@ -1875,3 +1875,88 @@ body.selecting .fab { display: none; }
 .book-arrow:disabled { opacity: .3; }
 .book-close { display: grid; place-items: center; width: 44px; height: 44px; color: var(--ink); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .book-page { filter: brightness(.92); } }
+
+/* ---------- Version 39: Karte und Bedienung ---------- */
+
+/* Gebündelte Pins und Fotos auf der Karte */
+.cluster { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--c); background-size: cover; background-position: center;
+  color: #fff; font: 700 15px var(--body); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); box-sizing: border-box; }
+.cluster.ph b { min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--c); display: grid; place-items: center; transform: translate(14px, -14px); font-size: 13px; }
+.cluster-list { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
+.cluster-list li { padding: 3px 0; }
+.photo-pin { position: relative; width: 48px; height: 48px; border-radius: 10px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); overflow: visible; background: #fff; box-sizing: border-box; }
+.photo-pin img { width: 100%; height: 100%; object-fit: cover; border-radius: 7px; display: block; }
+.photo-pin b { position: absolute; top: -9px; right: -9px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--trip, #0F6670);
+  color: #fff; font: 700 12px var(--body); display: grid; place-items: center; box-sizing: border-box; }
+.mapview[data-base="luftbild"] .map-toggle, .mapview[data-base="luftbild"] .car-chip { box-shadow: 0 2px 12px rgba(0, 0, 0, .5); }
+
+/* Liste unter der Karte */
+.map-list { position: absolute; left: 0; right: 0; bottom: 0; z-index: 600; background: var(--surface, #fff); border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 16px rgba(58, 38, 23, .22); max-height: 46vh; display: flex; flex-direction: column; }
+.ml-handle { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 10px 16px 8px; border: 0; background: none;
+  color: var(--ink); font: 500 15px var(--body); cursor: pointer; text-align: left; }
+.ml-handle i { position: absolute; left: 50%; top: 5px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line, #E2D6C2); }
+.ml-handle span:first-of-type { flex: 1; }
+.ml-chev { color: var(--muted); }
+.ml-body { overflow: auto; padding: 0 12px 10px; }
+.ml-days { display: flex; align-items: center; justify-content: space-between; font-weight: 600; margin-bottom: 4px; }
+.ml-body ul { list-style: none; margin: 0; padding: 0; }
+.ml-body li button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--line, #E2D6C2); background: none;
+  color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ml-body li button.nopos { opacity: .6; }
+.ml-body .txt b, .ml-body .txt small { display: block; }
+.ml-body .txt small { color: var(--muted); }
+.mapview.has-list .map-actions { bottom: calc(var(--list-h, 46px) + 30px); transition: bottom .2s; }
+.mapview.has-list .leaflet-control-attribution { margin-bottom: var(--list-h, 46px); }
+
+/* Einkaufsmodus */
+.shop-btn { margin: 4px 0 8px; }
+.shop-banner { position: sticky; top: calc(var(--top) - var(--shrink, 0px)); z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: -8px -16px 12px; padding: 10px 16px; background: var(--trip); color: #fff; }
+body.shop-mode .page-head, body.shop-mode .seg.tabs { display: none; }
+body.shop-mode .checklist > li { min-height: 64px; font-size: 21px; }
+body.shop-mode .checklist .tick { width: 44px; height: 44px; flex: none; }
+body.shop-mode .checklist li.done { opacity: .55; font-size: 17px; min-height: 48px; }
+body.shop-mode .checklist li.ticking { transition: opacity .3s, transform .3s; opacity: .3; transform: translateY(16px); text-decoration: line-through; }
+
+/* Seite „Heute“ */
+.heute-ruhe p:first-child { font-size: 18px; }
+.heute-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.heute-links .chip { text-decoration: none; }
+
+/* Kopfzeile beim Scrollen schmaler: die obere Zeile (Logo, Einstellungen) gleitet weg */
+.topbar { transition: transform .22s ease-out; }
+body.head-small { --shrink: 50px; }
+body.head-small .topbar { transform: translateY(-50px); }
+.day-jump { top: calc(var(--top) - var(--shrink, 0px)); transition: top .22s ease-out; }
+body.head-small.split .mapview { top: calc(var(--top) - 50px); }
+
+/* Tastenkürzel */
+.keys { display: grid; gap: 8px; margin: 8px 0; }
+.keys div { display: flex; gap: 14px; align-items: center; }
+.keys dt { min-width: 64px; }
+kbd { display: inline-block; min-width: 26px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line, #E2D6C2); border-bottom-width: 3px;
+  background: var(--card, #fff); font: 600 14px var(--body); text-align: center; }
+
+/* Einstellungen einklappbar */
+.set-jump { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 14px; padding: 4px 16px; }
+.set-jump button { flex: none; min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line, #E2D6C2); background: var(--card, #fff);
+  color: var(--ink); font: 600 14px var(--body); cursor: pointer; white-space: nowrap; }
+:is(section, form).panel.fold > h2 { display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 0; }
+:is(section, form).panel.fold > h2::after { content: '▸'; color: var(--muted); transition: transform .15s; }
+:is(section, form).panel.fold.open > h2 { margin-bottom: 10px; }
+:is(section, form).panel.fold.open > h2::after { transform: rotate(90deg); }
+:is(section, form).panel.fold:not(.open) > :not(h2) { display: none; }
+
+/* Offline */
+body.offline .needs-net { opacity: .45; filter: grayscale(1); cursor: not-allowed; position: relative; }
+body.offline button.needs-net::after, body.offline a.needs-net::after { content: 'braucht Internet'; display: block; font: 600 10px var(--body); letter-spacing: .02em; }
+body.offline .round.needs-net::after, body.offline .icon-btn.needs-net::after { content: none; }
+
+/* Speicherplatz */
+.storage-bar { height: 12px; border-radius: 6px; background: var(--mist); overflow: hidden; margin: 8px 0; }
+.storage-bar i { display: block; height: 100%; background: var(--trip); }
+.storage-trips li { display: flex; align-items: center; gap: 10px; }
+.storage-trips .txt { flex: 1; }
+
+.mapview.list-open .map-actions .round { display: none; }
