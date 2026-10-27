@@ -2330,3 +2330,15 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .rider .frame2 { animation: frameB .3s steps(1) infinite; }
 @keyframes frameA { 0% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes frameB { 0% { opacity: 0; } 50% { opacity: 1; } }
+
+/* ---------- Version 49: Mitfahrer auch in der Auswahl in Bewegung ---------- */
+/* In den Kacheln fahren die Figuren ein Stück hin und her (Fliegendes schwebt), Tempo wie in der Kopfzeile */
+.rider-opt .rider.still, .rider-now .rider.still { animation: pickDrive calc(2.6s / var(--spd, 1)) ease-in-out infinite alternate; }
+.rider-opt .rider.still.air, .rider-now .rider.still.air { animation-name: pickFly; animation-duration: 2.4s; }
+.rider-opt .rider.r-schnecke, .rider-now .rider.r-schnecke { animation-duration: 6s; }
+@keyframes pickDrive { from { transform: translateX(-7%); } to { transform: translateX(7%); } }
+@keyframes pickFly { 0% { transform: translate(-10%, 4%); } 50% { transform: translate(0, -8%); } 100% { transform: translate(10%, 4%); } }
+.rider-opt { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .rider-opt .rider.still, .rider-now .rider.still { animation: none !important; }
+}
