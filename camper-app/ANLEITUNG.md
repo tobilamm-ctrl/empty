@@ -136,6 +136,11 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 51: Scharfe Mitfahrer
+
+Die Canva-Bilder der Mitfahrer sind jetzt in hoher Auflösung eingebaut (2,5-fach), besonders in der Auswahl und auf
+scharfen Handy-Bildschirmen deutlich schärfer. Die Vorlagen liegen im Canva-Design „LAMMping Mitfahrer Arbeitsfläche“.
+
 ## Neu in Version 50: Auswahl bewegt sich an der Stelle
 
 In der Auswahl „Wer fährt oben mit?“ bewegen sich die Figuren an ihrem Platz (Räder, Rauch, Lichter, Flügelschlag,
