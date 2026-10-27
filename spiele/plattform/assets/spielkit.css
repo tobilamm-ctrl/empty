@@ -95,3 +95,12 @@
 .sk-snd { white-space: nowrap; }
 @media (max-width: 560px) { .sk-turns { padding: 6px 8px; } .sk-turn-head { font-size: 14px; width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .sk-turns.sk-mine .sk-turn-head { animation: none; } .sk-p.sk-now { transform: none; } }
+
+/* Vollbild: nur Spielfeld und Zugleiste; Titel, Verlauf und Regeln ausgeblendet, Breite voll genutzt */
+body.sk-full { padding-top: 8px !important; padding-bottom: 16px !important; }
+body.sk-full .wrap { max-width: none; gap: 12px; }
+body.sk-full header.top { justify-content: flex-end; }
+body.sk-full header.top .brand, body.sk-full .panel.rules, body.sk-full .panel:has(> #log) { display: none !important; }
+body.sk-full .sk-home { display: none; }
+body.sk-full .sk-toolbar { gap: 6px; justify-content: flex-end; }
+body.sk-full .sk-toolbar .btn { padding: 5px 10px; font-size: 12.5px; white-space: nowrap; }

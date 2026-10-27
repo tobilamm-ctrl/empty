@@ -396,7 +396,7 @@ function render() {
 
 // ---------- Spielkit verbinden ----------
 kit = Spielkit.create({
-  id: "heimlauf", version: 1, minPlayers: 2, maxPlayers: 4, bots: true, defaultBots: 3, botNames: BOT_NAMES, sharedDevice: true,
+  id: "heimlauf", version: 1, minPlayers: 2, maxPlayers: 4, bots: true, defaultBots: 3, botNames: BOT_NAMES, sharedDevice: true, fullscreen: false,
   newPlayer, newState, onStart, whoActs, render,
   botPending, botStep, moveSound: "none", botDelay: 650,
   turnInfo: s => (s.phase === "roll" || s.phase === "move" ? { active: s.active, next: (s.active + 1) % s.players.length, also: [] } : null),

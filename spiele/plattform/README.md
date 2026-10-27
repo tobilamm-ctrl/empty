@@ -110,6 +110,10 @@ Es übernimmt:
   mit Anweisungen (liest die Statuszeile `#status` im eigenen Zug vor). Es spricht nur eine deutsche Stimme, die auf
   dem Gerät läuft (keine Stimmen aus dem Netz). Die Computer warten, bis die Ansage fertig ist. Spiele können Texte
   fürs Vorlesen mit `speech: text => …` umformen (Backgammon, Würfelpoker).
+- **Vollbild:** Knopf „⛶ Vollbild“ oben in jedem Spiel. Titel, Verlauf und Regeln verschwinden, die Zugleiste
+  bleibt, der Bildschirm geht nicht aus. Ist echtes Vollbild nicht erlaubt (eingebettet ohne `allow="fullscreen"`,
+  iPhone), wird trotzdem alles außer dem Spielfeld ausgeblendet. Ausgeblendet werden `.brand`, `.panel.rules` und
+  die Tafel mit `#log`. Heimlauf hat stattdessen seinen eigenen Tischmodus (`fullscreen: false`).
 - **Neuigkeiten:** Die zweite Zeile der Zugleiste zeigt, was Mitspieler und Computer seit dem eigenen letzten
   Zug gemacht haben (aus dem Verlauf `S.log`, Neuestes zuerst); „Alle“ klappt die Liste über dem Spielfeld auf.
   Die Leiste hat immer dieselbe Höhe, damit das Spielfeld nicht springt. Beim Weitergeben des Geräts steht die
@@ -148,6 +152,7 @@ const kit = Spielkit.create({
   botStep: () => { … },       // einen einzelnen Computer-Schritt ausführen (das Spielkit macht davor eine kurze Pause)
   nextUp: (s, aktiv) => …,    // wer als Nächstes dran ist, falls nicht einfach der nächste Sitz (optional)
   moveSound: "card",          // Ton für Züge der anderen: move, card, stone, dice, tile oder none
+  fullscreen: false,          // nur wenn das Spiel einen eigenen Vollbildmodus hat (sonst Knopf „⛶ Vollbild“)
 });
 kit.start();
 ```

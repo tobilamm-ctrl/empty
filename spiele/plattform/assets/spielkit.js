@@ -539,6 +539,7 @@
         <button class="btn small" id="sk-leave" type="button" hidden>Raum verlassen</button>
         <button class="btn small sk-snd" id="sk-sound" type="button" aria-pressed="true"></button>
         <button class="btn small sk-snd" id="sk-speech" type="button" title="Ansage: aus, wer dran ist, mit Zügen, mit Anweisungen"></button>
+        ${cfg.fullscreen === false ? "" : `<button class="btn small sk-snd" id="sk-full" type="button" aria-pressed="false" title="Vollbild: nur das Spielfeld, Bildschirm bleibt an"></button>`}
         <button class="btn" id="sk-new" type="button">Neues Spiel</button>`;
       if (!q("[data-sk-turns]")) {
         const bn = q("[data-sk-banner]");
@@ -709,6 +710,30 @@
           if (l) Speech.say(`Ansage: ${Speech.LEVELS[l]}.`);
           render();
         });
+      }
+      // Vollbild: Titel, Verlauf und Regeln ausblenden, Bildschirm wach halten. Ohne Vollbild-Erlaubnis
+      // (z. B. eingebettet oder am iPhone) füllt das Spiel trotzdem die Seite.
+      const fb = q("#sk-full");
+      if (fb) {
+        let wake = null;
+        const de = document.documentElement, fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+        const showFb = () => { const on = document.body.classList.contains("sk-full"); fb.textContent = on ? "✕ Vollbild" : "⛶ Vollbild"; fb.setAttribute("aria-pressed", on); };
+        const lock = async on => {
+          try { if (on && navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); } else if (!on && wake) { wake.release(); wake = null; } } catch (e) { /* ohne Wachhalten */ }
+        };
+        const setFull = async on => {
+          document.body.classList.toggle("sk-full", on); showFb(); lock(on);
+          try {
+            if (on && !fsEl()) { if (de.requestFullscreen) await de.requestFullscreen(); else if (de.webkitRequestFullscreen) de.webkitRequestFullscreen(); }
+            if (!on && fsEl()) { if (document.exitFullscreen) await document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); }
+          } catch (e) { /* Vollbild nicht erlaubt: Seite trotzdem aufs Spielfeld beschränken */ }
+          window.scrollTo(0, 0);
+        };
+        showFb();
+        fb.addEventListener("click", () => setFull(!document.body.classList.contains("sk-full")));
+        const left = () => { if (!fsEl() && ui.wasFs && document.body.classList.contains("sk-full")) setFull(false); ui.wasFs = !!fsEl(); };
+        document.addEventListener("fullscreenchange", left); document.addEventListener("webkitfullscreenchange", left);
+        document.addEventListener("visibilitychange", () => { if (!document.hidden && document.body.classList.contains("sk-full")) lock(true); });
       }
       // Klick beim Antippen von allem, was man im Spiel bedienen kann
       document.addEventListener("pointerdown", e => {
