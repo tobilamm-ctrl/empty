@@ -136,6 +136,14 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 48: Mitfahrer in Bilderbuch-Optik
+
+Alle Figuren oben in der Leiste (außer eurer V-Klasse) sind neu, in Canva im Bilderbuch-Stil gezeichnet und
+freigestellt. Die Bewegung kommt weiter von LAMMping: Räder drehen sich hinter den Radkästen (Bobbycar, Fahrrad,
+Traktor, Feuerwehr, Dampflok), Rauch steigt auf, das Blaulicht und die Ufo-Lichter blinken, das Boot schaukelt auf
+Wellen, der Vogel schlägt mit den Flügeln, der Schmetterling flattert, die Tiere laufen, hüpfen, galoppieren oder
+kriechen. Die Bilder liegen in `icons/mitfahrer/` (zusammen etwa 100 KB) und funktionieren auch offline.
+
 ## Neu in Version 47: Tagebuch aufgeräumt
 
 Über dem Tagebuch ist es übersichtlicher:

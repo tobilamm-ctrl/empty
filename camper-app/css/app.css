@@ -2314,3 +2314,19 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .pack-next-intro { margin: -4px 0 10px; }
 .pack-unused { margin-top: 18px; }
 .pack-unused h3 { margin: 0 0 4px; }
+
+/* ---------- Version 48: Mitfahrer als Canva-Bilder ---------- */
+.rider image { image-rendering: auto; }
+.rider .bob.small { animation: bobSmall .5s ease-in-out infinite; }
+@keyframes bobSmall { 50% { transform: translateY(-2px); } }
+.rider .waddle { transform-box: fill-box; transform-origin: 50% 100%; animation: waddle .6s ease-in-out infinite; }
+.rider .waddle.slow { animation-duration: .9s; }
+@keyframes waddle { 0%, 100% { transform: rotate(-3deg) translateY(0); } 25% { transform: rotate(0) translateY(-5px); } 50% { transform: rotate(3deg) translateY(0); } 75% { transform: rotate(0) translateY(-5px); } }
+.rider .gallop { transform-box: fill-box; transform-origin: 50% 70%; animation: gallop .42s ease-in-out infinite; }
+@keyframes gallop { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(5deg) translateY(-8px); } }
+.rider .flapY { transform-box: fill-box; transform-origin: 50% 50%; animation: flapY .2s ease-in-out infinite alternate; }
+@keyframes flapY { to { transform: scaleY(.45); } }
+.rider .frame1 { animation: frameA .3s steps(1) infinite; }
+.rider .frame2 { animation: frameB .3s steps(1) infinite; }
+@keyframes frameA { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes frameB { 0% { opacity: 0; } 50% { opacity: 1; } }

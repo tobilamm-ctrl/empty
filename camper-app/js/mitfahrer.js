@@ -4,27 +4,27 @@
 
 import { ART } from './mitfahrer-bilder.js';
 
-// [id, Name, Gruppe, viewBox-Breite, viewBox-Höhe, Tempo (1 = wie die V-Klasse), Luft?]
+// [id, Name, Gruppe, viewBox-Breite, viewBox-Höhe, Tempo (1 = wie die V-Klasse), Luft?, Höhe in der Kopfzeile (px)]
 export const RIDERS = [
-  ['vklasse', 'Unsere V-Klasse', 'fahr', 190, 78, 1, false],
-  ['bobbycar', 'Bobbycar', 'fahr', 190, 78, 0.8, false],
-  ['fahrrad', 'Fahrrad', 'fahr', 140, 78, 0.7, false],
-  ['traktor', 'Traktor', 'fahr', 142, 78, 0.5, false],
-  ['feuerwehr', 'Feuerwehr', 'fahr', 182, 78, 1.3, false],
-  ['dampflok', 'Dampflok', 'fahr', 196, 78, 0.8, false],
-  ['boot', 'Segelboot', 'fahr', 130, 78, 0.5, false],
-  ['ballon', 'Heißluftballon', 'luft', 64, 84, 0.3, true],
-  ['ufo', 'Ufo', 'luft', 96, 60, 1.6, true],
-  ['flieger', 'Papierflieger', 'luft', 80, 44, 1.1, true],
-  ['vogel', 'Vogel', 'luft', 60, 44, 1.2, true],
-  ['falter', 'Schmetterling', 'luft', 56, 44, 0.5, true],
-  ['schaf', 'LAMMping-Schaf', 'tier', 112, 78, 0.6, false],
-  ['hund', 'Hund', 'tier', 136, 78, 1.1, false],
-  ['hase', 'Hase', 'tier', 118, 78, 0.9, false],
-  ['schnecke', 'Schnecke', 'tier', 116, 78, 0.15, false],
-  ['dino', 'Dino', 'tier', 130, 78, 0.6, false],
-  ['igel', 'Igel', 'tier', 104, 78, 0.4, false],
-].map(([id, name, group, w, h, spd, air]) => ({ id, name, group, w, h, spd, air, art: ART[id] || null }));
+  ['vklasse', 'Unsere V-Klasse', 'fahr', 190, 78, 1, false, 23],
+  ['bobbycar', 'Bobbycar', 'fahr', 168, 82, 0.8, false, 23],
+  ['fahrrad', 'Fahrrad', 'fahr', 124, 110, 0.7, false, 28],
+  ['traktor', 'Traktor', 'fahr', 161, 116, 0.5, false, 28],
+  ['feuerwehr', 'Feuerwehr', 'fahr', 180, 84, 1.3, false, 24],
+  ['dampflok', 'Dampflok', 'fahr', 178, 84, 0.8, false, 24],
+  ['boot', 'Segelboot', 'fahr', 152, 180, 0.5, false, 32],
+  ['ballon', 'Heißluftballon', 'luft', 115, 175, 0.3, true, 32],
+  ['ufo', 'Ufo', 'luft', 155, 81, 1.6, true, 18],
+  ['flieger', 'Papierflieger', 'luft', 145, 59, 1.1, true, 14],
+  ['vogel', 'Vogel', 'luft', 137, 125, 1.2, true, 20],
+  ['falter', 'Schmetterling', 'luft', 132, 181, 0.5, true, 22],
+  ['schaf', 'LAMMping-Schaf', 'tier', 139, 109, 0.6, false, 24],
+  ['hund', 'Hund', 'tier', 146, 94, 1.1, false, 22],
+  ['hase', 'Hase', 'tier', 145, 117, 0.9, false, 24],
+  ['schnecke', 'Schnecke', 'tier', 139, 91, 0.15, false, 20],
+  ['dino', 'Dino', 'tier', 164, 124, 0.6, false, 27],
+  ['igel', 'Igel', 'tier', 119, 116, 0.4, false, 22],
+].map(([id, name, group, w, h, spd, air, rh]) => ({ id, name, group, w, h, spd, air, rh, art: ART[id] || null }));
 
 const GROUPS = [['fahr', 'Fahrzeuge'], ['luft', 'In der Luft'], ['tier', 'Tiere']];
 const MAX = 6;
@@ -43,8 +43,8 @@ export default function installMitfahrer(app) {
   const doc = () => S.games.find(g => g.id === `riders_${me()}`);
   const chosen = () => { const d = doc(); return (d ? d.list : [kid() ? 'bobbycar' : 'vklasse']).filter(byId); };
 
-  // Höhe in der Kopfzeile: Fahrzeuge und Tiere 23 px wie die V-Klasse, Fliegendes etwas kleiner, der Ballon größer
-  const rh = r => (r.id === 'ballon' ? 32 : r.id === 'ufo' ? 20 : r.air ? 20 : 23);
+  // Höhe in der Kopfzeile je Figur (Tabelle oben), die V-Klasse hat 23 px
+  const rh = r => r.rh || (r.air ? 20 : 23);
   const svg = (r, cls = '', style = '') => `<svg class="rider${r.air ? ' air' : ''} r-${r.id}${cls}" viewBox="0 0 ${r.w} ${r.h}"
     style="--rh: ${rh(r)}px; --rw: ${Math.round(r.w * rh(r) / r.h)}px; --spd: ${r.spd};${style}" aria-hidden="true">${r.art}</svg>`;
   app.riderSvg = () => { const r = byId(chosen()[0] || 'vklasse'); return svg(r, ' still'); };
