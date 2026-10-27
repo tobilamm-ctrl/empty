@@ -1,0 +1,411 @@
+<title>Heimlauf</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/spielkit.css">
+<script src="assets/spielkit.js"></script>
+<script>
+  // Auf der Plattform liegen die Schriften auf dem eigenen Server; ohne Plattform kommen sie von Google Fonts.
+  if (!window.PLATFORM) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&family=Patrick+Hand&display=swap";
+    document.head.appendChild(l);
+  }
+</script>
+<style>
+/* Brettspiel nach dem Prinzip „Mensch ärgere dich nicht“ für ein Tablet, das flach auf dem Tisch liegt:
+   Im Tischmodus (Vollbild) füllt das Brett den Bildschirm; Namen, Hinweise und Würfel drehen sich zu dem,
+   der gerade dran ist. Ohne Tischmodus: Kopfzeile, Brett, darunter Verlauf und Regeln. */
+:root {
+  color-scheme: dark;
+  --table: #1a140f;
+  --sheet: #262019;
+  --sheet-2: #352c22;
+  --ink: #f8f2e8;
+  --muted: #bdae98;
+  --accent: #ffcf4d;
+  --tile-ink: #262019;
+  --red: #e5604f;
+  --green: #7cc47f;
+  --wood: #e9d5ae;
+  --wood-2: #d9bf8f;
+  --p0: #d8433a; --p1: #2f6fd0; --p2: #2c9a52; --p3: #e0a612;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--table); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .5px; }
+.brand h1 span { color: var(--accent); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+.panel { background: var(--sheet); border-radius: 14px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0 0 10px; letter-spacing: .4px; }
+.cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .cols { grid-template-columns: 1fr 1fr; } }
+.btn { min-height: 44px; }
+
+/* Brett */
+.stage { display: grid; justify-items: center; gap: 10px; }
+.boardbox { position: relative; width: min(100%, 820px); aspect-ratio: 1; }
+.boardbox svg { width: 100%; height: 100%; display: block; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.tablebar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.status { text-align: center; margin: 0; font-size: 16px; min-height: 1.5em; }
+.status strong { color: var(--accent); }
+svg text { font-family: var(--font-display); }
+.pc { cursor: default; }
+.pc.can { cursor: pointer; }
+.pc.can .ring { animation: ring 1s ease-in-out infinite; }
+@keyframes ring { 50% { stroke-width: 2.4; opacity: .55; } }
+.die { cursor: pointer; }
+.die.roll { animation: shake .45s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes shake { 20% { transform: rotate(-18deg) scale(1.08); } 45% { transform: rotate(14deg); } 70% { transform: rotate(-8deg); } }
+.fresh { animation: pop .35s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes pop { from { transform: scale(.4); } }
+
+/* Tischmodus (Vollbild): nur das Brett */
+body.tablemode { padding: 0; overflow: hidden; height: 100vh; height: 100dvh; }
+body.tablemode .wrap { max-width: none; height: 100%; display: grid; place-items: center; gap: 0; }
+body.tablemode header.top, body.tablemode .sk-turns, body.tablemode .sk-banner, body.tablemode .cols, body.tablemode .tablebar .notable, body.tablemode #status { display: none !important; }
+body.tablemode .stage { width: 100%; height: 100%; place-items: center; position: relative; }
+body.tablemode .boardbox { width: min(100vw, 100dvh, 100vh); }
+body.tablemode .tablebar { position: fixed; right: 8px; top: 8px; z-index: 5; flex-direction: column; }
+body.tablemode .tablebar .btn { min-height: 40px; padding: 6px 12px; font-size: 13px; opacity: .85; }
+
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; max-height: 300px; overflow-y: auto; }
+.log li { color: var(--muted); }
+.log li b { color: var(--ink); }
+.rules { font-size: 14px; }
+.rules summary { cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .4px; }
+.rules ul { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 6px; }
+.result { border: 2px solid var(--accent); }
+.result h2 { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- Zeichen der vier Farben (zusätzlich zur Farbe) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="hl-0" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34"/></symbol>
+    <symbol id="hl-1" viewBox="0 0 100 100"><path d="M50 8C66 32 84 48 84 64a34 34 0 0 1-68 0C16 48 34 32 50 8Z"/></symbol>
+    <symbol id="hl-2" viewBox="0 0 100 100"><path d="M50 10 92 86H8Z"/></symbol>
+    <symbol id="hl-3" viewBox="0 0 100 100"><path d="M50 4 61 36 95 37 68 57 78 90 50 70 22 90 32 57 5 37 39 36Z"/></symbol>
+    <radialGradient id="hl-wood" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#f3e2bf"/><stop offset="1" stop-color="#d6b986"/></radialGradient>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Heim<span>lauf</span></h1>
+      <div class="sub">Würfeln, laufen, rauswerfen, nach Hause kommen</div>
+    </div>
+    <div class="sk-toolbar" data-sk-toolbar></div>
+  </header>
+  <p class="sk-banner" data-sk-banner hidden></p>
+  <section class="panel result" id="result" hidden></section>
+  <section class="panel sk-lobby" data-sk-lobby hidden></section>
+
+  <section class="stage" id="stage">
+    <div class="tablebar">
+      <button class="btn primary" type="button" id="btn-table">⛶ Tischmodus (Vollbild)</button>
+      <button class="btn notable" type="button" id="btn-sound2" hidden></button>
+    </div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <div class="boardbox" id="boardbox"></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel">
+      <h2>Verlauf</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+    <section class="panel rules">
+      <details open>
+        <summary>Spielregeln</summary>
+        <ul id="rules-list"></ul>
+      </details>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const { esc, rnd } = Spielkit;
+
+// ---------- Brett (11 × 11 Felder) ----------
+// Laufweg mit 40 Feldern, Feld 0 ist der Start von Sitz 0; jeder Sitz startet 10 Felder weiter.
+const PATH = [[0,4],[1,4],[2,4],[3,4],[4,4],[4,3],[4,2],[4,1],[4,0],[5,0],[6,0],[6,1],[6,2],[6,3],[6,4],[7,4],[8,4],[9,4],[10,4],[10,5],
+  [10,6],[9,6],[8,6],[7,6],[6,6],[6,7],[6,8],[6,9],[6,10],[5,10],[4,10],[4,9],[4,8],[4,7],[4,6],[3,6],[2,6],[1,6],[0,6],[0,5]];
+const HOME = [[[1,5],[2,5],[3,5],[4,5]], [[5,1],[5,2],[5,3],[5,4]], [[9,5],[8,5],[7,5],[6,5]], [[5,9],[5,8],[5,7],[5,6]]];
+const BASE = [[[0,0],[1,0],[0,1],[1,1]], [[9,0],[10,0],[9,1],[10,1]], [[9,9],[10,9],[9,10],[10,10]], [[0,9],[1,9],[0,10],[1,10]]];
+// Wo sitzt der Spieler am Tisch? Danach drehen sich Name und Hinweise (Grad) und wo sie stehen (Feldmitte)
+const SEAT_ROT = [90, 180, 270, 0];
+const SEAT_LABEL = [[2.6, 2.6], [8.4, 2.6], [8.4, 8.4], [2.6, 8.4]];
+const COLNAME = ["Rot", "Blau", "Grün", "Gelb"];
+const BOT_NAMES = ["Ada", "Kurt", "Mila", "Ole"];
+const vb = (name, du, er) => (name === "Du" ? du : er);
+const SEATS_FOR = { 2: [0, 2], 3: [0, 1, 2], 4: [0, 1, 2, 3] };
+
+let S, kit;
+const UI = { lastSeq: -1, rolling: false, lastDieSeq: -1 };
+const log = html => { S.log.unshift(html); S.log = S.log.slice(0, 120); };
+const nm = i => `<b>${esc(S.players[i].name)}</b>`;
+const absOf = (seat, steps) => (seat * 10 + steps) % 40;
+
+// ---------- Regeln (verändern nur S, laufen über kit.act) ----------
+// Figur: −1 im Haus (Startkreis), 0–39 Schritte auf dem Weg, 40–43 im Ziel
+function pieceAt(abs) {   // wer steht auf Feld abs des Weges?
+  for (let i = 0; i < S.players.length; i++) { const p = S.players[i]; for (let k = 0; k < 4; k++) { const s = p.pcs[k]; if (s >= 0 && s <= 39 && absOf(p.seat, s) === abs) return { i, k }; } }
+  return null;
+}
+function moves(i, d) {
+  const p = S.players[i], out = [];
+  const baseN = p.pcs.filter(s => s === -1).length, startOwn = p.pcs.findIndex(s => s === 0);
+  for (let k = 0; k < 4; k++) {
+    const s = p.pcs[k];
+    let t;
+    if (s === -1) { if (d !== 6 || startOwn >= 0) continue; t = 0; }
+    else {
+      t = s + d;
+      if (t > 43) continue;
+      if (t >= 40) { if (p.pcs.some((x, j) => j !== k && x > s && x <= t && x >= 40)) continue; }   // im Ziel nicht überspringen
+      else { const o = pieceAt(absOf(p.seat, t)); if (o && o.i === i) continue; }
+    }
+    out.push({ k, from: s, to: t });
+  }
+  // Pflichten: mit einer 6 zuerst herauskommen; das Startfeld räumen, solange noch Figuren im Haus sind
+  if (d === 6 && baseN && out.some(m => m.from === -1)) return out.filter(m => m.from === -1);
+  if (startOwn >= 0 && baseN && out.some(m => m.k === startOwn)) return out.filter(m => m.k === startOwn);
+  return out;
+}
+// darf dreimal würfeln: keine Figur auf dem Weg und die im Ziel stehen schon ganz hinten
+function threeTries(p) {
+  if (p.pcs.some(s => s >= 0 && s <= 39)) return false;
+  const inGoal = p.pcs.filter(s => s >= 40).sort((a, b) => b - a);
+  return inGoal.every((s, k) => s === 43 - k);
+}
+function roll() {
+  const i = S.active, p = S.players[i];
+  S.die = 1 + rnd(6); S.dieSeq = (S.dieSeq || 0) + 1; S.seq++; S.fresh = null;
+  const ms = moves(i, S.die);
+  if (ms.length) { S.phase = "move"; return; }
+  if (threeTries(p) && S.die !== 6 && S.tries < 2) {
+    S.tries++;
+    log(`${nm(i)} ${vb(p.name, "würfelst", "würfelt")} eine ${S.die} und ${vb(p.name, "darfst", "darf")} noch einmal (Versuch ${S.tries + 1} von 3).`);
+    return;
+  }
+  log(`${nm(i)} ${vb(p.name, "würfelst", "würfelt")} eine ${S.die} und ${vb(p.name, "kannst", "kann")} nicht ziehen.`);
+  nextPlayer(S.die === 6);
+}
+function nextPlayer(again) {
+  S.tries = 0; S.phase = "roll";
+  if (!again) S.active = (S.active + 1) % S.players.length;
+}
+function move(k) {
+  const i = S.active, p = S.players[i], m = moves(i, S.die).find(x => x.k === k);
+  const o = m.to <= 39 ? pieceAt(absOf(p.seat, m.to)) : null;
+  p.pcs[k] = m.to; S.seq++; S.fresh = { i, k };
+  let txt = m.from === -1 ? `${nm(i)} ${vb(p.name, "würfelst", "würfelt")} eine 6 und ${vb(p.name, "kommst", "kommt")} heraus` : `${nm(i)} ${vb(p.name, "ziehst", "zieht")} ${S.die === 1 ? "1 Feld" : S.die + " Felder"}${m.to >= 40 ? " ins Ziel" : ""}`;
+  {
+    if (o && o.i !== i) { S.players[o.i].pcs[o.k] = -1; S.hit = (S.hit || 0) + 1; txt += ` und ${vb(p.name, "wirfst", "wirft")} ${nm(o.i)} raus`; }
+  }
+  log(txt + ".");
+  if (p.pcs.every(s => s >= 40)) {
+    S.phase = "over"; S.winner = i;
+    log(`<b>${esc(p.name)} ${vb(p.name, "hast", "hat")} alle Figuren im Ziel und ${vb(p.name, "gewinnst", "gewinnt")}!</b>`);
+    return;
+  }
+  nextPlayer(S.die === 6);
+}
+
+// ---------- Computer-Gegner ----------
+// Wert eines Zugs: rauswerfen, herauskommen, ins Ziel, aus der Gefahr; nicht vor einen Gegner stellen
+function danger(i, abs) {
+  let n = 0;
+  S.players.forEach((q, j) => { if (j === i) return; q.pcs.forEach(s => { if (s < 0 || s > 39) return; const dist = (abs - absOf(q.seat, s) + 40) % 40; if (dist >= 1 && dist <= 6 && s + dist <= 39) n++; }); });
+  return n;
+}
+function botMove(i) {
+  const p = S.players[i], ms = moves(i, S.die);
+  let best = ms[0], bv = -Infinity;
+  for (const m of ms) {
+    let v = m.to * .2;
+    if (m.from === -1) v += 60;
+    if (m.to >= 40 && m.from <= 39) v += 50;
+    if (m.to <= 39) {
+      const o = pieceAt(absOf(p.seat, m.to)); if (o && o.i !== i) v += 100;
+      v -= 25 * danger(i, absOf(p.seat, m.to));
+    }
+    if (m.from >= 0 && m.from <= 39) v += 20 * danger(i, absOf(p.seat, m.from));
+    v += Math.random() * .3;
+    if (v > bv) { bv = v; best = m; }
+  }
+  return best.k;
+}
+const botPending = () => (S.phase === "roll" || S.phase === "move") && S.players[S.active].ai;
+function botStep() { if (S.phase === "roll") roll(); else move(botMove(S.active)); }
+function playBots() {
+  if (kit.paced()) return;
+  let guard = 0;
+  while (botPending() && guard++ < 5000) botStep();
+}
+
+// ---------- Spielstand ----------
+const newPlayer = r => ({ id: r.id, name: r.name, ai: r.ai, seat: 0, pcs: [-1, -1, -1, -1] });
+function seatPlayers(s) {
+  const seats = SEATS_FOR[s.players.length] || [0, 1, 2, 3];
+  s.players.forEach((p, k) => { p.seat = seats[k]; p.pcs = [-1, -1, -1, -1]; });
+}
+function newState({ roster, mode }) {
+  const s = { players: roster.map(newPlayer), active: 0, phase: "roll", die: 0, dieSeq: 0, tries: 0, winner: -1, fresh: null, seq: 0, log: [] };
+  seatPlayers(s);
+  if (mode !== "online") { S = s; s.active = rnd(roster.length); log(`${nm(s.active)} ${vb(s.players[s.active].name, "beginnst", "beginnt")}.`); playBots(); }
+  return s;
+}
+function onStart(s) { S = s; seatPlayers(s); s.phase = "roll"; s.active = rnd(s.players.length); log(`${nm(s.active)} ${vb(s.players[s.active].name, "beginnst", "beginnt")}.`); playBots(); }
+const whoActs = () => (S.phase === "roll" || S.phase === "move" ? [S.active] : []);
+
+// ---------- Eingaben ----------
+// an einem Gerät darf jeder tippen (Tablet auf dem Tisch), online nur, wer dran ist
+const canAct = () => (S.phase === "roll" || S.phase === "move") && !S.players[S.active].ai && (!kit.online() || kit.me() === S.active);
+function act(fn) {
+  const seq = S.seq;
+  kit.act(() => { if (!canAct() || S.seq !== seq) return false; if (fn() === false) return false; playBots(); });
+}
+$("boardbox").addEventListener("click", e => {
+  const d = e.target.closest("[data-die]"), pc = e.target.closest(".pc.can");
+  if (d && S.phase === "roll") { act(() => roll()); return; }
+  if (pc && S.phase === "move") { const k = +pc.dataset.k; act(() => { if (!moves(S.active, S.die).some(m => m.k === k)) return false; move(k); }); }
+});
+document.addEventListener("click", e => { if (e.target.closest("[data-again]")) kit.rematch(); });
+
+// Tischmodus: Vollbild und Bildschirm wach halten
+let wake = null;
+async function setTable(on) {
+  try {
+    if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    if (!on && document.fullscreenElement) await document.exitFullscreen();
+  } catch (e) { /* Vollbild nicht erlaubt: Tischmodus trotzdem */ }
+  document.body.classList.toggle("tablemode", on);
+  try { if (on && navigator.wakeLock) wake = await navigator.wakeLock.request("screen"); else if (!on && wake) { wake.release(); wake = null; } } catch (e) { /* egal */ }
+  $("btn-table").textContent = on ? "✕ Tischmodus beenden" : "⛶ Tischmodus (Vollbild)";
+}
+$("btn-table").addEventListener("click", () => setTable(!document.body.classList.contains("tablemode")));
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("tablemode")) setTable(false); });
+document.addEventListener("visibilitychange", async () => { if (!document.hidden && document.body.classList.contains("tablemode") && navigator.wakeLock && !wake) { try { wake = await navigator.wakeLock.request("screen"); } catch (e) { /* egal */ } } });
+
+// ---------- Grafik ----------
+const C = (x, y) => [x * 10 + 5, y * 10 + 5];
+const PCOL = s => `var(--p${s})`;
+const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+function fieldSvg(x, y, fill, stroke, r = 4.1) { const [cx, cy] = C(x, y); return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width=".7"/>`; }
+function pieceSvg(seat, x, y, opt = {}) {
+  const [cx, cy] = C(x, y);
+  return `<g class="pc${opt.can ? " can" : ""}${opt.fresh ? " fresh" : ""}" data-k="${opt.k}" ${opt.can ? `role="button" aria-label="${COLNAME[seat]}e Figur ziehen"` : ""}>
+    ${opt.can ? `<circle class="ring" cx="${cx}" cy="${cy}" r="4.9" fill="none" stroke="#fff" stroke-width="1.4"/>` : ""}
+    <circle cx="${cx}" cy="${cy + .5}" r="3.5" fill="rgba(0,0,0,.35)"/>
+    <circle cx="${cx}" cy="${cy}" r="3.4" fill="${PCOL(seat)}" stroke="#fff" stroke-width=".7"/>
+    <use href="#hl-${seat}" x="${cx - 1.8}" y="${cy - 1.8}" width="3.6" height="3.6" fill="#fff" opacity=".9"/>
+    ${opt.can ? `<circle cx="${cx}" cy="${cy}" r="5.4" fill="transparent"/>` : ""}</g>`;
+}
+function boardSvg() {
+  const a = S.players[S.active] || S.players[0], aSeat = a.seat, can = canAct() && S.phase === "move" ? moves(S.active, S.die).map(m => m.k) : [];
+  let s = `<svg viewBox="-1 -1 112 112" role="img" aria-label="Spielbrett"><rect x="-1" y="-1" width="112" height="112" rx="5" fill="url(#hl-wood)"/>`;
+  // Weg
+  s += `<path d="${PATH.map(([x, y], k) => `${k ? "L" : "M"}${C(x, y).join(" ")}`).join("")}Z" fill="none" stroke="#a88a5c" stroke-width="1.2"/>`;
+  PATH.forEach(([x, y], k) => {
+    const st = k % 10 === 0 ? k / 10 : -1;
+    s += fieldSvg(x, y, st >= 0 ? PCOL(st) : "#fffaf0", "#8a6d43");
+    if (st >= 0) s += `<use href="#hl-${st}" x="${C(x, y)[0] - 2}" y="${C(x, y)[1] - 2}" width="4" height="4" fill="#fff" opacity=".55"/>`;
+  });
+  // Haus und Ziel je Farbe
+  for (let st = 0; st < 4; st++) {
+    BASE[st].forEach(([x, y]) => { s += fieldSvg(x, y, `color-mix(in srgb, ${PCOL(st)} 35%, #fffaf0)`, PCOL(st)); });
+    HOME[st].forEach(([x, y]) => { s += fieldSvg(x, y, `color-mix(in srgb, ${PCOL(st)} 45%, #fffaf0)`, PCOL(st)); });
+  }
+  // Namen der Spieler, zu ihrer Seite gedreht
+  S.players.forEach((p, i) => {
+    const [lx, ly] = SEAT_LABEL[p.seat], cx = lx * 10, cy = ly * 10, on = i === S.active && S.phase !== "over";
+    const inGoal = p.pcs.filter(v => v >= 40).length;
+    s += `<g transform="rotate(${SEAT_ROT[p.seat]} ${cx} ${cy})">
+      <rect x="${cx - 15}" y="${cy - 6}" width="30" height="12" rx="3" fill="${on ? PCOL(p.seat) : "rgba(0,0,0,.12)"}" ${on ? 'stroke="#fff" stroke-width=".8"' : ""}/>
+      <text x="${cx}" y="${cy - .3}" text-anchor="middle" font-size="4.6" fill="${on ? "#fff" : "#4a3a24"}">${esc(p.name.length > 11 ? p.name.slice(0, 10) + "…" : p.name)}${p.ai ? " 🤖" : ""}</text>
+      <text x="${cx}" y="${cy + 4.2}" text-anchor="middle" font-size="2.9" fill="${on ? "#fff" : "#6b5638"}" font-family="Nunito, sans-serif">${on ? (S.phase === "roll" ? (p.ai ? "würfelt …" : "Würfel antippen") : (p.ai ? "zieht …" : "Figur antippen")) : `${inGoal} im Ziel`}</text></g>`;
+  });
+  // Figuren
+  S.players.forEach((p, i) => {
+    p.pcs.forEach((v, k) => {
+      const at = v === -1 ? BASE[p.seat][k] : v >= 40 ? HOME[p.seat][v - 40] : PATH[absOf(p.seat, v)];
+      s += pieceSvg(p.seat, at[0], at[1], { k: i === S.active ? k : -1, can: i === S.active && can.includes(k), fresh: S.fresh && S.fresh.i === i && S.fresh.k === k && UI.lastSeq !== S.seq });
+    });
+  });
+  // Würfel in der Mitte, zum Spieler am Zug gedreht
+  const d = S.die || 0, roll = S.phase === "roll" && canAct(), rolled = UI.lastDieSeq !== S.dieSeq;
+  s += `<g transform="rotate(${SEAT_ROT[aSeat]} 55 55)"><g class="die${rolled && d ? " roll" : ""}" data-die="1" role="button" aria-label="Würfel${d ? ": " + d : ""}">
+    <rect x="49.6" y="49.6" width="10.8" height="10.8" rx="2.2" fill="${roll ? "#fff" : "#f4ede0"}" stroke="${roll ? PCOL(aSeat) : "#8a6d43"}" stroke-width="${roll ? 1.3 : .6}"/>
+    ${d ? PIPS[d].map(([px, py]) => `<circle cx="${55 + px * 2.9}" cy="${55 + py * 2.9}" r="1.05" fill="#2a2118"/>`).join("") : `<text x="55" y="57.4" text-anchor="middle" font-size="6" fill="#8a6d43">?</text>`}
+    <rect x="47" y="47" width="16" height="16" fill="transparent"/></g></g>`;
+  if (S.phase === "over" && S.winner >= 0) {
+    const w = S.players[S.winner];
+    s += `<g transform="rotate(${SEAT_ROT[w.seat]} 55 55)"><rect x="25" y="36" width="60" height="12" rx="3" fill="${PCOL(w.seat)}" stroke="#fff"/><text x="55" y="44.5" text-anchor="middle" font-size="6" fill="#fff">${esc(w.name)} ${vb(w.name, "gewinnst", "gewinnt")}!</text></g>`;
+  }
+  return s + "</svg>";
+}
+
+// ---------- Darstellung ----------
+function render() {
+  const lobby = S.phase === "lobby";
+  $("stage").hidden = lobby;
+  $("log").innerHTML = S.log.map(l => `<li>${l}</li>`).join("");
+  $("rules-list").innerHTML = `<li>2 bis 4 Spieler, jeder mit 4 Figuren seiner Farbe (Rot ● Kreis, Blau 💧 Tropfen, Grün ▲ Dreieck, Gelb ★ Stern). Ziel: alle vier Figuren einmal ums Brett in die eigenen Zielfelder bringen.</li>
+    <li>Wer dran ist, tippt auf den Würfel in der Mitte und dann auf eine leuchtende Figur. Mit einer <b>6</b> kommt eine Figur aus dem Haus auf das Startfeld, und man darf noch einmal würfeln.</li>
+    <li>Wer keine Figur auf dem Weg hat, darf bis zu <b>dreimal</b> würfeln, um eine 6 zu bekommen.</li>
+    <li>Mit einer 6 muss man herauskommen, wenn es geht. Das <b>Startfeld</b> muss geräumt werden, solange noch Figuren im Haus sind.</li>
+    <li>Landet eine Figur auf einer fremden, wird diese <b>rausgeworfen</b> und muss zurück ins Haus. Auf eigene Figuren darf man nicht ziehen.</li>
+    <li>Ins Ziel geht es nur mit passender Augenzahl; im Ziel darf man nicht über eigene Figuren springen.</li>
+    <li><b>Tischmodus:</b> Das Tablet liegt flach in der Mitte, jeder sitzt an einer Seite. Namen, Hinweise und Würfel drehen sich zu dem, der dran ist.</li>`;
+  if (lobby) { $("result").hidden = true; return; }
+  // Würfelton und Treffer
+  if (UI.lastDieSeq !== S.dieSeq && UI.lastDieSeq !== -1) kit.sound("dice");
+  $("boardbox").innerHTML = boardSvg();
+  UI.lastDieSeq = S.dieSeq;
+  if (UI.lastSeq !== S.seq && S.fresh && UI.lastSeq !== -1) kit.sound((S.hit || 0) > (UI.hits || 0) ? "hit" : "stone");
+  UI.hits = S.hit || 0; UI.lastSeq = S.seq;
+  const a = S.players[S.active];
+  let st = "";
+  if (S.phase === "roll") st = `<strong>${esc(a.name)}</strong> ${a.ai ? "würfelt …" : canAct() ? `${vb(a.name, "bist", "ist")} dran: Würfel antippen${S.tries ? ` (Versuch ${S.tries + 1} von 3)` : ""}.` : "ist dran."}`;
+  else if (S.phase === "move") st = `<strong>${esc(a.name)}</strong> hat eine ${S.die} gewürfelt${canAct() ? ": leuchtende Figur antippen." : "."}`;
+  else if (S.phase === "over") st = `<strong>${esc(S.players[S.winner].name)}</strong> ${vb(S.players[S.winner].name, "hast", "hat")} gewonnen.`;
+  if (kit.error) st += ` <span class="sk-err">${esc(kit.error)}</span>`;
+  $("status").innerHTML = st;
+  const res = $("result");
+  if (S.phase === "over") {
+    const again = kit.online() && !kit.isHost() ? "" : `<button class="btn primary" type="button" data-again>${kit.online() ? "Neues Spiel im selben Raum" : "Noch ein Spiel"}</button>`;
+    res.innerHTML = `<h2>${esc(S.players[S.winner].name)} ${vb(S.players[S.winner].name, "gewinnst", "gewinnt")}</h2><p>${S.players.map(p => `${esc(p.name)}: ${p.pcs.filter(v => v >= 40).length} im Ziel`).join(" · ")}</p>${again}`;
+    res.hidden = false;
+  } else res.hidden = true;
+}
+
+// ---------- Spielkit verbinden ----------
+kit = Spielkit.create({
+  id: "heimlauf", version: 1, minPlayers: 2, maxPlayers: 4, bots: true, defaultBots: 3, botNames: BOT_NAMES, sharedDevice: true,
+  newPlayer, newState, onStart, whoActs, render,
+  botPending, botStep, moveSound: "none", botDelay: 650,
+  turnInfo: s => (s.phase === "roll" || s.phase === "move" ? { active: s.active, next: (s.active + 1) % s.players.length, also: [] } : null),
+  onState: s => { S = s; },
+  validState: s => Array.isArray(s.players) && s.players.every(p => Array.isArray(p.pcs)),
+  roomStatus: s => `läuft · ${s.players.map(p => p.pcs.filter(v => v >= 40).length).join(":")} im Ziel`,
+  // nur für automatische Tests der Regeln
+  test: { moves, roll, move, botMove, threeTries, playBots, pieceAt, render: () => kit.render(), get S() { return S; } },
+});
+kit.start();
+})();
+</script>

@@ -112,6 +112,13 @@
     "color": "#ff8a5c"
   },
   {
+    "id": "heimlauf",
+    "title": "Heimlauf",
+    "description": "Brettspiel nach dem Prinzip „Mensch ärgere dich nicht“. Mit Tischmodus im Vollbild fürs Tablet in der Tischmitte. An einem Gerät, gegen den Computer oder online.",
+    "players": "2–4 Spieler · ca. 30 Minuten",
+    "color": "#d8433a"
+  },
+  {
     "id": "muehle",
     "title": "Mühle",
     "description": "Der Brettspielklassiker mit neun Steinen. Zu zweit an einem Gerät, gegen den Computer oder online.",

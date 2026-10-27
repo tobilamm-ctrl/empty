@@ -3,7 +3,7 @@
 Merkliste für weitere Spiele auf dem Spielkit (`plattform/assets/spielkit.js`).
 
 **Fertig:** Farbkreuz (nach „Noch mal!“), Farbkreuz Plus (nach „Noch mal so gut!“), Würfelpoker (Prinzip „Kniffel“),
-Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Zehnerleiter (Prinzip „Phase 10“), Schafkopf, Farbreihen (Prinzip „Qwixx“).
+Vier in einer Reihe, Reversi, Zwölfer (Prinzip „Skyjo“), Kronland (Prinzip „Kingdomino“), Mosaik (Prinzip „Azul“), Codeknacker (Prinzip „Mastermind“), Mühle, Backgammon, Schiffe versenken, Mau-Mau, Kunterbunt (Mau-Mau im Uno-Stil), Rommé, Zehnerleiter (Prinzip „Phase 10“), Heimlauf (Prinzip „Mensch ärgere dich nicht“, mit Tischmodus fürs Tablet), Schafkopf, Farbreihen (Prinzip „Qwixx“).
 Außerdem der **Punkteblock** zum Mitschreiben bei Spielen auf dem Tisch und draußen: Qwirkle, Mölkky, Boule, Cornhole, Wizard, Phase 10, Kniffel, UNO, Scrabble, Take That, allgemein.
 Weitere mögliche Blöcke: Schafkopf-Abrechnung (echte Karten), Watten, Doppelkopf, Skat, Carcassonne-Schlusswertung.
 Vorlage für neue Spiele: `plattform/games/vorlage/` („Schweinchen“).
@@ -32,7 +32,6 @@ oder Kartenbild 1:1 kopieren.
 | **Halma / Sternhalma** | 2–6 | Familienspiel für große Runden | mittel | frei |
 | **Kalaha (Mancala)** | 2 | in einer Minute erklärt, sehr guter Computer-Gegner möglich | gering | frei |
 | **Sperrsteine** (Prinzip „Malefiz“) | 2–4 | würfeln, laufen, Sperrsteine versetzen | mittel | Prinzip frei, „Malefiz“ ist ein Markenname |
-| **Ludo / Pachisi** (Prinzip „Mensch ärgere dich nicht“) | 2–4 | Familienklassiker | mittel | Prinzip frei, Name geschützt |
 | **Dame** | 2 | Klassiker | mittel | frei |
 | **Domino** | 2–4 | Legeregeln einfach | gering | frei |
 | **Stadt, Land, Fluss** | 2–6+ | online ideal, alle schreiben gleichzeitig | mittel | frei |
