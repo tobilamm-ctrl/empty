@@ -17,3 +17,4 @@ Welche Lieferung auf dem Server liegt, steht unten auf der Spieleübersicht („
 | 5 | 25.10.2026 | 5d93857 | Punkteblock: UNO (Sieger sammelt bzw. Minuspunkte), Scrabble (Bingo +50, Restbuchstaben), Take That (Plus, Minus, Kröten); Spielname groß oben im Punkteblock; Versionskennung an Skript- und Stildateien (kein alter Stand aus dem Browser-Zwischenspeicher) |
 | 6 | 26.10.2026 | cf3a14b | Neu: Zehnerleiter (Kartenspiel nach dem Prinzip „Phase 10“) |
 | 7 | 26.10.2026 | dd06396 | Zehnerleiter: Ziel der aktuellen Phase immer sichtbar (auch bei den Mitspielern); Hausregel „Folge über 12 hinaus“ (11-12-1-2), anfangs eingeschaltet |
+| 8 | 27.10.2026 | e5ee7a5 | Neu: Heimlauf (Brettspiel nach dem Prinzip „Mensch ärgere dich nicht“) mit Tischmodus: Vollbild fürs Tablet in der Tischmitte |
