@@ -136,12 +136,10 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
-## Neu in Version 49: Bewegte Auswahl
+## Neu in Version 50: Auswahl bewegt sich an der Stelle
 
-In der Auswahl „Wer fährt oben mit?“ (und in der Vorschau in den Einstellungen und auf der Kinder-Startseite) sind
-die Figuren jetzt auch in Bewegung: Sie fahren in ihrer Kachel hin und her bzw. schweben, Räder drehen sich, der Vogel
-schlägt mit den Flügeln, der Schmetterling flattert. Wer am Handy „Bewegung reduzieren“ eingeschaltet hat, sieht sie
-ruhig.
+In der Auswahl „Wer fährt oben mit?“ bewegen sich die Figuren an ihrem Platz (Räder, Rauch, Lichter, Flügelschlag,
+Watscheln, Schweben), fahren aber nicht mehr hin und her.
 
 ## Neu in Version 48: Mitfahrer in Bilderbuch-Optik
 
