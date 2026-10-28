@@ -232,12 +232,8 @@ export default function installTeilen(app) {
     for (let i = 0; i <= sW; i += 17) { ctx.beginPath(); ctx.arc(sx + i, sy, 6, 0, 7); ctx.arc(sx + i, sy + sH, 6, 0, 7); ctx.fill(); }
     for (let i = 0; i <= sH; i += 17) { ctx.beginPath(); ctx.arc(sx, sy + i, 6, 0, 7); ctx.arc(sx + sW, sy + i, 6, 0, 7); ctx.fill(); }
     ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.strokeRect(sx + 14, sy + 14, sW - 28, sH - 28);
-    const sheep = document.querySelector('#schaf path');
-    if (sheep) {
-      ctx.save(); ctx.translate(sx + 26, sy + 46); ctx.scale(0.235, 0.235);
-      ctx.fillStyle = '#6B4226'; ctx.fill(new Path2D(sheep.getAttribute('d')), 'evenodd');
-      ctx.restore();
-    }
+    const sheep = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = 'icons/schaf.svg'; });
+    if (sheep) { const h = 104, w = h * sheep.width / sheep.height; ctx.drawImage(sheep, sx + (sW - w) / 2, sy + 30, w, h); }
     ctx.fillStyle = '#6B4226'; ctx.font = '600 22px Fredoka, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('LAMMping', sx + sW / 2, sy + sH - 30);
     ctx.textAlign = 'left';

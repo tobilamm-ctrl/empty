@@ -46,7 +46,7 @@ import installMitfahrer from './mitfahrer.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 51;
+const APP_VERSION = 52;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -359,7 +359,7 @@ async function shrink(file, max, quality) {
 
 // Die Grafiken liegen als Symbole in index.html (#b-karte, #b-listen, …)
 // Breite/Höhe je Grafik: alle gleich hoch, die Breite folgt dem Inhalt
-const ART_RATIO = {"karte": 1.826, "tagebuch": 1.858, "listen": 1.84, "boxen": 1.883, "kasse": 1.826, "reisen": 1.869, "tank": 1.846, "orte": 1.855, "check": 1.798, "fahrzeug": 1.951, "statistik": 1.869, "einstellungen": 1.835, "planung": 1.84, "wetter": 1.903, "laender": 1.869, "dokumente": 1.869, "album": 1.885, "kochen": 1.86, "autarkie": 1.855, "spiele": 1.899, "ideen": 1.935, "reiseblog": 1.857, "rubbelkarte": 1.88, "zuladung": 1.812, "wasserwaage": 1.869, "abstimmung": 1.826, "urlaubsgeld": 1.846, "dienste": 1.866, "pinnwand": 1.855, "tickets": 1.839, "reisefoto": 1.846, "kalender": 1.84, "heute": 1.923, "wunschzettel": 1.835, "freunde": 1.855, "mehr": 1.826};
+const ART_RATIO = {"karte": 1.517, "tagebuch": 1.517, "listen": 1.517, "boxen": 1.364, "kasse": 1.125, "reisen": 1.378, "tank": 1.311, "orte": 1.23, "check": 1.222, "fahrzeug": 1.264, "statistik": 1.361, "einstellungen": 1.309, "planung": 1.517, "wetter": 1.234, "laender": 1.278, "dokumente": 1.235, "album": 1.324, "kochen": 1.338, "autarkie": 1.247, "spiele": 1.247, "ideen": 1.371, "reiseblog": 1.196, "rubbelkarte": 1.238, "zuladung": 1.281, "wasserwaage": 1.239, "abstimmung": 1.215, "urlaubsgeld": 1.439, "dienste": 1.143, "pinnwand": 1.165, "tickets": 1.276, "reisefoto": 1.276, "kalender": 1.413, "heute": 1.208, "wunschzettel": 1.27, "freunde": 1.387, "mehr": 0.953};
 const art = key => `<svg class="art" style="--r:${ART_RATIO[key] || 1.85}" aria-hidden="true"><use href="#b-${key}"/></svg>`;
 const sheetHead = title => `<div class="sheet-head"><h2>${title}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>`;
 const pageHead = (key, title, sub = '') => `<header class="page-head with-art">

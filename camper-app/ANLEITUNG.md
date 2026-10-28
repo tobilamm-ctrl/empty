@@ -136,6 +136,17 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 52: Neues LAMMping-Schaf
+
+Das bisherige Schaf beruhte auf einem lizenzpflichtigen Stockbild (iStock) und ist komplett ersetzt:
+- **Logo-Schaf** (Kopfzeile, Anmeldeseite, Hintergrund, Kinder-Startseite, Drucke, Reiseblog, Teilen-Bild) ist das
+  neue cremefarbene Schaf aus eurer Sammlung, als Vektorgrafik nachgezeichnet und damit in jeder Größe scharf.
+- **Bereichsbilder** neben den Überschriften: 31 neue Bilder aus der Sammlung (`icons/bereiche/*.webp`). Für Karte,
+  Tagebuch, Listen und Planung gibt es dort noch kein eigenes Bild: Basis-Schaf plus das bisherige Symbol; „Mehr“
+  zeigt das Basis-Schaf.
+- **App-Symbole** (Startbildschirm, Favicon) neu mit dem neuen Schaf.
+- Die alten Dateien `icons/lammping.svg` bitte auf dem Webspace löschen, sie werden nicht mehr gebraucht.
+
 ## Neu in Version 51: Scharfe Mitfahrer
 
 Die Canva-Bilder der Mitfahrer sind jetzt in hoher Auflösung eingebaut (2,5-fach), besonders in der Auswahl und auf
