@@ -47,6 +47,33 @@ export default function installSichern(app) {
   new MutationObserver(() => addQr(document.getElementById('sheetBody'))).observe(document.getElementById('sheetBody'), { childList: true, subtree: true });
   // „App weitergeben“ steht zusammen mit „App installieren“ in den Einstellungen (app.js)
 
+  // Zugangskarte für neue Personen: QR-Code zur App (Anmeldename schon ausgefüllt), Anmeldename und Passwort.
+  // Das Passwort steht nur auf dem Papier, nicht im QR-Code.
+  app.accessCard = ({ name, login, password, crewName }) => {
+    const base = location.origin + location.pathname;
+    const url = `${base}?login=${encodeURIComponent(login)}`;
+    const half = () => `<section class="ac-card">
+      <header><svg class="ac-sheep" aria-hidden="true"><use href="#schaf"/></svg><svg class="ac-word" role="img" aria-label="LAMMping"><use href="#wort"/></svg></header>
+      <h1>Hallo ${esc(name)}!</h1>
+      <p class="ac-lead">Dein Zugang zu LAMMping${crewName ? `, unserem Reisetagebuch „${esc(crewName)}“` : ''}.</p>
+      <div class="ac-body">
+        <div class="ac-qr">${qrSvg(url, 180)}<small>Mit der Handykamera scannen</small></div>
+        <dl>
+          <dt>Adresse</dt><dd class="ac-url">${esc(base.replace(/^https?:\/\//, ''))}</dd>
+          <dt>Anmeldename</dt><dd class="ac-mono">${esc(login)}</dd>
+          <dt>Passwort</dt><dd class="ac-mono">${password ? esc(password) : '<span class="ac-line"></span>'}</dd>
+        </dl>
+      </div>
+      <ol class="ac-steps">
+        <li>QR-Code scannen oder die Adresse im Browser öffnen.</li>
+        <li>Mit Anmeldename und Passwort anmelden (der Anmeldename steht nach dem Scannen schon drin).</li>
+        <li>Als App ablegen: Android im Browser-Menü „App installieren“, iPhone in Safari „Teilen“ → „Zum Home-Bildschirm“.</li>
+      </ol>
+      <p class="ac-foot">Passwort bitte geheim halten. Ändern lässt es sich in LAMMping unter Einstellungen → Passwort ändern.</p>
+    </section>`;
+    app.printHtml(`<article class="access-cards">${half()}</article>`, `LAMMping-Zugang ${name}`);
+  };
+
   /* ====================================================================== */
   /* Listen ausdrucken                                                       */
   /* ====================================================================== */

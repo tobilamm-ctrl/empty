@@ -136,6 +136,16 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 53: Zugangskarte für neue Personen
+
+Wer in der Verwaltung eine Person anlegt (oder ihr ein neues Passwort gibt), bekommt danach den Knopf
+**„Zugangskarte drucken / PDF“**: eine Karte zum Ausschneiden mit Begrüßung, QR-Code zur App, Adresse, Anmeldename,
+Passwort und drei Schritten zum Anmelden und Installieren. Im Druckfenster „Als PDF speichern“ wählen, um sie zu
+verschicken.
+- Der QR-Code öffnet LAMMping mit schon ausgefülltem Anmeldenamen. Das Passwort steht nur auf dem Papier, nicht im Code.
+- Das Passwort kennt LAMMping nur direkt nach dem Speichern. Später gibt es die Karte beim Bearbeiten einer Person über
+  „Zugangskarte“, dann mit einer Linie zum Eintragen des Passworts (oder mit dem gerade neu eingegebenen).
+
 ## Neu in Version 52: Neues LAMMping-Schaf
 
 Das bisherige Schaf beruhte auf einem lizenzpflichtigen Stockbild (iStock) und ist komplett ersetzt:

@@ -2330,3 +2330,22 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .rider .frame2 { animation: frameB .3s steps(1) infinite; }
 @keyframes frameA { 0% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes frameB { 0% { opacity: 0; } 50% { opacity: 1; } }
+
+/* ---------- Version 53: Zugangskarte für neue Personen (Druck/PDF) ---------- */
+.ac-card { max-width: 170mm; margin: 0 auto; padding: 10mm 12mm; border: 1.5px dashed #C9B79C; border-radius: 6mm; color: #3A2617; font-family: var(--body, sans-serif); break-inside: avoid; }
+.ac-card header { display: flex; align-items: center; gap: 4mm; }
+.ac-sheep { width: 22mm; height: 23mm; }
+.ac-word { width: 62mm; height: 11mm; color: #6B4226; }
+.ac-card h1 { font: 700 26pt/1.1 var(--head, sans-serif); margin: 6mm 0 1mm; }
+.ac-lead { margin: 0 0 6mm; font-size: 12pt; color: #6B4226; }
+.ac-body { display: flex; gap: 9mm; align-items: center; }
+.ac-qr { display: flex; flex-direction: column; align-items: center; gap: 2mm; flex: none; }
+.ac-qr .qr { width: 48mm; height: 48mm; }
+.ac-qr small { font-size: 9pt; color: #8A6A4A; }
+.ac-card dl { margin: 0; flex: 1; }
+.ac-card dt { font-size: 9pt; text-transform: uppercase; letter-spacing: .06em; color: #8A6A4A; margin-top: 3mm; }
+.ac-card dd { margin: 0; font-size: 13pt; font-weight: 600; word-break: break-all; }
+.ac-mono { font: 700 17pt/1.3 ui-monospace, Menlo, Consolas, monospace !important; letter-spacing: .04em; }
+.ac-line { display: inline-block; width: 60mm; border-bottom: 1.5px solid #3A2617; height: 8mm; }
+.ac-steps { margin: 7mm 0 3mm; padding-left: 6mm; font-size: 11pt; line-height: 1.45; }
+.ac-foot { margin: 0; font-size: 9.5pt; color: #8A6A4A; }

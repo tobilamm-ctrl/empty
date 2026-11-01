@@ -46,7 +46,7 @@ import installMitfahrer from './mitfahrer.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 52;
+const APP_VERSION = 53;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -1544,6 +1544,9 @@ const pwInput = required => `<label class="field"><span>${required ? 'Passwort (
   <input name="newPw" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore
     ${required ? 'required ' : ''}minlength="6"></label>`;
 
+// Zugangskarte (sichern.js): Daten des gerade gespeicherten Kontos oder aus dem offenen Formular
+let lastCard = null;
+
 function userForm(id) {
   const u = (admin.users.find(x => x.id === id)) || {};
   const self = u.id === session.user.id;
@@ -1561,6 +1564,7 @@ function userForm(id) {
     ${u.id ? '' : `<label class="check"><input type="checkbox" name="joinCrew" checked><span>Gleich in die Crew „${esc(crew.name)}“ aufnehmen</span></label>`}
     <div class="sheet-foot">
       ${u.id && !self ? `<button type="button" class="ghost danger" data-action="del-user" data-id="${u.id}">Löschen</button>` : ''}
+      ${u.id ? '<button type="button" class="ghost" data-action="access-card">Zugangskarte</button>' : ''}
       <button class="primary">Speichern</button>
     </div>
   </form>`);
@@ -1599,7 +1603,7 @@ VIEWS.login = () => `<section class="login">
   ${HERO}
   <p>Meldet euch mit eurem Anmeldenamen an. Neue Konten legen die Verwalter in den Einstellungen an.</p>
   <form data-form="login" class="panel">
-    <label class="field"><span>Anmeldename</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
+    <label class="field"><span>Anmeldename</span><input name="login" autocomplete="username" autocapitalize="none" required value="${esc(new URLSearchParams(location.search).get('login') || '')}"></label>
     <label class="field"><span>Passwort</span><input type="password" name="password" autocomplete="current-password" required></label>
     <button class="primary">Anmelden</button>
   </form>
@@ -1963,6 +1967,13 @@ const ACTIONS = {
   },
 };
 
+// Zugangskarte für ein Konto drucken (siehe userForm)
+ACTIONS['access-card'] = el => {
+  const f = el.closest('form');
+  const card = el.dataset.last ? lastCard : { name: f.name.value.trim(), login: f.login.value.trim(), password: f.newPw ? f.newPw.value : '' };
+  if (card && APP.accessCard) APP.accessCard({ ...card, crewName: crew.name });
+};
+
 const FORMS = {
   entry: submitEntry,
   'list-add': form => {
@@ -2062,9 +2073,18 @@ const FORMS = {
         // Neue Personen zahlen standardmäßig nicht mit (meist Kinder); änderbar in der Crew
         await api('crew-save', { id: c.id, name: c.name, members: [...c.members, { id: res.id, shares: form.isAdmin.checked }] });
       }
-      closeSheet();
-      toast(id ? 'Gespeichert' : 'Konto angelegt');
+      const pw = form.newPw ? form.newPw.value : '';
       refreshSession();
+      if (pw && APP.accessCard) {
+        lastCard = { name: form.name.value.trim(), login: form.login.value.trim(), password: pw };
+        openSheet(`<div>${sheetHead(id ? 'Neues Passwort gespeichert' : 'Konto angelegt')}
+          <p>Für <b>${esc(lastCard.name)}</b> gibt es jetzt eine Zugangskarte zum Ausdrucken oder als PDF: mit QR-Code zur App, Anmeldename und Passwort.</p>
+          <p class="sub">Das Passwort kennt LAMMping nur jetzt. Später lässt sich die Karte nur noch ohne Passwort drucken.</p>
+          <div class="sheet-foot"><button type="button" class="ghost" data-action="close">Fertig</button><button type="button" class="primary" data-action="access-card" data-last="1">Zugangskarte drucken / PDF</button></div></div>`);
+      } else {
+        closeSheet();
+        toast(id ? 'Gespeichert' : 'Konto angelegt');
+      }
     } catch (e) { toast(e.message); }
   },
   crew: async form => {
