@@ -77,6 +77,13 @@ export default function installFotos(app) {
     return same[0] ? same[0].id : 'new';
   }
 
+  // Früher automatisch vergebene Titel „Fotos aus Ort“ auf den Ort kürzen (nur unveränderte Titel)
+  // (auch für Einträge, die erst später von anderen Geräten ankommen; danach passt die Bedingung nicht mehr)
+  app.chromeHooks.push(() => {
+    if (!app.session()) return;
+    S.entries.filter(e => e.place && e.title === `Fotos aus ${e.place}`).forEach(e => save('entries', { ...e, title: e.place }));
+  });
+
   let batch = null;
   ACTIONS['photo-import'] = el => {
     const t = tripById(el.dataset.id);
@@ -173,7 +180,7 @@ export default function installFotos(app) {
       const info = at ? await placeInfo(at) : { name: '', cc: '', poi: '' };
       const e = {
         id: newId(), tripId: t.id, by: me(), createdAt: Date.now(), type: 'sight',
-        title: info.poi || (info.name ? `Fotos aus ${info.name}` : 'Fotos'), date: g[0].date, place: info.name || '', text: '',
+        title: info.poi || info.name || 'Fotos', date: g[0].date, place: info.name || '', text: '',
         lat: at ? at.lat : null, lng: at ? at.lng : null, acc: null, country: info.cc || '', rating: 0, features: [], cost: 0, extra: {}, photos: [],
       };
       g.forEach(ph => { ph.entry = e.id; });

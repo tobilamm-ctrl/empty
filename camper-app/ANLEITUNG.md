@@ -136,6 +136,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 63: Titel nur noch der Ort
+
+- Einträge, die beim Einsortieren von Fotos automatisch entstehen, heißen jetzt nur noch wie der Ort (z. B.
+  „Zandvoort“) bzw. wie die erkannte Sehenswürdigkeit, nicht mehr „Fotos aus …“. Bestehende Einträge mit genau diesem
+  automatischen Titel werden beim Öffnen der App umbenannt; selbst vergebene Titel bleiben unverändert.
+
 ## Neu in Version 62: Mehr nach Themen, „Zuletzt benutzt“, Fotos zur passenden Reise
 
 - **Mehr nach Themen:** Unterwegs heute · Reise planen · Camper & Technik · Geld · Familie & Spaß · Erinnerungen ·
