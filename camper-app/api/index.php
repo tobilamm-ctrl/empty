@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 25;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 26;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -58,6 +58,10 @@ function db(): PDO {
         'shares' => 'token CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, trip_id VARCHAR(64) NOT NULL, created BIGINT NOT NULL, by_user VARCHAR(32)',
         // Einladung in eine Crew (Link bzw. QR-Code), mehrfach nutzbar bis zum Ablauf
         'invites' => 'token CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, created BIGINT NOT NULL, expires BIGINT NOT NULL, by_user VARCHAR(32), uses INT NOT NULL DEFAULT 0',
+        // Mitverfolgen: follower_crew darf die Reisen von crew_id sehen (status ok) oder hat angefragt (requested)
+        'follows' => 'crew_id VARCHAR(32) NOT NULL, follower_crew VARCHAR(32) NOT NULL, status VARCHAR(12) NOT NULL, created BIGINT NOT NULL, by_user VARCHAR(32), PRIMARY KEY (crew_id, follower_crew)',
+        // Zuletzt gemeldeter Standort einer Crew (nur wenn sie ihn für Mitreisende freigibt)
+        'livepos' => 'crew_id VARCHAR(32) PRIMARY KEY, lat DOUBLE NOT NULL, lng DOUBLE NOT NULL, at BIGINT NOT NULL, by_user VARCHAR(32)',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
@@ -164,6 +168,25 @@ function manages(array $u, string $id): bool {
 // Crew-Leiter sehen die Kasse ihrer Crew immer, alle anderen nur mit Freigabe
 function canCash(array $u, string $crew = ''): bool { return (int) $u['can_cash'] || ($crew !== '' && isLeader($u, $crew)); }
 
+function crewName(string $id): string { return (string) (one('SELECT name FROM crews WHERE id = ?', [$id])['name'] ?? ''); }
+// Laufende Reise einer Crew (nicht beendet, Start erreicht, Ende nicht vorbei) bzw. die zuletzt begonnene
+function crewTrips(string $crew): array {
+    return array_values(array_filter(array_map(fn($r) => json_decode($r['data'], true), all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'trips' AND deleted = 0", [$crew])), 'is_array'));
+}
+function runningTrip(string $crew): ?array {
+    $d = date('Y-m-d');
+    foreach (crewTrips($crew) as $t) {
+        $s = (string) ($t['start'] ?? ''); $e = (string) ($t['end'] ?? '');
+        if (empty($t['ended']) && empty($t['archived']) && $s !== '' && $s <= $d && ($e === '' || $e >= $d)) return $t;
+    }
+    return null;
+}
+function lastTrip(string $crew): ?array {
+    $d = date('Y-m-d');
+    $list = array_filter(crewTrips($crew), fn($t) => ($t['start'] ?? '') !== '' && $t['start'] <= $d);
+    usort($list, fn($a, $b) => strcmp($b['start'], $a['start']));
+    return $list[0] ?? null;
+}
 function requireCrew(array $u, $crew): string {
     if (!validId($crew) || !one('SELECT 1 AS ok FROM members WHERE crew_id = ? AND user_id = ?', [$crew, $u['id']])) {
         fail('Kein Zugriff auf diese Crew', 403);
@@ -589,6 +612,112 @@ case 'blogphoto':
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
     ]);
 
+/* ----- Mitverfolgen: Reisen anderer Crews (nach Freigabe) ----- */
+
+case 'travel':
+    $u = requireUser();
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    $rel = [];
+    foreach (all('SELECT * FROM follows WHERE crew_id = ? OR follower_crew = ?', [$crew, $crew]) as $f) {
+        if ($f['follower_crew'] === $crew) $rel[$f['crew_id']]['me'] = $f['status'];       // wir folgen ihnen
+        else $rel[$f['follower_crew']]['them'] = $f['status'];                              // sie folgen uns
+    }
+    $list = [];
+    foreach (all('SELECT c.id, c.name, (SELECT COUNT(*) FROM members m WHERE m.crew_id = c.id) AS n FROM crews c WHERE c.id <> ? ORDER BY c.name', [$crew]) as $c) {
+        $t = runningTrip($c['id']);
+        $me = $rel[$c['id']]['me'] ?? null;
+        $row = ['id' => $c['id'], 'name' => $c['name'], 'travelling' => (bool) $t, 'since' => $t['start'] ?? '', 'follow' => $me, 'follower' => $rel[$c['id']]['them'] ?? null];
+        // Wer freigegeben hat: Stand der Einträge (für „Neues“)
+        if ($me === 'ok') $row['rev'] = (int) (one("SELECT MAX(rev) AS r FROM docs WHERE crew_id = ? AND coll IN ('entries', 'trips', 'tracks')", [$c['id']])['r'] ?? 0);
+        $list[] = $row;
+    }
+    out(['crews' => $list, 'leader' => isLeader($u, $crew)]);
+
+case 'follow':
+    $u = requireUser();
+    $crew = requireCrew($u, $body['crew'] ?? '');
+    $target = (string) ($body['target'] ?? '');
+    if (!validId($target) || $target === $crew || !one('SELECT id FROM crews WHERE id = ?', [$target])) fail('Diese Crew gibt es nicht.', 404);
+    $op = (string) ($body['op'] ?? '');
+    $row = fn($a, $b) => one('SELECT status FROM follows WHERE crew_id = ? AND follower_crew = ?', [$a, $b]);
+    $set = function ($a, $b, $st) use ($u) {
+        q('DELETE FROM follows WHERE crew_id = ? AND follower_crew = ?', [$a, $b]);
+        q('INSERT INTO follows (crew_id, follower_crew, status, created, by_user) VALUES (?, ?, ?, ?, ?)', [$a, $b, $st, now(), $u['id']]);
+    };
+    if ($op === 'request') {                 // wir möchten ihnen folgen
+        if (!$row($target, $crew)) $set($target, $crew, 'requested');
+    } elseif ($op === 'invite') {            // sie dürfen uns folgen (gleich freigegeben)
+        if (!isLeader($u, $crew)) fail('Nur Crew-Leiter geben eure Reisen frei.', 403);
+        $set($crew, $target, 'ok');
+    } elseif ($op === 'accept') {            // Anfrage an uns annehmen
+        if (!isLeader($u, $crew)) fail('Nur Crew-Leiter geben eure Reisen frei.', 403);
+        if (!$row($crew, $target)) fail('Keine Anfrage von dieser Crew.', 404);
+        $set($crew, $target, 'ok');
+    } elseif ($op === 'revoke') {            // Freigabe zurücknehmen oder Anfrage ablehnen
+        if (!isLeader($u, $crew)) fail('Nur Crew-Leiter geben eure Reisen frei.', 403);
+        q('DELETE FROM follows WHERE crew_id = ? AND follower_crew = ?', [$crew, $target]);
+    } elseif ($op === 'unfollow') {          // nicht mehr folgen bzw. Anfrage zurückziehen
+        q('DELETE FROM follows WHERE crew_id = ? AND follower_crew = ?', [$target, $crew]);
+    } else fail('Unbekannt');
+    out(['ok' => true]);
+
+case 'follow-feed':
+case 'follow-photo':
+    $u = requireUser();
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    $of = (string) ($_GET['of'] ?? '');
+    $f = validId($of) ? one("SELECT status FROM follows WHERE crew_id = ? AND follower_crew = ? AND status = 'ok'", [$of, $crew]) : null;
+    if (!$f) fail('Diese Crew hat ihre Reisen nicht für euch freigegeben.', 403);
+    $trip = runningTrip($of) ?: lastTrip($of);
+    if (!$trip) out(['crew' => crewName($of), 'trip' => null]);
+    // Wie im Reiseblog: nur Einträge der Reise, ohne ausgeblendete, ohne Kosten
+    $entries = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'entries' AND deleted = 0", [$of]) as $r) {
+        $e = json_decode($r['data'], true);
+        if (($e['tripId'] ?? '') !== $trip['id'] || !empty($e['blogHide'])) continue;
+        $entries[] = [
+            'id' => $e['id'], 'type' => $e['type'] ?? 'notiz', 'title' => $e['title'] ?? '', 'place' => $e['place'] ?? '', 'date' => $e['date'] ?? '',
+            'text' => $e['text'] ?? '', 'rating' => $e['rating'] ?? 0, 'country' => $e['country'] ?? '', 'lat' => $e['lat'] ?? null, 'lng' => $e['lng'] ?? null,
+            'photos' => array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
+                fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
+        ];
+    }
+    if ($action === 'follow-photo') {
+        $id = (string) ($_GET['id'] ?? '');
+        $ok = false;
+        foreach ($entries as $e) foreach ($e['photos'] as $p) if ($p['id'] === $id) $ok = true;
+        $path = $ok ? photoPath($of, $id) : '';
+        if (!$path || !is_file($path)) fail('Foto nicht gefunden', 404);
+        header('Content-Type: image/jpeg');
+        header('Cache-Control: private, max-age=86400');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+    $tracks = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND deleted = 0", [$of]) as $r) {
+        $k = json_decode($r['data'], true);
+        if (($k['tripId'] ?? '') === $trip['id']) $tracks[] = ['kind' => $k['kind'] ?? '', 'pts' => $k['pts'] ?? ''];
+    }
+    // Standort: nur während der laufenden Reise und höchstens 2 Tage alt
+    $live = runningTrip($of) ? one('SELECT lat, lng, at FROM livepos WHERE crew_id = ? AND at > ?', [$of, now() - 2 * 86400000]) : null;
+    out([
+        'crew' => crewName($of), 'running' => (bool) runningTrip($of),
+        'trip' => ['id' => $trip['id'], 'name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670'],
+        'entries' => $entries, 'tracks' => $tracks,
+        'live' => $live ? ['lat' => (float) $live['lat'], 'lng' => (float) $live['lng'], 'at' => (int) $live['at']] : null,
+    ]);
+
+case 'livepos':
+    $u = requireUser();
+    $crew = requireCrew($u, $body['crew'] ?? '');
+    if (!empty($body['off'])) { q('DELETE FROM livepos WHERE crew_id = ?', [$crew]); out(['ok' => true]); }
+    $lat = $body['lat'] ?? null; $lng = $body['lng'] ?? null;
+    if (!is_numeric($lat) || !is_numeric($lng) || abs((float) $lat) > 90 || abs((float) $lng) > 180) fail('Ungültige Position');
+    q('DELETE FROM livepos WHERE crew_id = ?', [$crew]);
+    q('INSERT INTO livepos (crew_id, lat, lng, at, by_user) VALUES (?, ?, ?, ?, ?)', [$crew, (float) $lat, (float) $lng, now(), $u['id']]);
+    out(['ok' => true]);
+
 /* ----- Verwaltung: Super-Admin (alle Konten) und Crew-Leiter (eigene Crews) ----- */
 
 case 'admin':
@@ -707,6 +836,8 @@ case 'crew-delete':
     q('DELETE FROM docs WHERE crew_id = ?', [$id]);
     q('DELETE FROM invites WHERE crew_id = ?', [$id]);
     q('DELETE FROM shares WHERE crew_id = ?', [$id]);
+    q('DELETE FROM follows WHERE crew_id = ? OR follower_crew = ?', [$id, $id]);
+    q('DELETE FROM livepos WHERE crew_id = ?', [$id]);
     q('DELETE FROM crews WHERE id = ?', [$id]);
     $dir = photoDir($id);
     if (is_dir($dir)) { array_map('unlink', array_merge(glob("$dir/*.jpg") ?: [], glob("$dir/*.pdf") ?: [])); @rmdir($dir); }

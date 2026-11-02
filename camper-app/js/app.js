@@ -43,11 +43,12 @@ import installSichern from './sichern.js';
 import installSpielekiste from './spielekiste.js';
 import installMitfahrer from './mitfahrer.js';
 import installDateien from './dateien.js';
+import installMitreisen from './mitreisen.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 57;
+const APP_VERSION = 58;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -402,7 +403,7 @@ const pageHead = (key, title, sub = '') => `<header class="page-head with-art">
 
 // Bereiche hinter „Mehr“: der Reiter bleibt dort markiert
 const MORE_ROUTES = ['mehr', 'kasse', 'tank', 'orte', 'checklisten', 'fahrzeug', 'statistik', 'reisen', 'einstellungen', 'verwaltung',
-  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender', 'heute', 'regentag', 'wunschzettel', 'freunde'];
+  'wetter', 'laender', 'dokumente', 'album', 'kochen', 'autarkie', 'spiele', 'ideen', 'nochweit', 'reisepass', 'kinder', 'rueckblick', 'dienste', 'reiseblog', 'rubbelkarte', 'zuladung', 'wasserwaage', 'abstimmung', 'urlaubsgeld', 'pinnwand', 'reisefoto', 'tickets', 'teilen', 'kalender', 'heute', 'regentag', 'wunschzettel', 'freunde', 'mitreisen'];
 const CASH_ROUTES = ['kasse', 'tank'];
 
 /* ---------- Rendern ---------- */
@@ -2570,6 +2571,7 @@ installFamilienleben(APP);
 installSichern(APP);
 installSpielekiste(APP);
 installMitfahrer(APP);
+installMitreisen(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

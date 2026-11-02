@@ -136,6 +136,27 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 58: Unterwegs mit Freunden (Reisen anderer Crews mitverfolgen)
+
+**Wichtig beim Hochladen:** Diesmal ist wieder **`api/index.php`** neu (zwei neue Tabellen, legt der Server selbst an).
+`api/config.php` und `api/data` bleiben unverändert.
+
+- **Mehr › Unterwegs mit Freunden.** Alle Crews sehen gegenseitig nur, wer gerade unterwegs ist („Familie Franz, seit
+  30. Okt. unterwegs“), keine Inhalte.
+- **Folgen:** Eine Crew tippt auf **Folgen anfragen**, ein Crew-Leiter der anderen Crew nimmt an oder lehnt ab. Oder ein
+  Crew-Leiter lädt eine andere Crew direkt ein (**Crew einladen, euch zu folgen**). Die Freigabe lässt sich jederzeit
+  beenden.
+- **Was Mitreisende sehen:** Karte mit Route und Stopps, Tagebucheinträge mit Fotos und, wenn eingeschaltet, den
+  zuletzt gemeldeten Standort. Für den Reiseblog ausgeblendete Einträge, Kosten, Listen und Dokumente bleiben privat.
+  Ist eine Crew gerade nicht unterwegs, sehen Mitreisende ihre letzte Reise.
+- **Standort melden:** Ein Crew-Leiter schaltet „Unseren Standort für Mitreisende melden“ ein. Während einer laufenden
+  Reise meldet die App dann den Standort, wenn sie geöffnet ist (höchstens alle 15 Minuten, nur wenn der Standort im
+  Browser schon erlaubt ist). Gezeigt wird er höchstens 2 Tage lang.
+- **Auf eurer Karte:** Die Reisen der Crews, denen ihr folgt, erscheinen gestrichelt mit Namen. Abschaltbar im
+  Ebenen-Fenster der Karte.
+- **Hinweis bei Neuem:** Trägt eine Crew, der ihr folgt, etwas Neues ein, erscheint oben rechts 👋 mit dem Namen (am
+  Handy mit der Anzahl). Ein Tipp öffnet die Reise.
+
 ## Neu in Version 57: Fotos sortieren und besser zusammenfassen
 
 - **Reihenfolge der Fotos:** Im Eintrag lassen sich die Fotos umsortieren: mit der Maus ziehen, am Handy lange drücken
