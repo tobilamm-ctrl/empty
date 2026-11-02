@@ -2535,3 +2535,8 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 10px; }
 .plan-stop .plan-grip:hover { background: var(--mist); color: var(--ink); }
 .plan-stop.dragging { position: relative; z-index: 5; background: var(--surface); box-shadow: 0 8px 22px rgba(58, 38, 23, .25); border-radius: 12px; cursor: grabbing; }
+
+/* ---------- Version 70: Mitteilungen ---------- */
+.push-cron { margin-top: 12px; }
+.push-cron summary { cursor: pointer; font-weight: 600; }
+.cron-url code { display: block; padding: 8px 10px; background: var(--mist); border-radius: 8px; font-size: 12px; word-break: break-all; }

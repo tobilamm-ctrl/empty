@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 26;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 27;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -62,6 +62,10 @@ function db(): PDO {
         'follows' => 'crew_id VARCHAR(32) NOT NULL, follower_crew VARCHAR(32) NOT NULL, status VARCHAR(12) NOT NULL, created BIGINT NOT NULL, by_user VARCHAR(32), PRIMARY KEY (crew_id, follower_crew)',
         // Zuletzt gemeldeter Standort einer Crew (nur wenn sie ihn für Mitreisende freigibt)
         'livepos' => 'crew_id VARCHAR(32) PRIMARY KEY, lat DOUBLE NOT NULL, lng DOUBLE NOT NULL, at BIGINT NOT NULL, by_user VARCHAR(32)',
+        // Mitteilungen (Web Push): ein Eintrag je Gerät; push_log verhindert doppelte Erinnerungen; kv: Schlüssel & Co.
+        'push_subs' => 'id CHAR(40) PRIMARY KEY, user_id VARCHAR(32) NOT NULL, endpoint TEXT NOT NULL, p256dh VARCHAR(200) NOT NULL, auth VARCHAR(64) NOT NULL, tz VARCHAR(64), pins INT NOT NULL DEFAULT 1, tickets INT NOT NULL DEFAULT 1, created BIGINT NOT NULL',
+        'push_log' => 'k VARCHAR(160) PRIMARY KEY, at BIGINT NOT NULL',
+        'kv' => 'k VARCHAR(40) PRIMARY KEY, v TEXT NOT NULL',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
@@ -167,6 +171,133 @@ function manages(array $u, string $id): bool {
 
 // Crew-Leiter sehen die Kasse ihrer Crew immer, alle anderen nur mit Freigabe
 function canCash(array $u, string $crew = ''): bool { return (int) $u['can_cash'] || ($crew !== '' && isLeader($u, $crew)); }
+
+/* ---------- Mitteilungen (Web Push, RFC 8291/8292) ---------- */
+
+function b64u(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
+function b64ud(string $s): string { return (string) base64_decode(strtr($s, '-_', '+/') . str_repeat('=', (4 - strlen($s) % 4) % 4)); }
+function kvGet(string $k): ?string { $r = one('SELECT v FROM kv WHERE k = ?', [$k]); return $r ? (string) $r['v'] : null; }
+function kvSet(string $k, string $v): void { q('DELETE FROM kv WHERE k = ?', [$k]); q('INSERT INTO kv (k, v) VALUES (?, ?)', [$k, $v]); }
+// Öffentlicher Schlüssel als rohe Punktdarstellung (65 Byte)
+function ecRaw(array $d): string { return "\x04" . str_pad($d['ec']['x'], 32, "\0", STR_PAD_LEFT) . str_pad($d['ec']['y'], 32, "\0", STR_PAD_LEFT); }
+// Rohen P-256-Punkt als PEM (für openssl_pkey_derive)
+function ecPem(string $raw): string {
+    $der = hex2bin('3059301306072a8648ce3d020106082a8648ce3d030107034200') . $raw;
+    return "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END PUBLIC KEY-----\n";
+}
+// VAPID-Schlüssel: beim ersten Bedarf erzeugen und in der Datenbank ablegen
+function vapid(): array {
+    $pem = kvGet('vapid_priv');
+    if (!$pem) {
+        $key = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+        if (!$key) fail('Auf dem Server fehlt OpenSSL mit elliptischen Kurven.', 500);
+        openssl_pkey_export($key, $pem);
+        kvSet('vapid_priv', $pem);
+        kvSet('cron_key', bin2hex(random_bytes(12)));
+    }
+    $key = openssl_pkey_get_private($pem);
+    return ['key' => $key, 'pub' => b64u(ecRaw(openssl_pkey_get_details($key)))];
+}
+// ECDSA-Signatur (DER) in die 64 Byte r||s umwandeln, wie JWT sie will
+function derToRaw(string $der): string {
+    $o = 3; if (ord($der[1]) & 0x80) $o += ord($der[1]) & 0x7f;
+    $rl = ord($der[$o]); $r = substr($der, $o + 1, $rl); $o += 1 + $rl + 1;
+    $sl = ord($der[$o]); $sv = substr($der, $o + 1, $sl);
+    $fix = fn($x) => str_pad(ltrim($x, "\0"), 32, "\0", STR_PAD_LEFT);
+    return $fix($r) . $fix($sv);
+}
+function vapidHeader(string $endpoint): string {
+    $v = vapid();
+    $u = parse_url($endpoint);
+    $head = b64u(json_encode(['typ' => 'JWT', 'alg' => 'ES256']));
+    $claims = b64u(json_encode(['aud' => $u['scheme'] . '://' . $u['host'], 'exp' => time() + 12 * 3600, 'sub' => 'mailto:lammping@' . ($_SERVER['HTTP_HOST'] ?? 'localhost')]));
+    openssl_sign("$head.$claims", $sig, $v['key'], OPENSSL_ALGO_SHA256);
+    return 'vapid t=' . "$head.$claims." . b64u(derToRaw($sig)) . ', k=' . $v['pub'];
+}
+// Nachricht verschlüsseln (aes128gcm, RFC 8291)
+function pushEncrypt(string $payload, string $p256dh, string $auth): string {
+    $ua = b64ud($p256dh); $secret = b64ud($auth);
+    $eph = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+    $as = ecRaw(openssl_pkey_get_details($eph));
+    $shared = openssl_pkey_derive(openssl_pkey_get_public(ecPem($ua)), $eph, 32);
+    $ikm = hash_hkdf('sha256', $shared, 32, "WebPush: info\0" . $ua . $as, $secret);
+    $salt = random_bytes(16);
+    $cek = hash_hkdf('sha256', $ikm, 16, "Content-Encoding: aes128gcm\0", $salt);
+    $nonce = hash_hkdf('sha256', $ikm, 12, "Content-Encoding: nonce\0", $salt);
+    $ct = openssl_encrypt($payload . "\x02", 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, $tag);
+    return $salt . pack('N', 4096) . chr(65) . $as . $ct . $tag;
+}
+// An ein Gerät senden; abgelaufene Anmeldungen (404/410) werden gelöscht
+function pushSend(array $sub, array $msg): int {
+    $body = pushEncrypt(json_encode($msg, JSON_UNESCAPED_UNICODE), $sub['p256dh'], $sub['auth']);
+    $ch = curl_init($sub['endpoint']);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/octet-stream', 'Content-Encoding: aes128gcm', 'TTL: 43200', 'Urgency: normal',
+            'Authorization: ' . vapidHeader($sub['endpoint'])]]);
+    curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code === 404 || $code === 410) q('DELETE FROM push_subs WHERE id = ?', [$sub['id']]);
+    return $code;
+}
+// An alle Mitglieder einer Crew (mit der jeweiligen Einstellung), außer an $skipUser
+function pushCrew(string $crew, string $pref, array $msg, string $skipUser = ''): void {
+    if (!function_exists('curl_init') || !function_exists('openssl_pkey_derive')) return;
+    $subs = all("SELECT s.* FROM push_subs s JOIN members m ON m.user_id = s.user_id WHERE m.crew_id = ? AND s.$pref = 1 AND s.user_id <> ?", [$crew, $skipUser]);
+    foreach ($subs as $sub) { try { pushSend($sub, $msg); } catch (Throwable $e) { /* ein Gerät darf die anderen nicht aufhalten */ } }
+}
+// Ticket-Erinnerungen: am Morgen (8 Uhr) des Tages und bei Uhrzeit 3 Stunden vorher, in der Zeitzone des Geräts
+function ticketReminders(): int {
+    $sent = 0;
+    $subs = all('SELECT s.*, m.crew_id FROM push_subs s JOIN members m ON m.user_id = s.user_id WHERE s.tickets = 1');
+    if (!$subs) return 0;
+    $byCrew = []; $dead = [];
+    foreach ($subs as $s) $byCrew[$s['crew_id']][] = $s;
+    foreach ($byCrew as $crew => $list) {
+        $tickets = array_filter(array_map(fn($r) => json_decode($r['data'], true), all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'games' AND deleted = 0 AND data LIKE '%\"kind\":\"ticket\"%'", [$crew])),
+            fn($t) => is_array($t) && ($t['kind'] ?? '') === 'ticket' && !empty($t['date']));
+        foreach ($tickets as $t) foreach ($list as $sub) {
+            if (isset($dead[$sub['id']])) continue;
+            try { $tz = new DateTimeZone($sub['tz'] ?: 'Europe/Berlin'); } catch (Throwable $e) { $tz = new DateTimeZone('Europe/Berlin'); }
+            $now = new DateTime('now', $tz);
+            $time = preg_match('/^\d\d:\d\d$/', (string) ($t['time'] ?? '')) ? $t['time'] : '';
+            $title = '🎟️ ' . mb_substr((string) ($t['title'] ?? 'Ticket'), 0, 80);
+            $msgs = []; $mins = null;
+            if ($time) {
+                $at = new DateTime($t['date'] . ' ' . $time, $tz);
+                $mins = ($at->getTimestamp() - $now->getTimestamp()) / 60;
+                if ($mins > 0 && $mins <= 180) $msgs['h'] = ($t['date'] === $now->format('Y-m-d') ? 'Heute' : 'Morgen') . ' um ' . $time . ' Uhr' . (!empty($t['place']) ? ', ' . $t['place'] : '') . (!empty($t['number']) ? ' · Buchung ' . $t['number'] : '');
+            }
+            // Morgens am Tag selbst (bei frühen Abfahrten reicht die Erinnerung 3 Stunden vorher)
+            // Morgens nur, solange es bis zur Abfahrt noch mehr als 3 Stunden sind (sonst kommt die andere Erinnerung)
+            if ($t['date'] === $now->format('Y-m-d') && $now->format('H:i') >= '08:00' && ($mins === null || $mins > 180)) {
+                $msgs['m'] = 'Heute' . ($time ? ' um ' . $time . ' Uhr' : '') . (!empty($t['place']) ? ': ' . $t['place'] : '');
+            }
+            foreach ($msgs as $kind => $body) {
+                $k = substr("t:{$t['id']}:{$t['date']}:$kind:{$sub['id']}", 0, 160);
+                if (one('SELECT k FROM push_log WHERE k = ?', [$k])) continue;
+                q('INSERT INTO push_log (k, at) VALUES (?, ?)', [$k, now()]);
+                // Kommt die Erinnerung 3 Stunden vorher, ist die vom Morgen erledigt
+                if ($kind === 'h') { $km = substr("t:{$t['id']}:{$t['date']}:m:{$sub['id']}", 0, 160); if (!one('SELECT k FROM push_log WHERE k = ?', [$km])) q('INSERT INTO push_log (k, at) VALUES (?, ?)', [$km, now()]); }
+                try {
+                    $code = pushSend($sub, ['title' => $title, 'body' => $body, 'url' => './#/tickets', 'tag' => 'ticket-' . $t['id']]);
+                    if ($code === 404 || $code === 410) { $dead[$sub['id']] = true; break; }
+                    $sent++;
+                } catch (Throwable $e) { /* weiter */ }
+            }
+        }
+    }
+    q('DELETE FROM push_log WHERE at < ?', [now() - 14 * 86400000]);
+    return $sent;
+}
+// Ohne Cronjob: bei Abgleichen höchstens alle 5 Minuten nachsehen
+function maybeReminders(): void {
+    if (!function_exists('curl_init')) return;
+    $last = (int) (kvGet('cron_last') ?? 0);
+    if (now() - $last < 5 * 60000) return;
+    kvSet('cron_last', (string) now());
+    try { ticketReminders(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
+}
 
 function crewName(string $id): string { return (string) (one('SELECT name FROM crews WHERE id = ?', [$id])['name'] ?? ''); }
 // Laufende Reise einer Crew (nicht beendet, Start erreicht, Ende nicht vorbei) bzw. die zuletzt begonnene
@@ -387,6 +518,7 @@ case 'sync':
     ], $rows);
     $rev = $docs ? end($docs)['rev'] : $since;
     if (!$since || !$docs) autoBackup();
+    maybeReminders();
     out(['docs' => $docs, 'rev' => $rev, 'more' => count($docs) === 2000]);
 
 case 'push':
@@ -394,6 +526,7 @@ case 'push':
     $crew = requireCrew($u, $body['crew'] ?? '');
     $changes = $body['changes'] ?? [];
     $lead = isLeader($u, $crew); $cash = canCash($u, $crew);
+    $newPins = [];
     if (!is_array($changes) || count($changes) > 500) fail('Ungültige Änderungen');
     $pdo = db();
     $mysql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql';
@@ -409,6 +542,9 @@ case 'push':
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen
             q("UPDATE counter SET value = value + 1 WHERE name = 'rev'");
             $rev = (int) one("SELECT value FROM counter WHERE name = 'rev'")['value'];
+            // Neuer Pinnwand-Zettel? (vor dem Ersetzen prüfen, ob es ihn schon gab)
+            if ($c['coll'] === 'games' && $data !== null && ($data['kind'] ?? '') === 'pin'
+                && !one("SELECT id FROM docs WHERE crew_id = ? AND coll = 'games' AND id = ?", [$crew, $c['id']])) $newPins[] = $data;
             q('DELETE FROM docs WHERE crew_id = ? AND coll = ? AND id = ?', [$crew, $c['coll'], $c['id']]);
             q('INSERT INTO docs (crew_id, coll, id, data, deleted, rev, by_user) VALUES (?, ?, ?, ?, ?, ?, ?)', [
                 $crew, $c['coll'], $c['id'],
@@ -433,6 +569,10 @@ case 'push':
     } catch (Throwable $e) {
         $mysql ? $pdo->rollBack() : $pdo->exec('ROLLBACK');
         throw $e;
+    }
+    foreach (array_slice($newPins, 0, 5) as $pin) {
+        pushCrew($crew, 'pins', ['title' => '📌 ' . $u['name'] . ' an der Pinnwand', 'body' => mb_substr((string) ($pin['text'] ?? ''), 0, 160),
+            'url' => './#/pinnwand', 'tag' => 'pin-' . ($pin['id'] ?? '')], $u['id']);
     }
     out(['ok' => true]);
 
@@ -611,6 +751,58 @@ case 'blogphoto':
         'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
     ]);
+
+/* ----- Mitteilungen ----- */
+
+case 'push-key':
+    $u = requireUser();
+    $ok = function_exists('curl_init') && function_exists('openssl_pkey_derive');
+    if (!$ok) out(['key' => null, 'error' => 'Auf dem Server fehlen PHP-Erweiterungen (curl, openssl).']);
+    $v = vapid();
+    $res = ['key' => $v['pub']];
+    // Für den Super-Admin: Adresse für einen Cronjob, damit Ticket-Erinnerungen pünktlich kommen
+    if ((int) $u['is_admin']) {
+        $base = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? '') . strtok($_SERVER['REQUEST_URI'] ?? '/api/', '?');
+        $res['cron'] = $base . '?a=cron&k=' . kvGet('cron_key');
+        $res['cronLast'] = (int) (kvGet('cron_seen') ?? 0);
+    }
+    $res['subs'] = array_map(fn($r) => ['id' => $r['id'], 'pins' => (bool) (int) $r['pins'], 'tickets' => (bool) (int) $r['tickets']],
+        all('SELECT id, pins, tickets FROM push_subs WHERE user_id = ?', [$u['id']]));
+    out($res);
+
+case 'push-sub':
+    $u = requireUser();
+    $ep = (string) ($body['endpoint'] ?? '');
+    // Push-Dienste sind immer https; http://localhost nur mit 'push_test' => true in config.php (lokaler Test-Dienst)
+    $okEp = preg_match('#^https://#', $ep) || (!empty($CFG['push_test']) && preg_match('#^http://(localhost|127\.0\.0\.1)[:/]#', $ep));
+    if (!$okEp || strlen($ep) > 2000) fail('Ungültige Anmeldung');
+    $p = (string) ($body['p256dh'] ?? ''); $a = (string) ($body['auth'] ?? '');
+    if (strlen(b64ud($p)) !== 65 || strlen(b64ud($a)) < 16) fail('Ungültige Schlüssel');
+    $id = sha1($ep);
+    q('DELETE FROM push_subs WHERE id = ?', [$id]);
+    q('INSERT INTO push_subs (id, user_id, endpoint, p256dh, auth, tz, pins, tickets, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [$id, $u['id'], $ep, $p, $a,
+        mb_substr((string) ($body['tz'] ?? 'Europe/Berlin'), 0, 64), empty($body['pins']) ? 0 : 1, empty($body['tickets']) ? 0 : 1, now()]);
+    out(['ok' => true, 'id' => $id]);
+
+case 'push-unsub':
+    $u = requireUser();
+    q('DELETE FROM push_subs WHERE id = ? AND user_id = ?', [sha1((string) ($body['endpoint'] ?? '')), $u['id']]);
+    out(['ok' => true]);
+
+case 'push-test':
+    $u = requireUser();
+    $sub = one('SELECT * FROM push_subs WHERE id = ? AND user_id = ?', [sha1((string) ($body['endpoint'] ?? '')), $u['id']]);
+    if (!$sub) fail('Auf diesem Gerät sind Mitteilungen nicht eingeschaltet.', 404);
+    $code = pushSend($sub, ['title' => '🐑 LAMMping', 'body' => 'So sehen Mitteilungen aus. Alles eingerichtet!', 'url' => './#/einstellungen', 'tag' => 'test']);
+    out(['ok' => $code >= 200 && $code < 300, 'code' => $code]);
+
+case 'cron':
+    // Vom Webspace regelmäßig aufrufen lassen (z. B. alle 10 Minuten): Ticket-Erinnerungen pünktlich verschicken
+    $k = kvGet('cron_key');
+    if (!$k || !hash_equals($k, (string) ($_GET['k'] ?? ''))) fail('Falscher Schlüssel', 403);
+    kvSet('cron_seen', (string) now());
+    kvSet('cron_last', (string) now());
+    out(['ok' => true, 'sent' => ticketReminders()]);
 
 /* ----- Mitverfolgen: Reisen anderer Crews (nach Freigabe) ----- */
 
@@ -795,6 +987,7 @@ case 'user-delete':
     if (!manages($u, $id)) fail('Dieses Konto verwaltest du nicht.', 403);
     q('DELETE FROM members WHERE user_id = ?', [$id]);
     q('DELETE FROM tokens WHERE user_id = ?', [$id]);
+    q('DELETE FROM push_subs WHERE user_id = ?', [$id]);
     q('DELETE FROM users WHERE id = ?', [$id]);
     out(['ok' => true]);
 

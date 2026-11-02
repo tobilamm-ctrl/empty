@@ -100,7 +100,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 **🔒 System und Sicherheit**
 
-72. Erinnerungen als Mitteilung (Push)
+72. ~~Erinnerungen als Mitteilung (Push)~~ Erledigt in Lieferung 70 für Pinnwand und Tickets (weitere Anlässe möglich: Fristen, Mitreisende, Packliste).
 73. App-Sperre mit Fingerabdruck oder PIN
 74. Schneller Personenwechsel auf einem gemeinsamen Gerät
 75. ~~Speicherplatz-Übersicht~~ Erledigt in Lieferung 39.

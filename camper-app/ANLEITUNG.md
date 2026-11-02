@@ -136,6 +136,24 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 70: Mitteilungen aufs Handy (Pinnwand, Tickets)
+
+**Wichtig beim Hochladen:** Diesmal ist wieder **`api/index.php`** neu (drei neue Tabellen, legt der Server selbst an;
+die Schlüssel für die Mitteilungen erzeugt er beim ersten Mal selbst). `api/config.php` und `api/data` bleiben.
+Der Server braucht die PHP-Erweiterungen **curl** und **openssl** (auf fast allen Webspaces vorhanden).
+
+- **Einschalten:** Einstellungen › **Mitteilungen** › „Mitteilungen auf diesem Gerät einschalten“ und die Frage des
+  Browsers erlauben. Gilt je Gerät; auf jedem Handy einmal einschalten.
+  - **iPhone/iPad:** nur in der installierten App (Safari › Teilen › Zum Home-Bildschirm, ab iOS 16.4).
+- **📌 Pinnwand:** Hängt jemand einen Zettel an, bekommen alle anderen in der Crew eine Mitteilung – auch bei
+  geschlossener App.
+- **🎟️ Tickets:** Erinnerung am Morgen des Tages (ab 8 Uhr) und, wenn eine Uhrzeit eingetragen ist, 3 Stunden vor
+  Abfahrt (mit Ort und Buchungsnummer). Ein Tipp auf die Mitteilung öffnet die Tickets.
+- **Test-Mitteilung** und **Ausschalten** im selben Abschnitt; beide Arten einzeln abschaltbar.
+- **Pünktliche Ticket-Erinnerungen (Cronjob):** Ohne Cronjob prüft der Server die Tickets nur, wenn gerade jemand
+  LAMMping offen hat. Der Super-Admin findet unter Einstellungen › Mitteilungen eine Adresse; diese im Webspace als
+  Cronjob alle 10 Minuten aufrufen lassen.
+
 ## Neu in Version 69: Geplante Stopps ziehen
 
 - Unter „↕ Reihenfolge“ verschiebt ihr die Stopps jetzt durch Ziehen am Griff ⠿ (mit der Maus und mit dem Finger, ohne
