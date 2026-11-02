@@ -19,3 +19,4 @@ Welche Lieferung auf dem Server liegt, steht unten auf der Spieleübersicht („
 | 7 | 26.10.2026 | dd06396 | Zehnerleiter: Ziel der aktuellen Phase immer sichtbar (auch bei den Mitspielern); Hausregel „Folge über 12 hinaus“ (11-12-1-2), anfangs eingeschaltet |
 | 8 | 27.10.2026 | e5ee7a5 | Neu: Heimlauf (Brettspiel nach dem Prinzip „Mensch ärgere dich nicht“) mit Tischmodus: Vollbild fürs Tablet in der Tischmitte |
 | 9 | 27.10.2026 | 4c336c3 | Vollbild-Knopf „⛶ Vollbild“ in allen Spielen: nur Spielfeld und Zugleiste, Bildschirm bleibt an |
+| 10 | 02.11.2026 | e1275ab | Einladungen: Link und QR-Code in der Verwaltung erzeugen, ausdrucken oder teilen; Eingeladene legen sich selbst ein Konto an |
