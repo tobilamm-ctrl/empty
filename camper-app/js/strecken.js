@@ -19,16 +19,28 @@ export default function installStrecken(app) {
   // Ver-/Entsorgung, Fähre, Pause, Werkstatt). Sehenswertes, Baden, Wanderungen, Restaurants und Fotos erreicht man oft
   // zu Fuß; mit dem Auto dorthin und zurück ergäbe viele Umwege. Nahe Punkte (2 km) werden zusammengefasst.
   const DRIVE = ['stellplatz', 'tank', 'service', 'faehre', 'pause', 'werkstatt'];
-  const mode = () => (LS.get('roadsMode', 'fahrt') === 'alle' ? 'alle' : 'fahrt');
+  // Drei Varianten:
+  //  tage:  alle Einträge, aber Punkte bis 5 km zusammengefasst (Rundgänge im Ort fallen weg, echte Fahrten bleiben)
+  //  fahrt: Fahrt-Stopps plus erster und letzter Eintrag jedes Tages (kein Tag fehlt), 2 km zusammengefasst
+  //  alle:  jeder Eintrag mit Ort, 1 km zusammengefasst (meist zu viel: Fußwege werden zu Autofahrten)
+  const MODES = ['tage', 'fahrt', 'alle'];
+  const mode = () => (MODES.includes(LS.get('roadsMode', 'tage')) ? LS.get('roadsMode', 'tage') : 'tage');
   function waypoints(t, m = mode()) {
     const all = tripEntries(t).filter(hasPos).sort(byDate);
-    let list = m === 'alle' ? all : all.filter(e => DRIVE.includes(e.type));
-    if (list.length < 2) list = all;          // ohne solche Stopps: alle
-    const near = m === 'alle' ? 1 : 2;
+    let list = all, near = { tage: 5, fahrt: 2, alle: 1 }[m];
+    if (m === 'fahrt') {
+      const keep = new Set();
+      const byDay = {};
+      all.forEach(e => { (byDay[e.date.slice(0, 10)] ||= []).push(e); });
+      Object.values(byDay).forEach(d => { keep.add(d[0]); keep.add(d[d.length - 1]); });
+      list = all.filter(e => keep.has(e) || DRIVE.includes(e.type));
+    }
     const out = [];
-    list.forEach(e => {
+    list.forEach((e, k) => {
       const p = [e.lat, e.lng];
+      // Der letzte Punkt eines Tages (meist die Übernachtung) ersetzt einen nahen Punkt davor
       if (!out.length || dist(out[out.length - 1], p) > near) out.push(p);
+      else if (k === list.length - 1 || list[k + 1].date.slice(0, 10) !== e.date.slice(0, 10)) out[out.length - 1] = p;
     });
     return out;
   }
@@ -67,13 +79,14 @@ export default function installStrecken(app) {
     if (wps.length < 2) return toast('Dafür braucht die Reise mindestens zwei Stopps mit Ort.');
     const own = driveTracks(t).filter(x => x.auto !== 'roads');
     openSheet(`<form data-form="route-roads" data-id="${t.id}">${sheetHead('Der Straße folgen')}
-      ${done ? `<p class="hint">Berechnet: <b>${fmtKm(done.km || 0)}</b> entlang der Straßen.
+      ${done ? `<p class="hint">Berechnet: <b>${fmtKm(done.km || 0)}</b> entlang der Straßen${t.odoKm ? ` (Tacho: ${fmtKm(t.odoKm)})` : ''}.
         <button type="button" class="link danger" data-action="route-roads-undo" data-id="${t.id}">Rückgängig: wieder gerade Linien</button></p>` : ''}
       <p>LAMMping berechnet die Strecke zwischen euren Stopps entlang der Straßen (OpenStreetMap).</p>
       <div class="field"><span>Durch welche Stopps?</span>
-        <label class="check"><input type="radio" name="mode" value="fahrt"${m === 'fahrt' ? ' checked' : ''} data-action="route-roads-mode"><span>Nur Fahrt-Stopps: Übernachtung, Tanken, Ver-/Entsorgung, Fähre, Pause (${waypoints(t, 'fahrt').length} Punkte, empfohlen)</span></label>
-        <label class="check"><input type="radio" name="mode" value="alle"${m === 'alle' ? ' checked' : ''} data-action="route-roads-mode"><span>Alle Einträge mit Ort (${waypoints(t, 'alle').length} Punkte; Sehenswertes, Baden usw. werden dann mit dem Auto angefahren, das ergibt meist zu viele Kilometer)</span></label></div>
-      <p class="sub">Luftlinie zwischen diesen Punkten: ${fmtKm(airline(wps))}. Abstecher ohne Eintrag kennt LAMMping nicht; korrigieren lässt sich die Strecke über den Stift auf der Karte („Strecke“).</p>
+        <label class="check"><input type="radio" name="mode" value="tage"${m === 'tage' ? ' checked' : ''} data-action="route-roads-mode"><span><b>Ausgewogen (empfohlen):</b> alle Einträge, Punkte bis 5 km zusammengefasst – Rundgänge im Ort fallen weg (${waypoints(t, 'tage').length} Punkte, Luftlinie ${fmtKm(airline(waypoints(t, 'tage')))})</span></label>
+        <label class="check"><input type="radio" name="mode" value="fahrt"${m === 'fahrt' ? ' checked' : ''} data-action="route-roads-mode"><span><b>Knapp:</b> Übernachtung, Tanken, Fähre usw. plus erster und letzter Eintrag jedes Tages (${waypoints(t, 'fahrt').length} Punkte, Luftlinie ${fmtKm(airline(waypoints(t, 'fahrt')))})</span></label>
+        <label class="check"><input type="radio" name="mode" value="alle"${m === 'alle' ? ' checked' : ''} data-action="route-roads-mode"><span><b>Jeder Eintrag:</b> auch Fußwege werden zu Autofahrten, meist zu viel (${waypoints(t, 'alle').length} Punkte, Luftlinie ${fmtKm(airline(waypoints(t, 'alle')))})</span></label></div>
+      <p class="sub">Abstecher ohne Eintrag kennt LAMMping nicht; korrigieren lässt sich die Strecke über den Stift auf der Karte („Strecke“). Mit eingetragenem Tachostand zeigt LAMMping nach der Berechnung den Unterschied.</p>
       <label class="field"><span>Laut Tacho gefahren (km, optional)</span><input name="odo" inputmode="numeric" value="${t.odoKm || ''}" placeholder="z. B. 3860">
         <small class="sub">Wenn eingetragen, zählt diese Zahl in Reise und Statistik.</small></label>
       ${own.length ? `<p class="sub">Vorhandene GPX-, gezeichnete oder aufgezeichnete Strecken bleiben erhalten.</p>` : ''}
@@ -123,7 +136,9 @@ export default function installStrecken(app) {
       wps: enc(app.simplifyTo(wps, 150)), pts: enc(app.simplifyTo(res.pts, 4000)), km: Math.round(res.km * 10) / 10,
     });
     closeSheet();
-    toast(`Strecke berechnet: ${fmtKm(res.km)}${res.straight ? '. Ein Teil war nicht erreichbar und bleibt gerade' : ''}. Rückgängig über denselben Knopf.`);
+    const odo = parseInt(String(form.odo.value).replace(/\D/g, ''), 10) || 0;
+    const diff = odo ? ` (Tacho: ${fmtKm(odo)}, ${res.km > odo ? '+' : '−'}${Math.round(Math.abs(res.km - odo) / odo * 100)} %)` : '';
+    toast(`Strecke berechnet: ${fmtKm(res.km)}${diff}${res.straight ? '. Ein Teil war nicht erreichbar und bleibt gerade' : ''}. Rückgängig über denselben Knopf.`);
     render();
   };
 

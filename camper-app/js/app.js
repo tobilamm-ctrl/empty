@@ -50,11 +50,15 @@ import installZuschnitt from './zuschnitt.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 60;
+const APP_VERSION = 61;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
   ['Pflaume', '#7B4B94'], ['Himmel', '#2E7FB8'], ['Rost', '#A4462B'], ['Schiefer', '#46596E'],
+  // Weitere Farben (Version 61): kräftig genug für Linien auf der Karte, untereinander gut zu unterscheiden
+  ['Himbeere', '#C2185B'], ['Lagune', '#00897B'], ['Mandarine', '#EF8A17'], ['Tanne', '#2E5E3A'],
+  ['Lavendel', '#8E7CC3'], ['Nachtblau', '#1F3A93'], ['Kirsche', '#B71C1C'], ['Oliv', '#7C7A2A'],
+  ['Türkis', '#1BA6B8'], ['Flieder', '#B05FA8'], ['Kakao', '#6D4C3D'], ['Anthrazit', '#2F2F2F'],
 ];
 
 const ICONS = {
@@ -2347,6 +2351,7 @@ const FORMS = {
       color: form.color.value || nextColor(),
       archived: old ? form.archived.checked : false,
       budget: form.budget ? num(form.budget.value) || 0 : (old && old.budget) || 0,
+      noDuties: form.duties ? !form.duties.checked : !!(old && old.noDuties),
       // Mitreisende: leer = alle (auch Personen, die später dazukommen)
       members: form.who && [...form.querySelectorAll('[name=who]:not(:checked)')].length ? [...form.querySelectorAll('[name=who]:checked')].map(c => c.value) : null,
     });

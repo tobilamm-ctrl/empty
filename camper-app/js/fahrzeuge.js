@@ -83,6 +83,7 @@ export default function installFahrzeuge(app) {
   /* Fahrzeug je Reise und Reise als Vorlage (im Reise-Formular)             */
   /* ====================================================================== */
 
+  const formExtra = app.tripFormExtra;
   app.tripFormExtra = t => {
     const vs = app.vehicles();
     const others = sortTrips(S.trips).filter(x => x.id !== t.id);
@@ -95,7 +96,7 @@ export default function installFahrzeuge(app) {
         <label class="check"><input type="checkbox" name="tplPlaces"><span>Geplante Orte (noch nicht besuchte)</span></label>
         <label class="check"><input type="checkbox" name="tplMeta" checked><span>Fahrzeug und Mitreisende</span></label>
         <p class="sub">Checklisten (Abfahrt, Ankunft) gelten ohnehin für alle Reisen; ihre Haken starten neu.</p>
-      </details>` : ''}`;
+      </details>` : ''}${formExtra ? formExtra(t) : ''}`;
   };
   const tripSaved = app.tripSaved;
   app.tripSaved = (t, old, form) => {

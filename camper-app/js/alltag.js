@@ -107,6 +107,9 @@ export default function installAlltag(app) {
       return { label, pid, done: (doc.done || {})[label] || null };
     });
   }
+  // Pro Reise abschaltbar (z. B. zu zweit unterwegs)
+  const off = t => !!(t && t.noDuties);
+  app.dutiesOff = off;
   const points = t => {
     const p = {};
     S.games.filter(g => g.kind === 'duty' && g.tripId === t.id).forEach(g => Object.values(g.done || {}).forEach(pid => { p[pid] = (p[pid] || 0) + 1; }));
@@ -117,6 +120,8 @@ export default function installAlltag(app) {
   VIEWS.dienste = () => {
     const t = currentTrip();
     if (!t) return `${pageHead('dienste', 'Camper-Dienste')}<p class="hint">Legt zuerst eine Reise an.</p>`;
+    if (off(t)) return `${pageHead('dienste', 'Camper-Dienste')}<p class="hint">Für „${esc(t.name)}“ sind die Camper-Dienste ausgeschaltet.</p>
+      ${isAdmin() ? `<button class="primary" data-action="duty-toggle" data-id="${t.id}">Für diese Reise einschalten</button>` : ''}`;
     const d = ui.dutyDay || today();
     const list = plan(t, d);
     const pts = points(t);
@@ -129,8 +134,19 @@ export default function installAlltag(app) {
         <button class="ghost small-btn" data-action="duty-swap" data-l="${esc(x.label)}" data-day="${d}">Tauschen</button></li>`).join('')}</ul>
       <h2 class="date-head">Punkte auf „${esc(t.name)}“</h2>
       <ol class="leader-list">${board.map(({ m, n }) => `<li><span>${esc(m.name)}</span><b>${n}</b></li>`).join('')}</ol>
-      ${isAdmin() ? '<button class="link" data-action="duty-edit">Dienste bearbeiten</button>' : ''}`;
+      ${isAdmin() ? `<div class="btnrow"><button class="link" data-action="duty-edit">Dienste bearbeiten</button>
+        <button class="link" data-action="duty-toggle" data-id="${t.id}">Für diese Reise ausschalten</button></div>` : ''}`;
   };
+  ACTIONS['duty-toggle'] = el => {
+    const t = S.trips.find(x => x.id === el.dataset.id);
+    if (!t) return;
+    save('trips', { ...t, noDuties: !t.noDuties });
+    toast(t.noDuties ? 'Camper-Dienste wieder eingeschaltet' : `Camper-Dienste für „${t.name}“ ausgeschaltet`);
+  };
+  // Im Reise-Formular: Schalter
+  const formExtra = app.tripFormExtra;
+  app.tripFormExtra = t => `${formExtra ? formExtra(t) : ''}<label class="check"><input type="checkbox" name="duties"${off(t) ? '' : ' checked'}><span>Camper-Dienste für diese Reise (reihum verteilen)</span></label>`;
+  // Gespeichert wird der Schalter in FORMS.trip (app.js)
   ACTIONS['duty-day'] = el => { ui.dutyDay = el.dataset.day; render(); };
   ACTIONS['duty-done'] = el => {
     const t = currentTrip(), d = el.dataset.day, l = el.dataset.l;
@@ -173,7 +189,7 @@ export default function installAlltag(app) {
     const hl = S.games.some(g => g.id === hlId(t, today(), me()));
     const extra = `<div class="today-more">
       ${b ? `<a class="today-budget" href="#/kasse">${icon('coin')}${b.left >= 0 ? `Budget: noch ${money(b.left)}${b.perDay != null ? `, ${money(b.perDay)} pro Tag` : ''}` : `Budget um ${money(-b.left)} überschritten`}</a>` : ''}
-      ${(!app.allowed || app.allowed('dienste')) && duties().length ? `<a class="today-duty" href="#/dienste">${icon('check')}${meDuty.length ? `Dein Dienst: ${esc(meDuty.join(', '))}` : mine.length ? `Noch offen: ${mine.length} ${mine.length === 1 ? 'Dienst' : 'Dienste'}` : 'Alle Dienste erledigt'}</a>` : ''}
+      ${(!app.allowed || app.allowed('dienste')) && !off(t) && duties().length ? `<a class="today-duty" href="#/dienste">${icon('check')}${meDuty.length ? `Dein Dienst: ${esc(meDuty.join(', '))}` : mine.length ? `Noch offen: ${mine.length} ${mine.length === 1 ? 'Dienst' : 'Dienste'}` : 'Alle Dienste erledigt'}</a>` : ''}
       <button class="link" data-action="hl-form">${icon('star')}${hl ? 'Highlight des Tages ändern' : 'Highlight des Tages'}</button>
     </div>`;
     return html.replace('<div class="today-links">', `${extra}<div class="today-links">`);
@@ -185,7 +201,7 @@ export default function installAlltag(app) {
     const html = kids();
     const t = currentTrip();
     if (!running(t)) return html;
-    const meDuty = plan(t, today()).filter(x => !x.done && x.pid === me()).map(x => x.label);
+    const meDuty = off(t) ? [] : plan(t, today()).filter(x => !x.done && x.pid === me()).map(x => x.label);
     const box = `<section class="kids-today">
       <button class="kids-tile wide" data-action="hl-form">${icon('star')}<b>Was war heute dein Highlight?</b></button>
       ${(!app.allowed || app.allowed('dienste')) && meDuty.length ? `<a class="kids-tile wide duty" href="#/dienste">${icon('check')}<b>Dein Dienst heute: ${esc(meDuty.join(', '))}</b></a>` : ''}

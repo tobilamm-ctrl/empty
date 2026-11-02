@@ -136,6 +136,18 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 61: Straße folgen ausgewogen, Camper-Dienste abschaltbar, mehr Reisefarben
+
+- **Straße folgen, drei Varianten:** **Ausgewogen (empfohlen)**: alle Einträge, Punkte bis 5 km zusammengefasst –
+  Rundgänge im Ort fallen weg, echte Fahrten bleiben. **Knapp**: Übernachtung, Tanken, Fähre usw. plus erster und
+  letzter Eintrag jedes Tages (vorher fehlten Tage ohne solche Einträge, z. B. die ersten 7 Tage). **Jeder Eintrag**:
+  meist zu viel. Zu jeder Variante stehen Punkte und Luftlinie da; nach der Berechnung zeigt LAMMping den Unterschied
+  zum eingetragenen Tachostand in Prozent.
+- **Camper-Dienste je Reise abschaltbar:** Im Reise-Formular „Camper-Dienste für diese Reise“ oder auf der
+  Dienste-Seite „Für diese Reise ausschalten“. Dann verschwinden sie auch aus der Heute-Karte und von der
+  Kinder-Startseite.
+- **Mehr Reisefarben:** 20 statt 8 (neu u. a. Himbeere, Lagune, Mandarine, Tanne, Lavendel, Nachtblau, Türkis).
+
 ## Neu in Version 60: Karte zeigt nur die gewählte Reise, Straße folgen genauer und rückgängig
 
 - **Fehler behoben: Pins anderer Reisen und vielfache Pins.** Beim Bündeln naher Pins merkte sich die Karte die
