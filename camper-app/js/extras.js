@@ -205,14 +205,14 @@ export default function installExtras(app) {
             <span class="txt"><b>${esc(d.title)}</b><small>${esc([d.kind, d.person ? personName(d.person) : ''].filter(Boolean).join(', '))}</small></span>
             ${d.expires ? `<span class="due ${n < 0 ? 'over' : n <= 60 ? 'soon' : ''}">${n < 0 ? 'abgelaufen' : 'bis ' + fmtShort(d.expires)}</span>` : ''}
           </button></li>`; }).join('')}</ul>
-          <button class="link" data-action="doc-offline">Alle Bilder für offline speichern</button>`
+          <button class="link" data-action="doc-offline">Alle Bilder und PDFs für offline speichern</button>`
           : '<p class="hint">Fotografiert Ausweise, Fahrzeugschein und Versicherungskarte. Ablaufdaten erinnern euch 60 Tage vorher.</p>'}
       </section>` : ''}`;
   };
 
   function docForm(id) {
     const d = S.documents.find(x => x.id === id) || { kind: 'Personalausweis', images: [] };
-    app.docImages = { keep: (d.images || []).slice(), add: [] };
+    app.docImages = { keep: (d.images || []).slice(), add: [], files: (d.files || []).slice(), fdrop: [] };
     openSheet(`<form data-form="doc" data-id="${d.id || ''}">${sheetHead(d.id ? 'Dokument' : 'Neues Dokument')}
       <label class="field"><span>Bezeichnung</span><input name="title" value="${esc(d.title)}" required placeholder="z. B. Reisepass Lena"></label>
       <div class="row2">
@@ -226,6 +226,8 @@ export default function installExtras(app) {
       <label class="field"><span>Notiz</span><input name="note" value="${esc(d.note)}"></label>
       <div class="field"><span>Bilder (Vorder- und Rückseite)</span><div class="photo-grid" id="docGrid">${docGrid()}</div>
         <label class="ghost file">${icon('plus')}Foto hinzufügen<input type="file" accept="image/*" multiple data-action="doc-photos"></label></div>
+      <div class="field"><span>PDF (z. B. Versicherungsschein)</span><div class="pdf-list" id="docPdfs">${app.pdf.chips(app.docImages.files, 'drop-doc-pdf')}</div>
+        <label class="ghost file">📎 PDF anhängen<input type="file" accept="application/pdf,.pdf" multiple data-action="doc-pdfs"></label></div>
       <div class="sheet-foot">
         ${d.id ? `<button type="button" class="ghost danger" data-action="del-doc" data-id="${d.id}">Löschen</button>` : ''}
         <button class="primary">Speichern</button>
@@ -242,6 +244,20 @@ export default function installExtras(app) {
     el.value = '';
     document.getElementById('docGrid').innerHTML = docGrid();
   };
+  const docPdfs = () => { document.getElementById('docPdfs').innerHTML = app.pdf.chips(app.docImages.files, 'drop-doc-pdf'); };
+  CHANGES['doc-pdfs'] = async el => {
+    const files = [...el.files];
+    el.value = '';
+    app.docImages.files.push(...await app.pdf.uploadAll(files, 'doc-'));
+    docPdfs();
+  };
+  ACTIONS['drop-doc-pdf'] = el => {
+    app.docImages.fdrop.push(el.dataset.id);
+    app.docImages.files = app.docImages.files.filter(f => f.id !== el.dataset.id);
+    docPdfs();
+  };
+  // Von außen (Teilen-Menü): neues Dokument mit schon hochgeladenen PDFs
+  app.docWithPdfs = (title, files) => { docForm(''); app.docImages.files = files; docPdfs(); const t = document.querySelector('[data-form="doc"] [name="title"]'); if (t) t.value = title; };
   ACTIONS['drop-doc-photo'] = el => {
     app.docImages.keep = app.docImages.keep.filter(p => p.id !== el.dataset.id);
     app.docImages.add = app.docImages.add.filter(p => p.id !== el.dataset.id);
@@ -259,6 +275,7 @@ export default function installExtras(app) {
         ${d.note ? `<div><dt>Notiz</dt><dd>${esc(d.note)}</dd></div>` : ''}
       </dl>
       <div class="doc-images">${(d.images || []).map(p => `<img data-photo="${p.id}" src="${p.thumb}" alt="">`).join('')}</div>
+      ${(d.files || []).length ? `<div class="pdf-list">${app.pdf.chips(d.files)}</div>` : ''}
       <div class="sheet-foot"><button class="primary" data-action="doc-form" data-id="${d.id}">Bearbeiten</button></div></article>`, root => {
       root.querySelectorAll('[data-photo]').forEach(img => app.store().get('photos', img.dataset.photo).then(p => { if (p && p.data) img.src = p.data; }).catch(() => {}));
     });
@@ -267,6 +284,7 @@ export default function installExtras(app) {
     if (!confirm('Dieses Dokument mit seinen Bildern löschen?')) return;
     const d = S.documents.find(x => x.id === el.dataset.id);
     (d.images || []).forEach(p => remove('photos', p.id));
+    (d.files || []).forEach(f => app.pdf.drop(f.id));
     remove('documents', d.id);
     closeSheet();
   };
@@ -275,18 +293,21 @@ export default function installExtras(app) {
     for (const d of S.documents) for (const p of d.images || []) {
       try { const { data } = await app.store().get('photos', p.id); if (!data.startsWith('data:')) await fetch(data, { credentials: 'same-origin' }); n++; } catch { /* offline */ }
     }
-    toast(`${n} Bilder sind jetzt auch offline da.`);
+    S.documents.forEach(d => app.pdf.prefetch(d.files));
+    toast(`${n} Bilder und alle PDFs sind jetzt auch offline da.`);
   };
   FORMS.doc = form => {
     const old = S.documents.find(x => x.id === form.dataset.id);
     const keepIds = new Set(app.docImages.keep.map(p => p.id));
     (old && old.images || []).filter(p => !keepIds.has(p.id)).forEach(p => remove('photos', p.id));
     app.docImages.add.forEach(p => save('photos', { id: p.id, data: p.data }));
+    app.docImages.fdrop.forEach(id => app.pdf.drop(id));
     save('documents', {
       ...(old || { id: newId(), createdAt: Date.now() }),
       title: form.title.value.trim(), kind: form.kind.value, person: form.person.value, number: form.number.value.trim(),
       expires: form.expires.value, note: form.note.value.trim(),
       images: [...app.docImages.keep, ...app.docImages.add].map(({ id, thumb }) => ({ id, thumb })),
+      files: app.docImages.files,
     });
     closeSheet();
   };

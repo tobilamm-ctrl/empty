@@ -73,6 +73,7 @@ export default function installIdeen(app) {
       <h3 class="date-head">Ideen und Notizen dazu</h3>
       ${notes.length ? `<ul class="idea-notes">${notes.map(n => `<li>${n.text ? `<p>${linkify(n.text)}</p>` : ''}
         ${(n.photos || []).length ? `<div class="idea-photos">${n.photos.map(p => `<img src="${p.thumb}" data-photo="${p.id}" alt="">`).join('')}</div>` : ''}
+        ${(n.files || []).length ? `<div class="pdf-list">${app.pdf.chips(n.files)}</div>` : ''}
         <small>${esc(personName(n.by))}, ${when(n.at)}${n.by === me() ? ` · <button class="link" data-action="idea-note-del" data-id="${i.id}" data-note="${n.id}">löschen</button>` : ''}</small></li>`).join('')}</ul>`
         : '<p class="sub">Noch nichts notiert: Stellplätze, Ausflüge, Restaurants, Links …</p>'}
       <form data-form="idea-note" data-id="${i.id}" class="idea-note-form">
@@ -82,6 +83,7 @@ export default function installIdeen(app) {
       <div class="btnrow idea-add">
         ${navigator.clipboard && navigator.clipboard.readText ? `<button type="button" class="ghost small-btn" data-action="idea-paste" data-id="${i.id}">📋 Aus Zwischenablage</button>` : ''}
         <label class="ghost btn small-btn file">📷 Foto<input type="file" accept="image/*" multiple data-action="idea-photo" data-id="${i.id}"></label>
+        <label class="ghost btn small-btn file">📎 PDF<input type="file" accept="application/pdf,.pdf" multiple data-action="idea-pdf" data-id="${i.id}"></label>
       </div>
       <div class="sheet-foot">
         <button type="button" class="ghost" data-action="idea-form" data-id="${i.id}">Bearbeiten</button>
@@ -115,11 +117,21 @@ export default function installIdeen(app) {
     if (!photos.length) return toast('Das Foto ließ sich nicht lesen.');
     openIdea(save('ideas', { ...i, notes: [...(i.notes || []), { id: newId(), by: me(), at: Date.now(), text: '', photos }] }));
   };
+  // PDFs (Prospekt, Buchungsbestätigung) als eigene Notiz
+  CHANGES['idea-pdf'] = async el => {
+    const files = [...el.files]; el.value = '';
+    if (!files.length) return;
+    const got = await app.pdf.uploadAll(files);
+    const i = S.ideas.find(x => x.id === el.dataset.id);
+    if (!i || !got.length) return;
+    openIdea(save('ideas', { ...i, notes: [...(i.notes || []), { id: newId(), by: me(), at: Date.now(), text: '', files: got }] }));
+  };
   ACTIONS['idea-note-del'] = el => {
     const i = S.ideas.find(x => x.id === el.dataset.id);
     if (!i || !confirm('Diese Notiz löschen?')) return;
     const n = (i.notes || []).find(x => x.id === el.dataset.note);
     (n && n.photos || []).forEach(p => remove('photos', p.id));
+    (n && n.files || []).forEach(f => app.pdf.drop(f.id));
     openIdea(save('ideas', { ...i, notes: (i.notes || []).filter(x => x.id !== el.dataset.note) }));
   };
 
@@ -151,6 +163,8 @@ export default function installIdeen(app) {
   };
   ACTIONS['idea-del'] = el => {
     if (!confirm('Diese Idee mit allen Notizen löschen?')) return;
+    const i = S.ideas.find(x => x.id === el.dataset.id);
+    (i && i.notes || []).forEach(n => { (n.photos || []).forEach(p => remove('photos', p.id)); (n.files || []).forEach(f => app.pdf.drop(f.id)); });
     remove('ideas', el.dataset.id);
     closeSheet();
   };

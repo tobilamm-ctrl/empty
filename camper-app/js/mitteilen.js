@@ -155,7 +155,13 @@ export default function installMitteilen(app) {
       const meta = await c.match('meta');
       if (meta) {
         Object.assign(out, await meta.json());
-        for (let i = 0; i < (out.count || 0); i++) { const r = await c.match('f' + i); if (r) out.files.push(await r.blob()); }
+        for (let i = 0; i < (out.count || 0); i++) {
+          const r = await c.match('f' + i);
+          if (!r) continue;
+          const b = await r.blob();
+          // Dateiname kommt aus dem Service Worker mit (für PDFs wichtig)
+          out.files.push(new File([b], (out.names || [])[i] || (/pdf/.test(b.type) ? 'Dokument.pdf' : 'Bild'), { type: b.type }));
+        }
       }
     } catch { /* kein Speicher */ }
     // Manche Apps packen den Link in den Text
@@ -177,6 +183,8 @@ export default function installMitteilen(app) {
     if (!shared) { loadShared().then(s => { shared = s; render(); }); return `${pageHead('ideen', 'Geteilt')}<p class="sub">Wird geladen …</p>`; }
     const s = shared;
     const thumbs = s.files.filter(f => /^image\//.test(f.type)).map(f => URL.createObjectURL(f));
+    const pdfs = s.files.filter(app.pdf.isPdf);
+    const onlyPdf = pdfs.length && pdfs.length === s.files.length && !s.text && !s.url;
     const pos = coordsOf(s.url) || coordsOf(s.text);
     const ideas = S.ideas.filter(i => !i.tripId).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     if (!s.title && !s.text && !s.url && !s.files.length) return `${pageHead('ideen', 'Geteilt')}<p class="hint">Hier ist nichts angekommen. Teile aus einer anderen App (z. B. Google Maps) über „Teilen“ → LAMMping.</p>`;
@@ -185,10 +193,13 @@ export default function installMitteilen(app) {
         ${s.title ? `<b>${esc(s.title)}</b>` : ''}${s.text ? `<p>${esc(s.text)}</p>` : ''}${s.url ? `<p class="sub">${esc(s.url)}</p>` : ''}
         ${pos ? `<p class="sub">📍 Position erkannt</p>` : ''}
         ${thumbs.length ? `<div class="pc-photos">${thumbs.map(u => `<img src="${u}" alt="">`).join('')}</div>` : ''}
+        ${pdfs.length ? `<ul class="pdf-names">${pdfs.map(f => `<li>📄 ${esc(f.name)}</li>`).join('')}</ul>` : ''}
       </section>
       <div class="share-dest">
-        <button class="primary" data-action="shared-entry">${icon('notiz')}Ins Tagebuch (heute)</button>
+        ${onlyPdf ? '' : `<button class="primary" data-action="shared-entry">${icon('notiz')}Ins Tagebuch (heute)</button>`}
         ${!s.files.length || s.url || s.text ? `<button class="ghost" data-action="shared-place">${icon('pin')}Auf die Wunschliste</button>` : ''}
+        ${pdfs.length ? `<button class="${onlyPdf ? 'primary' : 'ghost'}" data-action="shared-ticket">🎟️ Als Ticket oder Reservierung</button>
+          ${app.session().user.isAdmin ? `<button class="ghost" data-action="shared-doc">🪪 Zu den Dokumenten</button>` : ''}` : ''}
         <h2 class="date-head">Zu den Reiseideen</h2>
         <button class="ghost" data-action="shared-idea" data-id="">${icon('plus')}Neue Reiseidee „${esc(nameOf(s))}“</button>
         ${ideas.length ? `<p class="sub">oder als Notiz zu einer Idee:</p>
@@ -232,16 +243,41 @@ export default function installMitteilen(app) {
     }
     return out;
   };
+  // Geteilte PDFs hochladen (braucht Netz); Rückgabe null, wenn nichts davon ankam
+  const sharedPdfs = async (s, prefix = '') => {
+    const list = s.files.filter(app.pdf.isPdf);
+    return list.length ? app.pdf.uploadAll(list, prefix) : [];
+  };
+  const pdfTitle = s => s.title || (s.files.find(app.pdf.isPdf) || {}).name?.replace(/\.pdf$/i, '') || '';
+  ACTIONS['shared-ticket'] = async () => {
+    const s = shared;
+    const files = await sharedPdfs(s);
+    if (!files.length) return;
+    await clearShared(); shared = null;
+    go('tickets');
+    setTimeout(() => app.ticketWithPdfs(pdfTitle(s), files), 300);
+  };
+  ACTIONS['shared-doc'] = async () => {
+    const s = shared;
+    const files = await sharedPdfs(s, 'doc-');
+    if (!files.length) return;
+    await clearShared(); shared = null;
+    go('dokumente');
+    setTimeout(() => app.docWithPdfs(pdfTitle(s), files), 300);
+  };
   ACTIONS['shared-idea'] = async el => {
     const s = shared;
+    const pdfCount = s.files.filter(app.pdf.isPdf).length;
+    const files = await sharedPdfs(s);
+    if (pdfCount && !files.length && !s.text && !s.url && !s.files.some(f => /^image\//.test(f.type))) return;
     const photos = await sharedPhotos(s);
-    const note = { id: newId(), by: me(), at: Date.now(), text: sharedNote(s) || (photos.length ? 'Foto' : ''), ...(photos.length ? { photos } : {}) };
+    const note = { id: newId(), by: me(), at: Date.now(), text: sharedNote(s) || (photos.length ? 'Foto' : ''), ...(photos.length ? { photos } : {}), ...(files.length ? { files } : {}) };
     if (el.dataset.id) {
       const i = S.ideas.find(x => x.id === el.dataset.id);
       save('ideas', { ...i, notes: [...(i.notes || []), note] });
       done(`Bei „${i.title}“ notiert`, 'ideen');
     } else {
-      const first = s.url || photos.length ? [{ ...note, text: s.url || '' }] : [];
+      const first = s.url || photos.length || files.length ? [{ ...note, text: s.url || '' }] : [];
       save('ideas', { id: newId(), by: me(), createdAt: Date.now(), likes: { [me()]: true }, title: nameOf(s), where: '', season: '', days: '', text: s.text || '', notes: first });
       done('Neue Reiseidee angelegt', 'ideen');
     }

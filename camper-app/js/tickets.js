@@ -27,6 +27,7 @@ export default function installTickets(app) {
     const all = tickets(t).slice().sort((a, b) => when(a).localeCompare(when(b)));
     const next = all.filter(x => !past(x)), old = all.filter(past);
     // Bilder für unterwegs ohne Netz vorab holen
+    setTimeout(() => all.filter(x => !past(x)).forEach(x => app.pdf.prefetch(x.files)), 400);
     setTimeout(() => all.forEach(x => (x.images || []).forEach(im => app.store().get('photos', im.id).then(p => { if (p && p.data && !p.data.startsWith('data:')) fetch(p.data).catch(() => {}); }).catch(() => {}))), 300);
     const row = x => `<li><button data-action="ticket-view" data-id="${x.id}">
       <span class="tk-ic">${kind(x.kindKey)[2]}</span>
@@ -34,7 +35,7 @@ export default function installTickets(app) {
       <span class="due ${countdown(x).startsWith('in') && !countdown(x).includes('Tagen') ? 'soon' : ''}">${countdown(x)}</span></button></li>`;
     return `${pageHead('tickets', 'Tickets', t ? `Für „${esc(t.name)}“, auch ohne Netz` : 'Fähre, Campingplatz, Eintritt')}
       <div class="btnrow"><button class="primary" data-action="ticket-form">${icon('plus')}Ticket oder Reservierung</button></div>
-      ${next.length ? `<ul class="ledger tickets">${next.map(row).join('')}</ul>` : '<p class="hint">Fährtickets, Campingplatz-Reservierungen, Eintrittskarten oder Vignetten: mit Datum, Buchungsnummer und einem Foto oder Screenshot vom QR-Code. So habt ihr alles griffbereit, auch ohne Netz am Hafen.</p>'}
+      ${next.length ? `<ul class="ledger tickets">${next.map(row).join('')}</ul>` : '<p class="hint">Fährtickets, Campingplatz-Reservierungen, Eintrittskarten oder Vignetten: mit Datum, Buchungsnummer, einem Foto vom QR-Code oder dem PDF der Buchung. So habt ihr alles griffbereit, auch ohne Netz am Hafen.</p>'}
       ${old.length ? `<details class="old-tickets"><summary>Vorbei (${old.length})</summary><ul class="ledger tickets">${old.map(row).join('')}</ul></details>` : ''}`;
   };
 
@@ -46,6 +47,7 @@ export default function installTickets(app) {
       ${x.place ? `<p>${esc(x.place)}</p>` : ''}
       ${x.number ? `<p class="tk-number"><span>Buchungsnummer</span><b>${esc(x.number)}</b><button class="ghost small-btn" data-action="ticket-copy" data-n="${esc(x.number)}">Kopieren</button></p>` : ''}
       ${(x.images || []).map(im => `<img class="tk-img" data-photo="${im.id}" src="${im.thumb}" alt="Ticket">`).join('')}
+      ${(x.files || []).length ? `<div class="pdf-list">${app.pdf.chips(x.files)}</div>` : ''}
       ${x.note ? `<p class="prose">${esc(x.note).replace(/\n/g, '<br>')}</p>` : ''}
       ${x.link ? `<p><a href="${esc(x.link)}" target="_blank" rel="noopener">Buchung online öffnen</a></p>` : ''}
       <p class="sub">Tipp: Zum Scannen den Bildschirm ganz hell stellen.</p>
@@ -59,14 +61,15 @@ export default function installTickets(app) {
     const x = S.games.find(g => g.id === el.dataset.id);
     if (!x || !confirm('Dieses Ticket löschen?')) return;
     (x.images || []).forEach(im => remove('photos', im.id));
+    (x.files || []).forEach(f => app.pdf.drop(f.id));
     remove('games', x.id);
     closeSheet();
   };
 
   let draft = null;
-  ACTIONS['ticket-form'] = el => {
-    const x = S.games.find(g => g.id === (el && el.dataset.id)) || { kindKey: 'faehre', date: today(), images: [] };
-    draft = { keep: (x.images || []).slice(), add: [], drop: [] };
+  ACTIONS['ticket-form'] = (el, pre = null) => {
+    const x = S.games.find(g => g.id === (el && el.dataset && el.dataset.id)) || { kindKey: 'faehre', date: today(), images: [], ...(pre || {}) };
+    draft = { keep: (x.images || []).slice(), add: [], drop: [], files: (x.files || []).slice(), fdrop: [] };
     openSheet(`<form data-form="ticket" data-id="${x.id || ''}">${sheetHead(x.id ? 'Ticket bearbeiten' : 'Neues Ticket')}
       <div class="chips wrap">${KINDS.map(([k, l, e]) => `<label class="chip"><input type="radio" name="kindKey" value="${k}"${x.kindKey === k ? ' checked' : ''}><span>${e} ${l}</span></label>`).join('')}</div>
       <label class="field"><span>Bezeichnung</span><input name="title" required maxlength="80" value="${esc(x.title)}" placeholder="z. B. Fähre Piombino – Portoferraio"></label>
@@ -78,8 +81,10 @@ export default function installTickets(app) {
       <label class="field"><span>Link zur Buchung</span><input name="link" type="url" value="${esc(x.link)}" placeholder="https://"></label>
       <label class="field"><span>Notiz</span><textarea name="note" rows="2" placeholder="z. B. 30 Minuten vorher am Schalter sein">${esc(x.note)}</textarea></label>
       <div class="field"><span>Bild vom Ticket oder QR-Code</span><div class="photo-grid" id="tkPhotos">${grid()}</div>
-        <label class="ghost file">${icon('camera')}Foto oder Screenshot<input type="file" accept="image/*" multiple data-action="ticket-img"></label>
-        <p class="sub">PDF? Einfach einen Screenshot vom QR-Code machen und den hier einfügen.</p></div>
+        <label class="ghost file">${icon('camera')}Foto oder Screenshot<input type="file" accept="image/*" multiple data-action="ticket-img"></label></div>
+      <div class="field"><span>PDF (Buchungsbestätigung, Ticket)</span><div class="pdf-list" id="tkPdfs">${app.pdf.chips(draft.files, 'ticket-pdf-drop')}</div>
+        <label class="ghost file">📎 PDF anhängen<input type="file" accept="application/pdf,.pdf" multiple data-action="ticket-pdf"></label>
+        <p class="sub">Braucht Internet zum Hochladen. Einmal geöffnet, geht das PDF auch offline.</p></div>
       <div class="sheet-foot"><button class="primary">Speichern</button></div></form>`);
   };
   function grid() {
@@ -93,6 +98,22 @@ export default function installTickets(app) {
     el.value = '';
     document.getElementById('tkPhotos').innerHTML = grid();
   };
+  const pdfs = () => { document.getElementById('tkPdfs').innerHTML = app.pdf.chips(draft.files, 'ticket-pdf-drop'); };
+  CHANGES['ticket-pdf'] = async el => {
+    const files = [...el.files];
+    el.value = '';
+    const got = await app.pdf.uploadAll(files);
+    if (!draft) return;
+    draft.files.push(...got);
+    pdfs();
+  };
+  ACTIONS['ticket-pdf-drop'] = el => {
+    draft.fdrop.push(el.dataset.id);
+    draft.files = draft.files.filter(f => f.id !== el.dataset.id);
+    pdfs();
+  };
+  // Von außen (Teilen-Menü): neues Ticket mit schon hochgeladenen PDFs
+  app.ticketWithPdfs = (title, files) => ACTIONS['ticket-form'](null, { title, files });
   ACTIONS['ticket-img-drop'] = el => {
     const id = el.dataset.id;
     if (draft.keep.some(p => p.id === id)) draft.drop.push(id);
@@ -104,12 +125,14 @@ export default function installTickets(app) {
     const old = S.games.find(g => g.id === form.dataset.id);
     const id = old ? old.id : newId();
     draft.drop.forEach(pid => remove('photos', pid));
+    draft.fdrop.forEach(fid => app.pdf.drop(fid));
     draft.add.forEach(p => save('photos', { id: p.id, tripId: t ? t.id : null, data: p.data }));
     save('games', {
       ...(old || { id, kind: 'ticket', by: app.me(), createdAt: Date.now(), tripId: t ? t.id : null }),
       kindKey: form.kindKey.value, title: form.title.value.trim(), date: form.date.value, time: form.time.value, until: form.until.value,
       place: form.place.value.trim(), number: form.number.value.trim(), link: form.link.value.trim(), note: form.note.value.trim(),
       images: [...draft.keep, ...draft.add].map(({ id: pid, thumb }) => ({ id: pid, thumb })),
+      files: draft.files,
     });
     closeSheet();
     toast('Ticket gespeichert');

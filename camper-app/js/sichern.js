@@ -73,6 +73,25 @@ export default function installSichern(app) {
     </section>`;
     app.printHtml(`<article class="access-cards">${half()}</article>`, `LAMMping-Zugang ${name}`);
   };
+  // Einladung in eine Crew zum Ausdrucken: QR-Code, Link und wie es weitergeht
+  app.inviteCard = ({ url, crewName }) => {
+    app.printHtml(`<article class="access-cards"><section class="ac-card">
+      <header><svg class="ac-sheep" aria-hidden="true"><use href="#schaf"/></svg><svg class="ac-word" role="img" aria-label="LAMMping"><use href="#wort"/></svg></header>
+      <h1>Komm in unsere Crew!</h1>
+      <p class="ac-lead">Einladung zu LAMMping${crewName ? `, Crew „${esc(crewName)}“` : ''}.</p>
+      <div class="ac-body">
+        <div class="ac-qr">${qrSvg(url, 180)}<small>Mit der Handykamera scannen</small></div>
+        <dl><dt>Link</dt><dd class="ac-url">${esc(url.replace(/^https?:\/\//, ''))}</dd>
+          <dt>Gültig bis</dt><dd>${new Date(Date.now() + 14 * 864e5).toLocaleDateString('de-DE')}</dd></dl>
+      </div>
+      <ol class="ac-steps">
+        <li>QR-Code scannen oder den Link im Browser öffnen.</li>
+        <li>Eigenes Konto anlegen (Name, Anmeldename, Passwort) – oder mit einem bestehenden Konto anmelden.</li>
+        <li>Als App ablegen: Android im Browser-Menü „App installieren“, iPhone in Safari „Teilen“ → „Zum Home-Bildschirm“.</li>
+      </ol>
+      <p class="ac-foot">Der Link ist nur für eingeladene Personen gedacht. Bitte nicht öffentlich teilen.</p>
+    </section></article>`, `LAMMping-Einladung ${crewName || ''}`);
+  };
 
   /* ====================================================================== */
   /* Listen ausdrucken                                                       */

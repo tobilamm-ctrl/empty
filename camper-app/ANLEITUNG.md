@@ -136,6 +136,29 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 55: Crews für mehrere Familien, Einladungen, PDFs
+
+**Wichtig beim Hochladen:** Diesmal ist auch **`api/index.php`** neu. Bitte vorher in der Verwaltung eine Sicherung
+herunterladen. `api/config.php` und der Ordner `api/data` bleiben unverändert. Die Datenbank stellt sich beim ersten
+Aufruf selbst um: Wer bisher Verwalter war, ist danach Super-Admin und Crew-Leiter in seinen Crews.
+
+- **Drei Rollen:**
+  - **Super-Admin** (Tobi): legt Konten an und löscht sie, setzt Passwörter zurück und vergibt das Recht „darf eigene
+    Crews gründen“. Von fremden Crews sieht er in der Verwaltung nur Name und Mitgliederzahl, keine Inhalte.
+  - **Crew-Leiter** (je Crew, der Gründer automatisch): lädt Leute ein, legt Konten für die eigenen Leute an (z. B.
+    Kinder), vergibt Rechte in der Crew und ernennt weitere Crew-Leiter. Dokumente, Kasse und Verwaltung sehen Leiter
+    nur in ihren eigenen Crews.
+  - **Mitglied:** wie bisher.
+- **Einladen per Link oder QR-Code:** Einstellungen › Verwaltung › bei der Crew **„Einladen“**. Es erscheinen QR-Code
+  und Link zum Kopieren, Teilen oder Drucken (Karte „Komm in unsere Crew!“). Wer den Link öffnet, legt sich ein Konto
+  an oder meldet sich an und ist sofort in der Crew. Der Link gilt 14 Tage und lässt sich bei der Crew zurückziehen.
+- **PDFs:** An Reiseideen (**📎 PDF**), Tickets und Dokumente lassen sich PDFs anhängen, bis 10 MB. Im Teilen-Menü
+  anderer Apps erscheint LAMMping jetzt auch für PDFs, mit der Wahl Reiseidee, Ticket oder (für Crew-Leiter)
+  Dokumente. Hochladen braucht Internet. Einmal geöffnet, gehen PDFs auch offline; Tickets der Reise werden beim
+  Öffnen der Tickets-Seite gleich mit gespeichert. Dokument-PDFs sehen nur Crew-Leiter.
+- Hinweis: Manche Webspaces erlauben kleinere Uploads als 10 MB (PHP-Einstellung `post_max_size`). Dann meldet
+  LAMMping beim Hochladen die Grenze.
+
 ## Neu in Version 54: Pinnwand-Zettel, Reisefoto Jahr für Jahr, Teilen in Reiseideen
 
 - **Gelber Zettel in der Kopfzeile:** Hängt etwas an der Pinnwand, klebt rechts neben LAMMping ein gelber Zettel mit

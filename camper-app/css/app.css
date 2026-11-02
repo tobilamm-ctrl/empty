@@ -2379,3 +2379,26 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .idea-photos img { width: 84px; height: 64px; object-fit: cover; border-radius: 8px; cursor: zoom-in; }
 .idea-add { margin: 6px 0 10px; }
 .idea-pick li[hidden] { display: none; }
+
+/* ---------- Version 55: Crews für mehrere Familien, Einladungen ---------- */
+.crew-row { display: flex; align-items: center; gap: 8px; }
+.crew-row > button:first-child { flex: 1; min-width: 0; }
+.people .crew-row { border-bottom: 1px solid var(--line); }
+.people .crew-row > button:first-child { border-bottom: 0; }
+.people .crew-row > button:first-child .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.people .crew-row .small-btn { flex: none; width: auto; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+.people.foreign li { display: flex; padding: 10px 0; border-bottom: 1px solid var(--line); opacity: .75; }
+.people.foreign .txt { display: flex; flex-direction: column; }
+.people.foreign small { color: var(--muted); }
+.people button[disabled] { opacity: .6; cursor: default; }
+.member-list li { flex-wrap: wrap; }
+.invite-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.invite-list li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line); }
+
+/* ---------- Version 55: PDFs an Reiseideen, Tickets und Dokumenten ---------- */
+.pdf-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.pdf-list:empty { display: none; }
+.pdf-chip { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 2px 4px 2px 10px; }
+.pdf-chip a { color: inherit; text-decoration: none; padding: 6px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pdf-chip a small { color: var(--muted); margin-left: 4px; }
+.pdf-names { list-style: none; padding: 0; margin: 8px 0 0; }

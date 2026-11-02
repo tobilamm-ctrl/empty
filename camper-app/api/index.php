@@ -6,12 +6,14 @@ declare(strict_types=1);
 
 $CFG = require __DIR__ . '/config.php';
 const COLLS = ['trips', 'entries', 'expenses', 'boxes', 'items', 'packstate', 'lists', 'listItems', 'meta', 'photos',
-    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games', 'ideas', 'stamps'];
+    'fuel', 'places', 'checklists', 'checkstate', 'deadlines', 'tracks', 'documents', 'recipes', 'plates', 'games', 'ideas', 'stamps', 'files'];
 const CASH_COLLS = ['expenses', 'fuel'];   // nur mit Kassen-Freigabe
-const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Verwalter
-const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Verwalter vergeben sie
+const ADMIN_COLLS = ['documents'];         // Ausweise & Co.: nur Crew-Leiter
+const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle sehen sie, nur Crew-Leiter vergeben sie
+const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
+const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 24;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 25;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -54,6 +56,8 @@ function db(): PDO {
         'attempts' => 'ip VARCHAR(64) NOT NULL, ts BIGINT NOT NULL',
         // Reiseblog: geheimer Link zum Lesen einer Reise
         'shares' => 'token CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, trip_id VARCHAR(64) NOT NULL, created BIGINT NOT NULL, by_user VARCHAR(32)',
+        // Einladung in eine Crew (Link bzw. QR-Code), mehrfach nutzbar bis zum Ablauf
+        'invites' => 'token CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, created BIGINT NOT NULL, expires BIGINT NOT NULL, by_user VARCHAR(32), uses INT NOT NULL DEFAULT 0',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
@@ -67,6 +71,18 @@ function db(): PDO {
     if (!in_array('areas', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN areas TEXT');
     if (!in_array('simple', $cols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN simple INT NOT NULL DEFAULT 0');
     if (!in_array('start', $cols, true)) $pdo->exec("ALTER TABLE users ADD COLUMN start VARCHAR(32) NOT NULL DEFAULT ''");
+    // Mehrere Familien: wer darf eigene Crews gründen (bisherige Verwalter: ja)
+    if (!in_array('can_found', $cols, true)) {
+        $pdo->exec('ALTER TABLE users ADD COLUMN can_found INT NOT NULL DEFAULT 0');
+        $pdo->exec('UPDATE users SET can_found = 1 WHERE is_admin = 1');
+    }
+    // Crew-Leiter je Crew (bisherige Verwalter werden Leiter ihrer Crews)
+    $mcols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM members')->fetchAll(), 'Field')
+                    : array_column($pdo->query('PRAGMA table_info(members)')->fetchAll(), 'name');
+    if (!in_array('leader', $mcols, true)) {
+        $pdo->exec('ALTER TABLE members ADD COLUMN leader INT NOT NULL DEFAULT 0');
+        $pdo->exec('UPDATE members SET leader = 1 WHERE user_id IN (SELECT id FROM users WHERE is_admin = 1)');
+    }
     // Reiseblog-Einstellungen (Fotos, Texte, Verzögerung …)
     $scols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM shares')->fetchAll(), 'Field')
                     : array_column($pdo->query('PRAGMA table_info(shares)')->fetchAll(), 'name');
@@ -91,7 +107,8 @@ $body = [];
 if ($method === 'POST') {
     // Eigener Header: Formulare fremder Seiten können ihn nicht setzen (Schutz vor CSRF)
     if (($_SERVER['HTTP_X_LAMMPING'] ?? '') !== '1') fail('Ungültige Anfrage', 403);
-    $body = json_decode(file_get_contents('php://input') ?: '[]', true);
+    // PDFs kommen roh (siehe 'file'), alles andere als JSON
+    $body = $action === 'file' ? [] : json_decode(file_get_contents('php://input') ?: '[]', true);
     if (!is_array($body)) fail('Ungültige Daten');
 }
 
@@ -120,14 +137,32 @@ function requireUser(): array {
     return $u;
 }
 
+// Super-Admin: verwaltet alle Konten und darf das Gründen von Crews erlauben (sieht aber keine fremden Inhalte)
 function requireAdmin(): array {
     $u = requireUser();
-    if (!(int) $u['is_admin']) fail('Nur für Verwalter', 403);
+    if (!(int) $u['is_admin']) fail('Nur für den Super-Admin', 403);
     return $u;
 }
+function isLeader(array $u, string $crew): bool {
+    return (bool) one('SELECT 1 AS ok FROM members WHERE crew_id = ? AND user_id = ? AND leader = 1', [$crew, $u['id']]);
+}
+function ledCrews(array $u): array { return array_column(all('SELECT crew_id FROM members WHERE user_id = ? AND leader = 1', [$u['id']]), 'crew_id'); }
+function requireLeader(array $u, $crew): string {
+    $crew = requireCrew($u, $crew);
+    if (!isLeader($u, $crew)) fail('Nur für Crew-Leiter', 403);
+    return $crew;
+}
+// Ein Konto „gehört“ einem Crew-Leiter, wenn es nur in Crews ist, die er leitet (und kein Super-Admin ist)
+function manages(array $u, string $id): bool {
+    if ((int) $u['is_admin']) return true;
+    $t = one('SELECT is_admin FROM users WHERE id = ?', [$id]);
+    if (!$t || (int) $t['is_admin']) return false;
+    $theirs = array_column(all('SELECT crew_id FROM members WHERE user_id = ?', [$id]), 'crew_id');
+    return $theirs && !array_diff($theirs, ledCrews($u));
+}
 
-// Verwalter sehen die Kasse immer, alle anderen nur mit Freigabe
-function canCash(array $u): bool { return (int) $u['is_admin'] || (int) $u['can_cash']; }
+// Crew-Leiter sehen die Kasse ihrer Crew immer, alle anderen nur mit Freigabe
+function canCash(array $u, string $crew = ''): bool { return (int) $u['can_cash'] || ($crew !== '' && isLeader($u, $crew)); }
 
 function requireCrew(array $u, $crew): string {
     if (!validId($crew) || !one('SELECT 1 AS ok FROM members WHERE crew_id = ? AND user_id = ?', [$crew, $u['id']])) {
@@ -169,13 +204,17 @@ function cleanName($s, string $what): string {
 }
 
 function sessionInfo(array $u): array {
-    $crews = all('SELECT c.id, c.name FROM crews c JOIN members m ON m.crew_id = c.id WHERE m.user_id = ? ORDER BY c.name', [$u['id']]);
+    $crews = all('SELECT c.id, c.name, m.leader FROM crews c JOIN members m ON m.crew_id = c.id WHERE m.user_id = ? ORDER BY c.name', [$u['id']]);
     foreach ($crews as &$c) {
+        $c['leader'] = (bool) (int) $c['leader'];
         $c['members'] = array_map(fn($m) => ['id' => $m['id'], 'name' => $m['name'], 'shares' => (bool) (int) $m['shares']],
             all('SELECT u.id, u.name, m.shares FROM members m JOIN users u ON u.id = m.user_id WHERE m.crew_id = ? ORDER BY u.name', [$c['id']]));
     }
     return [
-        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'isAdmin' => (bool) (int) $u['is_admin'], 'canCash' => canCash($u)]
+        // isAdmin und canCash setzt die App je geöffneter Crew (Crew-Leiter); superAdmin gilt für alle Konten
+        'user' => ['id' => $u['id'], 'name' => $u['name'], 'login' => $u['login'], 'superAdmin' => (bool) (int) $u['is_admin'],
+            'canFound' => (bool) (int) $u['is_admin'] || !empty($u['can_found']), 'canCashOwn' => (bool) (int) $u['can_cash'],
+            'isAdmin' => (bool) (int) $u['is_admin'], 'canCash' => canCash($u)]
             + userView($u),
         'crews' => $crews,
     ];
@@ -216,7 +255,7 @@ function makeBackup(): string {
     rsort($all);
     foreach (array_slice($all, 4) as $old) @unlink($old);
     // Gelöschte Fotos liegen 30 Tage im Papierkorb, dann endgültig weg
-    foreach (glob(trashDir() . '/*/*.jpg') ?: [] as $f) if (filemtime($f) < time() - 30 * 86400) @unlink($f);
+    foreach (array_merge(glob(trashDir() . '/*/*.jpg') ?: [], glob(trashDir() . '/*/*.pdf') ?: []) as $f) if (filemtime($f) < time() - 30 * 86400) @unlink($f);
     return basename($file);
 }
 function autoBackup(): void {
@@ -245,7 +284,8 @@ case 'setup':
     q('INSERT INTO users (id, name, login, pass, is_admin, created) VALUES (?, ?, ?, ?, 1, ?)',
         [$uid, cleanName($body['name'] ?? '', 'Der Name'), mb_strtolower(cleanName($body['login'] ?? '', 'Der Anmeldename')), checkPassword($body['password'] ?? ''), now()]);
     q('INSERT INTO crews (id, name, created) VALUES (?, ?, ?)', [$cid, cleanName($body['crew'] ?? '', 'Der Crew-Name'), now()]);
-    q('INSERT INTO members (crew_id, user_id, shares) VALUES (?, ?, 1)', [$cid, $uid]);
+    q('INSERT INTO members (crew_id, user_id, shares, leader) VALUES (?, ?, 1, 1)', [$cid, $uid]);
+    q('UPDATE users SET can_found = 1 WHERE id = ?', [$uid]);
     login($uid);
     out(sessionInfo(one('SELECT * FROM users WHERE id = ?', [$uid])));
 
@@ -313,8 +353,10 @@ case 'sync':
     $u = requireUser();
     $crew = requireCrew($u, $_GET['crew'] ?? '');
     $since = (int) ($_GET['since'] ?? 0);
-    $hidden = array_merge(canCash($u) ? [] : CASH_COLLS, (int) $u['is_admin'] ? [] : ADMIN_COLLS);
+    $hidden = array_merge(canCash($u, $crew) ? [] : CASH_COLLS, isLeader($u, $crew) ? [] : ADMIN_COLLS);
     $hide = $hidden ? " AND coll NOT IN ('" . implode("', '", $hidden) . "')" : '';
+    // Namen von Dokument-PDFs (Kennung „doc-…“) sehen nur Crew-Leiter
+    if (!isLeader($u, $crew)) $hide .= " AND NOT (coll = 'files' AND id LIKE 'doc-%')";
     $rows = all("SELECT coll, id, data, deleted, rev FROM docs WHERE crew_id = ? AND rev > ?$hide ORDER BY rev LIMIT 2000", [$crew, $since]);
     $docs = array_map(fn($r) => [
         'coll' => $r['coll'], 'id' => $r['id'], 'rev' => (int) $r['rev'],
@@ -328,6 +370,7 @@ case 'push':
     $u = requireUser();
     $crew = requireCrew($u, $body['crew'] ?? '');
     $changes = $body['changes'] ?? [];
+    $lead = isLeader($u, $crew); $cash = canCash($u, $crew);
     if (!is_array($changes) || count($changes) > 500) fail('Ungültige Änderungen');
     $pdo = db();
     $mysql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql';
@@ -335,8 +378,9 @@ case 'push':
     try {
         foreach ($changes as $c) {
             if (!in_array($c['coll'] ?? '', COLLS, true) || !validId($c['id'] ?? null)) continue;
-            if (in_array($c['coll'], CASH_COLLS, true) && !canCash($u)) continue;
-            if ((in_array($c['coll'], ADMIN_COLLS, true) || in_array($c['coll'], ADMIN_WRITE, true)) && !(int) $u['is_admin']) continue;
+            if (in_array($c['coll'], CASH_COLLS, true) && !$cash) continue;
+            if ((in_array($c['coll'], ADMIN_COLLS, true) || in_array($c['coll'], ADMIN_WRITE, true)) && !$lead) continue;
+            if ($c['coll'] === 'files' && str_starts_with($c['id'], 'doc-') && !$lead) continue;
             $data = $c['data'] ?? null;
             if ($data !== null && !is_array($data)) continue;
             // Laufende Nummer: bestimmt die Reihenfolge, in der die Handys Änderungen abholen
@@ -355,6 +399,12 @@ case 'push':
                 @rename(photoPath($crew, $c['id']), "$t/{$c['id']}.jpg");
                 @touch("$t/{$c['id']}.jpg");
             }
+            if ($c['coll'] === 'files' && $data === null && is_file(filePath($crew, $c['id']))) {
+                $t = trashDir() . '/' . $crew;
+                if (!is_dir($t)) mkdir($t, 0750, true);
+                @rename(filePath($crew, $c['id']), "$t/{$c['id']}.pdf");
+                @touch("$t/{$c['id']}.pdf");
+            }
         }
         $mysql ? $pdo->commit() : $pdo->exec('COMMIT');
     } catch (Throwable $e) {
@@ -369,7 +419,8 @@ case 'photo':
     $u = requireUser();
     // Bilder von Dokumenten (Kennung „doc-…“) gibt es nur für Verwalter
     $pid = $method === 'POST' ? ($body['id'] ?? '') : ($_GET['id'] ?? '');
-    if (str_starts_with((string) $pid, 'doc-') && !(int) $u['is_admin']) fail('Nur für Verwalter', 403);
+    $pcrew = (string) ($method === 'POST' ? ($body['crew'] ?? '') : ($_GET['crew'] ?? ''));
+    if (str_starts_with((string) $pid, 'doc-') && !isLeader($u, $pcrew)) fail('Nur für Crew-Leiter', 403);
     if ($method === 'POST') {
         $crew = requireCrew($u, $body['crew'] ?? '');
         $id = $body['id'] ?? '';
@@ -426,8 +477,8 @@ case 'version':
 case 'share':
     $u = requireUser();
     if ($method === 'POST') {
-        if (!(int) $u['is_admin']) fail('Nur Verwalter können den Reiseblog ein- und ausschalten.', 403);
         $crew = requireCrew($u, $body['crew'] ?? '');
+        if (!isLeader($u, $crew)) fail('Nur Crew-Leiter können den Reiseblog ein- und ausschalten.', 403);
         $trip = $body['trip'] ?? '';
         if (!validId($trip)) fail('Ungültige Reise');
         $old = one('SELECT * FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
@@ -454,7 +505,7 @@ case 'placeshare':
     $crew = requireCrew($u, $method === 'POST' ? ($body['crew'] ?? '') : ($_GET['crew'] ?? ''));
     $old = one("SELECT * FROM shares WHERE crew_id = ? AND trip_id = '~plaetze'", [$crew]);
     if ($method !== 'POST') out(['token' => $old['token'] ?? null, 'created' => (int) ($old['created'] ?? 0)]);
-    if (!(int) $u['is_admin']) fail('Nur Verwalter können Plätze weitergeben.', 403);
+    if (!isLeader($u, $crew)) fail('Nur Crew-Leiter können Plätze weitergeben.', 403);
     if (empty($body['on'])) { q("DELETE FROM shares WHERE crew_id = ? AND trip_id = '~plaetze'", [$crew]); out(['token' => null]); }
     $list = [];
     foreach (array_slice(is_array($body['places'] ?? null) ? $body['places'] : [], 0, 300) as $p) {
@@ -538,81 +589,197 @@ case 'blogphoto':
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
     ]);
 
-/* ----- Verwaltung (nur Eltern) ----- */
+/* ----- Verwaltung: Super-Admin (alle Konten) und Crew-Leiter (eigene Crews) ----- */
 
 case 'admin':
-    requireAdmin();
-    $users = array_map(fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin'], 'canCash' => (bool) (int) $r['can_cash']] + userView($r),
-        all('SELECT * FROM users ORDER BY name'));
-    $crews = all('SELECT id, name FROM crews ORDER BY name');
-    foreach ($crews as &$c) {
-        $c['members'] = array_map(fn($m) => ['id' => $m['user_id'], 'shares' => (bool) (int) $m['shares']],
-            all('SELECT user_id, shares FROM members WHERE crew_id = ?', [$c['id']]));
+    $u = requireUser();
+    $super = (bool) (int) $u['is_admin'];
+    $led = ledCrews($u);
+    if (!$super && !$led && empty($u['can_found'])) fail('Nur für Crew-Leiter', 403);
+    $view = fn($r) => ['id' => $r['id'], 'name' => $r['name'], 'login' => $r['login'], 'isAdmin' => (bool) (int) $r['is_admin'],
+        'canFound' => !empty($r['can_found']), 'canCash' => (bool) (int) $r['can_cash'], 'managed' => manages($u, $r['id'])] + userView($r);
+    // Super-Admin: alle Konten; Crew-Leiter: die Mitglieder seiner Crews
+    $users = $super ? all('SELECT * FROM users ORDER BY name')
+        : (!$led ? all('SELECT * FROM users WHERE id = ?', [$u['id']]) : all('SELECT DISTINCT u.* FROM users u JOIN members m ON m.user_id = u.id WHERE m.crew_id IN (' . implode(',', array_fill(0, count($led), '?')) . ') ORDER BY u.name', $led));
+    $crews = [];
+    foreach (all('SELECT c.id, c.name, (SELECT COUNT(*) FROM members m WHERE m.crew_id = c.id) AS n FROM crews c ORDER BY c.name') as $c) {
+        if (in_array($c['id'], $led, true)) {
+            $c['members'] = array_map(fn($m) => ['id' => $m['user_id'], 'shares' => (bool) (int) $m['shares'], 'leader' => (bool) (int) $m['leader']],
+                all('SELECT user_id, shares, leader FROM members WHERE crew_id = ?', [$c['id']]));
+            $c['invites'] = array_map(fn($i) => ['token' => $i['token'], 'expires' => (int) $i['expires'], 'uses' => (int) $i['uses']],
+                all('SELECT token, expires, uses FROM invites WHERE crew_id = ? AND expires > ? ORDER BY created DESC', [$c['id'], now()]));
+            $c['leader'] = true;
+            $crews[] = $c;
+        } elseif ($super) {
+            // Fremde Crews: nur Name und Mitgliederzahl
+            $crews[] = ['id' => $c['id'], 'name' => $c['name'], 'count' => (int) $c['n'], 'foreign' => true];
+        }
     }
-    out(['users' => $users, 'crews' => $crews]);
+    out(['users' => array_map($view, $users), 'crews' => array_map(fn($c) => ['count' => (int) ($c['n'] ?? $c['count'] ?? 0)] + array_diff_key($c, ['n' => 1]), $crews),
+        'superAdmin' => $super]);
 
 case 'user-save':
-    $admin = requireAdmin();
+    $u = requireUser();
+    $super = (bool) (int) $u['is_admin'];
     $id = $body['id'] ?? null;
+    $join = (string) ($body['joinCrew'] ?? '');
+    if ($id) {
+        if (!one('SELECT id FROM users WHERE id = ?', [$id])) fail('Konto nicht gefunden', 404);
+        if ($id !== $u['id'] && !manages($u, $id)) fail('Dieses Konto verwaltest du nicht.', 403);
+    } else {
+        // Neue Konten: Super-Admin überall, Crew-Leiter nur direkt in eine eigene Crew
+        if (!$super && ($join === '' || !isLeader($u, $join))) fail('Neue Konten legen Crew-Leiter für ihre Crew an.', 403);
+    }
     $name = cleanName($body['name'] ?? '', 'Der Name');
     $login = mb_strtolower(cleanName($body['login'] ?? '', 'Der Anmeldename'));
     $taken = one('SELECT id FROM users WHERE login = ?', [$login]);
     if ($taken && $taken['id'] !== $id) fail('Diesen Anmeldenamen gibt es schon.');
-    $isAdmin = !empty($body['isAdmin']) ? 1 : 0;
-    $cash = !empty($body['canCash']) || $isAdmin ? 1 : 0;
+    $old = $id ? one('SELECT * FROM users WHERE id = ?', [$id]) : null;
+    // Super-Admin und „darf Crews gründen“ vergibt nur der Super-Admin
+    $isAdmin = $super ? (!empty($body['isAdmin']) ? 1 : 0) : (int) ($old['is_admin'] ?? 0);
+    $canFound = $super ? (!empty($body['canFound']) || $isAdmin ? 1 : 0) : (int) ($old['can_found'] ?? 0);
+    if ($id === $u['id'] && $super && !$isAdmin) fail('Du kannst dir die Rolle Super-Admin nicht selbst entziehen.');
+    $cash = !empty($body['canCash']) ? 1 : 0;
+    $areas = cleanAreas($body['areas'] ?? null); $simple = !empty($body['simple']) ? 1 : 0;
+    $start = preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? ''));
     if ($id) {
-        if (!one('SELECT id FROM users WHERE id = ?', [$id])) fail('Konto nicht gefunden', 404);
-        if ($id === $admin['id'] && !$isAdmin) fail('Du kannst dir die Verwaltung nicht selbst entziehen.');
-        q('UPDATE users SET name = ?, login = ?, is_admin = ?, can_cash = ?, areas = ?, simple = ?, start = ? WHERE id = ?',
-            [$name, $login, $isAdmin, $cash, $isAdmin ? null : cleanAreas($body['areas'] ?? null), !$isAdmin && !empty($body['simple']) ? 1 : 0, preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? '')), $id]);
+        q('UPDATE users SET name = ?, login = ?, is_admin = ?, can_found = ?, can_cash = ?, areas = ?, simple = ?, start = ? WHERE id = ?',
+            [$name, $login, $isAdmin, $canFound, $cash, $areas, $simple, $start, $id]);
         if (!empty($body['password'])) {
             q('UPDATE users SET pass = ? WHERE id = ?', [checkPassword($body['password']), $id]);
-            q('DELETE FROM tokens WHERE user_id = ?', [$id]);
+            if ($id !== $u['id']) q('DELETE FROM tokens WHERE user_id = ?', [$id]);
         }
     } else {
         $id = newId();
-        q('INSERT INTO users (id, name, login, pass, is_admin, can_cash, areas, simple, start, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, $cash, $isAdmin ? null : cleanAreas($body['areas'] ?? null),
-             !$isAdmin && !empty($body['simple']) ? 1 : 0, preg_replace('/[^a-z]/', '', (string) ($body['start'] ?? '')), now()]);
+        q('INSERT INTO users (id, name, login, pass, is_admin, can_found, can_cash, areas, simple, start, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, $name, $login, checkPassword($body['password'] ?? ''), $isAdmin, $canFound, $cash, $areas, $simple, $start, now()]);
+        if ($join !== '' && (isLeader($u, $join) || ($super && one('SELECT id FROM crews WHERE id = ?', [$join])))) {
+            q('INSERT INTO members (crew_id, user_id, shares, leader) VALUES (?, ?, ?, 0)', [$join, $id, !empty($body['shares']) ? 1 : 0]);
+        }
     }
     out(['id' => $id]);
 
 case 'user-delete':
-    $admin = requireAdmin();
-    $id = $body['id'] ?? '';
-    if ($id === $admin['id']) fail('Du kannst dein eigenes Konto nicht löschen.');
+    $u = requireUser();
+    $id = (string) ($body['id'] ?? '');
+    if ($id === $u['id']) fail('Du kannst dein eigenes Konto nicht löschen.');
+    if (!manages($u, $id)) fail('Dieses Konto verwaltest du nicht.', 403);
     q('DELETE FROM members WHERE user_id = ?', [$id]);
     q('DELETE FROM tokens WHERE user_id = ?', [$id]);
     q('DELETE FROM users WHERE id = ?', [$id]);
     out(['ok' => true]);
 
 case 'crew-save':
-    requireAdmin();
+    $u = requireUser();
     $id = $body['id'] ?? null;
     $name = cleanName($body['name'] ?? '', 'Der Crew-Name');
-    if ($id) q('UPDATE crews SET name = ? WHERE id = ?', [$name, $id]);
-    else { $id = newId(); q('INSERT INTO crews (id, name, created) VALUES (?, ?, ?)', [$id, $name, now()]); }
-    // Mitglieder komplett setzen: [{id, shares}]
+    if ($id) {
+        requireLeader($u, $id);
+        q('UPDATE crews SET name = ? WHERE id = ?', [$name, $id]);
+    } else {
+        // Neue Crew gründen: wer es darf, wird ihr Leiter
+        if (!(int) $u['is_admin'] && empty($u['can_found'])) fail('Du darfst keine eigenen Crews gründen. Das erlaubt der Super-Admin.', 403);
+        $id = newId();
+        q('INSERT INTO crews (id, name, created) VALUES (?, ?, ?)', [$id, $name, now()]);
+        q('INSERT INTO members (crew_id, user_id, shares, leader) VALUES (?, ?, 1, 1)', [$id, $u['id']]);
+    }
+    // Mitglieder setzen: [{id, shares, leader}]; nur bisherige Mitglieder und selbst verwaltete Konten
     if (isset($body['members']) && is_array($body['members'])) {
-        q('DELETE FROM members WHERE crew_id = ?', [$id]);
+        $before = array_column(all('SELECT user_id FROM members WHERE crew_id = ?', [$id]), 'user_id');
+        $rows = [];
         foreach ($body['members'] as $m) {
-            if (validId($m['id'] ?? null) && one('SELECT id FROM users WHERE id = ?', [$m['id']])) {
-                q('INSERT INTO members (crew_id, user_id, shares) VALUES (?, ?, ?)', [$id, $m['id'], !empty($m['shares']) ? 1 : 0]);
-            }
+            $mid = $m['id'] ?? null;
+            if (!validId($mid) || !one('SELECT id FROM users WHERE id = ?', [$mid])) continue;
+            if (!in_array($mid, $before, true) && $mid !== $u['id'] && !manages($u, $mid)) continue;
+            $rows[$mid] = [!empty($m['shares']) ? 1 : 0, !empty($m['leader']) ? 1 : 0];
         }
+        if (!array_filter($rows, fn($r) => $r[1])) fail('Eine Crew braucht mindestens einen Crew-Leiter.');
+        q('DELETE FROM members WHERE crew_id = ?', [$id]);
+        foreach ($rows as $mid => [$sh, $ld]) q('INSERT INTO members (crew_id, user_id, shares, leader) VALUES (?, ?, ?, ?)', [$id, $mid, $sh, $ld]);
     }
     out(['id' => $id]);
 
 case 'crew-delete':
-    requireAdmin();
-    $id = $body['id'] ?? '';
-    if (!validId($id)) fail('Ungültige Crew');
+    $u = requireUser();
+    $id = (string) ($body['id'] ?? '');
+    requireLeader($u, $id);
     q('DELETE FROM members WHERE crew_id = ?', [$id]);
     q('DELETE FROM docs WHERE crew_id = ?', [$id]);
+    q('DELETE FROM invites WHERE crew_id = ?', [$id]);
+    q('DELETE FROM shares WHERE crew_id = ?', [$id]);
     q('DELETE FROM crews WHERE id = ?', [$id]);
     $dir = photoDir($id);
-    if (is_dir($dir)) { array_map('unlink', glob("$dir/*.jpg") ?: []); @rmdir($dir); }
+    if (is_dir($dir)) { array_map('unlink', array_merge(glob("$dir/*.jpg") ?: [], glob("$dir/*.pdf") ?: [])); @rmdir($dir); }
     out(['ok' => true]);
+
+/* ----- Einladungen in eine Crew (Link bzw. QR-Code) ----- */
+
+case 'invite-create':
+    $u = requireUser();
+    $crew = requireLeader($u, $body['crew'] ?? '');
+    $token = bin2hex(random_bytes(16));
+    q('INSERT INTO invites (token, crew_id, created, expires, by_user, uses) VALUES (?, ?, ?, ?, ?, 0)', [$token, $crew, now(), now() + INVITE_DAYS * 864e5, $u['id']]);
+    out(['token' => $token, 'expires' => now() + INVITE_DAYS * 864e5]);
+
+case 'invite-delete':
+    $u = requireUser();
+    $inv = one('SELECT * FROM invites WHERE token = ?', [(string) ($body['token'] ?? '')]);
+    if ($inv) { requireLeader($u, $inv['crew_id']); q('DELETE FROM invites WHERE token = ?', [$inv['token']]); }
+    out(['ok' => true]);
+
+case 'invite':
+    // Öffentlich: Wohin lädt der Link ein? (nur Crew-Name)
+    $token = (string) ($_GET['t'] ?? $body['token'] ?? '');
+    $inv = preg_match('/^[a-f0-9]{32}$/', $token) ? one('SELECT i.*, c.name FROM invites i JOIN crews c ON c.id = i.crew_id WHERE i.token = ? AND i.expires > ?', [$token, now()]) : null;
+    if (!$inv) fail('Diese Einladung gibt es nicht (mehr). Bitte um einen neuen Link.', 404);
+    if ($method !== 'POST') out(['crew' => $inv['name'], 'expires' => (int) $inv['expires']]);
+    limitAttempts();
+    $u = currentUser();
+    if (!$u) {
+        // Neues Konto über die Einladung
+        $login = mb_strtolower(cleanName($body['login'] ?? '', 'Der Anmeldename'));
+        if (one('SELECT id FROM users WHERE login = ?', [$login])) fail('Diesen Anmeldenamen gibt es schon. Wer schon ein Konto hat, meldet sich zuerst an.');
+        $uid = newId();
+        q('INSERT INTO users (id, name, login, pass, is_admin, can_found, can_cash, created) VALUES (?, ?, ?, ?, 0, 0, 1, ?)',
+            [$uid, cleanName($body['name'] ?? '', 'Der Name'), $login, checkPassword($body['password'] ?? ''), now()]);
+        login($uid);
+        $u = one('SELECT * FROM users WHERE id = ?', [$uid]);
+    }
+    if (!one('SELECT 1 AS ok FROM members WHERE crew_id = ? AND user_id = ?', [$inv['crew_id'], $u['id']])) {
+        q('INSERT INTO members (crew_id, user_id, shares, leader) VALUES (?, ?, 1, 0)', [$inv['crew_id'], $u['id']]);
+        q('UPDATE invites SET uses = uses + 1 WHERE token = ?', [$token]);
+    }
+    out(['crewId' => $inv['crew_id']] + sessionInfo($u));
+
+/* ----- PDFs (Tickets, Prospekte, Dokumente): roh hochladen, im Fotoordner der Crew ablegen ----- */
+
+case 'file':
+    $u = requireUser();
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    $id = (string) ($_GET['id'] ?? '');
+    if (!validId($id)) fail('Ungültige Datei');
+    // Dateien zu Dokumenten (Kennung „doc-…“) nur für Crew-Leiter
+    if (str_starts_with($id, 'doc-') && !isLeader($u, $crew)) fail('Nur für Crew-Leiter', 403);
+    if ($method === 'POST') {
+        $len = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        $bin = (string) file_get_contents('php://input');
+        if ($len > 0 && strlen($bin) === 0) fail('Die Datei ist zu groß für den Server (Grenze: ' . ini_get('post_max_size') . ').', 413);
+        if (strlen($bin) > FILE_MAX) fail('Die Datei ist zu groß (höchstens 10 MB).', 413);
+        if (substr($bin, 0, 5) !== '%PDF-') fail('Nur PDF-Dateien');
+        $path = filePath($crew, $id);
+        if (!is_dir(dirname($path))) mkdir(dirname($path), 0750, true);
+        file_put_contents($path, $bin);
+        out(['ok' => true, 'size' => strlen($bin)]);
+    }
+    $path = filePath($crew, $id);
+    if (!is_file($path)) fail('Datei nicht gefunden', 404);
+    $name = preg_replace('/[^A-Za-z0-9ÄÖÜäöüß ._-]/u', '', (string) ($_GET['name'] ?? 'Dokument')) ?: 'Dokument';
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . (str_ends_with(mb_strtolower($name), '.pdf') ? $name : "$name.pdf") . '"');
+    header('Cache-Control: private, max-age=31536000, immutable');
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
+    exit;
 
 default:
     fail('Unbekannte Aktion', 404);
@@ -629,3 +796,4 @@ function mediaType(string $b): string {
 }
 function photoDir(string $crew): string { global $CFG; return rtrim($CFG['photos'], '/') . '/' . $crew; }
 function photoPath(string $crew, string $id): string { return photoDir($crew) . '/' . $id . '.jpg'; }
+function filePath(string $crew, string $id): string { return photoDir($crew) . '/' . $id . '.pdf'; }

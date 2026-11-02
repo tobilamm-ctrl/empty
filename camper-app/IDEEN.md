@@ -107,7 +107,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 76. Erste Schritte für neue Familien
 77. App auf Englisch
 
-78. Rechte für mehrere Familien (für später, siehe eigener Abschnitt)
+78. ~~Rechte für mehrere Familien~~ Erledigt in Lieferung 55 (Super-Admin, Crew-Leiter, Einladungslink/QR-Code).
 
 **🚗 Kopfzeile**
 
@@ -127,9 +127,8 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 **📌 Hinweise**
 
 82. ~~Benachrichtigungssymbol für die Pinnwand~~ Erledigt in Lieferung 54 als gelber Zettel in der Kopfzeile.
-83. In eine bestimmte Reiseidee teilen: Erledigt in Lieferung 54 (alle Ideen mit Suche, Bilder an der Idee, „Aus
-    Zwischenablage“ und „Foto“ in jeder Idee). Noch offen: PDFs teilen und anhängen (braucht neue `api/index.php`,
-    gehört zu Paket 10).
+83. ~~In eine bestimmte Reiseidee teilen, PDFs teilen und anhängen~~ Erledigt in Lieferung 54 und 55 (PDFs an
+    Reiseideen, Tickets und Dokumenten, LAMMping im Teilen-Menü auch für PDFs).
 84. Fehlende Bereichsbilder im neuen Schaf-Stil (Lieferung 52): Karte, Tagebuch, Listen, Planung (zurzeit Basis-Schaf
     plus altes Symbol) und ggf. „Mehr“. Bilder in höherer Auflösung liefern, dann tausche ich sie aus.
 
@@ -278,7 +277,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 - **Speicherplatz-Übersicht:** Platz von Fotos und Daten je Reise; alte Reisen vom Handy entfernen (bleiben auf dem Server).
 - **App auf Englisch:** Sprachauswahl für befreundete Familien; großer Umbau (alle Texte), passt zu „Rechte für mehrere Familien“.
 
-## Für später: Rechte für mehrere Familien (erst nach dem Testen, wenn andere die App nutzen wollen)
+## Rechte für mehrere Familien (umgesetzt in Lieferung 55)
 
 Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Urlaubsgruppen) gründen, deren Inhalte Tobi nicht sieht.
 

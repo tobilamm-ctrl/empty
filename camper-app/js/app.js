@@ -42,11 +42,12 @@ import installFamilienleben from './familienleben.js';
 import installSichern from './sichern.js';
 import installSpielekiste from './spielekiste.js';
 import installMitfahrer from './mitfahrer.js';
+import installDateien from './dateien.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 54;
+const APP_VERSION = 55;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -159,7 +160,7 @@ const SETTLE = 'Ausgleich';
 const S = {
   trips: [], entries: [], expenses: [], boxes: [], items: [], packstate: [], lists: [], listItems: [], meta: [],
   fuel: [], places: [], checklists: [], checkstate: [], deadlines: [], tracks: [],
-  documents: [], recipes: [], plates: [], games: [], ideas: [], stamps: [],
+  documents: [], recipes: [], plates: [], games: [], ideas: [], stamps: [], files: [],
 };
 const WATCHED = Object.keys(S);
 let store = null;
@@ -268,6 +269,15 @@ const members = () => (crew && crew.members) || [];
 const payers = () => members().filter(m => m.shares);
 const me = () => session.user.id;
 const canCash = () => !!session.user.canCash;
+// Rollen je geöffneter Crew: Crew-Leiter haben die früheren Verwalter-Rechte (Dokumente, Stempel, Reiseblog, Kasse)
+function applyRole() {
+  if (!session || !session.user || !crew) return;
+  const c = session.crews.find(x => x.id === crew.id);
+  if (!c || !('leader' in c)) return;   // ältere, zwischengespeicherte Anmeldung: Werte vom Server behalten
+  session.user.isAdmin = !!c.leader;
+  session.user.canCash = !!c.leader || !!session.user.canCashOwn;
+}
+const leadsAny = () => !!(session && session.user && (session.user.superAdmin || session.crews.some(c => c.leader)));
 const personName = id => (members().find(m => m.id === id) || {}).name || 'Ehemaliges Mitglied';
 const initial = id => (personName(id)[0] || '?').toUpperCase();
 const setTrip = id => LS.set('trip.' + crew.id, id);
@@ -1455,9 +1465,9 @@ VIEWS.einstellungen = () => {
         ${syncState.error === 'auth' ? '<button class="primary" data-action="relogin">Neu anmelden</button>' : '<button class="ghost" data-action="sync-now">Jetzt abgleichen</button>'}
       </div>
     </section>
-    ${u.isAdmin ? `<section class="panel">
+    ${leadsAny() || u.canFound ? `<section class="panel">
       <h2>Verwaltung</h2>
-      <p>Konten für die Familie anlegen, Passwörter zurücksetzen und festlegen, wer zu welcher Crew gehört.</p>
+      <p>${u.superAdmin ? 'Als Super-Admin verwaltest du alle Konten. ' : ''}${session.crews.some(c => c.leader) ? 'Für deine Crews: Personen anlegen, Passwörter zurücksetzen, Rechte vergeben und per Link oder QR-Code einladen.' : 'Eigene Crews gründen.'}</p>
       <a class="ghost btn" href="#/verwaltung">Personen und Crews verwalten</a>
     </section>` : ''}
     <form class="panel" data-form="password">
@@ -1516,27 +1526,34 @@ async function refreshSession() {
       session = s;
       LS.set('session', s);
       crew = s.crews.find(c => c.id === crew.id) || crew;
+      applyRole();
     }
   } catch { /* offline: bleibt wie es ist */ }
   loadAdmin();
 }
 
 VIEWS.verwaltung = () => {
-  if (!session.user.isAdmin) return '<p class="hint">Nur für Verwalter.</p>';
+  if (!leadsAny() && !session.user.canFound) return '<p class="hint">Nur für Crew-Leiter.</p>';
   if (!admin) { loadAdmin(); return pageHead('einstellungen', 'Verwaltung') + '<p class="hint">Wird geladen …</p>'; }
   if (admin.error) return `${pageHead('einstellungen', 'Verwaltung')}<p class="hint">${esc(admin.error)} Die Verwaltung braucht eine Internetverbindung.</p>
     <button class="ghost" data-action="admin-reload">Noch einmal versuchen</button>`;
   const name = id => (admin.users.find(u => u.id === id) || {}).name || '?';
-  return `${pageHead('einstellungen', 'Verwaltung', 'Nur Verwalter sehen diese Seite.')}
-    <div class="toolbar"><h2>Personen</h2><button class="primary" data-action="user-form">${icon('plus')}Person</button></div>
-    <ul class="people">${admin.users.map(u => `<li><button data-action="user-form" data-id="${u.id}">
+  const ledHere = (admin.crews.find(c => c.id === crew.id) || {}).leader;
+  const role = u => [u.isAdmin && 'Super-Admin', u.canFound && !u.isAdmin && 'darf Crews gründen', u.canCash ? 'sieht die Kasse' : 'ohne Kasse'].filter(Boolean).join(', ');
+  const own = admin.crews.filter(c => c.leader), foreign = admin.crews.filter(c => c.foreign);
+  return `${pageHead('einstellungen', 'Verwaltung', admin.superAdmin ? 'Super-Admin: alle Konten, eigene Crews' : 'Crew-Leiter: deine Crews')}
+    <div class="toolbar"><h2>Personen</h2>${ledHere || admin.superAdmin ? `<button class="primary" data-action="user-form">${icon('plus')}Person</button>` : ''}</div>
+    <ul class="people">${admin.users.map(u => `<li><button data-action="user-form" data-id="${u.id}"${u.managed || u.id === session.user.id ? '' : ' disabled'}>
       <span class="avatar">${esc(u.name[0] || '?')}</span>
-      <span class="txt"><b>${esc(u.name)}</b><small>Anmeldename: ${esc(u.login)}${u.isAdmin ? ', Verwalter' : u.canCash ? ', sieht die Kasse' : ', ohne Kasse'}</small></span>
-      ${icon('edit')}</button></li>`).join('')}</ul>
-    <div class="toolbar"><h2>Crews</h2><button class="primary" data-action="crew-form">${icon('plus')}Crew</button></div>
-    <ul class="people">${admin.crews.map(c => `<li><button data-action="crew-form" data-id="${c.id}">
-      <span class="txt"><b>${esc(c.name)}</b><small>${c.members.map(m => esc(name(m.id))).join(', ') || 'Noch ohne Mitglieder'}</small></span>
-      ${icon('edit')}</button></li>`).join('')}</ul>`;
+      <span class="txt"><b>${esc(u.name)}</b><small>Anmeldename: ${esc(u.login)}, ${role(u)}</small></span>
+      ${u.managed || u.id === session.user.id ? icon('edit') : ''}</button></li>`).join('')}</ul>
+    <div class="toolbar"><h2>${foreign.length ? 'Deine Crews' : 'Crews'}</h2>${session.user.canFound ? `<button class="primary" data-action="crew-form">${icon('plus')}Crew gründen</button>` : ''}</div>
+    <ul class="people">${own.map(c => `<li class="crew-row"><button data-action="crew-form" data-id="${c.id}">
+      <span class="txt"><b>${esc(c.name)}</b><small>${c.members.map(m => `${esc(name(m.id))}${m.leader ? ' 👑' : ''}`).join(', ') || 'Noch ohne Mitglieder'}${c.invites.length ? ` · ${c.invites.length} ${c.invites.length === 1 ? 'Einladung' : 'Einladungen'} offen` : ''}</small></span>
+      ${icon('edit')}</button><button class="ghost small-btn" data-action="invite-new" data-crew="${c.id}">Einladen</button></li>`).join('') || '<li class="none">Du leitest noch keine Crew.</li>'}</ul>
+    ${foreign.length ? `<h2 class="date-head">Andere Crews</h2><p class="sub">Von fremden Crews siehst du nur Name und Mitgliederzahl.</p>
+      <ul class="people foreign">${foreign.map(c => `<li><span class="txt"><b>${esc(c.name)}</b><small>${c.count} ${c.count === 1 ? 'Mitglied' : 'Mitglieder'}</small></span></li>`).join('')}</ul>` : ''}
+    <p class="sub">👑 = Crew-Leiter. Crew-Leiter legen Personen für ihre Crew an, vergeben Rechte und laden per Link oder QR-Code ein.</p>`;
 };
 
 // Eigenes Feld ohne Passwort-Namen: Passwortmanager sollen hier nichts eintragen oder speichern
@@ -1550,6 +1567,7 @@ let lastCard = null;
 function userForm(id) {
   const u = (admin.users.find(x => x.id === id)) || {};
   const self = u.id === session.user.id;
+  const ledHere = (admin.crews.find(c => c.id === crew.id) || {}).leader;
   openSheet(`<form data-form="user" data-id="${u.id || ''}">
     <div class="sheet-head"><h2>${u.id ? 'Person bearbeiten' : 'Neue Person'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <label class="field"><span>Name</span><input name="name" value="${esc(u.name)}" required placeholder="z. B. Lena"></label>
@@ -1557,11 +1575,13 @@ function userForm(id) {
     ${u.id
       ? `<div class="field" id="pwField"><span>Passwort</span><button type="button" class="ghost" data-action="show-pw-field">Neues Passwort festlegen</button></div>`
       : pwInput(true)}
-    <label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Verwalter (darf Konten und Crews verwalten)</span></label>
-    <label class="check cash-check"><input type="checkbox" name="canCash"${u.isAdmin || u.canCash ? ' checked' : ''}><span>Darf die Kasse sehen</span></label>
-    <p class="sub admin-note">Verwalter sehen die Kasse immer.</p>
+    ${admin.superAdmin ? `<label class="check"><input type="checkbox" name="isAdmin"${u.isAdmin ? ' checked' : ''}${self ? ' disabled' : ''}><span>Super-Admin (verwaltet alle Konten)</span></label>
+      <label class="check"><input type="checkbox" name="canFound"${u.canFound || u.isAdmin ? ' checked' : ''}><span>Darf eigene Crews gründen</span></label>` : ''}
+    <label class="check cash-check"><input type="checkbox" name="canCash"${u.canCash ? ' checked' : ''}><span>Darf die Kasse sehen</span></label>
+    <p class="sub">Crew-Leiter sehen die Kasse ihrer Crew immer. Wer Crew-Leiter ist, legst du in der Crew fest.</p>
     ${APP.areaFields ? APP.areaFields(u) : ''}
-    ${u.id ? '' : `<label class="check"><input type="checkbox" name="joinCrew" checked><span>Gleich in die Crew „${esc(crew.name)}“ aufnehmen</span></label>`}
+    ${u.id ? '' : ledHere ? `<label class="check"><input type="checkbox" name="joinCrew" checked${admin.superAdmin ? '' : ' disabled'}><span>In die Crew „${esc(crew.name)}“ aufnehmen</span></label>`
+      : '<p class="sub">Das Konto gehört danach noch zu keiner Crew. Hinzufügen kann es ein Crew-Leiter.</p>'}
     <div class="sheet-foot">
       ${u.id && !self ? `<button type="button" class="ghost danger" data-action="del-user" data-id="${u.id}">Löschen</button>` : ''}
       ${u.id ? '<button type="button" class="ghost" data-action="access-card">Zugangskarte</button>' : ''}
@@ -1571,23 +1591,31 @@ function userForm(id) {
 }
 
 function crewForm(id) {
-  const c = admin.crews.find(x => x.id === id) || { members: [{ id: session.user.id, shares: true }] };
-  const rows = admin.users.map(u => {
+  const c = admin.crews.find(x => x.id === id) || { members: [{ id: session.user.id, shares: true, leader: true }], invites: [] };
+  // Zur Auswahl: bisherige Mitglieder und Konten, die ich verwalte
+  const pick = admin.users.filter(u => c.members.some(m => m.id === u.id) || u.managed || u.id === session.user.id);
+  const rows = pick.map(u => {
     const m = c.members.find(x => x.id === u.id);
     return `<li>
       <label class="check"><input type="checkbox" name="member" value="${u.id}"${m ? ' checked' : ''}><span>${esc(u.name)}</span></label>
       <label class="check small"><input type="checkbox" name="shares" value="${u.id}"${!m || m.shares ? ' checked' : ''}><span>zahlt mit</span></label>
+      <label class="check small"><input type="checkbox" name="leader" value="${u.id}"${m && m.leader ? ' checked' : ''}><span>👑 Leiter</span></label>
     </li>`;
   }).join('');
   openSheet(`<form data-form="crew" data-id="${c.id || ''}">
-    <div class="sheet-head"><h2>${c.id ? 'Crew bearbeiten' : 'Neue Crew'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
-    <label class="field"><span>Name</span><input name="name" value="${esc(c.name)}" required placeholder="z. B. Familie oder Lenas Touren"></label>
-    <div class="field"><span>Wer gehört dazu?</span>
-      <p class="sub">„Zahlt mit“ heißt: Die Person wird in der Kasse bei geteilten Ausgaben berücksichtigt.</p>
+    <div class="sheet-head"><h2>${c.id ? 'Crew bearbeiten' : 'Neue Crew gründen'}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
+    <label class="field"><span>Name</span><input name="name" value="${esc(c.name)}" required placeholder="z. B. Familie Berger"></label>
+    ${c.id ? `<div class="field"><span>Wer gehört dazu?</span>
+      <p class="sub">„Zahlt mit“: zählt in der Kasse bei geteilten Ausgaben. „Leiter“: verwaltet die Crew, sieht Dokumente und Kasse, vergibt Stempel.</p>
       <ul class="member-list">${rows}</ul>
     </div>
+    ${c.invites.length ? `<div class="field"><span>Offene Einladungen</span><ul class="invite-list">${c.invites.map(i => `<li>gültig bis ${new Date(i.expires).toLocaleDateString('de-DE')}${i.uses ? `, ${i.uses}× genutzt` : ''}
+      <button type="button" class="link" data-action="invite-show" data-token="${i.token}" data-crew="${c.id}">Zeigen</button>
+      <button type="button" class="link danger" data-action="invite-del" data-token="${i.token}">Zurückziehen</button></li>`).join('')}</ul></div>` : ''}`
+      : '<p class="sub">Du wirst Crew-Leiter der neuen Crew. Danach kannst du Personen anlegen oder per Link einladen.</p>'}
     <div class="sheet-foot">
-      ${c.id ? `<button type="button" class="ghost danger" data-action="del-crew" data-id="${c.id}">Löschen</button>` : ''}
+      ${c.id ? `<button type="button" class="ghost danger" data-action="del-crew" data-id="${c.id}">Löschen</button>
+        <button type="button" class="ghost" data-action="invite-new" data-crew="${c.id}">Einladen</button>` : ''}
       <button class="primary">Speichern</button>
     </div>
   </form>`);
@@ -1597,6 +1625,38 @@ function crewForm(id) {
 
 const HERO = `<div class="brand-hero"><svg class="hero-sheep" aria-hidden="true"><use href="#schaf"/></svg><svg class="wordmark" role="img" aria-label="LAMMping"><use href="#wort"/></svg></div>`;
 
+// Wer einen Einladungslink öffnet, landet hier: eigenes Konto anlegen oder mit bestehendem Konto beitreten
+let invite = null;   // { token, loggedIn, crew, error, haveAccount }
+async function loadInvite() {
+  try { const r = await api('invite', undefined, `&t=${encodeURIComponent(invite.token)}`); invite.crew = r.crew; } catch (e) { invite.error = e.message; }
+  render();
+}
+function inviteDone(res) {
+  LS.set('crew', res.crewId);
+  const { crewId, ...s } = res;
+  LS.set('session', s);
+  location.replace(location.pathname + '#/karte');
+}
+VIEWS.invite = () => `<section class="login">${HERO}
+  ${invite.error ? `<p class="hint">${esc(invite.error)}</p><a class="ghost btn" href="${location.pathname}">Zur Anmeldung</a>`
+    : !invite.crew ? '<p class="sub">Einladung wird geladen …</p>'
+    : invite.loggedIn ? `<h2>Einladung in die Crew „${esc(invite.crew)}“</h2>
+      <p>Du bist angemeldet. Mit einem Tipp bist du dabei; deine bisherigen Crews bleiben erhalten.</p>
+      <form data-form="invite-join" class="panel"><button class="primary">Crew „${esc(invite.crew)}“ beitreten</button></form>`
+    : invite.haveAccount ? `<h2>Einladung in die Crew „${esc(invite.crew)}“</h2><p>Melde dich mit deinem Konto an, danach bist du in der Crew.</p>
+      <form data-form="invite-login" class="panel">
+        <label class="field"><span>Anmeldename</span><input name="login" autocomplete="username" autocapitalize="none" required></label>
+        <label class="field"><span>Passwort</span><input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="primary">Anmelden und beitreten</button></form>
+      <button class="link" data-action="invite-mode" data-have="">Ich brauche ein neues Konto</button>`
+    : `<h2>Einladung in die Crew „${esc(invite.crew)}“</h2><p>Lege dir ein eigenes Konto an. Danach bist du in der Crew und kannst LAMMping nutzen.</p>
+      <form data-form="invite-join" class="panel">
+        <label class="field"><span>Dein Name</span><input name="name" required autocomplete="name" placeholder="z. B. Lena"></label>
+        <label class="field"><span>Anmeldename</span><input name="login" required autocapitalize="none" autocomplete="username" placeholder="z. B. lena"></label>
+        <label class="field"><span>Passwort (mindestens 6 Zeichen)</span><input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+        <button class="primary">Konto anlegen und beitreten</button></form>
+      <button class="link" data-action="invite-mode" data-have="1">Ich habe schon ein Konto</button>`}
+</section>`;
 VIEWS.loading = () => `<section class="login">${HERO}<p class="sub">Wird geladen …</p></section>`;
 
 VIEWS.login = () => `<section class="login">
@@ -1967,6 +2027,38 @@ const ACTIONS = {
   },
 };
 
+// Einladungen in eine Crew: Link bzw. QR-Code, 14 Tage gültig
+const inviteUrl = token => `${location.origin}${location.pathname}?invite=${token}`;
+function inviteSheet(token, crewId) {
+  const c = (admin && admin.crews.find(x => x.id === crewId)) || session.crews.find(x => x.id === crewId) || {};
+  const url = inviteUrl(token);
+  openSheet(`<div class="qr-sheet">${sheetHead(`Einladung in „${esc(c.name || '')}“`)}
+    <p>Wer diesen Code scannt oder den Link öffnet, kann sich ein eigenes Konto anlegen (oder mit einem bestehenden anmelden) und ist dann in der Crew. Gültig 14 Tage.</p>
+    <div class="qr-box">${APP.qrSvg ? APP.qrSvg(url, 240) : ''}</div>
+    <p class="sub qr-url">${esc(url)}</p>
+    <div class="sheet-foot">
+      <button type="button" class="ghost" data-action="invite-copy" data-url="${esc(url)}">Link kopieren</button>
+      ${navigator.share ? `<button type="button" class="ghost" data-action="invite-share" data-url="${esc(url)}" data-name="${esc(c.name || '')}">Teilen</button>` : ''}
+      <button type="button" class="primary" data-action="invite-print" data-url="${esc(url)}" data-name="${esc(c.name || '')}">Drucken / PDF</button>
+    </div></div>`);
+}
+ACTIONS['invite-new'] = async el => {
+  try {
+    const r = await api('invite-create', { crew: el.dataset.crew });
+    admin = null;
+    inviteSheet(r.token, el.dataset.crew);
+    loadAdmin();
+  } catch (e) { toast(e.message); }
+};
+ACTIONS['invite-show'] = el => inviteSheet(el.dataset.token, el.dataset.crew);
+ACTIONS['invite-del'] = async el => {
+  if (!confirm('Diese Einladung zurückziehen? Der Link funktioniert dann nicht mehr.')) return;
+  try { await api('invite-delete', { token: el.dataset.token }); closeSheet(); admin = null; loadAdmin(); toast('Einladung zurückgezogen'); } catch (e) { toast(e.message); }
+};
+ACTIONS['invite-copy'] = async el => { try { await navigator.clipboard.writeText(el.dataset.url); toast('Link kopiert'); } catch { toast('Kopieren ging nicht. Den Link bitte von Hand markieren.'); } };
+ACTIONS['invite-share'] = el => navigator.share({ title: 'Einladung zu LAMMping', text: `Komm in unsere Crew „${el.dataset.name}“ bei LAMMping:`, url: el.dataset.url }).catch(() => {});
+ACTIONS['invite-print'] = el => APP.inviteCard && APP.inviteCard({ url: el.dataset.url, crewName: el.dataset.name });
+
 // Zugangskarte für ein Konto drucken (siehe userForm)
 ACTIONS['access-card'] = el => {
   const f = el.closest('form');
@@ -2063,16 +2155,14 @@ const FORMS = {
   user: async form => {
     const id = form.dataset.id || null;
     try {
-      const res = await api('user-save', {
+      await api('user-save', {
         id, name: form.name.value.trim(), login: form.login.value.trim(),
-        password: form.newPw ? form.newPw.value : '', isAdmin: form.isAdmin.checked || (id === session.user.id), canCash: form.canCash.checked,
+        password: form.newPw ? form.newPw.value : '', canCash: form.canCash.checked,
+        ...(form.isAdmin ? { isAdmin: form.isAdmin.checked || (id === session.user.id), canFound: form.canFound.checked } : {}),
+        // Neue Personen zahlen standardmäßig nicht mit (meist Kinder); änderbar in der Crew
+        ...(!id && form.joinCrew && form.joinCrew.checked ? { joinCrew: crew.id, shares: false } : {}),
         ...(APP.readAreas ? APP.readAreas(form) : {}),
       });
-      if (!id && form.joinCrew && form.joinCrew.checked) {
-        const c = admin.crews.find(x => x.id === crew.id);
-        // Neue Personen zahlen standardmäßig nicht mit (meist Kinder); änderbar in der Crew
-        await api('crew-save', { id: c.id, name: c.name, members: [...c.members, { id: res.id, shares: form.isAdmin.checked }] });
-      }
       const pw = form.newPw ? form.newPw.value : '';
       refreshSession();
       if (pw && APP.accessCard) {
@@ -2089,17 +2179,35 @@ const FORMS = {
   },
   crew: async form => {
     const shares = new Set([...form.querySelectorAll('[name=shares]:checked')].map(i => i.value));
-    const chosen = [...form.querySelectorAll('[name=member]:checked')].map(i => ({ id: i.value, shares: shares.has(i.value) }));
-    if (form.dataset.id === crew.id && !chosen.some(m => m.id === session.user.id)) {
+    const leaders = new Set([...form.querySelectorAll('[name=leader]:checked')].map(i => i.value));
+    const chosen = [...form.querySelectorAll('[name=member]:checked')].map(i => ({ id: i.value, shares: shares.has(i.value), leader: leaders.has(i.value) }));
+    if (form.dataset.id && form.dataset.id === crew.id && !chosen.some(m => m.id === session.user.id)) {
       return toast('Du kannst dich nicht aus der geöffneten Crew entfernen.');
     }
+    if (form.dataset.id && !chosen.some(m => m.leader)) return toast('Eine Crew braucht mindestens einen Crew-Leiter (👑).');
     try {
-      await api('crew-save', { id: form.dataset.id || null, name: form.name.value.trim(), members: chosen });
+      await api('crew-save', { id: form.dataset.id || null, name: form.name.value.trim(), ...(form.dataset.id ? { members: chosen } : {}) });
       closeSheet();
-      toast('Gespeichert');
+      toast(form.dataset.id ? 'Gespeichert' : 'Crew gegründet. Du findest sie unter Einstellungen → Crew.');
       refreshSession();
     } catch (e) { toast(e.message); }
   },
+};
+
+// Einladungsseite (siehe VIEWS.invite)
+ACTIONS['invite-mode'] = el => { invite.haveAccount = !!el.dataset.have; render(); };
+FORMS['invite-join'] = async form => {
+  const btn = form.querySelector('button'); btn.disabled = true;
+  try {
+    inviteDone(await api('invite', { token: invite.token, ...(form.name ? { name: form.name.value.trim(), login: form.login.value.trim(), password: form.password.value } : {}) }));
+  } catch (e) { toast(e.message); btn.disabled = false; }
+};
+FORMS['invite-login'] = async form => {
+  const btn = form.querySelector('button'); btn.disabled = true;
+  try {
+    await api('login', { login: form.login.value.trim(), password: form.password.value });
+    inviteDone(await api('invite', { token: invite.token }));
+  } catch (e) { toast(e.message); btn.disabled = false; }
 };
 
 document.addEventListener('click', ev => {
@@ -2179,6 +2287,7 @@ async function sendAuth(form, action, body) {
     if (store && s.crews.some(c => c.id === crew.id)) {
       // Nur die Anmeldung war abgelaufen: weiterarbeiten, ausstehende Änderungen übertragen
       session = s;
+      applyRole();
       gate = null;
       store.sync();
       onHash();
@@ -2204,11 +2313,18 @@ async function start() {
     if (!s) { gate = 'offline'; return render(); }
   }
   if (s.setup) { gate = 'setup'; return render(); }
+  // Einladungslink geöffnet: erst beitreten (mit neuem oder bestehendem Konto)
+  const inviteToken = new URLSearchParams(location.search).get('invite');
+  if (inviteToken && /^[a-f0-9]{32}$/.test(inviteToken)) {
+    invite = { token: inviteToken, loggedIn: !!s.user };
+    gate = 'invite'; loadInvite(); return render();
+  }
   if (!s.user) { gate = 'login'; return render(); }
   session = s;
   crew = s.crews.find(c => c.id === LS.get('crew', null)) || s.crews[0];
   if (!crew) { gate = 'nocrew'; return render(); }
   LS.set('crew', crew.id);
+  applyRole();
 
   // Kassen-Freigabe geändert? Neu freigegeben: alles neu holen. Entzogen: lokale Kasse löschen.
   const cashKey = 'cash.' + crew.id, hadCash = LS.get(cashKey, null);
@@ -2265,6 +2381,7 @@ const APP = {
   get routeLayer() { return routeLayer; },
   ensureMap,
 };
+installDateien(APP);
 installKacheln(APP);
 installMore(APP);
 installMapEdit(APP);
