@@ -162,7 +162,58 @@ export default function installEintragen(app) {
     const entryForm = document.querySelector('#sheet[open] form[data-form=entry]');
     if (entryForm) { app.addPhotoFiles(files); return; }
     if (document.getElementById('sheet').open) { toast('Fotos bitte auf ein offenes Eintragsfenster ziehen.'); return; }
-    if (!currentTrip()) { toast('Legt zuerst eine Reise an.'); return; }
+    // Auf Kalender, Reisen-Übersicht & Co. (nicht an eine Reise gebunden): Reise nach dem Aufnahmedatum wählen
+    if (DETACHED.includes(app.ui.route) || !currentTrip()) { pickTripFor(files); return; }
+    handleDrop(files);
+  });
+  const DETACHED = ['kalender', 'reisen', 'statistik', 'mehr', 'rubbelkarte', 'album'];
+  async function pickTripFor(files) {
+    const dates = [];
+    let at = null;
+    for (const f of files.slice(0, 60)) {
+      const ex = app.readExif ? await app.readExif(f).catch(() => ({})) : {};
+      if (ex.date) dates.push(ex.date);
+      if (!at && typeof ex.lat === 'number') at = ex;
+    }
+    dates.sort();
+    if (!dates.length) {
+      if (currentTrip()) { toast(`Ohne Aufnahmedatum: zu „${currentTrip().name}“`); handleDrop(files); }
+      else toast('In den Fotos steht kein Aufnahmedatum. Legt zuerst eine Reise an.');
+      return;
+    }
+    // Die Reise, zu der die meisten Fotos passen
+    const votes = {};
+    dates.forEach(d => { const t = app.tripForDate(d); if (t) votes[t.id] = (votes[t.id] || 0) + 1; });
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    const fmt = d => new Date(`${d.slice(0, 10)}T12:00`).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (best) {
+      const t = S.trips.find(x => x.id === best[0]);
+      app.setTrip(t.id);
+      toast(`${files.length > 1 ? 'Fotos' : 'Foto'} vom ${fmt(dates[0])}: zu „${t.name}“`);
+      if (best[1] < dates.length) setTimeout(() => toast(`${dates.length - best[1]} Fotos liegen außerhalb dieser Reise.`), 2500);
+      handleDrop(files);
+      return;
+    }
+    // Keine Reise zu diesem Datum: neue anlegen?
+    pendingFiles = files; pendingAt = at;
+    const a = dates[0].slice(0, 10), b = dates[dates.length - 1].slice(0, 10);
+    const cur = currentTrip();
+    openSheet(`<div>${app.sheetHead('Neue Reise anlegen?')}
+      <p>${files.length > 1 ? 'Die Fotos sind' : 'Das Foto ist'} vom <b>${fmt(a)}${b !== a ? ` bis ${fmt(b)}` : ''}</b>. Zu diesem Datum gibt es noch keine Reise.</p>
+      <div class="sheet-foot">${cur ? `<button type="button" class="ghost" data-action="drop-to-current">Zu „${esc(cur.name)}“</button>` : ''}
+        <button type="button" class="primary" data-action="drop-new-trip" data-a="${a}" data-b="${b}">Neue Reise anlegen</button></div></div>`);
+  }
+  let pendingFiles = null, pendingAt = null;
+  ACTIONS['drop-to-current'] = () => { const f = pendingFiles; pendingFiles = null; closeSheet(); if (f) setTimeout(() => handleDrop(f), 300); };
+  ACTIONS['drop-new-trip'] = async el => {
+    const f = pendingFiles, at = pendingAt; pendingFiles = null; pendingAt = null;
+    // Namensvorschlag: Ort des ersten Fotos und Monat, z. B. „Oslo August 2026“
+    let name = '';
+    if (at && navigator.onLine) { try { const i = await app.placeInfo(at); if (i.name) name = i.name; } catch { /* ohne Namen */ } }
+    const month = new Date(`${el.dataset.a}T12:00`).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    app.newTripThen({ start: el.dataset.a, end: el.dataset.b, name: name ? `${name} ${month}` : '' }, () => { if (f) handleDrop(f); });
+  };
+  async function handleDrop(files) {
     if (files.length > 1 && app.importPhotos) { app.importPhotos(files); return; }   // mehrere: nach Zeit und Ort einsortieren
     const ex = app.readExif ? await app.readExif(files[0]) : {};
     // Gibt es schon einen Eintrag kurz davor oder danach an derselben Stelle? Dann anbieten, das Foto dort dazuzulegen
@@ -177,7 +228,7 @@ export default function installEintragen(app) {
       return;
     }
     dropNew(files, ex);
-  });
+  }
   let dropped = null;
   ACTIONS['drop-add'] = async () => {
     const d = dropped; dropped = null;

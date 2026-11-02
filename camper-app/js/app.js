@@ -50,7 +50,7 @@ import installZuschnitt from './zuschnitt.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 61;
+const APP_VERSION = 62;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -288,6 +288,35 @@ const leadsAny = () => !!(session && session.user && (session.user.superAdmin ||
 const personName = id => (members().find(m => m.id === id) || {}).name || 'Ehemaliges Mitglied';
 const initial = id => (personName(id)[0] || '?').toUpperCase();
 const setTrip = id => LS.set('trip.' + crew.id, id);
+
+// Reise, zu der ein Tag gehört: Start bis Ende (ohne Ende: bis zum letzten Eintrag bzw. heute, solange sie läuft).
+// Passen mehrere, gewinnt die kürzeste.
+function tripForDate(day) {
+  const d = String(day || '').slice(0, 10);
+  if (!d) return null;
+  const hits = S.trips.filter(t => t.start).map(t => {
+    const last = S.entries.filter(e => e.tripId === t.id && e.date).map(e => e.date.slice(0, 10)).sort().pop() || t.start;
+    const end = t.end || (!t.ended && !t.archived && t.start <= today() ? today() : last);
+    return { t, a: t.start, b: end > last ? end : last };
+  }).filter(x => x.a <= d && d <= x.b);
+  hits.sort((x, y) => (dayDate(x.b) - dayDate(x.a)) - (dayDate(y.b) - dayDate(y.a)));
+  return hits.length ? hits[0].t : null;
+}
+// Neue Reise anlegen (Formular mit Vorgaben) und danach etwas damit tun (z. B. Fotos oder Einträge zuordnen)
+let afterNewTrip = null;
+function newTripThen(pre, cb) {
+  afterNewTrip = cb;
+  tripForm();
+  setTimeout(() => {
+    const f = document.querySelector('#sheet form[data-form=trip]');
+    if (!f) return;
+    if (pre.start) f.start.value = pre.start;
+    if (pre.end) f.end.value = pre.end;
+    if (pre.name && !f.name.value) f.name.value = pre.name;
+  }, 0);
+}
+// Name der Reise in ihrer Farbe (Kopf von Eintrag und Bearbeiten-Fenster)
+const tripTag = t => (t ? `<span class="trip-tag" style="--c:${tripColor(t)}" title="Reise">${esc(t.name)}</span>` : '');
 
 const sortTrips = list => list.slice().sort((a, b) => (b.start || '9').localeCompare(a.start || '9'));
 const activeTrips = () => sortTrips(S.trips.filter(t => !t.archived));
@@ -821,7 +850,7 @@ function entryForm(e = {}) {
   return `<form data-form="entry" data-type="${type}" data-id="${e.id || ''}">
     <div class="sheet-head">
       <h2>${isNew ? 'Neuer Eintrag' : 'Eintrag bearbeiten'}</h2>
-      <button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button>
+      ${tripTag(S.trips.find(x => x.id === e.tripId) || currentTrip())}<button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button>
     </div>
     <div class="type-grid">${typeRadios}</div>
     <label class="field"><span>Titel</span><input name="title" value="${esc(e.title)}" placeholder="z. B. Wiese am Seeufer" autocomplete="off"></label>
@@ -1123,13 +1152,13 @@ function submitEntry(form) {
   }
   closeSheet();
   toast(old ? 'Eintrag gespeichert' : 'Eintrag angelegt');
-  checkTripRange(e.tripId, [e.date]);
+  checkTripRange(e.tripId, [e.date], [e.id]);
   return e;
 }
 
 // Eintrag liegt außerhalb von Start und Ende der Reise (z. B. nachgetragene Reise, deren Start noch auf „heute“ steht):
 // anbieten, den Reisezeitraum anzupassen. „So lassen“ gilt für diese Reise dauerhaft.
-function checkTripRange(tripId, dates) {
+function checkTripRange(tripId, dates, ids = []) {
   const t = S.trips.find(x => x.id === tripId);
   const days = dates.filter(Boolean).map(d => d.slice(0, 10)).sort();
   if (!t || !days.length || t.rangeOk) return;
@@ -1140,13 +1169,20 @@ function checkTripRange(tripId, dates) {
   // Lag der bisherige Start nach allen Einträgen, war es eine nachgetragene Reise: dann auch das Ende setzen
   const start = early ? lo : t.start;
   const end = late ? hi : (t.end || (t.start > hi && hi < today() ? hi : ''));
+  // Passt eine andere Reise zu diesen Tagen? Dann lieber dorthin verschieben
+  const other = [lo, hi].map(tripForDate).find(x => x && x.id !== t.id) || null;
+  // Mehr als 30 Tage daneben: wohl eine eigene Reise
+  const far = Math.abs(dayDate(early ? lo : hi) - dayDate(early ? t.start : t.end)) > 30 * 864e5;
   const range = end && end !== start ? `${fd(start)} bis ${fd(end)}` : fd(start);
   setTimeout(() => openSheet(`<div>${sheetHead('Reisezeitraum anpassen?')}
     <p>${days.length > 1 ? 'Diese Einträge sind' : 'Dieser Eintrag ist'} vom <b>${fd(lo)}${hi !== lo ? ` bis ${fd(hi)}` : ''}</b>.
       Die Reise „${esc(t.name)}“ ${early ? `beginnt laut Angaben aber erst am ${fd(t.start)}` : `endet laut Angaben aber schon am ${fd(t.end)}`}.</p>
+    ${other ? `<p>Das passt zur Reise <b>„${esc(other.name)}“</b>.</p>` : ''}
     <p class="sub">Kalender, Reisetage und Rückblick richten sich nach dem Reisezeitraum.</p>
     <div class="sheet-foot"><button type="button" class="ghost" data-action="trip-range-keep" data-id="${t.id}">So lassen</button>
-      <button type="button" class="primary" data-action="trip-range-set" data-id="${t.id}" data-start="${start}" data-end="${end}">Reise: ${range}</button></div></div>`), 450);
+      ${other && ids.length ? `<button type="button" class="primary" data-action="trip-range-move" data-to="${other.id}" data-ids="${ids.join(',')}">Zu „${esc(other.name)}“ verschieben</button>` : ''}
+      ${!other && ids.length && far ? `<button type="button" class="ghost" data-action="trip-range-new" data-ids="${ids.join(',')}" data-a="${lo}" data-b="${hi}">Neue Reise</button>` : ''}
+      <button type="button" class="${other && ids.length ? 'ghost' : 'primary'}" data-action="trip-range-set" data-id="${t.id}" data-start="${start}" data-end="${end}">Reise: ${range}</button></div></div>`), 450);
 }
 
 function entryView(e) {
@@ -1155,7 +1191,7 @@ function entryView(e) {
   return `<article class="entry-view" style="--trip:${tripColor(t)}">
     <div class="sheet-head">
       <p class="kicker">${icon(e.type)}${TYPES[e.type].label}, ${fmtDay(e.date.slice(0, 10))}, ${fmtTime(e.date)}</p>
-      <button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button>
+      ${tripTag(t)}<button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button>
     </div>
     <h2>${esc(e.title || TYPES[e.type].label)}</h2>
     ${e.place ? `<p class="sub">${esc(e.place)}</p>` : ''}
@@ -2173,7 +2209,7 @@ const ACTIONS = {
     });
   },
 
-  'trip-form': el => tripForm(el.dataset.id),
+  'trip-form': el => { afterNewTrip = null; tripForm(el.dataset.id); },
   'pick-trip': el => { setTrip(el.dataset.id); lastFit = ''; go('tagebuch'); },
   'all-on-map': () => { ui.mapScope = 'all'; lastFit = ''; go('karte'); },
   'del-trip': el => {
@@ -2266,6 +2302,19 @@ ACTIONS['trip-range-set'] = el => {
   closeSheet();
   toast('Reisezeitraum angepasst');
 };
+ACTIONS['trip-range-move'] = el => {
+  const to = S.trips.find(x => x.id === el.dataset.to);
+  el.dataset.ids.split(',').forEach(id => { const e = S.entries.find(x => x.id === id); if (e && to) save('entries', { ...e, tripId: to.id }); });
+  closeSheet();
+  if (to) toast(`Zu „${to.name}“ verschoben`);
+};
+ACTIONS['trip-range-new'] = el => {
+  const ids = el.dataset.ids.split(',');
+  newTripThen({ start: el.dataset.a, end: el.dataset.b }, t => {
+    ids.forEach(id => { const e = S.entries.find(x => x.id === id); if (e) save('entries', { ...e, tripId: t.id }); });
+    toast(`Zu „${t.name}“ verschoben`);
+  });
+};
 ACTIONS['trip-range-keep'] = el => {
   const t = S.trips.find(x => x.id === el.dataset.id);
   if (t) save('trips', { ...t, rangeOk: true });
@@ -2357,6 +2406,7 @@ const FORMS = {
     });
     if (APP.tripSaved) APP.tripSaved(t, old, form);
     if (!old) { setTrip(t.id); lastFit = ''; }
+    if (!old && afterNewTrip) { const cb = afterNewTrip; afterNewTrip = null; setTimeout(() => cb(t), 500); }
     closeSheet();
     if (!old) go('tagebuch');
   },
@@ -2594,7 +2644,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   refit: () => { lastFit = null; },
-  mapClickHooks, MINOR, applyType, titleHints, checkTripRange, photoGeo, replaceFormPhoto, settingsPanels, showMe, payers, typesIn, costCat, extraText,
+  mapClickHooks, MINOR, applyType, titleHints, checkTripRange, photoGeo, replaceFormPhoto, tripForDate, tripForm, newTripThen, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,

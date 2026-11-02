@@ -136,6 +136,23 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 62: Mehr nach Themen, „Zuletzt benutzt“, Fotos zur passenden Reise
+
+- **Mehr nach Themen:** Unterwegs heute · Reise planen · Camper & Technik · Geld · Familie & Spaß · Erinnerungen ·
+  Sicherheit & Verwaltung. Gilt automatisch, solange jemand die Reihenfolge nicht selbst geändert hat. Wer eigene
+  Trennlinien oder eine eigene Reihenfolge hat, behält sie und kann unter „Kacheln anordnen“ › **Nach Themen ordnen**
+  umstellen (ausgeblendete Kacheln bleiben ausgeblendet).
+- **Fotos zur passenden Reise:** Wer Fotos auf Kalender, Reisen-Übersicht, Statistik, Mehr, Rubbelkarte oder Fotoalbum
+  zieht, bekommt sie bei der Reise, die zum Aufnahmedatum passt – nicht bei der gerade gewählten. Gibt es zu dem
+  Datum noch keine Reise, fragt LAMMping, ob eine neue angelegt werden soll (mit Datum und Namensvorschlag aus Ort und
+  Monat, z. B. „Malcesine April 2026“). Liegt ein Eintrag weit außerhalb seiner Reise, bietet „Reisezeitraum anpassen?“
+  jetzt auch „Zu ‚…‘ verschieben“ bzw. „Neue Reise“ an.
+- **Reisename im Kopf:** In der Ansicht eines Eintrags und im Bearbeiten-Fenster steht links neben dem Kreuz der Name
+  der Reise in ihrer Farbe.
+- **Zuletzt benutzt:** Ganz oben stehen die 5 zuletzt geöffneten Bereiche. Unter „Kacheln anordnen“ › „Oben auf der
+  Seite“ umstellbar auf **Am häufigsten** (ältere Nutzung zählt weniger, mehrmals innerhalb einer Minute zählt einmal)
+  oder **Aus**. Gilt je Person, auf allen ihren Geräten.
+
 ## Neu in Version 61: Straße folgen ausgewogen, Camper-Dienste abschaltbar, mehr Reisefarben
 
 - **Straße folgen, drei Varianten:** **Ausgewogen (empfohlen)**: alle Einträge, Punkte bis 5 km zusammengefasst –

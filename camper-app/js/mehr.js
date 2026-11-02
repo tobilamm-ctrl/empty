@@ -54,6 +54,64 @@ export default function installMore(app) {
   ];
 
   app.TILES = TILES;
+  // Grundordnung nach Themen (gilt, solange jemand die Reihenfolge nicht selbst geändert hat)
+  const THEMES = [
+    ['heute', 'Unterwegs heute', ['heute', 'wetter', 'tickets', 'pinnwand', 'mitreisen', 'dienste']],
+    ['planen', 'Reise planen', ['reisen', 'ideen', 'orte', 'kalender', 'laender']],
+    ['camper', 'Camper & Technik', ['fahrzeug', 'checklisten', 'zuladung', 'wasserwaage', 'autarkie', 'tank']],
+    ['geld', 'Geld', ['kasse', 'urlaubsgeld']],
+    ['familie', 'Familie & Spaß', ['spiele', 'abstimmung', 'wunschzettel', 'freunde', 'kochen']],
+    ['erinnern', 'Erinnerungen', ['album', 'reisefoto', 'reiseblog', 'rubbelkarte', 'statistik']],
+    ['sicher', 'Sicherheit & Verwaltung', ['dokumente', 'einstellungen']],
+  ];
+  // Zur Laufzeit lesen: spätere Module ergänzen TILES (z. B. „Unterwegs mit Freunden“)
+  const legacyIds = () => TILES.map(t => t.route);
+  // Bisher gespeichert, aber nur in der alten Reihenfolge (z. B. nach Ändern der Größe): Themen übernehmen
+  const legacy = p => !Object.keys(p.seps || {}).length && (() => {
+    const ids = legacyIds(), mine = p.order.filter(id => ids.includes(id));
+    return mine.join() === ids.filter(id => mine.includes(id)).join();
+  })();
+
+  /* ---------- Zuletzt benutzt / am häufigsten (je Person, auf allen Geräten) ---------- */
+
+  const useId = () => `tileuse_${app.me()}`;
+  const usage = () => S.meta.find(m => m.id === useId()) || { id: useId(), mode: 'zuletzt', use: {} };
+  const HALF = 14 * 864e5;   // Halbwertszeit: ältere Nutzung zählt weniger
+  const scoreOf = u => (u ? u.n * Math.pow(0.5, (Date.now() - u.at) / HALF) : 0);
+  let lastRoute = null;
+  app.chromeHooks.push(() => {
+    const r = ui.route;
+    if (r === lastRoute) return;
+    lastRoute = r;
+    if (!app.session() || !TILES.some(t => t.route === r) || r === 'einstellungen') return;
+    const d = usage(), use = d.use || {}, u = use[r];
+    // Schon die zuletzt benutzte Kachel: nichts zu speichern
+    if (u && Object.values(use).every(x => x.at <= u.at)) return;
+    // Mehrmals innerhalb einer Minute zählt für „am häufigsten“ nur einmal; „zuletzt“ stimmt trotzdem
+    const n = u && Date.now() - u.at < 60000 ? scoreOf(u) : scoreOf(u) + 1;
+    save('meta', { ...d, use: { ...use, [r]: { n, at: Date.now() } } });
+  });
+  function recentRow(items, hidden) {
+    const d = usage(), mode = d.mode || 'zuletzt';
+    if (mode === 'aus') return '';
+    const use = d.use || {};
+    const list = items.filter(i => use[i.id] && !hidden.includes(i.id))
+      .sort((a, b) => (mode === 'haeufig' ? scoreOf(use[b.id]) - scoreOf(use[a.id]) : use[b.id].at - use[a.id].at)).slice(0, 5);
+    if (list.length < 2) return '';
+    return `<h2 class="tile-sep">${mode === 'haeufig' ? 'Am häufigsten' : 'Zuletzt benutzt'}</h2>
+      <nav class="recent-row">${list.map(i => `<a href="${i.href}" class="recent-tile"><svg class="ico" aria-hidden="true"><use href="#p-${i.art}"/></svg><span>${esc(i.title)}</span>${i.badge || ''}</a>`).join('')}</nav>`;
+  }
+  ACTIONS['tiles-mode'] = el => { save('meta', { ...usage(), mode: el.dataset.m }); };
+  ACTIONS['tiles-themes'] = () => {
+    if (!confirm('Kacheln nach Themen ordnen? Deine eigene Reihenfolge und Trennlinien werden ersetzt, ausgeblendete Kacheln bleiben ausgeblendet.')) return;
+    app.boardDefault('mehr');
+  };
+  const editExtra = () => {
+    const m = usage().mode || 'zuletzt';
+    return `<div class="field tiles-extra"><span>Oben auf der Seite</span><div class="seg">${[['zuletzt', 'Zuletzt benutzt'], ['haeufig', 'Am häufigsten'], ['aus', 'Aus']].map(([k, l]) =>
+      `<button class="${m === k ? 'on' : ''}" data-action="tiles-mode" data-m="${k}">${l}</button>`).join('')}</div></div>
+      <div class="btnrow"><button class="ghost" data-action="tiles-themes">Nach Themen ordnen</button></div>`;
+  };
   const available = () => TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route)));
   const label = t => (t.alt && !(app.session().user.isAdmin) ? t.alt : t.title);
 
@@ -66,7 +124,12 @@ export default function installMore(app) {
         : t.route === 'dokumente' && app.docsDue() ? `<span class="badge soon" title="Dokumente laufen ab">${app.docsDue()}</span>` : '');
     const items = [...(app.barExtras ? app.barExtras() : []), ...available()].map(t => ({ id: t.route, art: t.art, title: label(t), text: t.text, href: `#/${t.route}`, badge: badge(t), fixed: t.route === 'einstellungen' }));
     const editing = ui.boardEdit === 'mehr';
-    return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${app.board.view({ key: 'mehr', items })}`;
+    // Bar-Extras (aus der unteren Leiste genommene Bereiche) stehen vorn, dann die Themen
+    const extras = items.filter(i => !legacyIds().includes(i.id)).map(i => i.id);
+    const cfg = { key: 'mehr', items, legacy, editExtra,
+      defaultOrder: [...extras, ...THEMES.flatMap(([k, , ids]) => [`sep:${k}`, ...ids])], defaultSeps: Object.fromEntries(THEMES.map(([k, n]) => [k, n])) };
+    const hidden = editing ? [] : app.boardEntries('mehr', cfg).hidden;
+    return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${editing ? '' : recentRow(items, hidden)}${app.board.view(cfg)}`;
   };
 
   /* ---------- Orte: Wunschliste, Lieblingsplätze, für Reisen vorgemerkt ---------- */

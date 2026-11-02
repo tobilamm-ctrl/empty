@@ -13,7 +13,8 @@ export default function installKacheln(app) {
 
   function entries(cfg) {
     const p = prefs(cfg.key);
-    const own = (p.order || []).length > 0;
+    // Eine gespeicherte Reihenfolge, die nur der alten Grundordnung entspricht, gilt nicht als eigene (cfg.legacy)
+    const own = (p.order || []).length > 0 && !(cfg.legacy && cfg.legacy(p));
     const base = own ? p.order : cfg.defaultOrder || cfg.items.map(i => i.id);
     const seps = { ...(own ? {} : cfg.defaultSeps || {}), ...(p.seps || {}) };
     const byId = new Map(cfg.items.map(i => [i.id, i]));
@@ -32,6 +33,9 @@ export default function installKacheln(app) {
     }
     return { list, seps, hidden: p.hidden || [], size: p.size || 'gross' };
   }
+  app.boardEntries = (key, cfg) => entries(cfg || boards[key]);
+  // Grundordnung wiederherstellen, ausgeblendete Kacheln und Größe bleiben
+  app.boardDefault = key => { const e = entries(boards[key]); save('meta', { id: prefsId(key), order: [], seps: {}, hidden: e.hidden, size: e.size }); };
   // Speichern schreibt immer die vollständige Liste (auch die vorgegebenen Trennlinien)
   function savePrefs(key, patch = {}) {
     const e = entries(boards[key]);
@@ -81,6 +85,7 @@ export default function installKacheln(app) {
       <div class="btnrow"><button class="primary" data-action="board-edit" data-k="">Fertig</button>
         <button class="ghost" data-action="board-sep" data-k="${cfg.key}">${icon('plus')}Trennlinie</button>
         <button class="ghost" data-action="board-reset" data-k="${cfg.key}">Zurücksetzen</button></div>
+      ${cfg.editExtra ? cfg.editExtra() : ''}
       <div class="tiles editing size-klein" id="boardGrid" data-k="${cfg.key}">${e.list.map(x => (x.sep ? sepEdit(x) : tileEdit(x))).join('')}</div>
       <div class="btnrow"><button class="primary" data-action="board-edit" data-k="">Fertig</button></div>`;
   }

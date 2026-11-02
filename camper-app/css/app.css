@@ -2479,3 +2479,17 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .crop-box i::after { content: ''; position: absolute; inset: -14px; }
 .crop-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 10px 14px calc(env(safe-area-inset-bottom) + 12px); }
 .crop-foot .ghost { color: #fff; border-color: rgba(255, 255, 255, .4); }
+
+/* ---------- Version 62: Mehr nach Themen, zuletzt benutzt ---------- */
+.recent-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+.recent-row::-webkit-scrollbar { display: none; }
+.recent-tile { position: relative; flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); color: var(--ink); text-decoration: none; font: 600 14px var(--body); box-shadow: 0 1px 3px rgba(60, 40, 10, .08); }
+.recent-tile .ico { width: 30px; height: 30px; flex: none; color: var(--wood); }
+.recent-tile .badge { position: absolute; top: -6px; right: -6px; }
+.tiles-extra { margin-top: 16px; }
+
+/* Reise im Kopf von Eintrag und Bearbeiten-Fenster */
+.sheet-head .trip-tag { margin-left: auto; margin-right: 6px; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 13px var(--body); color: #fff; background: var(--c); padding: 4px 10px; border-radius: 999px; }
+.sheet-head .trip-tag + .icon-btn { margin-left: 0; }
