@@ -44,11 +44,13 @@ import installSpielekiste from './spielekiste.js';
 import installMitfahrer from './mitfahrer.js';
 import installDateien from './dateien.js';
 import installMitreisen from './mitreisen.js';
+import installStrecken from './strecken.js';
+import installZuschnitt from './zuschnitt.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 58;
+const APP_VERSION = 59;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -309,14 +311,24 @@ function tripStatsNow(t) {
   // Mit importierter GPX-Strecke zählt die tatsächlich gefahrene Strecke
   const tracks = S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
   const driven = tracks.length > 0;
-  if (driven) dist = tracks.reduce((sum, x) => sum + (x.km || 0), 0);
+  // Berechnete Strecke „Entlang der Straßen“ deckt die ganze Reise ab; aufgezeichnete Teile nicht doppelt zählen
+  const roads = tracks.find(x => x.auto === 'roads');
+  if (driven) dist = roads ? roads.km || 0 : tracks.reduce((sum, x) => sum + (x.km || 0), 0);
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
-  const firstDay = t.start || (es.slice().sort(byDate)[0] || {}).date?.slice(0, 10);
-  const lastDay = t.end && t.end < today() ? t.end : today();
+  const sorted = es.filter(e => e.date).sort(byDate);
+  const firstEntry = (sorted[0] || {}).date?.slice(0, 10), lastEntry = (sorted[sorted.length - 1] || {}).date?.slice(0, 10);
+  const firstDay = t.start && (!firstEntry || t.start <= firstEntry) ? t.start : (firstEntry || t.start);
+  // Ende: festes Enddatum; sonst läuft die Reise bis heute, solange sie nicht beendet ist und zuletzt etwas eingetragen
+  // wurde; eine alte Reise ohne Enddatum endet mit dem letzten Eintrag
+  const weekAgo = dayDate(today()); weekAgo.setDate(weekAgo.getDate() - 7);
+  const running = !t.ended && !t.archived && (!lastEntry || dayDate(lastEntry) >= weekAgo);
+  let lastDay = t.end ? (t.end < today() ? t.end : today()) : running ? today() : (lastEntry || firstDay);
+  if (lastEntry && lastEntry > lastDay && lastEntry <= today()) lastDay = lastEntry;
   const days = firstDay && firstDay <= lastDay ? Math.round((dayDate(lastDay) - dayDate(firstDay)) / 864e5) + 1 : 0;
+  // Nächte: so viele, wie die Reise dauert (bis heute), mindestens so viele wie Stellplatz-Einträge
+  const nights = Math.max(es.filter(e => e.type === 'stellplatz').length, Math.max(0, days - 1));
   return {
-    es, stops, dist, driven, cost, days, firstDay,
-    nights: es.filter(e => e.type === 'stellplatz').length,
+    es, stops, dist, driven, cost, days, firstDay, nights,
     sights: es.filter(e => e.type === 'sight' || e.type === 'museum').length,
   };
 }
@@ -352,16 +364,50 @@ const PLACE_CACHE = new Map();
 const POI_CATS = ['tourism', 'leisure', 'amenity', 'historic', 'natural', 'waterway', 'man_made', 'aeroway', 'building', 'shop', 'railway'];
 const POI_SKIP = ['parking', 'parking_space', 'parking_entrance', 'bicycle_parking', 'bench', 'waste_basket', 'waste_disposal', 'recycling', 'toilets',
   'vending_machine', 'post_box', 'telephone', 'drinking_water', 'atm', 'charging_station', 'fuel', 'yes', 'house', 'residential', 'apartments', 'garage', 'rail', 'tree'];
+// Benannte Orte rund um eine Position (OpenStreetMap/Overpass): das Gebäude oder Gelände, in dem der Punkt liegt,
+// und was im Umkreis von 60 m einen Namen hat. Museen, Sehenswürdigkeiten, Campingplätze & Co. zählen am meisten.
+const POI_RANK = { tourism: 10, historic: 9, leisure: 7, natural: 7, amenity: 6, man_made: 5, waterway: 5, aeroway: 5, railway: 4, building: 3, shop: 2 };
+const POI_TOP = ['museum', 'attraction', 'camp_site', 'caravan_site', 'viewpoint', 'zoo', 'theme_park', 'gallery', 'castle', 'beach', 'waterfall', 'peak',
+  'aquarium', 'monument', 'ruins', 'place_of_worship', 'theatre', 'arts_centre', 'restaurant', 'cafe', 'marina', 'park', 'nature_reserve', 'water_park'];
+async function nearPois(p) {
+  const ll = `${(+p.lat).toFixed(6)},${(+p.lng).toFixed(6)}`;
+  const keys = Object.keys(POI_RANK).join('|');
+  const q = `[out:json][timeout:8];is_in(${ll})->.a;(way(pivot.a)[name][~"^(${keys})$"~"."];relation(pivot.a)[name][~"^(${keys})$"~"."];)->.in;`
+    + `nwr(around:60,${ll})[name][~"^(${keys})$"~"."]->.near;(.in;.near;);out tags center 40;`;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 7000);
+  try {
+    const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q), { signal: ctl.signal });
+    const els = (await r.json()).elements || [];
+    const seen = new Set();
+    return els.map(el => {
+      const t = el.tags || {};
+      const cat = Object.keys(POI_RANK).find(k => t[k] && !POI_SKIP.includes(t[k]));
+      if (!cat || !t.name) return null;
+      const c = el.center || (el.lat != null ? { lat: el.lat, lon: el.lon } : null);
+      const d = c ? km(p, { lat: c.lat, lng: c.lon }) : 0;
+      // Gebäude oder Gelände, deren Mitte sehr nah liegt: der Punkt liegt (fast sicher) darin
+      const isIn = el.type !== 'node' && (!c || d < 0.15);
+      let score = POI_RANK[cat] + (POI_TOP.includes(t[cat]) ? 6 : 0) + (isIn ? 4 : 0) - d * 40;
+      return { name: t['name:de'] || t.name, score };
+    }).filter(Boolean).sort((a, b) => b.score - a.score).filter(x => !seen.has(x.name) && seen.add(x.name));
+  } catch { return []; } finally { clearTimeout(timer); }
+}
+
 async function placeInfo(p) {
   const key = `${(+p.lat).toFixed(4)},${(+p.lng).toFixed(4)}`;
   if (PLACE_CACHE.has(key)) return PLACE_CACHE.get(key);
+  const around = navigator.onLine ? nearPois(p) : Promise.resolve([]);
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=de&lat=${p.lat}&lon=${p.lng}`);
     const j = await r.json();
     const a = j.address || {};
     const name = a.village || a.town || a.city || a.municipality || a.hamlet || a.suburb || a.county || '';
-    const poi = j.name && POI_CATS.includes(j.category) && !POI_SKIP.includes(j.type) && j.name !== name ? j.name : '';
-    const hints = [...new Set([poi, poi && name ? `${poi}, ${name}` : '', name, a.city && a.city !== name ? a.city : ''].filter(Boolean))].slice(0, 4);
+    const rev = j.name && POI_CATS.includes(j.category) && !POI_SKIP.includes(j.type) && j.name !== name ? j.name : '';
+    // Bester Kandidat aus der Umgebung; der Treffer der Adresssuche zählt als Gebäude dazu
+    const near = (await around).filter(x => x.name !== name);
+    const pois = [...new Set([...near.filter(x => !rev || x.score >= 8).map(x => x.name), rev, ...near.map(x => x.name)].filter(Boolean))];
+    const poi = pois[0] || '';
+    const hints = [...new Set([poi, pois[1] || '', poi && name ? `${poi}, ${name}` : '', name, a.city && a.city !== name ? a.city : ''].filter(Boolean))].slice(0, 5);
     const info = { name, cc: (a.country_code || '').toUpperCase(), poi, hints };
     if (j.address) PLACE_CACHE.set(key, info);
     return info;
@@ -667,7 +713,7 @@ function emptyTrip() {
 function tripHead(t, st, artKey = 'tagebuch') {
   const facts = [
     st.days ? `<div><b>${st.days}</b><span>${st.days === 1 ? 'Tag' : 'Tage'}</span></div>` : '',
-    `<div><b>${st.nights}</b><span>${st.nights === 1 ? 'Stellplatz' : 'Stellplätze'}</span></div>`,
+    `<div><b>${st.nights}</b><span>${st.nights === 1 ? 'Nacht' : 'Nächte'}</span></div>`,
     `<div><b>${st.sights}</b><span>Sehenswertes</span></div>`,
     st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>${st.driven ? 'gefahren' : 'Luftlinie'}</span></div>` : '',
   ].join('');
@@ -858,11 +904,20 @@ async function addPhotoFiles(files) {
   }
   for (const f of files) {
     try {
-      formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) });
+      // Ort und Zeit aus dem Foto merken (beim Verkleinern gehen sie verloren), z. B. für den Weg einer Wanderung
+      const ex = APP.readExif ? await APP.readExif(f).catch(() => ({})) : {};
+      formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78), ...photoGeo(ex) });
       const grid = $('#photoGrid');
       if (grid) grid.innerHTML = photoGrid();
     } catch { toast('Ein Foto ließ sich nicht lesen.'); }
   }
+}
+// Ort und Aufnahmezeit eines Fotos (aus EXIF), nur was vorhanden ist
+function photoGeo(ex) {
+  const g = {};
+  if (ex && typeof ex.lat === 'number') { g.lat = +ex.lat.toFixed(6); g.lng = +ex.lng.toFixed(6); }
+  if (ex && ex.date) g.at = ex.date;
+  return g;
 }
 // Fotos des offenen Eintrags in der gewählten Reihenfolge (das erste ist das Titelbild)
 function formPhotoList() {
@@ -872,7 +927,19 @@ function formPhotoList() {
 }
 function photoGrid() {
   return formPhotoList().map(p =>
-    `<figure data-pid="${p.id}"><img src="${p.thumb}" alt="" draggable="false"><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
+    `<figure data-pid="${p.id}" title="Tippen: zuschneiden · Ziehen: Reihenfolge ändern"><img src="${p.thumb}" alt="" draggable="false"><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
+}
+
+// Foto im offenen Eintrag ersetzen (z. B. zugeschnitten): neue Kennung, gleiche Stelle in der Reihenfolge
+function replaceFormPhoto(oldId, item) {
+  const ids = formPhotoList().map(p => p.id);
+  if (formPhotos.keep.some(p => p.id === oldId)) formPhotos.drop.push(oldId);
+  formPhotos.keep = formPhotos.keep.filter(p => p.id !== oldId);
+  formPhotos.add = formPhotos.add.filter(p => p.id !== oldId);
+  formPhotos.add.push(item);
+  formPhotos.order = ids.map(id => (id === oldId ? item.id : id));
+  const grid = $('#photoGrid');
+  if (grid) grid.innerHTML = photoGrid();
 }
 
 // Fotos umsortieren: mit der Maus ziehen, am Handy lange drücken und dann ziehen
@@ -1031,7 +1098,7 @@ function submitEntry(form) {
   // Fotos: neue als eigene Dokumente speichern, im Eintrag nur Vorschaubilder
   formPhotos.drop.forEach(id => remove('photos', id));
   formPhotos.add.forEach(p => save('photos', { id: p.id, entryId: e.id, tripId: e.tripId, data: p.data }));
-  e.photos = formPhotoList().map(({ id, thumb }) => ({ id, thumb }));
+  e.photos = formPhotoList().map(({ id, thumb, lat, lng, at }) => ({ id, thumb, ...(lat != null ? { lat, lng } : {}), ...(at ? { at } : {}) }));
   if (APP.entrySave) APP.entrySave(e, form);
   save('entries', e);
 
@@ -2520,7 +2587,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   refit: () => { lastFit = null; },
-  mapClickHooks, MINOR, applyType, titleHints, checkTripRange, settingsPanels, showMe, payers, typesIn, costCat, extraText,
+  mapClickHooks, MINOR, applyType, titleHints, checkTripRange, photoGeo, replaceFormPhoto, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,
@@ -2572,6 +2639,8 @@ installSichern(APP);
 installSpielekiste(APP);
 installMitfahrer(APP);
 installMitreisen(APP);
+installStrecken(APP);
+installZuschnitt(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

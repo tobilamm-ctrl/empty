@@ -69,7 +69,7 @@ export default function installEintragen(app) {
     const e = save('entries', {
       id, tripId: t.id, by: app.me(), createdAt: Date.now(), type: 'notiz', title: '', text: '', place: '',
       date: ex.date || nowLocal(), lat: ex.lat ?? null, lng: ex.lng ?? null, acc: null, country: '', rating: 0, features: [],
-      blogHide: false, cost: 0, extra: {}, photos: [{ id: pid, thumb }],
+      blogHide: false, cost: 0, extra: {}, photos: [{ id: pid, thumb, ...app.photoGeo(ex) }],
     }) || S.entries.find(x => x.id === id);
     toast('Foto-Eintrag angelegt. Antippen zum Ergänzen.');
     app.checkTripRange(t.id, [ex.date]);
@@ -187,7 +187,10 @@ export default function installEintragen(app) {
     toast('Foto wird gespeichert …');
     const add = [];
     for (const f of d.files) {
-      try { const id = newId(); save('photos', { id, entryId: e.id, tripId: e.tripId, data: await shrink(f, 1920, 0.78) }); add.push({ id, thumb: await shrink(f, 360, 0.7) }); }
+      try {
+        const id = newId(), ex = app.readExif ? await app.readExif(f).catch(() => ({})) : {};
+        save('photos', { id, entryId: e.id, tripId: e.tripId, data: await shrink(f, 1920, 0.78) }); add.push({ id, thumb: await shrink(f, 360, 0.7), ...app.photoGeo(ex) });
+      }
       catch { toast('Ein Foto ließ sich nicht lesen.'); }
     }
     const cur = S.entries.find(x => x.id === e.id);

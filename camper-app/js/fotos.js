@@ -165,7 +165,7 @@ export default function installFotos(app) {
     const stored = async ph => {
       const id = newId();
       save('photos', { id, entryId: ph.entry, tripId: t.id, data: await shrink(ph.file, 1920, 0.78) });
-      return { id, thumb: ph.thumb };
+      return { id, thumb: ph.thumb, ...app.photoGeo({ lat: ph.lat, lng: ph.lng, date: ph.exactTime ? ph.date : '' }) };
     };
     let created = 0, assigned = 0;
     for (const g of groups) {

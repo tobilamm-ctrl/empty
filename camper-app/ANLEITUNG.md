@@ -136,6 +136,31 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 59: Straße folgen, Nächte, Wanderwege aus Fotos, Aufzeichnen, Zuschneiden
+
+- **Der Straße folgen (auch nachträglich):** Knopf **Straße folgen** über dem Tagebuch (bei beendeten Reisen unter
+  „Nach der Reise“). LAMMping berechnet die Strecke zwischen den Stopps entlang der Straßen (OpenStreetMap) statt
+  gerader Linien; die Kilometer werden genauer. Vorhandene GPX- oder gezeichnete Strecken bleiben erhalten. Korrigieren
+  lässt sich die Strecke mit dem Stift auf der Karte („Strecke“). Kommen später Stopps dazu, einfach neu berechnen.
+- **Nächte:** Gezählt wird jetzt die Dauer der Reise (Start bis Ende, bei laufenden Reisen bis heute), mindestens aber
+  die Zahl der Stellplatz-Einträge. Ohne Enddatum endet eine alte Reise mit dem letzten Eintrag. Vorher zählten nur
+  Stellplatz-Einträge.
+- **Wanderungen aus Fotos:** Fotos merken sich jetzt Ort und Aufnahmezeit. Bei einer Wanderung / Radtour zeigt die
+  Karte die Fotos als grüne Punkte, verbunden in zeitlicher Reihenfolge. Mit **Weg aus Fotos** im Eintrag lassen sich
+  weitere Wegpunkte aus Fotos übernehmen, ohne die Fotos zu speichern. Gilt für Fotos, die ab jetzt hinzugefügt werden
+  (bei älteren hilft „Weg aus Fotos“ mit den Originalfotos).
+- **Aufzeichnen:** Knopf **Aufzeichnen** über dem Tagebuch, für eine Fahrt oder eine Wanderung / Radtour (feiner). Oben
+  läuft eine rote Leiste mit den Kilometern; Tipp darauf: Pause, Beenden, Verwerfen. Nach einer Wanderung öffnet sich
+  gleich der Eintrag mit Länge und Dauer. Einschränkung: Eine Web-App zeichnet nur auf, solange sie offen und der
+  Bildschirm an ist (LAMMping hält ihn wach). Für lange Touren mit gesperrtem Handy eine Tracking-App nutzen und die
+  GPX-Datei importieren.
+- **Titelvorschlag mit Sehenswürdigkeit:** LAMMping fragt zusätzlich, in welchem Gebäude oder Gelände der Punkt liegt
+  und was in 60 m Umkreis einen Namen hat. Museen, Sehenswürdigkeiten, Campingplätze, Restaurants kommen zuerst
+  (z. B. „MUNCH“ statt nur „Oslo“).
+- **Fotos zuschneiden:** Im Bearbeiten-Fenster ein Foto antippen: Rahmen ziehen, Format wählen (frei, 1:1, 4:3, 3:4,
+  16:9), drehen. Der Ausschnitt wird in voller Auflösung des gespeicherten Fotos übernommen, nicht noch einmal
+  verkleinert.
+
 ## Neu in Version 58: Unterwegs mit Freunden (Reisen anderer Crews mitverfolgen)
 
 **Wichtig beim Hochladen:** Diesmal ist wieder **`api/index.php`** neu (zwei neue Tabellen, legt der Server selbst an).
