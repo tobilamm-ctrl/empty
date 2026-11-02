@@ -72,13 +72,15 @@ export default function installEintragen(app) {
       blogHide: false, cost: 0, extra: {}, photos: [{ id: pid, thumb }],
     }) || S.entries.find(x => x.id === id);
     toast('Foto-Eintrag angelegt. Antippen zum Ergänzen.');
+    app.checkTripRange(t.id, [ex.date]);
     const fill = p => {
       const cur = S.entries.find(x => x.id === id);
       if (!cur) return;
       save('entries', { ...cur, lat: p.lat, lng: p.lng, acc: p.acc || null });
-      app.placeInfo(p).then(({ name, cc }) => {
+      app.placeInfo(p).then(({ name, cc, poi }) => {
         const c2 = S.entries.find(x => x.id === id);
-        if (c2 && name) save('entries', { ...c2, place: name, country: cc || c2.country });
+        // Ein Platz mit Namen (Campingplatz, Strand …) wird gleich zum Titel
+        if (c2 && name) save('entries', { ...c2, place: name, country: cc || c2.country, title: c2.title || poi || '' });
       });
     };
     if (typeof ex.lat === 'number') fill(ex);
@@ -164,7 +166,7 @@ export default function installEintragen(app) {
     if (files.length > 1 && app.importPhotos) { app.importPhotos(files); return; }   // mehrere: nach Zeit und Ort einsortieren
     const ex = app.readExif ? await app.readExif(files[0]) : {};
     app.openEntryForm({ type: 'notiz', date: ex.date || nowLocal(), lat: ex.lat ?? null, lng: ex.lng ?? null });
-    if (typeof ex.lat === 'number') app.setFormPos(document.querySelector('#sheetBody form'), ex, true);
+    if (typeof ex.lat === 'number') app.setFormPos(document.querySelector('#sheetBody form'), ex, true, true);
     app.addPhotoFiles(files);
   });
 

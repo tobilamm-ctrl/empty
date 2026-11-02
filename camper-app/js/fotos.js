@@ -144,10 +144,10 @@ export default function installFotos(app) {
     let created = 0, assigned = 0;
     for (const g of groups) {
       const at = g.find(hasPos);
-      const info = at ? await placeInfo(at) : { name: '', cc: '' };
+      const info = at ? await placeInfo(at) : { name: '', cc: '', poi: '' };
       const e = {
         id: newId(), tripId: t.id, by: me(), createdAt: Date.now(), type: 'sight',
-        title: info.name ? `Fotos aus ${info.name}` : 'Fotos', date: g[0].date, place: info.name || '', text: '',
+        title: info.poi || (info.name ? `Fotos aus ${info.name}` : 'Fotos'), date: g[0].date, place: info.name || '', text: '',
         lat: at ? at.lat : null, lng: at ? at.lng : null, acc: null, country: info.cc || '', rating: 0, features: [], cost: 0, extra: {}, photos: [],
       };
       g.forEach(ph => { ph.entry = e.id; });
@@ -166,6 +166,7 @@ export default function installFotos(app) {
     });
     batch = null;
     closeSheet();
+    app.checkTripRange(t.id, photos.filter(p => p.to !== 'skip').map(p => p.date));
     toast([assigned ? `${assigned} Fotos zugeordnet` : '', created ? (created === 1 ? '1 neuer Eintrag' : `${created} neue Einträge`) : ''].filter(Boolean).join(', ') || 'Nichts übernommen');
   };
 }

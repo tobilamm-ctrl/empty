@@ -136,6 +136,18 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 56: Titel aus dem Ort, Reisezeitraum passt sich an
+
+- **Titelvorschlag:** Kommt die Position aus einem Foto (hineinziehen oder „Fotos hinzufügen“ bei einem neuen
+  Eintrag), aus „Aktuelle Position“ oder von der Karte, stehen unter dem Titel Vorschläge zum Antippen: der Platz
+  selbst, wenn er in OpenStreetMap einen Namen hat (Campingplatz, Strand, Burg, Restaurant …), und der Ort. Beim
+  Hineinziehen eines Fotos wird der erste Vorschlag gleich eingetragen. Auch der Foto-Schnellknopf und „Fotos
+  einsortieren“ nehmen den Namen des Platzes als Titel.
+- **Nachgetragene Reisen:** Liegt ein Eintrag vor dem Start oder nach dem Ende der Reise (zum Beispiel, weil der Start
+  beim Anlegen noch auf „heute“ stand), fragt LAMMping, ob der Reisezeitraum angepasst werden soll. „So lassen“ gilt
+  für diese Reise dauerhaft.
+- **Kalender:** Zeigt jetzt auch Tage mit Einträgen außerhalb des Reisezeitraums.
+
 ## Neu in Version 55: Crews für mehrere Familien, Einladungen, PDFs
 
 **Wichtig beim Hochladen:** Diesmal ist auch **`api/index.php`** neu. Bitte vorher in der Verwaltung eine Sicherung

@@ -47,7 +47,7 @@ import installDateien from './dateien.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 55;
+const APP_VERSION = 56;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -345,12 +345,36 @@ function getPos() {
 }
 
 // Ortsname und Ländercode (für die Statistik) über OpenStreetMap
+// Ortsname zu einer Position (OpenStreetMap). Liefert außerdem den Platz selbst, wenn dort etwas mit Namen ist
+// (Campingplatz, Strand, Burg, Restaurant …), und daraus Vorschläge für den Titel.
+const PLACE_CACHE = new Map();
+const POI_CATS = ['tourism', 'leisure', 'amenity', 'historic', 'natural', 'waterway', 'man_made', 'aeroway', 'building', 'shop', 'railway'];
+const POI_SKIP = ['parking', 'parking_space', 'parking_entrance', 'bicycle_parking', 'bench', 'waste_basket', 'waste_disposal', 'recycling', 'toilets',
+  'vending_machine', 'post_box', 'telephone', 'drinking_water', 'atm', 'charging_station', 'fuel', 'yes', 'house', 'residential', 'apartments', 'garage', 'rail', 'tree'];
 async function placeInfo(p) {
+  const key = `${(+p.lat).toFixed(4)},${(+p.lng).toFixed(4)}`;
+  if (PLACE_CACHE.has(key)) return PLACE_CACHE.get(key);
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=de&lat=${p.lat}&lon=${p.lng}`);
-    const a = (await r.json()).address || {};
-    return { name: a.village || a.town || a.city || a.municipality || a.hamlet || a.county || '', cc: (a.country_code || '').toUpperCase() };
-  } catch { return { name: '', cc: '' }; }
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=de&lat=${p.lat}&lon=${p.lng}`);
+    const j = await r.json();
+    const a = j.address || {};
+    const name = a.village || a.town || a.city || a.municipality || a.hamlet || a.suburb || a.county || '';
+    const poi = j.name && POI_CATS.includes(j.category) && !POI_SKIP.includes(j.type) && j.name !== name ? j.name : '';
+    const hints = [...new Set([poi, poi && name ? `${poi}, ${name}` : '', name, a.city && a.city !== name ? a.city : ''].filter(Boolean))].slice(0, 4);
+    const info = { name, cc: (a.country_code || '').toUpperCase(), poi, hints };
+    if (j.address) PLACE_CACHE.set(key, info);
+    return info;
+  } catch { return { name: '', cc: '', poi: '', hints: [] }; }
+}
+
+// Titelvorschläge unter dem Titelfeld; mit fill wird der beste gleich eingetragen (nur wenn der Titel noch leer ist)
+function titleHints(form, info, fill) {
+  const t = form && form.title;
+  if (!t || !t.isConnected || !info.hints.length) return;
+  let box = form.querySelector('.title-hints');
+  if (!box) { box = document.createElement('div'); box.className = 'title-hints'; t.closest('.field').after(box); }
+  box.innerHTML = `<span class="sub">Vorschlag:</span>${info.hints.map(h => `<button type="button" class="chip" data-action="title-hint">${esc(h)}</button>`).join('')}`;
+  if (fill && !t.value.trim()) { t.value = info.hints[0]; t.dataset.suggested = '1'; }
 }
 
 /* ---------- Fotos ---------- */
@@ -820,6 +844,17 @@ async function addPhotoFiles(files) {
   files = files.filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name));
   if (!files.length) return;
   toast(files.length > 1 ? `${files.length} Fotos werden verkleinert …` : 'Foto wird verkleinert …');
+  // Neuer Eintrag noch ohne Position: Ort und Aufnahmezeit aus dem ersten Foto mit GPS übernehmen
+  const form = $('#sheetBody form[data-form=entry]');
+  if (form && !form.dataset.id && !form.lat.value && APP.readExif) {
+    for (const f of files.slice(0, 5)) {
+      const ex = await APP.readExif(f).catch(() => ({}));
+      if (typeof ex.lat !== 'number') continue;
+      if (ex.date && form.date) form.date.value = ex.date;
+      setFormPos(form, ex, true, true);
+      break;
+    }
+  }
   for (const f of files) {
     try {
       formPhotos.add.push({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) });
@@ -833,15 +868,16 @@ function photoGrid() {
     `<figure><img src="${p.thumb}" alt=""><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
 }
 
-function setFormPos(form, p, fillPlace) {
+function setFormPos(form, p, fillPlace, fillTitle = false) {
   form.lat.value = p.lat;
   form.lng.value = p.lng;
   form.acc.value = p.acc || '';
   $('#posText').textContent = posLabel(p);
   if (pickMarker) pickMarker.setLatLng([p.lat, p.lng]);
-  if (fillPlace) placeInfo(p).then(({ name, cc }) => {
-    if (name && form.place && !form.place.value) form.place.value = name;
-    if (form.country) form.country.value = cc;
+  if (fillPlace) placeInfo(p).then(info => {
+    if (info.name && form.place && !form.place.value) form.place.value = info.name;
+    if (form.country) form.country.value = info.cc;
+    titleHints(form, info, fillTitle);
   });
 }
 
@@ -945,7 +981,30 @@ function submitEntry(form) {
   }
   closeSheet();
   toast(old ? 'Eintrag gespeichert' : 'Eintrag angelegt');
+  checkTripRange(e.tripId, [e.date]);
   return e;
+}
+
+// Eintrag liegt außerhalb von Start und Ende der Reise (z. B. nachgetragene Reise, deren Start noch auf „heute“ steht):
+// anbieten, den Reisezeitraum anzupassen. „So lassen“ gilt für diese Reise dauerhaft.
+function checkTripRange(tripId, dates) {
+  const t = S.trips.find(x => x.id === tripId);
+  const days = dates.filter(Boolean).map(d => d.slice(0, 10)).sort();
+  if (!t || !days.length || t.rangeOk) return;
+  const fd = d => new Date(`${d}T12:00`).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+  const lo = days[0], hi = days[days.length - 1];
+  const early = t.start && lo < t.start, late = t.end && hi > t.end;
+  if (!early && !late) return;
+  // Lag der bisherige Start nach allen Einträgen, war es eine nachgetragene Reise: dann auch das Ende setzen
+  const start = early ? lo : t.start;
+  const end = late ? hi : (t.end || (t.start > hi && hi < today() ? hi : ''));
+  const range = end && end !== start ? `${fd(start)} bis ${fd(end)}` : fd(start);
+  setTimeout(() => openSheet(`<div>${sheetHead('Reisezeitraum anpassen?')}
+    <p>${days.length > 1 ? 'Diese Einträge sind' : 'Dieser Eintrag ist'} vom <b>${fd(lo)}${hi !== lo ? ` bis ${fd(hi)}` : ''}</b>.
+      Die Reise „${esc(t.name)}“ ${early ? `beginnt laut Angaben aber erst am ${fd(t.start)}` : `endet laut Angaben aber schon am ${fd(t.end)}`}.</p>
+    <p class="sub">Kalender, Reisetage und Rückblick richten sich nach dem Reisezeitraum.</p>
+    <div class="sheet-foot"><button type="button" class="ghost" data-action="trip-range-keep" data-id="${t.id}">So lassen</button>
+      <button type="button" class="primary" data-action="trip-range-set" data-id="${t.id}" data-start="${start}" data-end="${end}">Reise: ${range}</button></div></div>`), 450);
 }
 
 function entryView(e) {
@@ -2059,6 +2118,25 @@ ACTIONS['invite-copy'] = async el => { try { await navigator.clipboard.writeText
 ACTIONS['invite-share'] = el => navigator.share({ title: 'Einladung zu LAMMping', text: `Komm in unsere Crew „${el.dataset.name}“ bei LAMMping:`, url: el.dataset.url }).catch(() => {});
 ACTIONS['invite-print'] = el => APP.inviteCard && APP.inviteCard({ url: el.dataset.url, crewName: el.dataset.name });
 
+ACTIONS['trip-range-set'] = el => {
+  const t = S.trips.find(x => x.id === el.dataset.id);
+  if (t) save('trips', { ...t, start: el.dataset.start, end: el.dataset.end || t.end || '' });
+  closeSheet();
+  toast('Reisezeitraum angepasst');
+};
+ACTIONS['trip-range-keep'] = el => {
+  const t = S.trips.find(x => x.id === el.dataset.id);
+  if (t) save('trips', { ...t, rangeOk: true });
+  closeSheet();
+};
+
+// Titelvorschlag aus dem Ort übernehmen (siehe titleHints)
+ACTIONS['title-hint'] = el => {
+  const t = el.closest('form').title;
+  t.value = el.textContent;
+  t.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 // Zugangskarte für ein Konto drucken (siehe userForm)
 ACTIONS['access-card'] = el => {
   const f = el.closest('form');
@@ -2373,7 +2451,7 @@ const APP = {
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },
   refit: () => { lastFit = null; },
-  mapClickHooks, MINOR, applyType, settingsPanels, showMe, payers, typesIn, costCat, extraText,
+  mapClickHooks, MINOR, applyType, titleHints, checkTripRange, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
   session: () => session, store: () => store, shrink,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,

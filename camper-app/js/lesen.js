@@ -162,7 +162,8 @@ export default function installLesen(app) {
     let b = t.end || (lastEntry ? lastEntry.slice(0, 10) : a);
     // Laufende Reise ohne Enddatum: bis heute (nur, wenn sie nicht schon ewig zurückliegt)
     if (!t.end && !t.ended && !t.archived && a <= today() && addDays(a, 60) >= today()) b = today();
-    return b < a ? [a, a] : [a, b];
+    if (b < a) b = a;
+    return [a, b];
   }
   function calendarData() {
     const byDay = {};
@@ -173,8 +174,12 @@ export default function installLesen(app) {
     });
     S.entries.forEach(e => {
       const d = e.date && e.date.slice(0, 10), x = byDay[d];
-      if (x && x.t.id === e.tripId && !x.photo && (e.photos || []).length) x.photo = e.photos[0].thumb;
-      if (x && x.t.id === e.tripId) x.n = (x.n || 0) + 1;
+      // Einträge außerhalb des Reisezeitraums (z. B. Start noch nicht angepasst) trotzdem zeigen
+      const t = !x && d && S.trips.find(tr => tr.id === e.tripId);
+      if (t) byDay[d] = { t };
+      const y = byDay[d];
+      if (y && y.t.id === e.tripId && !y.photo && (e.photos || []).length) y.photo = e.photos[0].thumb;
+      if (y && y.t.id === e.tripId) y.n = (y.n || 0) + 1;
     });
     return byDay;
   }
