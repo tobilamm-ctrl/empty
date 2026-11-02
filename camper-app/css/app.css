@@ -2498,3 +2498,19 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .stop.flash, .day.flash { animation: lp-flash 1.6s ease-out; }
 @keyframes lp-flash { 0%, 30% { background: rgba(228, 87, 46, .16); box-shadow: 0 0 0 6px rgba(228, 87, 46, .16); } 100% { background: transparent; box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .stop.flash, .day.flash { animation: none; outline: 2px solid #E4572E; } }
+
+/* ---------- Version 65: Heute-Karte kompakt, Symbole in einer Zeile ---------- */
+.today-icons { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--c) 25%, transparent); }
+.today-ic { position: relative; width: 42px; height: 42px; display: grid; place-items: center; padding: 0; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); background: var(--surface); color: var(--petrol); cursor: pointer; font: 800 20px var(--head); }
+.today-ic .ic { width: 21px; height: 21px; }
+.today-ic span { line-height: 1; font-size: 19px; }
+.today-ic.done { color: #C9961A; }
+.today-ic.done .ic { fill: currentColor; }
+.today-ic.dot::after { content: ''; position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%; background: #D63A2F; box-shadow: 0 0 0 2px var(--surface); }
+.today-ic:hover { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+.today .today-more:empty, .today .today-links:empty { display: none; }
+/* Stift hinter dem Reisenamen im Tagebuch */
+.trip-head h1 .trip-edit { display: inline-grid; vertical-align: middle; margin: -4px 0 0 8px; width: 36px; height: 36px; color: var(--muted); }
+.trip-head h1 .trip-edit .ic { width: 20px; height: 20px; }
+.trip-head h1 .trip-edit:hover { color: var(--ink); }

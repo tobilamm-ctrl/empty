@@ -136,6 +136,14 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 65: Heute-Karte kompakt, Stift am Reisenamen
+
+- **Stift hinter dem Reisenamen** im Tagebuch: öffnet direkt die Einstellungen der Reise (Name, Datum, Farbe, Mitreisende, Dienste …).
+- Die Heute-Karte im Tagebuch ist kleiner. Die obere Leiste (Wetter, Sonne) bleibt. Darunter stehen in einer Zeile
+  nur noch Symbole: ☆ Highlight des Tages (gelb, wenn schon eingetragen), ? Frage des Tages (roter Punkt, solange sie
+  abends offen ist), 📌 Pinnwand, Teilen (Tag teilen) und das Orts-Symbol für „Was ist in der Nähe?“.
+- Weggefallen sind dort die Sternen-Chance (steht weiter auf der Wetter-Seite) und der Hinweis „Reisefoto fehlt noch“.
+
 ## Neu in Version 64: Von der Karte ins Tagebuch springen (PC)
 
 - In der Zwei-Spalten-Ansicht am PC (Karte links, Tagebuch rechts): Ein Klick auf einen Pin, ein Bündel oder ein

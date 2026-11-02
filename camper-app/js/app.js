@@ -46,11 +46,12 @@ import installDateien from './dateien.js';
 import installMitreisen from './mitreisen.js';
 import installStrecken from './strecken.js';
 import installZuschnitt from './zuschnitt.js';
+import installHeute from './heute.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 64;
+const APP_VERSION = 65;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -753,7 +754,7 @@ function tripHead(t, st, artKey = 'tagebuch') {
     st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>${st.odo ? 'gefahren (Tacho)' : st.driven ? 'gefahren' : 'Luftlinie'}</span></div>` : '',
   ].join('');
   return `<header class="trip-head">
-    <div class="page-head with-art"><div class="ph-text"><h1>${esc(t.name)}</h1><p class="sub">${fmtRange(t)}</p></div>${art(artKey)}</div>
+    <div class="page-head with-art"><div class="ph-text"><h1>${esc(t.name)}<button type="button" class="icon-btn trip-edit" data-action="trip-form" data-id="${t.id}" title="Reise bearbeiten" aria-label="Reise bearbeiten">${icon('edit')}</button></h1><p class="sub">${fmtRange(t)}</p></div>${art(artKey)}</div>
     <div class="facts">${facts}</div>
   </header>`;
 }
@@ -2698,6 +2699,7 @@ installMitfahrer(APP);
 installMitreisen(APP);
 installStrecken(APP);
 installZuschnitt(APP);
+installHeute(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 
