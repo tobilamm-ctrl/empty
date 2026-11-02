@@ -2407,3 +2407,10 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .title-hints { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -6px 0 12px; }
 .title-hints .sub { margin: 0 2px 0 0; }
 .title-hints .chip { font-size: .9rem; padding: 4px 12px; }
+
+/* ---------- Version 57: Fotos im Eintrag umsortieren ---------- */
+.photo-grid figure[data-pid] { cursor: grab; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.photo-grid figure.sorting { position: relative; z-index: 5; cursor: grabbing; transition: none; }
+.photo-grid figure.sorting img { box-shadow: 0 8px 22px rgba(58, 38, 23, .35); transform: scale(1.06); }
+.photo-grid.sorting figure:not(.sorting) { transition: transform .15s; }
+.photo-grid figure[data-pid]:first-child::after { content: 'Titelbild'; position: absolute; left: 4px; bottom: 4px; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(58, 38, 23, .7); color: #fff; pointer-events: none; }

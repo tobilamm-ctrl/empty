@@ -47,7 +47,7 @@ import installDateien from './dateien.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 56;
+const APP_VERSION = 57;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -863,10 +863,78 @@ async function addPhotoFiles(files) {
     } catch { toast('Ein Foto ließ sich nicht lesen.'); }
   }
 }
-function photoGrid() {
-  return [...formPhotos.keep, ...formPhotos.add].map(p =>
-    `<figure><img src="${p.thumb}" alt=""><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
+// Fotos des offenen Eintrags in der gewählten Reihenfolge (das erste ist das Titelbild)
+function formPhotoList() {
+  const all = [...formPhotos.keep, ...formPhotos.add], order = formPhotos.order || [];
+  const at = p => { const i = order.indexOf(p.id); return i < 0 ? order.length + all.indexOf(p) : i; };
+  return all.slice().sort((a, b) => at(a) - at(b));
 }
+function photoGrid() {
+  return formPhotoList().map(p =>
+    `<figure data-pid="${p.id}"><img src="${p.thumb}" alt="" draggable="false"><button type="button" data-action="drop-photo" data-id="${p.id}" aria-label="Foto entfernen">${icon('close')}</button></figure>`).join('');
+}
+
+// Fotos umsortieren: mit der Maus ziehen, am Handy lange drücken und dann ziehen
+const SORTABLE = { photoGrid: ids => { formPhotos.order = ids; } };
+(function sortablePhotos() {
+  let drag = null;
+  const figs = grid => [...grid.querySelectorAll('figure[data-pid]')];
+  function begin() {
+    drag.on = true;
+    drag.el.classList.add('sorting');
+    drag.grid.classList.add('sorting');
+    if (navigator.vibrate && drag.touch) navigator.vibrate(15);
+  }
+  function move(x, y) {
+    const { el, grid } = drag;
+    // Ziel: das Foto, über dem der Finger bzw. die Maus gerade ist
+    const over = figs(grid).find(f => { if (f === el) return false; const r = f.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
+    if (over) {
+      const list = figs(grid);
+      grid.insertBefore(el, list.indexOf(over) > list.indexOf(el) ? over.nextSibling : over);
+    }
+    el.style.transform = '';
+    const r = el.getBoundingClientRect();
+    el.style.transform = `translate(${x - drag.gx - r.left}px, ${y - drag.gy - r.top}px)`;
+  }
+  function end() {
+    const d = drag; drag = null;
+    clearTimeout(d.timer);
+    if (!d.on) return;
+    d.el.style.transform = '';
+    d.el.classList.remove('sorting');
+    d.grid.classList.remove('sorting');
+    const ids = figs(d.grid).map(f => f.dataset.pid);
+    if (SORTABLE[d.grid.id]) SORTABLE[d.grid.id](ids);
+    // Ein Klick direkt nach dem Ziehen soll nichts auslösen (z. B. das Kreuz)
+    d.grid.addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
+    setTimeout(() => d.grid.dispatchEvent(new Event('sorted')), 0);
+  }
+  document.addEventListener('pointerdown', ev => {
+    const el = ev.target.closest && ev.target.closest('.photo-grid figure[data-pid]');
+    if (!el || ev.button > 0 || ev.target.closest('button') || !SORTABLE[el.parentElement.id]) return;
+    const r = el.getBoundingClientRect();
+    drag = { el, grid: el.parentElement, x: ev.clientX, y: ev.clientY, gx: ev.clientX - r.left, gy: ev.clientY - r.top, on: false, touch: ev.pointerType === 'touch', id: ev.pointerId };
+    if (drag.touch) drag.timer = setTimeout(() => { if (drag) { begin(); move(drag.x, drag.y); } }, 350);
+  });
+  document.addEventListener('pointermove', ev => {
+    if (!drag || ev.pointerId !== drag.id) return;
+    if (!drag.on) {
+      // Maus: ab ein paar Pixeln ziehen; Finger: Bewegung vor dem langen Drücken ist Scrollen
+      if (Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < 6) return;
+      if (drag.touch) { clearTimeout(drag.timer); drag = null; return; }
+      begin();
+    }
+    move(ev.clientX, ev.clientY);
+  });
+  // Am Handy während des Sortierens nicht scrollen
+  document.addEventListener('touchmove', ev => { if (drag && drag.on) ev.preventDefault(); }, { passive: false });
+  document.addEventListener('pointerup', ev => { if (drag && ev.pointerId === drag.id) end(); });
+  document.addEventListener('pointercancel', ev => { if (drag && ev.pointerId === drag.id) { if (drag.on) end(); else { clearTimeout(drag.timer); drag = null; } } });
+  // Bilder im Formular nie als Datei „herausziehen“ (sonst landen sie als Kopie wieder im Eintrag)
+  document.addEventListener('dragstart', ev => { if (ev.target.closest && ev.target.closest('.photo-grid')) ev.preventDefault(); });
+  document.addEventListener('contextmenu', ev => { if (ev.target.closest && ev.target.closest('.photo-grid figure[data-pid]') && ev.pointerType !== 'mouse') ev.preventDefault(); });
+})();
 
 function setFormPos(form, p, fillPlace, fillTitle = false) {
   form.lat.value = p.lat;
@@ -962,7 +1030,7 @@ function submitEntry(form) {
   // Fotos: neue als eigene Dokumente speichern, im Eintrag nur Vorschaubilder
   formPhotos.drop.forEach(id => remove('photos', id));
   formPhotos.add.forEach(p => save('photos', { id: p.id, entryId: e.id, tripId: e.tripId, data: p.data }));
-  e.photos = [...formPhotos.keep, ...formPhotos.add].map(({ id, thumb }) => ({ id, thumb }));
+  e.photos = formPhotoList().map(({ id, thumb }) => ({ id, thumb }));
   if (APP.entrySave) APP.entrySave(e, form);
   save('entries', e);
 

@@ -17,7 +17,7 @@ export default function installFotos(app) {
   app.readExif = file => readExif(file);
   async function readExif(file) {
     try {
-      const v = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
+      const v = new DataView(await file.slice(0, 1024 * 1024).arrayBuffer());
       if (v.getUint16(0) !== 0xFFD8) return {};
       let o = 2;
       while (o + 10 < v.byteLength) {
@@ -62,10 +62,13 @@ export default function installFotos(app) {
 
   /* ---------- Vorschlag: passender Eintrag oder neu ---------- */
 
+  // Passender Eintrag: mit Ort in der Nähe (1,5 km) innerhalb von 36 Stunden, sonst ein Eintrag ohne Ort vom selben
+  // Tag innerhalb von 3 Stunden; jeweils der zeitlich nächste
   function suggest(ph, entries) {
     const dated = entries.filter(e => e.date);
     if (hasPos(ph)) {
-      const near = dated.filter(e => hasPos(e) && km(ph, e) <= 1.5 && minutes(ph.date, e.date) <= 36 * 60)
+      const near = dated.filter(e => (hasPos(e) ? km(ph, e) <= 1.5 && minutes(ph.date, e.date) <= 36 * 60
+        : e.date.slice(0, 10) === ph.date.slice(0, 10) && minutes(ph.date, e.date) <= 180))
         .sort((a, b) => minutes(ph.date, a.date) - minutes(ph.date, b.date));
       return near[0] ? near[0].id : 'new';
     }
@@ -99,42 +102,65 @@ export default function installFotos(app) {
       photos.push(ph);
     }
     photos.sort((a, b) => a.date.localeCompare(b.date));
-    batch = { t, photos };
+    // Fotos ohne passenden Eintrag gleich zu neuen Einträgen zusammenfassen (in der Liste änderbar)
+    const groups = [];
+    photos.filter(ph => ph.target === 'new').forEach(ph => {
+      const g = groups[groups.length - 1];
+      if (g && fits(g, ph)) g.push(ph); else groups.push([ph]);
+      ph.target = 'n' + groups.length;
+    });
+    batch = { t, photos, groups: groups.length };
     showBatch();
   }
+
+  // Gehört ein Foto noch zur Gruppe davor? Bis 2 Stunden nach dem letzten Foto und höchstens 3 km entfernt,
+  // oder am selben Tag fast an derselben Stelle (300 m), z. B. den ganzen Nachmittag am Strand
+  function fits(g, ph) {
+    const last = g[g.length - 1], gap = minutes(last.date, ph.date);
+    const at = [...g].reverse().find(hasPos);
+    if (!hasPos(ph) || !at) return gap <= 120;
+    const d = km(at, ph);
+    return (gap <= 120 && d <= 3) || (last.date.slice(0, 10) === ph.date.slice(0, 10) && d <= 0.3);
+  }
+  app.suggestEntry = ph => suggest(ph, S.entries.filter(e => e.tripId === (app.currentTrip() || {}).id));
 
   function showBatch() {
     const { t, photos } = batch;
     const entries = S.entries.filter(e => e.tripId === t.id && e.date).sort((a, b) => a.date.localeCompare(b.date));
+    // Neue Einträge mit Uhrzeit des ersten Fotos benennen; einer mehr zur Auswahl, um Fotos abzutrennen
+    const firstOf = n => photos.find(ph => ph.target === 'n' + n);
+    const news = Array.from({ length: batch.groups + 1 }, (_, i) => i + 1);
+    const newLabel = n => { const f = firstOf(n); return `Neuer Eintrag ${n}${f ? ` (${f.date.slice(11, 16)} Uhr)` : ''}`; };
     const label = e => `${fmtDay(e.date.slice(0, 10))}, ${e.date.slice(11, 16)}: ${e.title || TYPES[e.type].label}`;
     const withGps = photos.filter(hasPos).length;
     openSheet(`<form data-form="photo-import" class="photo-import">${sheetHead('Fotos einsortieren')}
       <p class="sub">${photos.length} Fotos, ${withGps ? `${withGps} mit Ort` : 'keins mit Ort'}. LAMMping schlägt anhand von Aufnahmezeit${withGps ? ' und Ort' : ''} den passenden Eintrag vor. Fotos ohne passenden Eintrag werden zu neuen Einträgen zusammengefasst.</p>
       ${withGps < photos.length ? '<p class="sub">Manche Handys entfernen den Ort beim Auswählen der Fotos. Dann zählt nur die Aufnahmezeit.</p>' : ''}
+      ${photos.length > 1 ? '<button type="button" class="ghost small-btn" data-action="photo-import-one">Alle in einen neuen Eintrag</button>' : ''}
       <ul class="import-list">${photos.map((ph, i) => `<li>
         <img src="${ph.thumb}" alt="">
         <div><small>${fmtDay(ph.date.slice(0, 10))}, ${ph.date.slice(11, 16)}${ph.exactTime ? '' : ' (Dateidatum)'}${hasPos(ph) ? ' · mit Ort' : ''}</small>
           <select name="to${i}">
-            <option value="new"${ph.target === 'new' ? ' selected' : ''}>Neuer Eintrag</option>
+            ${news.map(n => `<option value="n${n}"${ph.target === 'n' + n ? ' selected' : ''}>${newLabel(n)}</option>`).join('')}
             ${entries.map(e => `<option value="${e.id}"${ph.target === e.id ? ' selected' : ''}>${esc(label(e))}</option>`).join('')}
             <option value="skip">Nicht übernehmen</option>
           </select></div></li>`).join('')}</ul>
       <div class="sheet-foot"><button class="primary">Übernehmen</button></div></form>`);
   }
 
+  ACTIONS['photo-import-one'] = el => {
+    el.closest('form').querySelectorAll('.import-list select').forEach(s => { if (s.value !== 'skip') s.value = 'n1'; });
+    toast('Alle Fotos kommen in einen neuen Eintrag');
+  };
   FORMS['photo-import'] = async form => {
     const { t, photos } = batch;
     const btn = form.querySelector('button.primary');
     btn.disabled = true; btn.textContent = 'Wird gespeichert …';
     photos.forEach((ph, i) => { ph.to = form[`to${i}`].value; });
-    // Neue Einträge: Fotos zusammenfassen, die zeitlich (90 Minuten) und räumlich (2 km) nah beieinander liegen
-    const groups = [];
-    photos.filter(ph => ph.to === 'new').forEach(ph => {
-      const g = groups[groups.length - 1];
-      const last = g && g[g.length - 1];
-      if (last && minutes(last.date, ph.date) <= 90 && (!hasPos(last) || !hasPos(ph) || km(last, ph) <= 2)) g.push(ph);
-      else groups.push([ph]);
-    });
+    // Neue Einträge: so, wie es in der Liste gewählt ist (Neuer Eintrag 1, 2, …)
+    const byNew = {};
+    photos.filter(ph => /^n\d+$/.test(ph.to)).forEach(ph => { (byNew[ph.to] ||= []).push(ph); });
+    const groups = Object.values(byNew);
     const add = {};          // Eintrag → neue Fotos
     const stored = async ph => {
       const id = newId();
@@ -155,7 +181,7 @@ export default function installFotos(app) {
       save('entries', e);
       created++;
     }
-    for (const ph of photos.filter(p => p.to !== 'new' && p.to !== 'skip')) {
+    for (const ph of photos.filter(p => !/^n\d+$/.test(p.to) && p.to !== 'skip')) {
       ph.entry = ph.to;
       (add[ph.to] ||= []).push(await stored(ph));
       assigned++;

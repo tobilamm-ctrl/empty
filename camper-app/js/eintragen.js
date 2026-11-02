@@ -165,10 +165,41 @@ export default function installEintragen(app) {
     if (!currentTrip()) { toast('Legt zuerst eine Reise an.'); return; }
     if (files.length > 1 && app.importPhotos) { app.importPhotos(files); return; }   // mehrere: nach Zeit und Ort einsortieren
     const ex = app.readExif ? await app.readExif(files[0]) : {};
+    // Gibt es schon einen Eintrag kurz davor oder danach an derselben Stelle? Dann anbieten, das Foto dort dazuzulegen
+    const hit = ex.date && app.suggestEntry ? S.entries.find(e => e.id === app.suggestEntry({ date: ex.date, lat: ex.lat, lng: ex.lng })) : null;
+    if (hit) {
+      dropped = { files, ex, entryId: hit.id };
+      openSheet(`<div>${app.sheetHead('Foto dazulegen?')}
+        <p>Kurz davor oder danach gibt es schon den Eintrag <b>${esc(hit.title || app.TYPES[hit.type].label)}</b>
+          (${hit.date.slice(11, 16)} Uhr${hit.place ? `, ${esc(hit.place)}` : ''}).</p>
+        <div class="sheet-foot"><button type="button" class="ghost" data-action="drop-new">Eigener Eintrag</button>
+          <button type="button" class="primary" data-action="drop-add">Dazulegen</button></div></div>`);
+      return;
+    }
+    dropNew(files, ex);
+  });
+  let dropped = null;
+  ACTIONS['drop-add'] = async () => {
+    const d = dropped; dropped = null;
+    const e = d && S.entries.find(x => x.id === d.entryId);
+    if (!e) return closeSheet();
+    closeSheet();
+    toast('Foto wird gespeichert …');
+    const add = [];
+    for (const f of d.files) {
+      try { const id = newId(); save('photos', { id, entryId: e.id, tripId: e.tripId, data: await shrink(f, 1920, 0.78) }); add.push({ id, thumb: await shrink(f, 360, 0.7) }); }
+      catch { toast('Ein Foto ließ sich nicht lesen.'); }
+    }
+    const cur = S.entries.find(x => x.id === e.id);
+    if (cur && add.length) save('entries', { ...cur, photos: [...(cur.photos || []), ...add] });
+    toast(`Bei „${e.title || app.TYPES[e.type].label}“ dazugelegt`);
+  };
+  ACTIONS['drop-new'] = () => { const d = dropped; dropped = null; closeSheet(); if (d) setTimeout(() => dropNew(d.files, d.ex), 300); };
+  function dropNew(files, ex) {
     app.openEntryForm({ type: 'notiz', date: ex.date || nowLocal(), lat: ex.lat ?? null, lng: ex.lng ?? null });
     if (typeof ex.lat === 'number') app.setFormPos(document.querySelector('#sheetBody form'), ex, true, true);
     app.addPhotoFiles(files);
-  });
+  }
 
   /* ====================================================================== */
   /* Entwürfe: angefangene Einträge werden gemerkt                           */

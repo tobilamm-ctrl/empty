@@ -136,6 +136,17 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 57: Fotos sortieren und besser zusammenfassen
+
+- **Reihenfolge der Fotos:** Im Eintrag lassen sich die Fotos umsortieren: mit der Maus ziehen, am Handy lange drücken
+  und dann ziehen. Das erste Foto ist das Titelbild (Kalender, Tagebuch). Beim Ziehen entsteht keine Kopie mehr.
+- **Foto hineinziehen:** Gibt es schon einen Eintrag kurz davor oder danach an derselben Stelle (bis 1,5 km), fragt
+  LAMMping: „Dazulegen“ oder „Eigener Eintrag“.
+- **Fotos einsortieren:** Die Liste zeigt jetzt gleich, welche Fotos zusammen in einen neuen Eintrag kommen
+  („Neuer Eintrag 1 (10:00 Uhr)“, „Neuer Eintrag 2 …“), und lässt sich ändern. Zusammen kommen Fotos bis 2 Stunden
+  Abstand und 3 km Entfernung, am selben Tag an fast derselben Stelle (300 m) auch mit größerem Abstand. Neu:
+  **Alle in einen neuen Eintrag**. Fotos mit Ort passen jetzt auch zu Einträgen ohne Position vom selben Tag.
+
 ## Neu in Version 56: Titel aus dem Ort, Reisezeitraum passt sich an
 
 - **Titelvorschlag:** Kommt die Position aus einem Foto (hineinziehen oder „Fotos hinzufügen“ bei einem neuen
