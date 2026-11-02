@@ -6,7 +6,7 @@ export default function installFotoansicht(app) {
 
   // Reihenfolge der Fotos: im Tagebuch alle Fotos der Reise so, wie sie gerade angezeigt werden
   function sequence(img) {
-    const scope = img.closest('#view .timeline, .entry-view, .book-page, .gallery, .album, #view') || document;
+    const scope = img.closest('.idea-photos, #view .timeline, .entry-view, .book-page, .gallery, .album, #view') || document;
     const imgs = [...scope.querySelectorAll('img[data-photo]')].filter(i => !i.closest('.no-viewer'));
     const seen = new Set();
     const list = imgs.filter(i => !seen.has(i.dataset.photo) && seen.add(i.dataset.photo)).map(i => {

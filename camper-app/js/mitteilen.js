@@ -38,6 +38,23 @@ export default function installMitteilen(app) {
   FORMS.pin = form => { const t = form.text.value.trim(); if (t) { post(t); form.reset(); closeSheet(); } };
   ACTIONS['pin-quick'] = el => { post(el.dataset.t); closeSheet(); };
   ACTIONS['pin-del'] = el => remove('games', el.dataset.id);
+  // Gelber Zettel in der Kopfzeile, solange etwas an der Pinnwand hängt; Tipp zeigt die Zettel über dem Bildschirm
+  const brand = document.querySelector('.brandbar .brand');
+  const note = document.createElement('button');
+  note.type = 'button'; note.className = 'pin-note'; note.hidden = true; note.dataset.action = 'pins-show';
+  if (brand) brand.after(note);
+  app.chromeHooks.push(() => {
+    const n = app.session && app.session() ? pins().length : 0;
+    note.hidden = !n;
+    if (n) { note.innerHTML = `<b>${n}</b><small>${n === 1 ? 'Zettel' : 'Zettel'}</small>`; note.setAttribute('aria-label', `Pinnwand: ${n} ${n === 1 ? 'Zettel' : 'Zettel'} ansehen`); }
+  });
+  ACTIONS['pins-show'] = () => openSheet(`<div class="pins-sheet">${sheetHead('📌 Pinnwand')}
+    ${pinList(pins()) || '<p class="hint">Gerade hängt nichts an der Pinnwand.</p>'}
+    <div class="sheet-foot"><button type="button" class="ghost" data-action="pins-goto">Zur Pinnwand</button><button type="button" class="primary" data-action="pin-new">${icon('plus')}Neuer Zettel</button></div></div>`);
+  ACTIONS['pins-goto'] = () => { closeSheet(); go('pinnwand'); };
+  // Zettel im Fenster abnehmen: Fenster gleich neu zeichnen
+  const pinDel = ACTIONS['pin-del'];
+  ACTIONS['pin-del'] = el => { pinDel(el); if (document.querySelector('#sheet[open] .pins-sheet')) setTimeout(() => (pins().length ? ACTIONS['pins-show']() : closeSheet()), 120); };
   ACTIONS['pin-new'] = () => openSheet(`<form data-form="pin">${sheetHead('Pinnwand')}
     <label class="field"><span>Nachricht an alle</span><input name="text" maxlength="120" required autocomplete="off"></label>
     <div class="chips wrap">${QUICK.map(q => `<button type="button" class="chip" data-action="pin-quick" data-t="${esc(q)}">${esc(q)}</button>`).join('')}</div>
@@ -174,7 +191,9 @@ export default function installMitteilen(app) {
         ${!s.files.length || s.url || s.text ? `<button class="ghost" data-action="shared-place">${icon('pin')}Auf die Wunschliste</button>` : ''}
         <h2 class="date-head">Zu den Reiseideen</h2>
         <button class="ghost" data-action="shared-idea" data-id="">${icon('plus')}Neue Reiseidee „${esc(nameOf(s))}“</button>
-        ${ideas.length ? `<p class="sub">oder als Notiz zu einer Idee:</p><ul class="ledger">${ideas.slice(0, 12).map(i => `<li><button data-action="shared-idea" data-id="${i.id}">
+        ${ideas.length ? `<p class="sub">oder als Notiz zu einer Idee:</p>
+          ${ideas.length > 6 ? `<label class="search">${icon('search')}<input class="idea-search" placeholder="Idee suchen" autocomplete="off"></label>` : ''}
+          <ul class="ledger idea-pick">${ideas.map(i => `<li data-q="${esc((i.title + ' ' + (i.where || '')).toLowerCase())}"><button data-action="shared-idea" data-id="${i.id}">
           <span class="txt"><b>${esc(i.title)}</b><small>${esc(i.where || '')}${(i.notes || []).length ? ` · ${i.notes.length} Notizen` : ''}</small></span></button></li>`).join('')}</ul>` : ''}
       </div>
       <button class="link" data-action="shared-drop">Verwerfen</button>`;
@@ -199,15 +218,31 @@ export default function installMitteilen(app) {
       url: s.url || '', lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, country: '', tripId: null, planDate: '', rating: 0, features: [], fav: false, done: false });
     done(pos ? 'Auf der Wunschliste – mit Position' : 'Auf der Wunschliste. Die Position kannst du dort noch setzen.', 'orte');
   };
-  ACTIONS['shared-idea'] = el => {
+  // Suche in der Ideenliste (ohne neu zu zeichnen)
+  document.addEventListener('input', ev => {
+    if (!ev.target.classList || !ev.target.classList.contains('idea-search')) return;
+    const q = ev.target.value.trim().toLowerCase();
+    document.querySelectorAll('.idea-pick li').forEach(li => { li.hidden = !!q && !li.dataset.q.includes(q); });
+  });
+  // Geteilte Bilder als Fotos an der Notiz speichern
+  const sharedPhotos = async s => {
+    const out = [];
+    for (const f of s.files.filter(x => /^image\//.test(x.type))) {
+      try { const id = newId(); save('photos', { id, data: await shrink(f, 1920, 0.8) }); out.push({ id, thumb: await shrink(f, 360, 0.7) }); } catch { /* Format nicht lesbar */ }
+    }
+    return out;
+  };
+  ACTIONS['shared-idea'] = async el => {
     const s = shared;
-    const note = { id: newId(), by: me(), at: Date.now(), text: sharedNote(s) };
+    const photos = await sharedPhotos(s);
+    const note = { id: newId(), by: me(), at: Date.now(), text: sharedNote(s) || (photos.length ? 'Foto' : ''), ...(photos.length ? { photos } : {}) };
     if (el.dataset.id) {
       const i = S.ideas.find(x => x.id === el.dataset.id);
       save('ideas', { ...i, notes: [...(i.notes || []), note] });
       done(`Bei „${i.title}“ notiert`, 'ideen');
     } else {
-      save('ideas', { id: newId(), by: me(), createdAt: Date.now(), likes: { [me()]: true }, title: nameOf(s), where: '', season: '', days: '', text: s.text || '', notes: s.url ? [{ ...note, text: s.url }] : [] });
+      const first = s.url || photos.length ? [{ ...note, text: s.url || '' }] : [];
+      save('ideas', { id: newId(), by: me(), createdAt: Date.now(), likes: { [me()]: true }, title: nameOf(s), where: '', season: '', days: '', text: s.text || '', notes: first });
       done('Neue Reiseidee angelegt', 'ideen');
     }
   };
@@ -219,16 +254,76 @@ export default function installMitteilen(app) {
 
   const tradition = () => S.meta.find(m => m.id === 'reisefoto') || { id: 'reisefoto', motiv: 'Alle zusammen vor dem Camper' };
   const tripPhoto = t => S.games.find(g => g.id === `reisefoto_${t.id}`);
+  // Jahr eines Reisefotos: nachgetragene Fotos tragen es selbst, sonst Reisebeginn bzw. Aufnahmetag
+  const yearOf = g => { if (g.year) return +g.year; const t = S.trips.find(x => x.id === g.tripId); return +((t && t.start) || new Date(g.at).toISOString()).slice(0, 4); };
+  const allPhotos = () => S.games.filter(g => g.kind === 'reisefoto' && g.photoId).map(g => ({ g, y: yearOf(g), t: S.trips.find(x => x.id === g.tripId) }))
+    .sort((a, b) => a.y - b.y || a.g.at - b.g.at);
+  // Je Jahr ein Foto (das erste des Jahres) für die Reihe und den Zeitraffer
+  const perYear = () => { const m = new Map(); allPhotos().forEach(x => { if (!m.has(x.y)) m.set(x.y, x); }); return [...m.values()]; };
   VIEWS.reisefoto = () => {
     const tr = tradition();
-    const list = app.sortTrips(S.trips).slice().reverse().map(t => ({ t, p: tripPhoto(t) })).filter(x => x.p);
+    const list = allPhotos().slice().reverse();
+    const years = perYear();
     const t = currentTrip();
-    return `${pageHead('reisefoto', 'Unser Reisefoto', 'Bei jeder Fahrt dasselbe Motiv')}
+    return `${pageHead('reisefoto', 'Unser Reisefoto', 'Jedes Jahr dasselbe Motiv')}
       <section class="panel"><p class="rf-motiv">📸 ${esc(tr.motiv)}</p>
         <div class="btnrow">${t ? `<label class="primary btn file">${icon('camera')}${tripPhoto(t) ? 'Foto ersetzen' : 'Foto für diese Reise'}<input type="file" accept="image/*" capture="environment" data-action="rf-shot" data-trip="${t.id}"></label>` : ''}
+          <label class="ghost btn file">Älteres Foto nachtragen<input type="file" accept="image/*" data-action="rf-old"></label>
           <button class="ghost" data-action="rf-motiv">Motiv ändern</button></div></section>
-      ${list.length ? `<div class="rf-grid">${list.map(({ t: tt, p }) => `<figure><img src="${p.thumb}" data-rf="${p.photoId}" alt=""><figcaption><b>${esc(tt.name)}</b><small>${fmtShort(tt.start || new Date(p.at).toISOString().slice(0, 10))}</small></figcaption></figure>`).join('')}</div>`
-        : '<p class="hint">Noch keine Reisefotos. Macht bei jeder Fahrt ein Foto mit demselben Motiv, so seht ihr, wie die Kinder wachsen.</p>'}`;
+      ${years.length > 1 ? `<section class="rf-years"><div class="rf-years-head"><h2 class="date-head">Jahr für Jahr</h2><button class="primary" data-action="rf-play">▶ Zeitraffer</button></div>
+        <div class="rf-strip" data-noswipe>${years.map(x => `<figure><img src="${x.g.thumb}" alt=""><figcaption>${x.y}</figcaption></figure>`).join('')}</div></section>` : ''}
+      ${list.length ? `<h2 class="date-head">Alle Reisefotos</h2><div class="rf-grid">${list.map(({ g: p, y, t: tt }) => `<figure><img src="${p.thumb}" data-rf="${p.photoId}" alt="">
+          <figcaption><b>${tt ? esc(tt.name) : `Reisefoto ${y}`}</b><small>${tt && tt.start ? fmtShort(tt.start) : y}</small>
+          ${!tt ? `<button class="link" data-action="rf-del" data-id="${p.id}">Entfernen</button>` : ''}</figcaption></figure>`).join('')}</div>`
+        : '<p class="hint">Noch keine Reisefotos. Macht jedes Jahr ein Foto mit demselben Motiv, so seht ihr, wie die Kinder wachsen. Ältere Fotos könnt ihr nachtragen.</p>'}`;
+  };
+  // Älteres Foto nachtragen: Jahr aus dem Foto lesen, dann bestätigen lassen
+  let oldFile = null;
+  CHANGES['rf-old'] = async el => {
+    const f = el.files[0]; el.value = '';
+    if (!f) return;
+    oldFile = f;
+    const ex = app.readExif ? await app.readExif(f) : {};
+    const y = (ex.date || '').slice(0, 4) || String(new Date(f.lastModified || Date.now()).getFullYear());
+    openSheet(`<form data-form="rf-old">${sheetHead('Älteres Reisefoto')}
+      <label class="field"><span>Aus welchem Jahr ist das Foto?</span><input name="year" inputmode="numeric" pattern="[0-9]{4}" required value="${esc(y)}"></label>
+      <div class="sheet-foot"><button class="primary">Nachtragen</button></div></form>`);
+  };
+  FORMS['rf-old'] = async form => {
+    const f = oldFile, year = +form.year.value;
+    if (!f || year < 1950 || year > 2100) return toast('Bitte ein Jahr wie 2019 eintragen.');
+    try {
+      const id = newId();
+      save('photos', { id, data: await shrink(f, 1920, 0.8) });
+      save('games', { id: `reisefoto_y${year}_${newId()}`, kind: 'reisefoto', tripId: null, year, photoId: id, thumb: await shrink(f, 480, 0.75), at: Date.now() });
+      oldFile = null; closeSheet(); toast(`Reisefoto ${year} nachgetragen`);
+    } catch { toast('Das Foto ließ sich nicht lesen.'); }
+  };
+  ACTIONS['rf-del'] = el => {
+    const g = S.games.find(x => x.id === el.dataset.id);
+    if (!g || !confirm('Dieses Reisefoto entfernen?')) return;
+    if (g.photoId) remove('photos', g.photoId);
+    remove('games', g.id);
+  };
+  // Zeitraffer: Jahr für Jahr groß nacheinander, Tipp beendet
+  ACTIONS['rf-play'] = () => {
+    const years = perYear();
+    if (!years.length) return;
+    const box = document.createElement('div');
+    box.className = 'rf-play';
+    box.innerHTML = '<img alt=""><b></b><small>Tippen zum Beenden</small>';
+    document.body.appendChild(box);
+    const img = box.querySelector('img'), label = box.querySelector('b');
+    let i = 0;
+    const show = () => {
+      const x = years[i];
+      img.src = x.g.thumb; label.textContent = x.y;
+      app.store().get('photos', x.g.photoId).then(p => { if (p && p.data && years[i] === x) img.src = p.data; }).catch(() => {});
+      i = (i + 1) % years.length;
+    };
+    show();
+    const timer = setInterval(show, 1600);
+    box.addEventListener('click', () => { clearInterval(timer); box.remove(); });
   };
   // Große Fassung nachladen
   app.afterDraw.push(view => view.querySelectorAll('img[data-rf]').forEach(img => app.store().get('photos', img.dataset.rf).then(p => { if (p && p.data) img.src = p.data; }).catch(() => {})));
@@ -256,11 +351,12 @@ export default function installMitteilen(app) {
     const html = todayCard ? todayCard(t, st) : '';
     if (!html || !running(t)) return html;
     const list = pins().slice(0, 2);
-    const rf = !tripPhoto(t);
+    // Erinnerung, solange es in diesem Jahr noch kein Reisefoto gibt
+    const rf = !allPhotos().some(x => x.y === new Date().getFullYear());
     const row = `<div class="today-pins">${pinList(list, true)}
       <div class="today-mit"><button class="link" data-action="pin-new">📌 Pinnwand</button>
         <button class="link" data-action="day-share">${icon('share')}Tag teilen</button>
-        ${rf ? `<a class="link" href="#/reisefoto">📸 Reisefoto fehlt noch</a>` : ''}</div></div>`;
+        ${rf ? `<a class="link" href="#/reisefoto">📸 Reisefoto ${new Date().getFullYear()} fehlt noch</a>` : ''}</div></div>`;
     return html.replace('<div class="today-links">', `${row}<div class="today-links">`);
   };
   const kids = VIEWS.kinder;

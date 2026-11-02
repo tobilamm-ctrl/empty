@@ -56,6 +56,29 @@ export default function installPackhilfe(app) {
   const unusedNow = (skipTrip = null) => Object.entries(notes().unused || {}).filter(([id, tid]) => tid !== skipTrip && S.items.some(i => i.id === id))
     .map(([id, tid]) => ({ item: S.items.find(i => i.id === id), trip: tripById(tid) }));
 
+  // Neue Reise angelegt: an die Packliste fürs nächste Mal erinnern
+  const tripSaved = app.tripSaved;
+  app.tripSaved = (t, old, form) => {
+    if (tripSaved) tripSaved(t, old, form);
+    if (old) return;
+    const open = missingItems().filter(i => !i.done), unused = unusedNow(t.id);
+    if (!open.length && !unused.length) return;
+    // Erst nach dem Wechsel ins Tagebuch öffnen (das Reise-Fenster wird gerade geschlossen)
+    setTimeout(() => openSheet(`<div>${sheetHead('Packliste: nächstes Mal')}
+      ${open.length ? `<p>Beim letzten Mal hat gefehlt:</p><ul class="pack-remind">${open.map(m => `<li>${esc(m.text)}</li>`).join('')}</ul>` : ''}
+      ${unused.length ? `<p class="sub">Nie gebraucht: ${unused.map(u => esc(u.item.name)).join(', ')}. Vielleicht zu Hause lassen?</p>` : ''}
+      <div class="sheet-foot"><button type="button" class="ghost" data-action="close">Später</button>
+        ${open.length ? `<button type="button" class="primary" data-action="pack-remind-add" data-id="${t.id}">Alles für „${esc(t.name)}“ einpacken</button>` : ''}</div></div>`), 450);
+  };
+  ACTIONS['pack-remind-add'] = el => {
+    const t = tripById(el.dataset.id);
+    if (!t) return;
+    const open = missingItems().filter(i => !i.done);
+    open.forEach(m => { save('items', { id: newId(), name: m.text, boxId: '', tripId: t.id, note: 'hat letztes Mal gefehlt' }); tick(m.id); });
+    closeSheet();
+    toast(`${open.length} ${open.length === 1 ? 'Sache steht' : 'Sachen stehen'} jetzt als Extra auf der Packliste`);
+  };
+
   // Nach der Reise auswerten
   ACTIONS['pack-review'] = el => {
     const t = tripById(el.dataset.id);

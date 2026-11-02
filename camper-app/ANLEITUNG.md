@@ -136,6 +136,21 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 54: Pinnwand-Zettel, Reisefoto Jahr für Jahr, Teilen in Reiseideen
+
+- **Gelber Zettel in der Kopfzeile:** Hängt etwas an der Pinnwand, klebt rechts neben LAMMping ein gelber Zettel mit
+  der Anzahl. Ein Tipp zeigt die Zettel über dem aktuellen Bildschirm, mit „Neuer Zettel“ und „Zur Pinnwand“.
+- **Unser Reisefoto, jedes Jahr:** „Jahr für Jahr“ zeigt je Jahr ein Foto nebeneinander, **▶ Zeitraffer** spielt die
+  Jahre groß nacheinander ab (Tipp beendet). Mit „Älteres Foto nachtragen“ kommen auch Fotos aus früheren Jahren dazu
+  (das Jahr wird aus dem Foto gelesen). Die Heute-Karte erinnert mit „Reisefoto 2026 fehlt noch“.
+- **In eine Reiseidee teilen:** Beim Teilen aus anderen Apps stehen alle Ideen zur Wahl (mit Suche), geteilte Bilder
+  werden an der Idee gespeichert. In jeder Idee neu: **📋 Aus Zwischenablage** (kopierten Link übernehmen, z. B. am
+  iPhone) und **📷 Foto**.
+- **Startseite:** Eine in den Einstellungen gewählte Startseite gilt jetzt immer. „Dort weitermachen, wo ich war“
+  greift nur noch, wenn als Startseite „Wie gewohnt“ eingestellt ist.
+- **Packliste: nächstes Mal:** Beim Anlegen einer neuen Reise erinnert LAMMping an die Sachen auf der Liste und packt
+  sie auf Wunsch mit einem Tipp als Extras auf die Packliste der neuen Reise.
+
 ## Neu in Version 53: Zugangskarte für neue Personen
 
 Wer in der Verwaltung eine Person anlegt (oder ihr ein neues Passwort gibt), bekommt danach den Knopf

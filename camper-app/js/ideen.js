@@ -4,7 +4,7 @@
 export default function installIdeen(app) {
   const {
     S, ui, VIEWS, ACTIONS, FORMS, esc, icon, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
-    today, me, personName, nextColor, setTrip,
+    today, me, personName, nextColor, setTrip, shrink, CHANGES,
   } = app;
   const sheetHead = app.sheetHead;
   // Adressen in Notizen anklickbar machen (erst maskieren, dann verlinken)
@@ -71,13 +71,18 @@ export default function installIdeen(app) {
       ${i.text ? `<p class="idea-text">${linkify(i.text)}</p>` : ''}
       <div class="idea-like-row">${likeBtn(i)}<span class="sub">${likes(i).length ? `Will ich auch: ${likes(i).map(personName).map(esc).join(', ')}` : 'Wem gefällt die Idee?'}</span></div>
       <h3 class="date-head">Ideen und Notizen dazu</h3>
-      ${notes.length ? `<ul class="idea-notes">${notes.map(n => `<li><p>${linkify(n.text)}</p>
+      ${notes.length ? `<ul class="idea-notes">${notes.map(n => `<li>${n.text ? `<p>${linkify(n.text)}</p>` : ''}
+        ${(n.photos || []).length ? `<div class="idea-photos">${n.photos.map(p => `<img src="${p.thumb}" data-photo="${p.id}" alt="">`).join('')}</div>` : ''}
         <small>${esc(personName(n.by))}, ${when(n.at)}${n.by === me() ? ` · <button class="link" data-action="idea-note-del" data-id="${i.id}" data-note="${n.id}">löschen</button>` : ''}</small></li>`).join('')}</ul>`
         : '<p class="sub">Noch nichts notiert: Stellplätze, Ausflüge, Restaurants, Links …</p>'}
       <form data-form="idea-note" data-id="${i.id}" class="idea-note-form">
         <textarea name="text" rows="2" placeholder="Idee oder Link notieren" required></textarea>
         <button class="primary">Notieren</button>
       </form>
+      <div class="btnrow idea-add">
+        ${navigator.clipboard && navigator.clipboard.readText ? `<button type="button" class="ghost small-btn" data-action="idea-paste" data-id="${i.id}">📋 Aus Zwischenablage</button>` : ''}
+        <label class="ghost btn small-btn file">📷 Foto<input type="file" accept="image/*" multiple data-action="idea-photo" data-id="${i.id}"></label>
+      </div>
       <div class="sheet-foot">
         <button type="button" class="ghost" data-action="idea-form" data-id="${i.id}">Bearbeiten</button>
         ${t ? `<button type="button" class="primary" data-action="idea-to-trip-open" data-trip="${t.id}">Zur Reise</button>`
@@ -90,10 +95,32 @@ export default function installIdeen(app) {
     if (!i || !text) return;
     openIdea(save('ideas', { ...i, notes: [...(i.notes || []), { id: newId(), by: me(), at: Date.now(), text }] }));
   };
+  // Kopierten Link oder Text als Notiz übernehmen (Ersatz für „Teilen“, z. B. am iPhone)
+  ACTIONS['idea-paste'] = async el => {
+    const i = S.ideas.find(x => x.id === el.dataset.id);
+    let text = '';
+    try { text = (await navigator.clipboard.readText()).trim(); } catch { return toast('Kein Zugriff auf die Zwischenablage. Lange auf das Notizfeld tippen und „Einfügen“ wählen.'); }
+    if (!i || !text) return toast('In der Zwischenablage ist nichts.');
+    openIdea(save('ideas', { ...i, notes: [...(i.notes || []), { id: newId(), by: me(), at: Date.now(), text: text.slice(0, 2000) }] }));
+    toast('Aus der Zwischenablage notiert');
+  };
+  CHANGES['idea-photo'] = async el => {
+    const i = S.ideas.find(x => x.id === el.dataset.id);
+    const files = [...el.files]; el.value = '';
+    if (!i || !files.length) return;
+    const photos = [];
+    for (const f of files) {
+      try { const id = newId(); save('photos', { id, data: await shrink(f, 1920, 0.8) }); photos.push({ id, thumb: await shrink(f, 360, 0.7) }); } catch { /* Format nicht lesbar */ }
+    }
+    if (!photos.length) return toast('Das Foto ließ sich nicht lesen.');
+    openIdea(save('ideas', { ...i, notes: [...(i.notes || []), { id: newId(), by: me(), at: Date.now(), text: '', photos }] }));
+  };
   ACTIONS['idea-note-del'] = el => {
     const i = S.ideas.find(x => x.id === el.dataset.id);
     if (!i || !confirm('Diese Notiz löschen?')) return;
-    openIdea(save('ideas', { ...i, notes: (i.notes || []).filter(n => n.id !== el.dataset.note) }));
+    const n = (i.notes || []).find(x => x.id === el.dataset.note);
+    (n && n.photos || []).forEach(p => remove('photos', p.id));
+    openIdea(save('ideas', { ...i, notes: (i.notes || []).filter(x => x.id !== el.dataset.note) }));
   };
 
   /* ---------- Anlegen und Bearbeiten ---------- */

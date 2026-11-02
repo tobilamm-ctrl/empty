@@ -100,7 +100,9 @@ export default function installBedienung(app) {
     resumed = true;
     const last = LS.get('lastPlace', null);
     const fresh = last && Date.now() - last.at < 12 * 36e5;
-    if (!opt('resume') || !fresh || !['', '#', '#/', '#/karte'].includes(location.hash) || last.route === out) return out;
+    // Eine fest gewählte Startseite (Einstellungen → Startseite) hat Vorrang vor „dort weitermachen“
+    const own = app.session && app.session() && app.session().user.start;
+    if (own || !opt('resume') || !fresh || !['', '#', '#/', '#/karte'].includes(location.hash) || last.route === out) return out;
     const ok = guard ? guard(last.route) === last.route : true;
     if (!ok) return out;
     if (last.game && last.route === 'spiele') ui.game = last.game;
@@ -313,7 +315,7 @@ export default function installBedienung(app) {
   settingsPanels.push(() => `<section class="panel">
     <h2>Komfort</h2>
     <label class="check"><input type="checkbox" data-action="opt-set" data-k="wakeLock"${opt('wakeLock') ? ' checked' : ''}><span>Bildschirm anlassen bei „Wie lange noch?“, Wasserwaage, Kochen, Spielen und im Einkaufsmodus</span></label>
-    <label class="check"><input type="checkbox" data-action="opt-set" data-k="resume"${opt('resume') ? ' checked' : ''}><span>Beim Öffnen dort weitermachen, wo ich war (bis 12 Stunden später)</span></label>
+    <label class="check"><input type="checkbox" data-action="opt-set" data-k="resume"${opt('resume') ? ' checked' : ''}><span>Beim Öffnen dort weitermachen, wo ich war (bis 12 Stunden später; nur wenn als Startseite „Wie gewohnt“ gewählt ist)</span></label>
     <label class="check"><input type="checkbox" data-action="opt-set" data-k="headSmall"${opt('headSmall') ? ' checked' : ''}><span>Kopfzeile beim Herunterscrollen verkleinern</span></label>
     <div class="btnrow"><button class="ghost" data-action="storage-check">Speicherplatz ansehen</button><button class="ghost" data-action="keys-help">Tastenkürzel am PC</button></div>
   </section>`);

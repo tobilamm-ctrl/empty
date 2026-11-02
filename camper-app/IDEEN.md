@@ -122,23 +122,14 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 80. Weitere Spiele in der Urlaubswertung (Punkteblock, Lieferung 43): Tick-Tack-Bumm und „Wer ist schneller?“ speichern
     noch keine Sieger für die Familie, die Quiz-Spiele (Hauptstädte, Umriss, Wo liegt das?, Farben-Merkspiel) nur
     Rekorde je Person und Handy. Idee: Sieger bzw. bester Wert der Reise je Person zählt mit.
-81. Jedes Jahr dasselbe Foto: festes Erinnerungsmotiv, die App erinnert daran und zeigt die Jahre nebeneinander
-    (früher vorgeschlagen, jetzt auf der Liste).
+81. ~~Jedes Jahr dasselbe Foto~~ Erledigt in Lieferung 54 (Jahr für Jahr, Zeitraffer, ältere Fotos nachtragen).
 
 **📌 Hinweise**
 
-82. Benachrichtigungssymbol an der Kachel „Pinnwand“ (Mehr), wenn dort etwas hängt: kleine Zahl bzw. Punkt mit der
-    Anzahl der aktuellen Zettel, wie bei anderen Kacheln mit Zähler. Ggf. auch am Reiter „Mehr“.
-83. Aus anderen Apps in eine bestimmte Reiseidee teilen (Links, Texte, Orte, Fotos). Grundstock gibt es seit Lieferung 34
-    („Mit LAMMping geteilt“ → „Zu den Reiseideen“: neue Idee oder Notiz zu einer der ersten 12 Ideen). Noch offen:
-    alle Ideen mit Suche auswählbar, Link als anklickbarer Link in der Idee, auf echtem Handy prüfen (geht nur mit
-    installierter App; iPhone/Safari unterstützt „Teilen an Web-Apps“ nicht → dort Ersatz: Link kopieren und in der
-    Reiseidee „Aus Zwischenablage einfügen“).
-    Bilder und PDFs: Bilder kommen beim Teilen zwar an, landen aber bisher nur im Tagebuch, bei einer Reiseidee fallen
-    sie weg → künftig als Fotos an der Idee speichern (geht ohne Server). PDFs (z. B. Prospekt, Buchungsbestätigung,
-    Fährticket) nimmt LAMMping noch gar nicht an: Teilen-Menü nur für Bilder freigegeben, Server speichert nur
-    JPEG-Fotos und Sprachnotizen → braucht neue `api/index.php` (PDF speichern, Größengrenze z. B. 10 MB, Vorschau
-    und Öffnen), passt zu Paket 10. Dann auch PDFs an Tickets und Dokumente anhängen.
+82. ~~Benachrichtigungssymbol für die Pinnwand~~ Erledigt in Lieferung 54 als gelber Zettel in der Kopfzeile.
+83. In eine bestimmte Reiseidee teilen: Erledigt in Lieferung 54 (alle Ideen mit Suche, Bilder an der Idee, „Aus
+    Zwischenablage“ und „Foto“ in jeder Idee). Noch offen: PDFs teilen und anhängen (braucht neue `api/index.php`,
+    gehört zu Paket 10).
 84. Fehlende Bereichsbilder im neuen Schaf-Stil (Lieferung 52): Karte, Tagebuch, Listen, Planung (zurzeit Basis-Schaf
     plus altes Symbol) und ggf. „Mehr“. Bilder in höherer Auflösung liefern, dann tausche ich sie aus.
 
@@ -165,7 +156,7 @@ Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und 
 10. **Server und Konten** (jeweils neue `api/index.php`; vor Push ein kleines Prüfskript schicken, ob der Webspace
     OpenSSL für Push-Mitteilungen hat): 72 Push-Mitteilungen → 31 Medikamenten-Erinnerung →
     74 Schneller Personenwechsel → 73 App-Sperre → 22 Gäste ohne Konto → 36 Gästebuch im Reiseblog →
-    76 Erste Schritte → 78 Rechte für mehrere Familien (nach Klärung der offenen Fragen).
+    76 Erste Schritte → 78 Rechte für mehrere Familien (Fragen geklärt, siehe Abschnitt unten).
    Ohne offene Fragen zuerst möglich: 74 Personenwechsel, 73 App-Sperre, 76 Erste Schritte.
    Jederzeit dazwischen: 79 Weitere Mitfahrer für die Kopfzeile, 80 Weitere Spiele in der Urlaubswertung,
    81 Jedes Jahr dasselbe Foto, 82 Symbol an der Pinnwand-Kachel,
@@ -303,10 +294,10 @@ Wunsch: Tobi ist Super-Admin; andere Familienmitglieder können eigene Crews (Ur
   Sicherung zum Herunterladen nur noch mit eigenen Crews. Neue `api/index.php` (Server-Teil) nötig.
 - Grenze: Die Datenbank liegt auf Tobis Webspace. Die App zeigt fremde Crews nicht, gegen direkten Datenbankzugriff
   hülfe nur Verschlüsselung auf den Geräten (sehr großer Umbau).
-- Noch offen:
-  1. Wer legt Konten an: nur der Super-Admin, oder auch Crew-Leiter für ihre Leute (z. B. Kinder)?
-  2. Wie kommt man in eine Crew: Crew-Leiter trägt Anmeldenamen ein, oder Einladungslink mit Selbst-Registrierung?
-  3. Was sieht der Super-Admin von fremden Crews: gar nichts oder Name und Mitgliederzahl?
+- Entschieden (Antworten vom 2.11.2026):
+  1. Konten anlegen: der Super-Admin **und** Crew-Leiter (für ihre eigenen Leute, z. B. Kinder).
+  2. In eine Crew kommt man per **Einladungslink bzw. QR-Code** (Zugangskarte aus Lieferung 53 als Baustein).
+  3. Der Super-Admin sieht von fremden Crews nur **Name und Mitgliederzahl**.
 
 ## Früher vorgeschlagen, noch nicht ausgewählt
 

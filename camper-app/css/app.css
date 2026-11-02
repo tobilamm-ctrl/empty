@@ -2349,3 +2349,33 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .ac-line { display: inline-block; width: 60mm; border-bottom: 1.5px solid #3A2617; height: 8mm; }
 .ac-steps { margin: 7mm 0 3mm; padding-left: 6mm; font-size: 11pt; line-height: 1.45; }
 .ac-foot { margin: 0; font-size: 9.5pt; color: #8A6A4A; }
+.pack-remind { margin: 4px 0 12px; padding-left: 20px; line-height: 1.6; }
+
+/* ---------- Version 54: gelber Pinnwand-Zettel in der Kopfzeile ---------- */
+.pin-note { position: relative; flex: none; margin-left: auto; margin-right: 2px; width: 44px; height: 40px; padding: 6px 0 0; border: 0; border-radius: 2px 2px 8px 2px;
+  background: linear-gradient(160deg, #FFF07A, #FFE14D); box-shadow: 0 3px 6px rgba(60, 40, 10, .25); transform: rotate(-5deg);
+  color: #5A3D12; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; cursor: pointer; }
+.pin-note::before { content: ''; position: absolute; top: -4px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
+  background: #D63A2F; box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.pin-note b { font: 800 17px var(--head); }
+.pin-note small { font: 600 9px var(--body); }
+.pin-note[hidden] { display: none; }
+.pin-note:active { transform: rotate(-2deg) scale(.96); }
+.pins-sheet .pins { margin-bottom: 8px; }
+/* Reisefoto: Jahr für Jahr und Zeitraffer */
+.rf-years-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rf-strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0 12px; scroll-snap-type: x mandatory; }
+.rf-strip figure { flex: 0 0 132px; margin: 0; scroll-snap-align: start; text-align: center; }
+.rf-strip img { width: 132px; height: 100px; object-fit: cover; border-radius: 10px; display: block; box-shadow: 0 2px 6px rgba(58, 38, 23, .15); }
+.rf-strip figcaption { font: 700 16px var(--head); margin-top: 4px; }
+.rf-grid figcaption .link { font-size: 13px; padding: 0; }
+.rf-play { position: fixed; inset: 0; z-index: 200; background: rgba(20, 12, 6, .94); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #fff; cursor: pointer; }
+.rf-play img { max-width: 92vw; max-height: 72vh; border-radius: 12px; object-fit: contain; animation: rfIn .5s ease-out; }
+.rf-play b { font: 800 44px var(--head); }
+.rf-play small { opacity: .7; }
+@keyframes rfIn { from { opacity: .2; transform: scale(.98); } }
+/* Reiseideen: Fotos in Notizen, Zwischenablage */
+.idea-photos { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.idea-photos img { width: 84px; height: 64px; object-fit: cover; border-radius: 8px; cursor: zoom-in; }
+.idea-add { margin: 6px 0 10px; }
+.idea-pick li[hidden] { display: none; }
