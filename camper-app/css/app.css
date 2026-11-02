@@ -2531,3 +2531,7 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .plan-stop .sort-btns .icon-btn { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; font: 800 18px var(--head); }
 .plan-stop .sort-btns .icon-btn[disabled] { opacity: .3; }
 .plan-stop.sorting { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.plan-stop .plan-grip { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 22px; color: var(--muted);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 10px; }
+.plan-stop .plan-grip:hover { background: var(--mist); color: var(--ink); }
+.plan-stop.dragging { position: relative; z-index: 5; background: var(--surface); box-shadow: 0 8px 22px rgba(58, 38, 23, .25); border-radius: 12px; cursor: grabbing; }

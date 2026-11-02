@@ -329,15 +329,14 @@ export default function installMore(app) {
     // Zwischen zwei geplanten Orten: Kilometer und Fahrzeit (unterwegs.js)
     const leg = i => (i > 0 && app.legHtml ? app.legHtml(stops[i - 1], stops[i]) : '');
     const sorting = ui.planSort === t.id;
-    const rows = stops.map((p, i) => `${sorting ? '' : leg(i)}<li class="plan-stop${p.done ? ' done' : ''}${sorting ? ' sorting' : ''}">
+    const rows = stops.map((p, i) => `${sorting ? '' : leg(i)}<li class="plan-stop${p.done ? ' done' : ''}${sorting ? ' sorting' : ''}" data-pid="${p.id}">
         <span class="node${p.kind === 'stellplatz' ? ' filled' : ''}">${kindIcon(p.kind)}</span>
         <button class="body as-text" data-action="place-form" data-id="${p.id}">
           <span class="time">${p.planDate ? fmtDay(p.planDate) : 'Noch ohne Datum'}, ${PLACE_KINDS[p.kind]}</span>
           <strong>${esc(p.name)}</strong>
           ${p.place || p.note ? `<span class="meta">${esc([p.place, p.note].filter(Boolean).join(', '))}</span>` : ''}
         </button>
-        ${sorting ? `<span class="sort-btns"><button class="icon-btn small" data-action="plan-move" data-id="${p.id}" data-d="-1" aria-label="Nach oben"${i ? '' : ' disabled'}>↑</button>
-            <button class="icon-btn small" data-action="plan-move" data-id="${p.id}" data-d="1" aria-label="Nach unten"${i < stops.length - 1 ? '' : ' disabled'}>↓</button></span>`
+        ${sorting ? `<span class="plan-grip" aria-label="Ziehen zum Verschieben" title="Ziehen zum Verschieben">⠿</span>`
           : p.done ? '<span class="done-tag">besucht</span>' : `<button class="ghost small-btn" data-action="place-arrive" data-id="${p.id}">Hier sind wir</button>`}
       </li>`).join('');
     const dated = stops.some(p => p.planDate);
@@ -347,7 +346,7 @@ export default function installMore(app) {
         <div class="toolbar"><h2>Stellplätze und Sehenswertes</h2>
           ${stops.length > 1 ? `<button class="${sorting ? 'primary' : 'ghost'} small-btn" data-action="plan-sort" data-id="${t.id}">${sorting ? 'Fertig' : '↕ Reihenfolge'}</button>` : ''}</div>
         ${sorting ? `<div class="plan-sort-bar"><button class="ghost" data-action="plan-auto" data-id="${t.id}">${icon('route')}Automatisch ordnen (kürzeste Strecke)</button>
-          <p class="sub">Startet bei eurem Standort bzw. beim letzten Eintrag im Tagebuch, sonst beim ersten Stopp. Danach mit ↑ ↓ anpassen.${dated ? ' Stopps mit Datum bleiben nach Datum sortiert.' : ''}</p></div>` : ''}
+          <p class="sub">Startet bei eurem Standort bzw. beim letzten Eintrag im Tagebuch, sonst beim ersten Stopp. Danach am Griff ⠿ an die gewünschte Stelle ziehen.${dated ? ' Stopps mit Datum bleiben nach Datum sortiert.' : ''}</p></div>` : ''}
         ${rows ? `<ol class="plan-list">${rows}</ol>` : '<p class="hint">Noch nichts vorgemerkt. Was ihr hier eintragt, erscheint auch auf der Karte als geplante Route.</p>'}
         <div class="btnrow">
           <button class="primary" data-action="place-form" data-trip="${t.id}" data-kind="stellplatz">${icon('plus')}Stellplatz</button>
@@ -379,16 +378,45 @@ export default function installMore(app) {
   // Reihenfolge speichern (nur geänderte Orte)
   const saveOrder = list => list.forEach((p, i) => { if (p.order !== i) save('places', { ...p, order: i }); });
   ACTIONS['plan-sort'] = el => { ui.planSort = ui.planSort === el.dataset.id ? null : el.dataset.id; render(); };
-  ACTIONS['plan-move'] = el => {
-    const p = S.places.find(x => x.id === el.dataset.id);
-    const list = tripPlaces(tripOf(p));
-    const i = list.indexOf(p), j = i + +el.dataset.d;
-    if (j < 0 || j >= list.length) return;
-    // Mit Datum steht ein Stopp fest; verschoben wird nur unter Gleichen (beide ohne bzw. mit demselben Datum)
-    if ((list[j].planDate || '') !== (p.planDate || '')) return toast('Stopps mit Datum stehen nach Datum. Datum ändern, um sie zu verschieben.');
-    [list[i], list[j]] = [list[j], list[i]];
-    saveOrder(list);
+
+  // Ziehen am Griff (Maus und Finger, ohne langes Drücken): Zeile wandert mit, beim Loslassen wird gespeichert
+  let pdrag = null;
+  document.addEventListener('pointerdown', ev => {
+    const g = ev.target.closest && ev.target.closest('.plan-grip');
+    if (!g) return;
+    ev.preventDefault();
+    const li = g.closest('.plan-stop'), list = li.parentElement, r = li.getBoundingClientRect();
+    pdrag = { li, list, id: ev.pointerId, gy: ev.clientY - r.top };
+    li.classList.add('dragging');
+    g.setPointerCapture && g.setPointerCapture(ev.pointerId);
+  });
+  document.addEventListener('pointermove', ev => {
+    if (!pdrag || ev.pointerId !== pdrag.id) return;
+    ev.preventDefault();
+    const { li, list } = pdrag;
+    const over = [...list.children].find(x => x !== li && x.classList.contains('plan-stop') && (() => { const r = x.getBoundingClientRect(); return ev.clientY > r.top && ev.clientY < r.bottom; })());
+    if (over) {
+      const kids = [...list.children];
+      list.insertBefore(li, kids.indexOf(over) > kids.indexOf(li) ? over.nextSibling : over);
+    }
+    li.style.transform = '';
+    const r = li.getBoundingClientRect();
+    li.style.transform = `translateY(${ev.clientY - pdrag.gy - r.top}px)`;
+    // Am Rand des Bildschirms mitscrollen
+    if (ev.clientY < 90) scrollBy(0, -12); else if (ev.clientY > innerHeight - 90) scrollBy(0, 12);
+  }, { passive: false });
+  const pend = ev => {
+    if (!pdrag || ev.pointerId !== pdrag.id) return;
+    const { li, list } = pdrag; pdrag = null;
+    li.style.transform = ''; li.classList.remove('dragging');
+    const ids = [...list.querySelectorAll('.plan-stop[data-pid]')].map(x => x.dataset.pid);
+    const ps = ids.map(id => S.places.find(p => p.id === id)).filter(Boolean);
+    if (ps.some(p => p.planDate)) toast('Stopps mit Datum stehen weiter nach Datum.');
+    saveOrder(ps);
   };
+  document.addEventListener('pointerup', pend);
+  document.addEventListener('pointercancel', pend);
+
   // Kürzeste Strecke (ungefähr): nächster Nachbar ab dem Start, dann 2-opt-Verbesserung (offener Weg)
   function shortestOrder(start, pts) {
     const d = (a, b) => km(a, b);
