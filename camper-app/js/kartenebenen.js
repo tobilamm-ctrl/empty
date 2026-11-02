@@ -177,6 +177,10 @@ export default function installKartenebenen(app) {
   /* ---------- Einbindung: nach jedem Zeichnen der Karte ---------- */
 
   app.mapHooks.push((layer, scope, t) => {
+    // Die Karte wurde gerade neu gezeichnet: früher herausgenommene (gebündelte) Pins gehören nicht mehr dazu.
+    // Sonst kämen sie wieder auf die Karte – auch von anderen Reisen und mehrfach.
+    hidden = [];
+    if (clusterLayer) clusterLayer.clearLayers();
     applyBase();
     photoMarkers(layer, scope, t);
     setTimeout(() => { recluster(); drawList(); }, 0);

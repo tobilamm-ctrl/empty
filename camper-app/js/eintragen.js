@@ -381,7 +381,9 @@ export default function installEintragen(app) {
     const btn = (a, l, cls = '') => `<button class="${cls}" data-action="sel-${a}">${l}</button>`;
     const acts = {
       items: [list.every(i => i.done) ? btn('undone', '↺ Wieder offen') : btn('done', '✓ Abhaken'), btn('move', '➜ In Liste …'), btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('del', 'Löschen', 'danger')],
-      entries: [btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('trip', '➜ In Reise …'), btn('del', 'Löschen', 'danger')],
+      entries: [btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('trip', '➜ In Reise …'),
+        ...(list.some(e => (e.photos || []).some(p => typeof p.lat === 'number')) ? [btn('photopos', '📍 Ort aus Fotos')] : []),
+        ...(list.some(e => typeof e.lat === 'number') ? [btn('nopos', '📍 Ort entfernen')] : []), btn('del', 'Löschen', 'danger')],
       places: [btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('trip', '➜ Für Reise …'), btn('visited', '✓ Besucht'), btn('del', 'Löschen', 'danger')],
     }[mode.ctx];
     bar.innerHTML = `<b>${n} ${n === 1 ? c.one : c.many}</b><div class="sel-acts">${acts.join('')}</div>
@@ -429,6 +431,21 @@ export default function installEintragen(app) {
   ACTIONS['sel-done'] = () => { docs().forEach(i => save('listItems', { ...i, done: true, doneAt: Date.now() })); done('Abgehakt'); };
   ACTIONS['sel-undone'] = () => { docs().forEach(i => save('listItems', { ...i, done: false })); done('Wieder offen'); };
   ACTIONS['sel-visited'] = () => { docs().forEach(p => save('places', { ...p, done: true })); done('Als besucht markiert'); };
+  // Falsch gesetzte Orte (z. B. alle Notizen am Startpunkt): aus den Fotos übernehmen oder entfernen
+  ACTIONS['sel-photopos'] = () => {
+    let n = 0;
+    docs().forEach(e => {
+      const p = (e.photos || []).find(x => typeof x.lat === 'number');
+      if (p) { save('entries', { ...e, lat: p.lat, lng: p.lng, acc: null }); n++; }
+    });
+    done(`${n} ${n === 1 ? 'Eintrag hat' : 'Einträge haben'} jetzt den Ort aus dem Foto`);
+  };
+  ACTIONS['sel-nopos'] = () => {
+    const list = docs().filter(e => typeof e.lat === 'number');
+    if (!confirm(`Bei ${list.length} ${list.length === 1 ? 'Eintrag' : 'Einträgen'} den Ort entfernen? Sie stehen dann nicht mehr auf der Karte, bleiben aber im Tagebuch.`)) return;
+    list.forEach(e => save('entries', { ...e, lat: null, lng: null, acc: null }));
+    done('Ort entfernt');
+  };
   ACTIONS['sel-del'] = () => {
     const list = docs(), c = CTX[mode.ctx];
     if (!confirm(`${list.length} ${list.length === 1 ? c.one : c.many} löschen?`)) return;

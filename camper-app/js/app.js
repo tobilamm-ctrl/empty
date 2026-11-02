@@ -50,7 +50,7 @@ import installZuschnitt from './zuschnitt.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 59;
+const APP_VERSION = 60;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -314,6 +314,8 @@ function tripStatsNow(t) {
   // Berechnete Strecke „Entlang der Straßen“ deckt die ganze Reise ab; aufgezeichnete Teile nicht doppelt zählen
   const roads = tracks.find(x => x.auto === 'roads');
   if (driven) dist = roads ? roads.km || 0 : tracks.reduce((sum, x) => sum + (x.km || 0), 0);
+  // Eingetragener Tachostand geht vor
+  if (t.odoKm > 0) dist = t.odoKm;
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
   const sorted = es.filter(e => e.date).sort(byDate);
   const firstEntry = (sorted[0] || {}).date?.slice(0, 10), lastEntry = (sorted[sorted.length - 1] || {}).date?.slice(0, 10);
@@ -328,7 +330,7 @@ function tripStatsNow(t) {
   // Nächte: so viele, wie die Reise dauert (bis heute), mindestens so viele wie Stellplatz-Einträge
   const nights = Math.max(es.filter(e => e.type === 'stellplatz').length, Math.max(0, days - 1));
   return {
-    es, stops, dist, driven, cost, days, firstDay, nights,
+    es, stops, dist, driven: driven || t.odoKm > 0, odo: t.odoKm > 0, cost, days, firstDay, nights,
     sights: es.filter(e => e.type === 'sight' || e.type === 'museum').length,
   };
 }
@@ -715,7 +717,7 @@ function tripHead(t, st, artKey = 'tagebuch') {
     st.days ? `<div><b>${st.days}</b><span>${st.days === 1 ? 'Tag' : 'Tage'}</span></div>` : '',
     `<div><b>${st.nights}</b><span>${st.nights === 1 ? 'Nacht' : 'Nächte'}</span></div>`,
     `<div><b>${st.sights}</b><span>Sehenswertes</span></div>`,
-    st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>${st.driven ? 'gefahren' : 'Luftlinie'}</span></div>` : '',
+    st.dist ? `<div><b>${fmtKm(st.dist)}</b><span>${st.odo ? 'gefahren (Tacho)' : st.driven ? 'gefahren' : 'Luftlinie'}</span></div>` : '',
   ].join('');
   return `<header class="trip-head">
     <div class="page-head with-art"><div class="ph-text"><h1>${esc(t.name)}</h1><p class="sub">${fmtRange(t)}</p></div>${art(artKey)}</div>

@@ -136,6 +136,21 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 60: Karte zeigt nur die gewählte Reise, Straße folgen genauer und rückgängig
+
+- **Fehler behoben: Pins anderer Reisen und vielfache Pins.** Beim Bündeln naher Pins merkte sich die Karte die
+  gebündelten Pins und legte sie bei jedem Neuzeichnen wieder auf die Karte – auch von anderen Reisen und mehrfach
+  (daher z. B. dieselben Notizen viele Male am Startpunkt und Bündel mit 44, 77 …). Jetzt zeigt „Diese Reise“ nur
+  noch ihre eigenen Pins, jeden einmal.
+- **Straße folgen, genauer:** Standardmäßig nur noch durch Fahrt-Stopps (Übernachtung, Tanken, Ver-/Entsorgung, Fähre,
+  Pause, Werkstatt), nahe Punkte (2 km) zusammengefasst. Sehenswertes, Baden, Wanderungen und Fotos erreicht man oft zu
+  Fuß; mit dem Auto hin und zurück ergab das viel zu viele Kilometer. Wahlweise weiter „Alle Einträge mit Ort“.
+- **Rückgängig:** Im selben Fenster „Rückgängig: wieder gerade Linien“ (entfernt nur die berechnete Strecke).
+- **Laut Tacho gefahren:** Im Fenster „Straße folgen“ lassen sich die tatsächlich gefahrenen Kilometer eintragen
+  („Nur Tacho speichern“). Sie gelten dann in Reise und Statistik („gefahren (Tacho)“).
+- **Orte aufräumen:** In der Mehrfachauswahl im Tagebuch (lange drücken) gibt es „📍 Ort aus Fotos“ und
+  „📍 Ort entfernen“.
+
 ## Neu in Version 59: Straße folgen, Nächte, Wanderwege aus Fotos, Aufzeichnen, Zuschneiden
 
 - **Der Straße folgen (auch nachträglich):** Knopf **Straße folgen** über dem Tagebuch (bei beendeten Reisen unter

@@ -15,15 +15,24 @@ export default function installStrecken(app) {
   /* 1. Der Straße folgen                                                    */
   /* ====================================================================== */
 
-  // Stopps in zeitlicher Reihenfolge, dicht beieinanderliegende (300 m) zusammengefasst
-  function waypoints(t) {
+  // Wegpunkte für die Straßenführung. Standard: nur Stopps, zu denen man mit dem Camper fährt (Übernachtung, Tanken,
+  // Ver-/Entsorgung, Fähre, Pause, Werkstatt). Sehenswertes, Baden, Wanderungen, Restaurants und Fotos erreicht man oft
+  // zu Fuß; mit dem Auto dorthin und zurück ergäbe viele Umwege. Nahe Punkte (2 km) werden zusammengefasst.
+  const DRIVE = ['stellplatz', 'tank', 'service', 'faehre', 'pause', 'werkstatt'];
+  const mode = () => (LS.get('roadsMode', 'fahrt') === 'alle' ? 'alle' : 'fahrt');
+  function waypoints(t, m = mode()) {
+    const all = tripEntries(t).filter(hasPos).sort(byDate);
+    let list = m === 'alle' ? all : all.filter(e => DRIVE.includes(e.type));
+    if (list.length < 2) list = all;          // ohne solche Stopps: alle
+    const near = m === 'alle' ? 1 : 2;
     const out = [];
-    tripEntries(t).filter(hasPos).sort(byDate).forEach(e => {
+    list.forEach(e => {
       const p = [e.lat, e.lng];
-      if (!out.length || dist(out[out.length - 1], p) > 0.3) out.push(p);
+      if (!out.length || dist(out[out.length - 1], p) > near) out.push(p);
     });
     return out;
   }
+  const airline = wps => { let d = 0; for (let i = 1; i < wps.length; i++) d += dist(wps[i - 1], wps[i]); return d; };
   async function routeThrough(wps, onStep) {
     let pts = [], total = 0, straight = 0;
     // Höchstens 25 Punkte je Anfrage, die Abschnitte überlappen um einen Punkt
@@ -50,35 +59,71 @@ export default function installStrecken(app) {
   const driveTracks = t => S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
 
   app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 5, action: 'route-roads', icon: 'route', label: 'Straße folgen', title: 'Der Straße folgen', desc: 'Strecke zwischen den Stopps entlang der Straßen berechnen', later: !!t.ended || !!t.archived } : null));
+  const roadsOf = t => driveTracks(t).find(x => x.auto === 'roads');
   ACTIONS['route-roads'] = el => {
     const t = tripById(el.dataset.id) || currentTrip();
     if (!t) return;
-    const wps = waypoints(t);
+    const m = mode(), wps = waypoints(t, m), done = roadsOf(t);
     if (wps.length < 2) return toast('Dafür braucht die Reise mindestens zwei Stopps mit Ort.');
     const own = driveTracks(t).filter(x => x.auto !== 'roads');
-    openSheet(`<div>${sheetHead('Der Straße folgen')}
-      <p>LAMMping berechnet die Strecke zwischen den ${wps.length} Stopps von „${esc(t.name)}“ entlang der Straßen (OpenStreetMap). Statt gerader Linien zeigt die Karte dann die wahrscheinlich gefahrene Strecke, und die Kilometer werden genauer.</p>
-      ${own.length ? `<p class="hint">Es gibt schon ${own.length === 1 ? 'eine Strecke' : `${own.length} Strecken`} (GPX, gezeichnet oder aufgezeichnet). Sie ${own.length === 1 ? 'bleibt' : 'bleiben'} erhalten; die berechnete Strecke kommt dazu.</p>` : ''}
-      <p class="sub">Umwege, Fähren oder Abstecher ohne Eintrag kennt LAMMping nicht. Korrigieren lässt sich die Strecke über den Stift auf der Karte („Strecke“). Kommen später Stopps dazu, einfach noch einmal berechnen.</p>
-      <div class="sheet-foot"><button type="button" class="ghost" data-action="close">Abbrechen</button>
-        <button type="button" class="primary" data-action="route-roads-go" data-id="${t.id}">${icon('route')}Strecke berechnen</button></div></div>`);
+    openSheet(`<form data-form="route-roads" data-id="${t.id}">${sheetHead('Der Straße folgen')}
+      ${done ? `<p class="hint">Berechnet: <b>${fmtKm(done.km || 0)}</b> entlang der Straßen.
+        <button type="button" class="link danger" data-action="route-roads-undo" data-id="${t.id}">Rückgängig: wieder gerade Linien</button></p>` : ''}
+      <p>LAMMping berechnet die Strecke zwischen euren Stopps entlang der Straßen (OpenStreetMap).</p>
+      <div class="field"><span>Durch welche Stopps?</span>
+        <label class="check"><input type="radio" name="mode" value="fahrt"${m === 'fahrt' ? ' checked' : ''} data-action="route-roads-mode"><span>Nur Fahrt-Stopps: Übernachtung, Tanken, Ver-/Entsorgung, Fähre, Pause (${waypoints(t, 'fahrt').length} Punkte, empfohlen)</span></label>
+        <label class="check"><input type="radio" name="mode" value="alle"${m === 'alle' ? ' checked' : ''} data-action="route-roads-mode"><span>Alle Einträge mit Ort (${waypoints(t, 'alle').length} Punkte; Sehenswertes, Baden usw. werden dann mit dem Auto angefahren, das ergibt meist zu viele Kilometer)</span></label></div>
+      <p class="sub">Luftlinie zwischen diesen Punkten: ${fmtKm(airline(wps))}. Abstecher ohne Eintrag kennt LAMMping nicht; korrigieren lässt sich die Strecke über den Stift auf der Karte („Strecke“).</p>
+      <label class="field"><span>Laut Tacho gefahren (km, optional)</span><input name="odo" inputmode="numeric" value="${t.odoKm || ''}" placeholder="z. B. 3860">
+        <small class="sub">Wenn eingetragen, zählt diese Zahl in Reise und Statistik.</small></label>
+      ${own.length ? `<p class="sub">Vorhandene GPX-, gezeichnete oder aufgezeichnete Strecken bleiben erhalten.</p>` : ''}
+      <div class="sheet-foot"><button type="button" class="ghost" data-action="route-roads-odo" data-id="${t.id}">Nur Tacho speichern</button>
+        <button class="primary">${icon('route')}${done ? 'Neu berechnen' : 'Strecke berechnen'}</button></div></form>`);
   };
-  ACTIONS['route-roads-go'] = async el => {
-    const t = tripById(el.dataset.id);
+  CHANGES['route-roads-mode'] = el => {
+    LS.set('roadsMode', el.value);
+    const f = el.closest('form'), odo = f.odo.value;
+    ACTIONS['route-roads']({ dataset: { id: f.dataset.id } });
+    const nf = document.querySelector('#sheet form[data-form=route-roads]');
+    if (nf) nf.odo.value = odo;
+  };
+  const saveOdo = (t, form) => {
+    const v = parseInt(String(form.odo.value).replace(/\D/g, ''), 10);
+    const odoKm = v > 0 ? v : null;
+    if ((t.odoKm || null) !== odoKm) save('trips', { ...t, odoKm });
+  };
+  ACTIONS['route-roads-odo'] = el => {
+    const t = tripById(el.dataset.id), form = el.closest('form');
     if (!t) return;
+    saveOdo(t, form);
+    closeSheet(); toast('Gespeichert'); render();
+  };
+  ACTIONS['route-roads-undo'] = el => {
+    const t = tripById(el.dataset.id), tr = t && roadsOf(t);
+    if (!tr) return;
+    remove('tracks', tr.id);
+    closeSheet();
+    toast('Berechnete Strecke entfernt, die Karte zeigt wieder gerade Linien zwischen den Stopps');
+    render();
+  };
+  app.FORMS['route-roads'] = async form => {
+    const t = tripById(form.dataset.id);
+    if (!t) return;
+    saveOdo(t, form);
     if (!navigator.onLine) return toast('Dafür braucht es eine Internetverbindung.');
     const wps = waypoints(t);
-    el.disabled = true;
-    const res = await routeThrough(wps, (i, n) => { el.textContent = `Wird berechnet … ${Math.round(i / n * 100)} %`; });
-    const old = driveTracks(t).find(x => x.auto === 'roads');
+    const btn = form.querySelector('.sheet-foot .primary');
+    btn.disabled = true;
+    const res = await routeThrough(wps, (i, n) => { btn.textContent = `Wird berechnet … ${Math.round(i / n * 100)} %`; });
+    const old = roadsOf(t);
     // Gespeichert wird eine vereinfachte Linie (höchstens 4000 Punkte), damit der Abgleich klein bleibt
     save('tracks', {
       ...(old || { id: newId(), tripId: t.id, createdAt: Date.now() }),
-      kind: 'drive', auto: 'roads', name: 'Entlang der Straßen', routed: true,
+      kind: 'drive', auto: 'roads', name: 'Entlang der Straßen', routed: true, mode: mode(),
       wps: enc(app.simplifyTo(wps, 150)), pts: enc(app.simplifyTo(res.pts, 4000)), km: Math.round(res.km * 10) / 10,
     });
     closeSheet();
-    toast(res.straight ? `Strecke berechnet: ${fmtKm(res.km)}. Ein Teil war nicht erreichbar und bleibt gerade.` : `Strecke berechnet: ${fmtKm(res.km)}`);
+    toast(`Strecke berechnet: ${fmtKm(res.km)}${res.straight ? '. Ein Teil war nicht erreichbar und bleibt gerade' : ''}. Rückgängig über denselben Knopf.`);
     render();
   };
 
