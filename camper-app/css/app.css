@@ -2514,3 +2514,11 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .trip-head h1 .trip-edit { display: inline-grid; vertical-align: middle; margin: -4px 0 0 8px; width: 36px; height: 36px; color: var(--muted); }
 .trip-head h1 .trip-edit .ic { width: 20px; height: 20px; }
 .trip-head h1 .trip-edit:hover { color: var(--ink); }
+
+/* ---------- Version 67: geplante Stopps auf der Karte ---------- */
+.plan-pin { position: relative; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--surface);
+  border: 3px dashed var(--c); color: var(--c); box-shadow: 0 1px 4px rgba(0, 0, 0, .3); }
+.plan-pin b { font: 800 13px var(--head); line-height: 1; }
+.plan-pin span { position: absolute; left: 31px; top: 3px; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+  font: 700 12px var(--body); color: #3A2617; background: rgba(255, 253, 248, .9); padding: 1px 6px; border-radius: 6px; pointer-events: none; }
+.plan-pin.done { opacity: .55; }

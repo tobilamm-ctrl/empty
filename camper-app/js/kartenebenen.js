@@ -68,7 +68,7 @@ export default function installKartenebenen(app) {
     hidden = [];
     if (!clusterOn() || ui.mapEdit || map.getZoom() >= 16) return;
     const markers = [];
-    rl.eachLayer(l => { if (l instanceof L.Marker && !(l.options && l.options.draggable)) markers.push(l); });
+    rl.eachLayer(l => { if (l instanceof L.Marker && !(l.options && (l.options.draggable || l.options.noCluster))) markers.push(l); });
     const pts = markers.map(m => map.latLngToLayerPoint(m.getLatLng()));
     const used = new Set();
     // Fotos zuerst, damit ein Bündel möglichst ein Vorschaubild bekommt

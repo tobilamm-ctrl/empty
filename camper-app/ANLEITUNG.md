@@ -136,6 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 67: Geplante Stopps auf der Karte
+
+- Die in der Planung gesammelten Stellplätze und Sehenswürdigkeiten der gewählten Reise stehen jetzt immer auf der
+  Karte: gestrichelter Kreis mit der Nummer aus der Planung und daneben der Name, in Planungsreihenfolge gepunktet
+  verbunden. Sie werden nie gebündelt. Mit dem Standort-Knopf seht ihr, wie nah ihr dran seid.
+- Der Schalter „Gemerkte und geplante Orte zeigen“ regelt nur noch Wunschliste und Lieblingsplätze.
+
 ## Neu in Version 66: Teilstrecken und Strecke bearbeiten
 
 - Ein kurzes aufgezeichnetes Stück oder eine GPX-Datei von nur einem Tag machte bisher die Verbindung der ganzen Reise

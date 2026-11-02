@@ -464,22 +464,32 @@ export default function installMore(app) {
     html: `<div class="pin pin-place${p.tripId ? ' planned' : ''}${p.fav ? ' fav' : ''}${p.done ? ' done' : ''}" style="--c:${color}">${p.fav ? '♥' : kindIcon(p.kind)}</div>`,
     iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12],
   });
+  // Geplante Stopps der gewählten Reise: immer sichtbar (auch ohne „Orte zeigen“), mit Nummer aus der Planung und
+  // Namen, nie gebündelt – so sieht man unterwegs, ob man in der Nähe ist. Der Schalter regelt Wunschliste & Co.
+  const planIcon = (p, n, color) => window.L.divIcon({
+    className: '',
+    html: `<div class="plan-pin${p.done ? ' done' : ''}" style="--c:${color}"><b>${n}</b><span>${esc(p.name)}</span></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14],
+  });
+  const placePopup = (p, trip) => `<div class="popup"><strong>${esc(p.name)}</strong>
+    <span>${esc([p.fav ? 'Lieblingsplatz' : trip ? 'Geplant für ' + trip.name : 'Wunschliste', p.planDate ? fmtDay(p.planDate) : ''].filter(Boolean).join(', '))}</span>
+    <button class="link" data-action="place-form" data-id="${p.id}">Ort öffnen</button></div>`;
   mapHooks.push((layer, scope, t) => {
-    if (!ui.showPlaces || ui.mapPins === 'keine') return [];
+    if (ui.mapPins === 'keine') return [];
     const L = window.L;
     const planned = t && scope === 'trip' ? tripPlaces(t).filter(hasPos) : [];
     if (planned.length > 1) {
-      L.polyline(planned.map(p => [p.lat, p.lng]), { color: tripColor(t), weight: 3, opacity: 0.8, dashArray: '1 10', lineCap: 'round' }).addTo(layer);
+      L.polyline(planned.map(p => [p.lat, p.lng]), { color: tripColor(t), weight: 3, opacity: 0.8, dashArray: '1 10', lineCap: 'round', interactive: false }).addTo(layer);
     }
-    const shown = scope === 'all' ? S.places : S.places.filter(p => !p.tripId || (t && p.tripId === t.id));
-    shown.filter(hasPos).forEach(p => {
-      const trip = tripOf(p);
-      L.marker([p.lat, p.lng], { icon: placeIcon(p, trip ? tripColor(trip) : '#6B4226'), zIndexOffset: -100 })
-        .bindPopup(`<div class="popup"><strong>${esc(p.name)}</strong>
-          <span>${esc([p.fav ? 'Lieblingsplatz' : trip ? 'Geplant für ' + trip.name : 'Wunschliste', p.planDate ? fmtDay(p.planDate) : ''].filter(Boolean).join(', '))}</span>
-          <button class="link" data-action="place-form" data-id="${p.id}">Ort öffnen</button></div>`)
-        .addTo(layer);
-    });
+    planned.forEach((p, i) => L.marker([p.lat, p.lng], { icon: planIcon(p, i + 1, tripColor(t)), zIndexOffset: 300, noCluster: true })
+      .bindPopup(placePopup(p, t)).addTo(layer));
+    if (ui.showPlaces) {
+      const shown = (scope === 'all' ? S.places : S.places.filter(p => !p.tripId || (t && p.tripId === t.id))).filter(p => !planned.includes(p));
+      shown.filter(hasPos).forEach(p => {
+        const trip = tripOf(p);
+        L.marker([p.lat, p.lng], { icon: placeIcon(p, trip ? tripColor(trip) : '#6B4226'), zIndexOffset: -100 }).bindPopup(placePopup(p, trip)).addTo(layer);
+      });
+    }
     return planned.map(p => [p.lat, p.lng]);
   });
 
