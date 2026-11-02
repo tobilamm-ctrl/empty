@@ -61,6 +61,7 @@ page_start('Spiele', $user);
 $games = games();
 ?>
 <h1>Hallo <?= h($user['name']) ?>, was spielen wir?</h1>
+<?php if (isset($_GET['willkommen'])) flash('Dein Konto ist angelegt und du bist angemeldet. Viel Spaß! Passwort und Name änderst du unter „Konto“.'); ?>
 <div class="games">
   <?php foreach ($games as $g): ?>
     <a class="game" href="play.php?spiel=<?= h($g['id']) ?>" style="--accent: <?= h($g['color'] ?? '#f4cb4d') ?>">

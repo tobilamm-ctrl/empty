@@ -12,6 +12,7 @@ const LOGIN_LOCK_SECONDS = 900;     // 15 Minuten
 const FRAME_ANCESTORS = "'self' https://lamm7.de https://*.lamm7.de";
 
 error_reporting(E_ALL);
+date_default_timezone_set('Europe/Berlin');
 ini_set('display_errors', '0');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
@@ -268,4 +269,66 @@ function flash(?string $msg, string $kind = 'ok'): void
     if ($msg) {
         echo '<p class="flash ' . h($kind) . '">' . h($msg) . '</p>';
     }
+}
+
+// ---------- Einladungen ----------
+// Ein Verwalter erzeugt einen Link (auch als QR-Code), mit dem sich bis zu „max“ Leute selbst ein Spieler-Konto
+// anlegen können, bis „expires“. Der Link enthält einen Zufallsschlüssel; abgelaufene und verbrauchte fallen weg.
+function invites(): array
+{
+    $now = time();
+    return array_filter(json_read(DATA_DIR . '/invites.json', []), function ($i) use ($now) {
+        return is_array($i) && ($i['expires'] ?? 0) > $now && ($i['used'] ?? 0) < ($i['max'] ?? 0);
+    });
+}
+
+function save_invites(array $invites): void
+{
+    json_write(DATA_DIR . '/invites.json', $invites);
+}
+
+function find_invite(string $token): ?array
+{
+    if (!preg_match('/^[A-Za-z0-9_-]{20,64}$/', $token)) {
+        return null;
+    }
+    foreach (invites() as $id => $i) {
+        if (hash_equals((string)$i['token'], $token)) {
+            return ['id' => $id] + $i;
+        }
+    }
+    return null;
+}
+
+// Adresse dieser Plattform (für Links, die nach draußen gehen)
+function base_url(): string
+{
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $host = preg_replace('/[^A-Za-z0-9.:\[\]-]/', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+    return ($https ? 'https' : 'http') . '://' . $host . $dir . '/';
+}
+
+function invite_url(array $invite): string
+{
+    return base_url() . 'einladung.php?t=' . rawurlencode((string)$invite['token']);
+}
+
+// Lesen und Schreiben von Konten und Einladungen nacheinander (zwei melden sich gleichzeitig an)
+function with_lock(callable $fn)
+{
+    ensure_data_dir();
+    $fh = fopen(DATA_DIR . '/.lock', 'c');
+    flock($fh, LOCK_EX);
+    try {
+        return $fn();
+    } finally {
+        flock($fh, LOCK_UN);
+        fclose($fh);
+    }
+}
+
+function date_de(int $t): string
+{
+    return date('d.m.Y, H:i', $t) . ' Uhr';
 }

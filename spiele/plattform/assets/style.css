@@ -70,3 +70,23 @@ table.users { width: 100%; border-collapse: collapse; }
 form.inline { display: flex; gap: 6px; margin: 0; }
 form.inline input { width: 150px; padding: 6px 10px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Einladungen in der Verwaltung */
+select { background: var(--panel-2); border: 0; border-radius: 8px; padding: 10px 12px; color: var(--ink); font: inherit; }
+.invites { display: grid; gap: 14px; }
+.invites h2 { margin: 0; }
+.invite-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.invite-form label { display: grid; gap: 4px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.invite-form label input { min-width: min(100%, 260px); }
+.invite-list { display: grid; gap: 12px; }
+.invite { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 14px; align-items: start; background: var(--panel-2); border-radius: 12px; padding: 12px; }
+.invite.fresh { outline: 2px solid var(--accent); }
+.invite h3 { margin: 0 0 2px; font-size: 16px; }
+.invite-body { display: grid; gap: 8px; min-width: 0; }
+.invite .qr { background: #fff; border-radius: 8px; padding: 4px; width: 116px; aspect-ratio: 1; }
+.invite .qr svg { display: block; width: 100%; height: 100%; }
+.invite-link { display: flex; gap: 6px; min-width: 0; }
+.invite-link input { flex: 1; min-width: 0; padding: 6px 10px; font-size: 13px; background: var(--panel); }
+@media (max-width: 520px) { .invite { grid-template-columns: 1fr; } .invite .qr { width: 160px; } }
+.note.small { font-size: 12.5px; }
+.invite-form input, .invite-form select { font-size: 15px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink); }

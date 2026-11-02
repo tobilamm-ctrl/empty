@@ -45,6 +45,9 @@ Keine Datenbank nötig. Die Daten liegen als Dateien im Ordner `data/`.
    Beim ersten Aufruf erscheint die Einrichtung: Konto für dich anlegen.
 5. **Konten anlegen.** Unter „Verwaltung“ für jede Person ein Konto mit Start-Passwort anlegen
    und persönlich weitergeben. Jeder kann sein Passwort unter „Konto“ ändern.
+   Einfacher: unter „Einladungen“ einen Link mit QR-Code erzeugen (1 Tag, 7 oder 30 Tage gültig, für 1, 5 oder
+   20 Personen), verschicken oder ausdrucken. Wer ihn öffnet, legt sich selbst ein Spieler-Konto an.
+   Zurückgezogene, abgelaufene und verbrauchte Einladungen funktionieren nicht mehr.
 6. **HTTPS erzwingen (empfohlen).** In der `.htaccess` die vier Zeilen unter
    „Immer verschlüsselt“ entkommentieren (das `#` am Zeilenanfang entfernen).
 
@@ -182,12 +185,14 @@ Spielstände müssen als JSON speicherbar sein (keine Funktionen, keine `Set`/`M
 ```
 index.php      Anmeldung und Spieleübersicht
 setup.php      Ersteinrichtung (danach gesperrt)
-admin.php      Konten verwalten
+admin.php      Konten verwalten, Einladungen erzeugen
+einladung.php  Einladung annehmen: Konto selbst anlegen (ohne Anmeldung erreichbar, nur mit gültigem Link)
+einladung-druck.php  Druckblatt einer Einladung mit QR-Code (A4)
 konto.php      eigenes Passwort und Anzeigename
 play.php       liefert ein Spiel nach Anmeldung aus
 api.php        Online-Räume
 lib/           PHP-Kern (gesperrt)
-data/          Konten und Räume (gesperrt, wird beim Einrichten befüllt)
+data/          Konten, Einladungen und Räume (gesperrt, wird beim Einrichten befüllt)
 games/         Spiele (gesperrt, nur über play.php erreichbar), vorlage/ als Startpunkt
-assets/        Gestaltung, Schriften und das Spielkit (spielkit.js, spielkit.css)
+assets/        Gestaltung, Schriften, das Spielkit (spielkit.js, spielkit.css) und qrcode.js (QR-Codes, MIT-Lizenz, Kazuhiko Arase)
 ```
