@@ -2522,3 +2522,12 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .plan-pin span { position: absolute; left: 31px; top: 3px; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
   font: 700 12px var(--body); color: #3A2617; background: rgba(255, 253, 248, .9); padding: 1px 6px; border-radius: 6px; pointer-events: none; }
 .plan-pin.done { opacity: .55; }
+
+/* ---------- Version 68: Reihenfolge der geplanten Stopps ---------- */
+.plan-block .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.plan-sort-bar { margin: 4px 0 10px; }
+.plan-sort-bar .sub { margin: 6px 0 0; }
+.plan-stop .sort-btns { display: flex; gap: 6px; flex: none; }
+.plan-stop .sort-btns .icon-btn { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; font: 800 18px var(--head); }
+.plan-stop .sort-btns .icon-btn[disabled] { opacity: .3; }
+.plan-stop.sorting { background: color-mix(in srgb, var(--surface) 70%, transparent); }

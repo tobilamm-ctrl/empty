@@ -136,6 +136,15 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 68: Geplante Stopps ordnen
+
+- In der Planung gibt es bei „Stellplätze und Sehenswertes“ den Knopf **↕ Reihenfolge**:
+  - **Automatisch ordnen (kürzeste Strecke):** ab eurem Standort (bzw. dem letzten Eintrag im Tagebuch, sonst dem
+    ersten Stopp) in die ungefähr kürzeste Reihenfolge, nach Luftlinie.
+  - **Von Hand:** mit ↑ und ↓ verschieben.
+  - Stopps mit Datum bleiben nach Datum sortiert und stehen vorn.
+- Die Reihenfolge gilt auch für die Nummern auf der Karte, die gepunktete Planungslinie und die Spritkosten.
+
 ## Neu in Version 67: Geplante Stopps auf der Karte
 
 - Die in der Planung gesammelten Stellplätze und Sehenswürdigkeiten der gewählten Reise stehen jetzt immer auf der

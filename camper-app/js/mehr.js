@@ -136,8 +136,10 @@ export default function installMore(app) {
 
   const PLACE_KINDS = { stellplatz: 'Stellplatz', poi: 'Sehenswert' };
   const kindIcon = k => icon(k === 'stellplatz' ? 'stellplatz' : 'sight');
+  // Reihenfolge der Planung: mit Datum nach Datum, sonst nach eigener Reihenfolge (order), sonst nach Anlegen
+  const ord = p => (typeof p.order === 'number' ? p.order : 1e6 + (p.createdAt || 0) / 1e13);
   const tripPlaces = t => S.places.filter(p => p.tripId === t.id)
-    .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9') || (a.createdAt || 0) - (b.createdAt || 0));
+    .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9') || ord(a) - ord(b) || (a.createdAt || 0) - (b.createdAt || 0));
   const tripOf = p => p.tripId && S.trips.find(t => t.id === p.tripId);
 
   function placeRow(p) {
@@ -326,19 +328,26 @@ export default function installMore(app) {
     const packed = all.filter(i => isPacked(t, i)).length;
     // Zwischen zwei geplanten Orten: Kilometer und Fahrzeit (unterwegs.js)
     const leg = i => (i > 0 && app.legHtml ? app.legHtml(stops[i - 1], stops[i]) : '');
-    const rows = stops.map((p, i) => `${leg(i)}<li class="plan-stop${p.done ? ' done' : ''}">
+    const sorting = ui.planSort === t.id;
+    const rows = stops.map((p, i) => `${sorting ? '' : leg(i)}<li class="plan-stop${p.done ? ' done' : ''}${sorting ? ' sorting' : ''}">
         <span class="node${p.kind === 'stellplatz' ? ' filled' : ''}">${kindIcon(p.kind)}</span>
         <button class="body as-text" data-action="place-form" data-id="${p.id}">
           <span class="time">${p.planDate ? fmtDay(p.planDate) : 'Noch ohne Datum'}, ${PLACE_KINDS[p.kind]}</span>
           <strong>${esc(p.name)}</strong>
           ${p.place || p.note ? `<span class="meta">${esc([p.place, p.note].filter(Boolean).join(', '))}</span>` : ''}
         </button>
-        ${p.done ? '<span class="done-tag">besucht</span>' : `<button class="ghost small-btn" data-action="place-arrive" data-id="${p.id}">Hier sind wir</button>`}
+        ${sorting ? `<span class="sort-btns"><button class="icon-btn small" data-action="plan-move" data-id="${p.id}" data-d="-1" aria-label="Nach oben"${i ? '' : ' disabled'}>↑</button>
+            <button class="icon-btn small" data-action="plan-move" data-id="${p.id}" data-d="1" aria-label="Nach unten"${i < stops.length - 1 ? '' : ' disabled'}>↓</button></span>`
+          : p.done ? '<span class="done-tag">besucht</span>' : `<button class="ghost small-btn" data-action="place-arrive" data-id="${p.id}">Hier sind wir</button>`}
       </li>`).join('');
+    const dated = stops.some(p => p.planDate);
     const openOf = l => S.listItems.filter(i => itemListId(i) === l.id && !i.done).length;
     return `
       <section class="plan-block">
-        <h2>Stellplätze und Sehenswertes</h2>
+        <div class="toolbar"><h2>Stellplätze und Sehenswertes</h2>
+          ${stops.length > 1 ? `<button class="${sorting ? 'primary' : 'ghost'} small-btn" data-action="plan-sort" data-id="${t.id}">${sorting ? 'Fertig' : '↕ Reihenfolge'}</button>` : ''}</div>
+        ${sorting ? `<div class="plan-sort-bar"><button class="ghost" data-action="plan-auto" data-id="${t.id}">${icon('route')}Automatisch ordnen (kürzeste Strecke)</button>
+          <p class="sub">Startet bei eurem Standort bzw. beim letzten Eintrag im Tagebuch, sonst beim ersten Stopp. Danach mit ↑ ↓ anpassen.${dated ? ' Stopps mit Datum bleiben nach Datum sortiert.' : ''}</p></div>` : ''}
         ${rows ? `<ol class="plan-list">${rows}</ol>` : '<p class="hint">Noch nichts vorgemerkt. Was ihr hier eintragt, erscheint auch auf der Karte als geplante Route.</p>'}
         <div class="btnrow">
           <button class="primary" data-action="place-form" data-trip="${t.id}" data-kind="stellplatz">${icon('plus')}Stellplatz</button>
@@ -365,6 +374,62 @@ export default function installMore(app) {
           <a class="ghost btn" href="#/packen">Zur Packliste</a>
         </div>
       </section>`;
+  };
+
+  // Reihenfolge speichern (nur geänderte Orte)
+  const saveOrder = list => list.forEach((p, i) => { if (p.order !== i) save('places', { ...p, order: i }); });
+  ACTIONS['plan-sort'] = el => { ui.planSort = ui.planSort === el.dataset.id ? null : el.dataset.id; render(); };
+  ACTIONS['plan-move'] = el => {
+    const p = S.places.find(x => x.id === el.dataset.id);
+    const list = tripPlaces(tripOf(p));
+    const i = list.indexOf(p), j = i + +el.dataset.d;
+    if (j < 0 || j >= list.length) return;
+    // Mit Datum steht ein Stopp fest; verschoben wird nur unter Gleichen (beide ohne bzw. mit demselben Datum)
+    if ((list[j].planDate || '') !== (p.planDate || '')) return toast('Stopps mit Datum stehen nach Datum. Datum ändern, um sie zu verschieben.');
+    [list[i], list[j]] = [list[j], list[i]];
+    saveOrder(list);
+  };
+  // Kürzeste Strecke (ungefähr): nächster Nachbar ab dem Start, dann 2-opt-Verbesserung (offener Weg)
+  function shortestOrder(start, pts) {
+    const d = (a, b) => km(a, b);
+    const left = pts.slice(), path = [];
+    let cur = start;
+    while (left.length) {
+      let k = 0;
+      left.forEach((p, i) => { if (d(cur, p) < d(cur, left[k])) k = i; });
+      cur = left.splice(k, 1)[0];
+      path.push(cur);
+    }
+    const all = [start, ...path];
+    for (let improved = true, n = 0; improved && n < 50; n++) {
+      improved = false;
+      for (let i = 1; i < all.length - 1; i++) for (let j = i + 1; j < all.length; j++) {
+        const a = all[i - 1], b = all[i], c = all[j], e = all[j + 1];
+        const before = d(a, b) + (e ? d(c, e) : 0), after = d(a, c) + (e ? d(b, e) : 0);
+        if (after < before - 1e-6) { all.splice(i, j - i + 1, ...all.slice(i, j + 1).reverse()); improved = true; }
+      }
+    }
+    return all.slice(1);
+  }
+  ACTIONS['plan-auto'] = async el => {
+    const t = S.trips.find(x => x.id === el.dataset.id);
+    const list = tripPlaces(t), withPos = list.filter(hasPos);
+    if (withPos.length < 2) return toast('Dafür brauchen mindestens zwei Stopps einen Ort auf der Karte.');
+    el.disabled = true;
+    // Start: Standort (kurz warten), sonst letzter Tagebuch-Eintrag mit Ort, sonst der bisher erste Stopp
+    let start = null;
+    try { start = await Promise.race([app.getPos(), new Promise((_, no) => setTimeout(no, 5000))]); } catch { /* ohne Standort */ }
+    const lastEntry = app.tripEntries(t).filter(hasPos).sort(app.byDate).pop();
+    const src = start ? ' ab eurem Standort' : lastEntry ? ' ab dem letzten Eintrag' : '';
+    start = start || lastEntry || withPos[0];
+    // Stopps mit Datum bleiben vorn in ihrer Datumsfolge; die übrigen kommen in die kürzeste Reihenfolge
+    const fixed = list.filter(p => p.planDate), free = withPos.filter(p => !p.planDate), noPos = list.filter(p => !p.planDate && !hasPos(p));
+    const from = fixed.filter(hasPos).pop() || start;
+    const ordered = [...fixed, ...shortestOrder(from, free), ...noPos];
+    saveOrder(ordered);
+    let len = 0; [from, ...shortestOrder(from, free)].forEach((p, i, a) => { if (i) len += km(a[i - 1], p); });
+    toast(`Neu geordnet: ${ordered.length} Stopps, etwa ${Math.round(len)} km Luftlinie${src}`);
+    el.disabled = false;
   };
 
   ACTIONS['open-list'] = el => {
