@@ -51,7 +51,7 @@ import installHeute from './heute.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 65;
+const APP_VERSION = 66;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -344,10 +344,12 @@ function tripStatsNow(t) {
   for (let i = 1; i < stops.length; i++) dist += km(stops[i - 1], stops[i]);
   // Mit importierter GPX-Strecke zählt die tatsächlich gefahrene Strecke
   const tracks = S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
-  const driven = tracks.length > 0;
-  // Berechnete Strecke „Entlang der Straßen“ deckt die ganze Reise ab; aufgezeichnete Teile nicht doppelt zählen
+  // Berechnete Strecke „Entlang der Straßen“ deckt die ganze Reise ab; aufgezeichnete Teile nicht doppelt zählen.
+  // Andere Strecken zählen nur, wenn sie zusammen den Großteil der Reise abdecken (sonst bleibt die Luftlinie).
   const roads = tracks.find(x => x.auto === 'roads');
-  if (driven) dist = roads ? roads.km || 0 : tracks.reduce((sum, x) => sum + (x.km || 0), 0);
+  const trackKm = tracks.reduce((sum, x) => sum + (x.km || 0), 0);
+  const driven = !!roads || (tracks.length > 0 && trackKm >= dist * 0.6);
+  if (driven) dist = roads ? roads.km || 0 : trackKm;
   // Eingetragener Tachostand geht vor
   if (t.odoKm > 0) dist = t.odoKm;
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
@@ -650,7 +652,13 @@ function drawRoute(t, emphasis) {
   const stops = tripEntries(t).filter(hasPos).sort(byDate);
   const pts = stops.map(e => [e.lat, e.lng]);
   // Mit GPX-Strecke zeigt die Linie zwischen den Stopps nur noch die Reihenfolge (gestrichelt)
-  const tracked = S.tracks.some(x => x.tripId === t.id && x.kind !== 'hike');
+  // Nur wenn eine Strecke die Reise wirklich abdeckt, zeigt die Linie zwischen den Stopps bloß die Reihenfolge.
+  // Kurze Stücke (z. B. eine Aufzeichnung oder ein GPX von einem Tag) oder leere Strecken zählen nicht:
+  // dann bleibt die Verbindung durchgezogen.
+  let air = 0;
+  for (let i = 1; i < stops.length; i++) air += km(stops[i - 1], stops[i]);
+  const drawable = S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike' && (x.pts || '').includes(';') && !(x.id === APP.editingTrackId && ui.mapEdit === 'strecke'));
+  const tracked = drawable.some(x => x.auto === 'roads') || drawable.reduce((sum, x) => sum + (x.km || 0), 0) >= air * 0.6;
   if (pts.length > 1 && !tracked) {
     L.polyline(pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
     L.polyline(pts, { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);

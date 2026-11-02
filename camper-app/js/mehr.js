@@ -573,7 +573,7 @@ export default function installMore(app) {
     const list = scope === 'all' ? S.tracks : S.tracks.filter(x => t && x.tripId === t.id);
     const ends = [];
     list.forEach(x => {
-      if (x.id === app.editingTrackId) return;   // wird gerade im Editor gezeichnet
+      if (x.id === app.editingTrackId && ui.mapEdit === 'strecke') return;   // wird gerade im Editor gezeichnet
       const pts = decodePts(x.pts);
       if (pts.length < 2) return;
       const color = tripColor(S.trips.find(y => y.id === x.tripId));

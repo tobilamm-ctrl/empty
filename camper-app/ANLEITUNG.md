@@ -136,6 +136,14 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 66: Teilstrecken und Strecke bearbeiten
+
+- Ein kurzes aufgezeichnetes Stück oder eine GPX-Datei von nur einem Tag machte bisher die Verbindung der ganzen Reise
+  gepunktet und ersetzte die Kilometer. Jetzt zählt eine Strecke erst, wenn sie zusammen mindestens 60 % der Luftlinie
+  abdeckt (oder mit „Straße folgen“ berechnet ist); sonst bleibt die Linie durchgezogen und die Luftlinie zählt.
+- Wurde „Strecke bearbeiten“ (Stift auf der Karte) nicht mit „Fertig“ verlassen, zeichnete die Karte diese Strecke
+  danach nicht mehr. Behoben.
+
 ## Neu in Version 65: Heute-Karte kompakt, Stift am Reisenamen
 
 - **Stift hinter dem Reisenamen** im Tagebuch: öffnet direkt die Einstellungen der Reise (Name, Datum, Farbe, Mitreisende, Dienste …).
