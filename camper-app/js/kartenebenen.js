@@ -94,6 +94,11 @@ export default function installKartenebenen(app) {
   }
   function openCluster(ms, ll) {
     const map = app.map;
+    // Zwei Spalten am PC: Tagebuch zum frühesten Eintrag des Bündels
+    if (app.diaryShow) {
+      const first = ms.map(m => m.entryId && S.entries.find(x => x.id === m.entryId)).filter(Boolean).sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0];
+      if (first) app.diaryShow(first.id);
+    }
     const ne = map.latLngToLayerPoint(ll.getNorthEast()), sw = map.latLngToLayerPoint(ll.getSouthWest());
     // Liegen die Pins (fast) übereinander: Liste statt weiter hineinzoomen
     if (ne.distanceTo(sw) < 6 || map.getZoom() >= 15) {

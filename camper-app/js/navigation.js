@@ -306,6 +306,40 @@ export default function installNavigation(app) {
     if (hoverMark) { follow.removeLayer(hoverMark); hoverMark = null; }
     if (withPos(e)) hoverMark = L.circleMarker([e.lat, e.lng], { radius: 24, color: '#E4572E', weight: 4, fill: false, interactive: false }).addTo(follow);
   });
+  // Klick auf der Karte (Pin, Bündel oder Route): im Tagebuch daneben zu diesem Eintrag bzw. Tag springen
+  const splitDiary = () => document.body.classList.contains('split') && ui.route === 'tagebuch';
+  app.diaryShow = id => {
+    if (!splitDiary()) return false;
+    const e = S.entries.find(x => x.id === id);
+    if (!e) return false;
+    const b = document.querySelector(`#view .stop [data-action=open-entry][data-id="${id}"]`);
+    const el = (b && b.closest('.stop')) || document.getElementById('day-' + (e.date || '').slice(0, 10));
+    if (!el) return false;
+    const tb = document.querySelector('.topbar');
+    window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - ((tb ? tb.getBoundingClientRect().bottom : 0) + 70), behavior: 'smooth' });
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    return true;
+  };
+  // Nächster Stopp der Reise zu einem Punkt (für Klicks auf die Linie)
+  const nearestStop = ll => {
+    const t = app.currentTrip();
+    if (!t) return null;
+    let best = null, bd = Infinity;
+    app.tripEntries(t).filter(withPos).forEach(e => { const d = app.map.distance(ll, [e.lat, e.lng]); if (d < bd) { bd = d; best = e; } });
+    return best;
+  };
+  app.mapHooks.push(layer => {
+    // Gleich beim Zeichnen (vor dem Bündeln): Pins und Linien der Karte anklickbar fürs Tagebuch daneben
+    layer.eachLayer(l => {
+      if (l._lpDiary) return;
+      l._lpDiary = true;
+      if (l instanceof L.Marker && l.entryId) l.on('click', () => app.diaryShow(l.entryId));
+      else if (l instanceof L.Polyline && !(l instanceof L.Polygon) && l.options.interactive !== false) {
+        l.on('click', ev => { if (!splitDiary()) return; const e = nearestStop(ev.latlng); if (e) app.diaryShow(e.id); });
+      }
+    });
+    return [];
+  });
   // Zurück auf die große Karte: wieder die ganze Reise zeigen
   app.chromeHooks.push(() => {
     if (ui.route !== 'tagebuch' && moved) { clearFollow(); moved = false; if (app.refit) app.refit(); }

@@ -136,6 +136,12 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 64: Von der Karte ins Tagebuch springen (PC)
+
+- In der Zwei-Spalten-Ansicht am PC (Karte links, Tagebuch rechts): Ein Klick auf einen Pin, ein Bündel oder ein
+  Stück der Route scrollt das Tagebuch zum passenden Eintrag und hebt ihn kurz hervor. Bei einem Bündel ist es der
+  früheste Eintrag darin, bei der Linie der nächstgelegene Stopp.
+
 ## Neu in Version 63: Titel nur noch der Ort
 
 - Einträge, die beim Einsortieren von Fotos automatisch entstehen, heißen jetzt nur noch wie der Ort (z. B.

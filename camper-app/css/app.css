@@ -2493,3 +2493,8 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .sheet-head .trip-tag { margin-left: auto; margin-right: 6px; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font: 700 13px var(--body); color: #fff; background: var(--c); padding: 4px 10px; border-radius: 999px; }
 .sheet-head .trip-tag + .icon-btn { margin-left: 0; }
+
+/* Sprung von der Karte ins Tagebuch (Zwei-Spalten-Ansicht) */
+.stop.flash, .day.flash { animation: lp-flash 1.6s ease-out; }
+@keyframes lp-flash { 0%, 30% { background: rgba(228, 87, 46, .16); box-shadow: 0 0 0 6px rgba(228, 87, 46, .16); } 100% { background: transparent; box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .stop.flash, .day.flash { animation: none; outline: 2px solid #E4572E; } }
