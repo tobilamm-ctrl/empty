@@ -140,6 +140,11 @@ P1. **Neuer Eintrag: Standort immer gleich vorschlagen.** Sobald Standortdaten d
     „Ich bin hier …“; das normale „+ Eintrag“ startet ohne Ort.)
 P2. **Wetter mit Ortsnamen.** Die Wetteranzeige (Heute-Karte im Tagebuch und Wetter-Seite) soll dazuschreiben, für
     welchen Ort sie gilt (z. B. „7° Bedeckt · Bardolino“).
+P3. **In der App aufgenommene Fotos auch in der Galerie speichern.** Wer über LAMMping fotografiert (Foto-Knopf,
+    Kamera im Eintrag), soll das Foto zusätzlich in der normalen Fotogalerie des Handys haben – in Originalqualität,
+    nicht nur verkleinert in der App. (Hinweis für die Umsetzung: Eine Web-App darf nicht selbst in die Galerie
+    schreiben; Wege: Aufnahme über die System-Kamera mit „speichern“, oder nach der Aufnahme „In Galerie sichern“ über
+    Teilen/Herunterladen anbieten.)
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
