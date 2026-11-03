@@ -145,6 +145,9 @@ P3. **In der App aufgenommene Fotos auch in der Galerie speichern.** Wer über L
     nicht nur verkleinert in der App. (Hinweis für die Umsetzung: Eine Web-App darf nicht selbst in die Galerie
     schreiben; Wege: Aufnahme über die System-Kamera mit „speichern“, oder nach der Aufnahme „In Galerie sichern“ über
     Teilen/Herunterladen anbieten.)
+P4. **„Ich bin hier …“ › Notiz ohne Standort.** Im Test kam bei „Ich bin hier …“ kein Standort. Ursache: Dort ist die
+    Notiz absichtlich „ohne Position“ (steht klein unter dem Knopf); alle anderen Arten holen den Standort. Gehört zu P1:
+    auch Notizen unter „Ich bin hier …“ sollen den Standort bekommen (abschaltbar bzw. im Eintrag entfernbar).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
