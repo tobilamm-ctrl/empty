@@ -86,3 +86,15 @@ Nach der Hochzeit:
 
 Betrieb: Kiosk-Modus (Gäste können die App nicht verlassen), läuft offline, startet nach einem
 Absturz von selbst neu. Datenschutz: Gäste mit einem Schild über die Fotobox informieren.
+
+## Drucken (entschieden: ja)
+
+- Drucker: Canon Selphy (z. B. CP1500), per USB am Laptop/Raspberry Pi (Linux: CUPS + Gutenprint,
+  vorher testen). Ca. 40–50 s pro Druck, Papierfach fasst nur wenige Blatt (etwa 18).
+- Kosten: Papier und Farbband im Set (108 Blatt), grob 0,30–0,40 € pro Druck.
+  Für ca. 100 Gäste etwa 150–200 Drucke einplanen (2 Sets).
+- Profi-Alternative (DNP, Mitsubishi): billiger pro Druck, aber teuer in der Anschaffung –
+  für eine Hochzeit nicht nötig.
+- Formate: 10 × 15 cm Einzelfoto oder Collage; Fotostreifen als zwei Streifen auf 10 × 15, danach schneiden.
+- Funktionen: Anzahl Kopien wählen, Drucklimit pro Foto, Warteschlange anzeigen, Papierzähler mit
+  Hinweis „Papier nachlegen“, Nachdruck aus dem Admin-Bereich.
