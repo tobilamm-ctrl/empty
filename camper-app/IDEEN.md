@@ -132,6 +132,13 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 84. Fehlende Bereichsbilder im neuen Schaf-Stil (Lieferung 52): Karte, Tagebuch, Listen, Planung (zurzeit Basis-Schaf
     plus altes Symbol) und ggf. „Mehr“. Bilder in höherer Auflösung liefern, dann tausche ich sie aus.
 
+## Praxistest November 2026 (nur gemerkt, Umsetzung nach der Rückkehr)
+
+P1. **Neuer Eintrag: Standort immer gleich vorschlagen.** Sobald Standortdaten da sind – aus einem Foto (EXIF) oder
+    per GPS – soll ein neuer Eintrag den Ort sofort übernehmen bzw. vorschlagen (Position, Ortsname, Titelvorschlag),
+    ohne dass man erst „Aktuelle Position“ tippen muss. (Heute: nur bei hineingezogenen Fotos, beim Foto-Knopf und bei
+    „Ich bin hier …“; das normale „+ Eintrag“ startet ohne Ort.)
+
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
 Jedes Paket betrifft weitgehend dieselben Dateien und wird am Stück gebaut und getestet. Nummern wie oben.
