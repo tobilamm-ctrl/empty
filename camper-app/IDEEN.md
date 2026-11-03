@@ -138,6 +138,8 @@ P1. **Neuer Eintrag: Standort immer gleich vorschlagen.** Sobald Standortdaten d
     per GPS – soll ein neuer Eintrag den Ort sofort übernehmen bzw. vorschlagen (Position, Ortsname, Titelvorschlag),
     ohne dass man erst „Aktuelle Position“ tippen muss. (Heute: nur bei hineingezogenen Fotos, beim Foto-Knopf und bei
     „Ich bin hier …“; das normale „+ Eintrag“ startet ohne Ort.)
+P2. **Wetter mit Ortsnamen.** Die Wetteranzeige (Heute-Karte im Tagebuch und Wetter-Seite) soll dazuschreiben, für
+    welchen Ort sie gilt (z. B. „7° Bedeckt · Bardolino“).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
