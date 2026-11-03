@@ -156,6 +156,8 @@ P5. **Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim H
     einen Eintrag gibt, und „Dazulegen“ anbieten statt einen neuen Eintrag anzulegen. Dazu: zwei vorhandene Einträge
     nachträglich zu einem zusammenführen (z. B. in der Mehrfachauswahl „Zusammenführen“: Fotos, Texte, frühester
     Zeitpunkt bleiben).
+P6. **„+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines Plus direkt neben dem Titel eines Eintrags
+    öffnet Kamera/Galerie und legt das Foto gleich in diesen Eintrag (ohne erst „Bearbeiten“ zu öffnen).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
