@@ -53,3 +53,36 @@ PowerShot SX70 HS. CCAPI muss erst kostenlos bei Canon freigeschaltet werden (En
 Für Variante C (USB, gPhoto2) passen auch billigere Modelle wie EOS 2000D/4000D.
 Für einen ganzen Abend Netzteil bzw. Akku-Attrappe einplanen.
 Fertige Lösungen gibt es auch (z. B. iPad-Apps, Open-Source-Projekte für Raspberry Pi).
+
+Entscheidung (Stand 03.11.2026): Tendenz zur **Canon EOS 2000D** per USB (Variante C).
+
+## Funktionsideen für die Fotobox
+
+Grundfunktionen (erste Version):
+- Startbildschirm mit großer Anleitung, Auslösen per Antippen oder Buzzer
+- Livebild und Countdown (3-2-1), danach Vorschau mit „Nochmal“ oder „Behalten“
+- Einzelfoto oder Collage (z. B. 4 Fotos als Fotostreifen)
+- Rahmen bzw. Overlay mit Namen des Brautpaars, Datum und Motiv
+- Automatisch speichern, zusätzlich Sicherung auf USB-Stick
+- Diashow der bisherigen Fotos, wenn niemand die Fotobox benutzt
+- Admin-Bereich mit PIN (Einstellungen, Fotos ausblenden oder löschen)
+
+Spaß:
+- GIF oder Boomerang aus mehreren Bildern
+- Posen-Vorschläge per Zufall („Alle machen ein Herz“)
+- Filter (Schwarzweiß, Vintage)
+- Digitaler Hintergrund (Greenscreen)
+- Tisch-Aufgaben und Foto-Bingo (über die Gästeliste)
+- Video-Gästebuch (kurze Videobotschaft, über Tablet- oder Webcam-Kamera)
+
+Teilen und Drucken:
+- Druck mit Zähler und Warnung, wenn Papier zur Neige geht
+- QR-Code zum Herunterladen des Fotos aufs Handy
+- Gästebuch: Namen antippen, kurzen Gruß dazuschreiben
+
+Nach der Hochzeit:
+- Export aller Fotos als ZIP, sortiert nach Uhrzeit, Tisch oder Person
+- Galerie, Dankeskarten, Statistik (meiste Fotos, beliebteste Uhrzeit)
+
+Betrieb: Kiosk-Modus (Gäste können die App nicht verlassen), läuft offline, startet nach einem
+Absturz von selbst neu. Datenschutz: Gäste mit einem Schild über die Fotobox informieren.
