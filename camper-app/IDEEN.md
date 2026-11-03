@@ -148,6 +148,14 @@ P3. **In der App aufgenommene Fotos auch in der Galerie speichern.** Wer über L
 P4. **„Ich bin hier …“ › Notiz ohne Standort.** Im Test kam bei „Ich bin hier …“ kein Standort. Ursache: Dort ist die
     Notiz absichtlich „ohne Position“ (steht klein unter dem Knopf); alle anderen Arten holen den Standort. Gehört zu P1:
     auch Notizen unter „Ich bin hier …“ sollen den Standort bekommen (abschaltbar bzw. im Eintrag entfernbar).
+    **Ergänzung:** „Ich bin hier …“ (und neue Einträge am Handy allgemein) sollen sich genauso verhalten wie das
+    Hineinziehen von Fotos am PC: Standort bestimmen, Ortsname eintragen und den Platz in der Nähe (POI:
+    Sehenswürdigkeit, Campingplatz, Restaurant …) als Titel vorschlagen, mit den Vorschlags-Chips unter dem Titel.
+P5. **Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim Hineinziehen.** Auch am Handy (Foto-Knopf,
+    „Ich bin hier …“, Fotos aus der Galerie) soll LAMMping erkennen, wenn es kurz davor an fast derselben Stelle schon
+    einen Eintrag gibt, und „Dazulegen“ anbieten statt einen neuen Eintrag anzulegen. Dazu: zwei vorhandene Einträge
+    nachträglich zu einem zusammenführen (z. B. in der Mehrfachauswahl „Zusammenführen“: Fotos, Texte, frühester
+    Zeitpunkt bleiben).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
