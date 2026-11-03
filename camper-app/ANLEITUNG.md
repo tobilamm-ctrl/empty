@@ -136,6 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 71: Erste Crew selbst gründen
+
+- Wer „Darf eigene Crews gründen“ hat, aber noch zu keiner Crew gehört, sieht nach der Anmeldung jetzt
+  „Crew gründen“ (Name ist mit „Familie …“ vorbelegt) und landet danach als Crew-Leiter direkt in der App.
+  Bisher kam nur der Hinweis, man solle einen Verwalter fragen. Wer nicht gründen darf, bekommt den Hinweis auf den
+  Einladungslink.
+
 ## Neu in Version 70: Mitteilungen aufs Handy (Pinnwand, Tickets)
 
 **Wichtig beim Hochladen:** Diesmal ist wieder **`api/index.php`** neu (drei neue Tabellen, legt der Server selbst an;

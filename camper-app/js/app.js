@@ -52,7 +52,7 @@ import installMitteilungen from './mitteilungen.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 70;
+const APP_VERSION = 71;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -1947,12 +1947,21 @@ VIEWS.setup = () => `<section class="login">
   </form>
 </section>`;
 
-VIEWS.nocrew = () => `<section class="login">
+// Noch in keiner Crew: wer Crews gründen darf, legt gleich eine an; sonst Einladung abwarten
+VIEWS.nocrew = () => {
+  const mayFound = !!(session.user.canFound || session.user.superAdmin);
+  return `<section class="login">
   ${HERO}
   <h2>Hallo ${esc(session.user.name)}</h2>
-  <p>Du gehörst noch zu keiner Crew. Bitte einen Verwalter, dich in eine Crew aufzunehmen, und öffne die App dann neu.</p>
+  ${mayFound ? `<p>Du gehörst noch zu keiner Crew. Gründe deine eigene, zum Beispiel für deine Familie. Du bist dann ihr Crew-Leiter und kannst andere einladen.</p>
+    <form data-form="nocrew-found" class="panel">
+      <label class="field"><span>Name der Crew</span><input name="name" required maxlength="100" placeholder="z. B. Familie ${esc(session.user.name)}" value="Familie ${esc(session.user.name)}"></label>
+      <button class="primary">Crew gründen</button></form>
+    <p class="sub">Oder öffne einen Einladungslink, den dir jemand geschickt hat.</p>`
+    : `<p>Du gehörst noch zu keiner Crew. Öffne den Einladungslink, den dir ein Crew-Leiter geschickt hat, oder bitte ihn, dich aufzunehmen. Danach die App neu öffnen.</p>`}
   <button class="ghost danger" data-action="logout">Abmelden</button>
 </section>`;
+};
 
 VIEWS.offline = () => `<section class="login">
   ${HERO}
@@ -2477,6 +2486,15 @@ const FORMS = {
 
 // Einladungsseite (siehe VIEWS.invite)
 ACTIONS['invite-mode'] = el => { invite.haveAccount = !!el.dataset.have; render(); };
+FORMS['nocrew-found'] = async form => {
+  const btn = form.querySelector('button'); btn.disabled = true;
+  try {
+    const r = await api('crew-save', { name: form.name.value.trim() });
+    if (r && r.id) LS.set('crew', r.id);
+    location.reload();
+  } catch (e) { toast(e.message); btn.disabled = false; }
+};
+
 FORMS['invite-join'] = async form => {
   const btn = form.querySelector('button'); btn.disabled = true;
   try {
