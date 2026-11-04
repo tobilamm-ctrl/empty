@@ -106,3 +106,13 @@ Schnellere Drucker (Stand 04.11.2026):
 - **Mitsubishi CP-D90DW**: ca. 9 s pro Druck.
 - Haken: Verbrauchsmaterial gibt es nur in großen Rollen (Hunderte Drucke) – für eine einzige Hochzeit oft
   teurer als der Selphy. Alternativen: Profidrucker leihen, oder zwei Selphys abwechselnd drucken lassen.
+
+Kosten pro Foto 10 × 15 (Händlerpreise, recherchiert 04.11.2026, können sich ändern):
+| Drucker | Set | Preis | pro Foto | Material für 200 Fotos |
+|---|---|---|---|---|
+| Canon Selphy | KP-108IN, 108 Drucke (2er-Pack 216) | ca. 30–34 € (2er-Pack ca. 50 €) | 0,23–0,31 € | ca. 50 € (2er-Pack) |
+| DNP DS-RX1HS | 2 Rollen, 1400 Drucke | ca. 160–185 € | 0,12–0,13 € | ca. 166 € (ganzes Set) |
+| DNP DS620A | 2 Rollen, 800 Drucke | ca. 120–130 € | 0,15–0,16 € | ca. 120 € (ganzes Set) |
+| Mitsubishi CP-D90DW-P | CK-D746, 800 Drucke | ca. 126 CHF (nur CH-Preis gefunden) | ca. 0,16 € | ca. 130 € (ganzes Set) |
+Ab etwa 700 Drucken ist der DNP DS-RX1HS beim Material günstiger als der Selphy (ohne Druckerkauf).
+Fotostreifen: DNP druckt zwei Streifen auf ein 10 × 15 und schneidet sie, Kosten pro Streifen also halb.
