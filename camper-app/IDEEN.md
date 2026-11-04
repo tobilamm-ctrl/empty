@@ -180,7 +180,16 @@ P10. **CO₂-Bilanz der Reise, auf verschiedene Arten.** Ideen für die Berechnu
     - **Fähren** (Strecke/Überfahrt × Faktor), ggf. Gas (Kocher/Heizung, kg Gas × ≈ 3 kg), Strom am Stellplatz;
     - Anzeige gesamt, **pro Person** und **pro Tag**, Vergleich mit anderen Reisearten (Flug + Hotel, Bahn, Auto +
       Ferienwohnung) und mit dem Vorjahr; optional Hinweis „so viel Bäume / Ausgleich kostet etwa …“.
-    (Rückfrage nach der Reise: „verschiedene Arten“ = verschiedene Rechenwege und/oder Vergleich der Reisearten?)
+    „Verschiedene Arten“ meint (laut Tobi) auch verschiedene **Reisearten** – siehe P11: CO₂ je Abschnitt nach
+    Verkehrsmittel (Camper, Flug, Schiff/Kreuzfahrt, Bahn, Auto, Fähre).
+P11. **Nicht nur Campingreisen: Flugreisen, Kreuzfahrten usw.** Eine Reise bekommt eine **Art** (Camping, Flug,
+    Kreuzfahrt, Bahn, Auto + Hotel, Rad …), auch gemischt in **Abschnitten** (z. B. Flug + Mietwagen, Fähre + Camper).
+    Folgen für die App:
+    - Bereiche passend ein- bzw. ausblenden (Tankbuch, Stellplätze, Zuladung, Autarkie nur bei Camper/Auto);
+    - Eintragsarten ergänzen: Hotel/Unterkunft, Flug, Hafen/Landgang, Bahnhof (statt nur „Stellplatz“);
+    - Karte: Flüge als Bogen zwischen Flughäfen, Schiffsrouten gestrichelt, keine „Straße folgen“ für diese Abschnitte;
+    - Statistik und Nächte je Reiseart, CO₂-Bilanz je Abschnitt nach Verkehrsmittel (P10);
+    - Tickets (Flug, Bordkarte, Kabine) passen dazu.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
