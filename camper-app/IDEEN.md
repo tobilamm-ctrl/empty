@@ -170,6 +170,10 @@ P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen i
        „Log to custom URL“; iPhone: OwnTracks HTTP oder Overland). Neue api/index.php mit Schlüssel je Crew/Person;
        Strecke wächst von selbst, „Unterwegs mit Freunden“ sieht den Standort live (mittel).
     **Entschieden (4.11.2026): 1 + 2 als Standard, 4 zusätzlich.**
+P9. **Foto über „Teilen › LAMMping“ zu einem vorhandenen Eintrag legen.** Wird nach einem Eintrag ein weiteres Bild
+    mit LAMMping geteilt, gleich fragen: „Zum letzten Eintrag ‚…‘ dazulegen?“ Darunter eine Auswahl der letzten
+    Einträge (z. B. die letzten 5 der Reise, mit Uhrzeit und Vorschaubild), plus „Neuer Eintrag“. Passt ein Eintrag
+    nach Zeit/Ort (wie beim Hineinziehen, P5), steht er oben und ist vorausgewählt.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
