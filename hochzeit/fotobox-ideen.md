@@ -98,3 +98,11 @@ Absturz von selbst neu. Datenschutz: Gäste mit einem Schild über die Fotobox i
 - Formate: 10 × 15 cm Einzelfoto oder Collage; Fotostreifen als zwei Streifen auf 10 × 15, danach schneiden.
 - Funktionen: Anzahl Kopien wählen, Drucklimit pro Foto, Warteschlange anzeigen, Papierzähler mit
   Hinweis „Papier nachlegen“, Nachdruck aus dem Admin-Bereich.
+
+Schnellere Drucker (Stand 04.11.2026):
+- **DNP DS-RX1HS**: Standard bei Fotobox-Verleihern, ca. 12 s pro 10 × 15, Rolle für ca. 700 Drucke,
+  schneidet Fotostreifen selbst, unter Linux gut unterstützt. Gebraucht nur mit Druckzähler und Testdruck kaufen.
+- **DNP DS620A**: kleiner und etwas schneller, teurer.
+- **Mitsubishi CP-D90DW**: ca. 9 s pro Druck.
+- Haken: Verbrauchsmaterial gibt es nur in großen Rollen (Hunderte Drucke) – für eine einzige Hochzeit oft
+  teurer als der Selphy. Alternativen: Profidrucker leihen, oder zwei Selphys abwechselnd drucken lassen.
