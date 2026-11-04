@@ -190,6 +190,10 @@ P11. **Nicht nur Campingreisen: Flugreisen, Kreuzfahrten usw.** Eine Reise bekom
     - Karte: Flüge als Bogen zwischen Flughäfen, Schiffsrouten gestrichelt, keine „Straße folgen“ für diese Abschnitte;
     - Statistik und Nächte je Reiseart, CO₂-Bilanz je Abschnitt nach Verkehrsmittel (P10);
     - Tickets (Flug, Bordkarte, Kabine) passen dazu.
+P12. **Text unter den Symbolen der Reise-Leiste anpassen** (Beenden · Fotos · Aufzeichnen · Packliste · Straße folgen ·
+    Nach der Reise). Am Handy überlappen die Wörter („Straße folge‑Nach der Reise“), „Aufzeichnen“ ist zu breit.
+    Lösung: kurze Wörter (z. B. „Strecke“, „Aufnahme“, „Später“), notfalls zweizeilig umbrechen bzw. kleinere Schrift;
+    selten Gebrauchtes (Straße folgen) eher unter „Nach der Reise“.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
