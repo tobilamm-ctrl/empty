@@ -161,6 +161,15 @@ P6. **„+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines
 P7. **Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
     sollen im Tagebuch sichtbar markiert sein (z. B. kleines durchgestrichenes Auge 🙈 „nicht im Reiseblog“ neben dem
     Titel), damit man auf einen Blick sieht, was Oma, Opa und Mitreisende nicht sehen.
+P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen im Hintergrund (Handy gesperrt, App zu)
+    keinen Standort. Möglich:
+    1. Beim Öffnen der App während einer laufenden Reise still einen Streckenpunkt merken (grobe Route, klein).
+    2. Strecke automatisch aus den GPS-Daten aller Fotos eines Tages, Lücken mit „Straße folgen“ (mittel).
+    3. Google-Zeitachse importieren – gibt es schon (Mehr › Zeitachse), nur nicht live.
+    4. Hintergrund-Tracking über eine Tracker-App, die Punkte an eine LAMMping-Adresse schickt (Android: GPSLogger
+       „Log to custom URL“; iPhone: OwnTracks HTTP oder Overland). Neue api/index.php mit Schlüssel je Crew/Person;
+       Strecke wächst von selbst, „Unterwegs mit Freunden“ sieht den Standort live (mittel).
+    Empfehlung: 1 + 2 als Standard, 4 als Zusatz für Genaue.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
