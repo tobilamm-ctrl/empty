@@ -158,6 +158,9 @@ P5. **Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim H
     Zeitpunkt bleiben).
 P6. **„+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines Plus direkt neben dem Titel eines Eintrags
     öffnet Kamera/Galerie und legt das Foto gleich in diesen Eintrag (ohne erst „Bearbeiten“ zu öffnen).
+P7. **Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
+    sollen im Tagebuch sichtbar markiert sein (z. B. kleines durchgestrichenes Auge 🙈 „nicht im Reiseblog“ neben dem
+    Titel), damit man auf einen Blick sieht, was Oma, Opa und Mitreisende nicht sehen.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
