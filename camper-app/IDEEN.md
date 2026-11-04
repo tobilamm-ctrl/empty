@@ -174,6 +174,13 @@ P9. **Foto über „Teilen › LAMMping“ zu einem vorhandenen Eintrag legen.**
     mit LAMMping geteilt, gleich fragen: „Zum letzten Eintrag ‚…‘ dazulegen?“ Darunter eine Auswahl der letzten
     Einträge (z. B. die letzten 5 der Reise, mit Uhrzeit und Vorschaubild), plus „Neuer Eintrag“. Passt ein Eintrag
     nach Zeit/Ort (wie beim Hineinziehen, P5), steht er oben und ist vorausgewählt.
+P10. **CO₂-Bilanz der Reise, auf verschiedene Arten.** Ideen für die Berechnung:
+    - aus dem **Tankbuch** (getankte Liter × Faktor: Diesel ≈ 2,65 kg/l, Benzin ≈ 2,33 kg/l) – am genauesten;
+    - aus den **Kilometern** (Tacho bzw. Strecke) × Verbrauch des Fahrzeugs, wenn nicht getankt wurde;
+    - **Fähren** (Strecke/Überfahrt × Faktor), ggf. Gas (Kocher/Heizung, kg Gas × ≈ 3 kg), Strom am Stellplatz;
+    - Anzeige gesamt, **pro Person** und **pro Tag**, Vergleich mit anderen Reisearten (Flug + Hotel, Bahn, Auto +
+      Ferienwohnung) und mit dem Vorjahr; optional Hinweis „so viel Bäume / Ausgleich kostet etwa …“.
+    (Rückfrage nach der Reise: „verschiedene Arten“ = verschiedene Rechenwege und/oder Vergleich der Reisearten?)
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
