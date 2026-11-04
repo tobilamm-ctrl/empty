@@ -169,7 +169,7 @@ P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen i
     4. Hintergrund-Tracking über eine Tracker-App, die Punkte an eine LAMMping-Adresse schickt (Android: GPSLogger
        „Log to custom URL“; iPhone: OwnTracks HTTP oder Overland). Neue api/index.php mit Schlüssel je Crew/Person;
        Strecke wächst von selbst, „Unterwegs mit Freunden“ sieht den Standort live (mittel).
-    Empfehlung: 1 + 2 als Standard, 4 als Zusatz für Genaue.
+    **Entschieden (4.11.2026): 1 + 2 als Standard, 4 zusätzlich.**
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
