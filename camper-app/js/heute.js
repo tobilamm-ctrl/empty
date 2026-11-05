@@ -53,9 +53,14 @@ export default function installHeute(app) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
       badges.push(`<button class="stop-badge snd" data-action="snd-play" data-id="${e.id}" aria-label="Sprachnotiz abspielen">🎙️ ${snd.length > 1 ? `${snd.length} · ` : ''}${secs(total)}</button>`);
     }
-    if (!badges.length) return html;
+    // Foto direkt in diesen Eintrag (Kamera oder Galerie)
+    badges.push(`<label class="stop-badge add-photo" title="Foto zu diesem Eintrag" aria-label="Foto zu diesem Eintrag">📷+<input type="file" accept="image/*" multiple hidden data-action="stop-photo" data-id="${e.id}"></label>`);
     const i = html.lastIndexOf('</div>');
     return i < 0 ? html + badges.join('') : `${html.slice(0, i)}${badges.join('')}${html.slice(i)}`;
+  };
+  app.CHANGES['stop-photo'] = el => {
+    const files = [...el.files]; el.value = '';
+    if (files.length && app.attachTo) app.attachTo(el.dataset.id, files);
   };
   ACTIONS['blog-unhide'] = el => {
     const e = S.entries.find(x => x.id === el.dataset.id);

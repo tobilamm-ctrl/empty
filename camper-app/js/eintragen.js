@@ -5,6 +5,7 @@ export default function installEintragen(app) {
   const { S, LS, VIEWS, ACTIONS, FORMS, CHANGES, esc, icon, newId, save, remove, toast, render, openSheet, closeSheet,
     currentTrip, nowLocal, fmtDay, fmtTime, TYPES, shrink, api } = app;
   const sheetHead = app.sheetHead;
+  const hasPos = app.hasPos;
 
   /* ====================================================================== */
   /* Schnellauswahl: „+ Eintrag“ gedrückt halten                             */
@@ -59,11 +60,18 @@ export default function installEintragen(app) {
     const t = currentTrip();
     if (!f) return;
     if (!t) { toast('Legt zuerst eine Reise an.'); return; }
+    // Mit der Kamera aufgenommen: Original auch aufs Handy (wie „Foto aufnehmen“ im Eintrag)
+    if (app.saveToGallery) app.saveToGallery(f);
+    const ex = app.readExif ? await app.readExif(f).catch(() => ({})) : {};
+    // Passt ein Eintrag von eben? Dann fragen, sonst gleich ein neuer Foto-Eintrag
+    whereTo([f], ex, () => photoEntry(f, ex));
+  };
+  async function photoEntry(f, ex) {
+    const t = currentTrip();
     toast('Foto wird gespeichert …');
     let thumb, data;
     try { thumb = await shrink(f, 360, 0.7); data = await shrink(f, 1920, 0.78); } catch { toast('Das Foto ließ sich nicht lesen.'); return; }
     // Aus der Galerie gewählt: Aufnahmezeit und Ort aus dem Foto, sonst jetzt und hier
-    const ex = app.readExif ? await app.readExif(f) : {};
     const fresh = !ex.date || Math.abs(new Date(ex.date) - Date.now()) < 15 * 60000;
     const id = newId(), pid = newId();
     save('photos', { id: pid, entryId: id, tripId: t.id, data });
@@ -87,7 +95,7 @@ export default function installEintragen(app) {
     if (typeof ex.lat === 'number') fill(ex);
     else if (fresh) app.getPos().then(fill).catch(() => {});
     return e;
-  };
+  }
 
   /* ====================================================================== */
   /* Google-Maps-Link einfügen (Ort, Name, Suche oder Link-Feld)             */
@@ -217,39 +225,54 @@ export default function installEintragen(app) {
   async function handleDrop(files) {
     if (files.length > 1 && app.importPhotos) { app.importPhotos(files); return; }   // mehrere: nach Zeit und Ort einsortieren
     const ex = app.readExif ? await app.readExif(files[0]) : {};
-    // Gibt es schon einen Eintrag kurz davor oder danach an derselben Stelle? Dann anbieten, das Foto dort dazuzulegen
-    const hit = ex.date && app.suggestEntry ? S.entries.find(e => e.id === app.suggestEntry({ date: ex.date, lat: ex.lat, lng: ex.lng })) : null;
-    if (hit) {
-      dropped = { files, ex, entryId: hit.id };
-      openSheet(`<div>${app.sheetHead('Foto dazulegen?')}
-        <p>Kurz davor oder danach gibt es schon den Eintrag <b>${esc(hit.title || app.TYPES[hit.type].label)}</b>
-          (${hit.date.slice(11, 16)} Uhr${hit.place ? `, ${esc(hit.place)}` : ''}).</p>
-        <div class="sheet-foot"><button type="button" class="ghost" data-action="drop-new">Eigener Eintrag</button>
-          <button type="button" class="primary" data-action="drop-add">Dazulegen</button></div></div>`);
-      return;
-    }
-    dropNew(files, ex);
+    whereTo(files, ex, () => dropNew(files, ex));
   }
-  let dropped = null;
-  ACTIONS['drop-add'] = async () => {
-    const d = dropped; dropped = null;
-    const e = d && S.entries.find(x => x.id === d.entryId);
-    if (!e) return closeSheet();
-    closeSheet();
-    toast('Foto wird gespeichert …');
+
+  /* ---------- „Wohin mit dem Foto?“: zu einem Eintrag von eben oder neu (Ziehen, Foto-Knopf, Teilen) ---------- */
+
+  const typeLabel = e => (app.TYPES[e.type] || app.TYPES.notiz).label;
+  // Fotos an einen vorhandenen Eintrag hängen (mit Ort und Zeit je Foto)
+  async function attachTo(entryId, files) {
+    const e = S.entries.find(x => x.id === entryId);
+    if (!e) return;
+    toast(files.length > 1 ? `${files.length} Fotos werden gespeichert …` : 'Foto wird gespeichert …');
     const add = [];
-    for (const f of d.files) {
+    for (const f of files) {
       try {
         const id = newId(), ex = app.readExif ? await app.readExif(f).catch(() => ({})) : {};
-        save('photos', { id, entryId: e.id, tripId: e.tripId, data: await shrink(f, 1920, 0.78) }); add.push({ id, thumb: await shrink(f, 360, 0.7), ...app.photoGeo(ex) });
-      }
-      catch { toast('Ein Foto ließ sich nicht lesen.'); }
+        save('photos', { id, entryId: e.id, tripId: e.tripId, data: await shrink(f, 1920, 0.78) });
+        add.push({ id, thumb: await shrink(f, 360, 0.7), ...app.photoGeo(ex) });
+      } catch { toast('Ein Foto ließ sich nicht lesen.'); }
     }
     const cur = S.entries.find(x => x.id === e.id);
     if (cur && add.length) save('entries', { ...cur, photos: [...(cur.photos || []), ...add] });
-    toast(`Bei „${e.title || app.TYPES[e.type].label}“ dazugelegt`);
-  };
-  ACTIONS['drop-new'] = () => { const d = dropped; dropped = null; closeSheet(); if (d) setTimeout(() => dropNew(d.files, d.ex), 300); };
+    if (add.length) toast(`Bei „${e.title || typeLabel(e)}“ dazugelegt`);
+  }
+  app.attachTo = attachTo;
+  let where = null;   // { files, onNew }
+  // always: auch fragen, wenn nichts genau passt (beim Teilen); sonst nur bei passendem Eintrag oder einem von eben
+  function whereTo(files, ex, onNew, always = false) {
+    const t = currentTrip();
+    const list = t ? S.entries.filter(e => e.tripId === t.id && e.date).sort((a, b) => b.date.localeCompare(a.date)) : [];
+    if (!list.length) return onNew();
+    const hitId = ex.date && app.suggestEntry ? app.suggestEntry({ date: ex.date, lat: ex.lat, lng: ex.lng }) : null;
+    const hit = list.find(e => e.id === hitId) || null;
+    const ref = ex.date ? new Date(ex.date) : new Date();
+    const recent = Math.abs(new Date(list[0].date) - ref) < 3 * 3600e3;
+    if (!always && !hit && !recent) return onNew();
+    const rows = [hit, ...list.filter(e => e !== hit)].filter(Boolean).slice(0, 6);
+    where = { files, onNew };
+    const n = files.length;
+    openSheet(`<div class="where-to">${app.sheetHead(n > 1 ? `Wohin mit den ${n} Fotos?` : 'Wohin mit dem Foto?')}
+      <ul class="where-list">${rows.map(e => `<li><button type="button" class="${e === hit ? 'hit' : ''}" data-action="where-add" data-id="${e.id}">
+        ${((e.photos || []).find(x => x.thumb) || {}).thumb ? `<img src="${e.photos.find(x => x.thumb).thumb}" alt="">` : `<span class="where-ic">${icon(e.type)}</span>`}
+        <span class="txt"><b>${esc(e.title || typeLabel(e))}</b><small>${fmtDay(e.date.slice(0, 10)).split(',')[0]}, ${e.date.slice(11, 16)} Uhr${e.place ? ` · ${esc(e.place)}` : ''}</small></span>
+        ${e === hit ? '<em>passt</em>' : ''}</button></li>`).join('')}</ul>
+      <div class="sheet-foot"><button type="button" class="${hit ? 'ghost' : 'primary'}" data-action="where-new">${icon('plus')}Neuer Eintrag</button></div></div>`);
+  }
+  app.whereTo = whereTo;
+  ACTIONS['where-add'] = el => { const w = where; where = null; closeSheet(); if (w) attachTo(el.dataset.id, w.files); };
+  ACTIONS['where-new'] = () => { const w = where; where = null; closeSheet(); if (w) setTimeout(() => w.onNew(), 300); };
   function dropNew(files, ex) {
     app.openEntryForm({ type: 'notiz', date: ex.date || nowLocal(), lat: ex.lat ?? null, lng: ex.lng ?? null });
     if (typeof ex.lat === 'number') app.setFormPos(document.querySelector('#sheetBody form'), ex, true, true);
@@ -434,6 +457,7 @@ export default function installEintragen(app) {
     const acts = {
       items: [list.every(i => i.done) ? btn('undone', '↺ Wieder offen') : btn('done', '✓ Abhaken'), btn('move', '➜ In Liste …'), btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('del', 'Löschen', 'danger')],
       entries: [btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('trip', '➜ In Reise …'),
+        ...(list.length > 1 ? [btn('merge', '⧉ Zusammenführen')] : []),
         ...(list.some(e => (e.photos || []).some(p => typeof p.lat === 'number')) ? [btn('photopos', '📍 Ort aus Fotos')] : []),
         ...(list.some(e => typeof e.lat === 'number') ? [btn('nopos', '📍 Ort entfernen')] : []), btn('del', 'Löschen', 'danger')],
       places: [btn('pin', allPinned ? '📌 Lösen' : '📌 Anheften'), btn('trip', '➜ Für Reise …'), btn('visited', '✓ Besucht'), btn('del', 'Löschen', 'danger')],
@@ -483,6 +507,42 @@ export default function installEintragen(app) {
   ACTIONS['sel-done'] = () => { docs().forEach(i => save('listItems', { ...i, done: true, doneAt: Date.now() })); done('Abgehakt'); };
   ACTIONS['sel-undone'] = () => { docs().forEach(i => save('listItems', { ...i, done: false })); done('Wieder offen'); };
   ACTIONS['sel-visited'] = () => { docs().forEach(p => save('places', { ...p, done: true })); done('Als besucht markiert'); };
+  // Mehrere Einträge zu einem: der früheste bleibt (Art, Titel, Ort), Fotos/Texte/Sprachnotizen/PDFs kommen dazu,
+  // Herzen, Kommentare, Kosten und Tankdaten zeigen danach auf ihn
+  ACTIONS['sel-merge'] = () => {
+    const list = docs().filter(Boolean).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    if (list.length < 2) return;
+    const [base, ...rest] = list;
+    const name = e => e.title || (app.TYPES[e.type] || app.TYPES.notiz).label;
+    if (!confirm(`${list.length} Einträge zu „${name(base)}“ zusammenführen? Fotos, Texte und Sprachnotizen bleiben erhalten.`)) return;
+    const all = list;
+    const texts = all.map(e => (e.text || '').trim()).filter(Boolean);
+    const merged = {
+      ...base,
+      title: base.title || (rest.find(e => e.title) || {}).title || '',
+      place: base.place || (rest.find(e => e.place) || {}).place || '',
+      text: [...new Set(texts)].join('\n\n'),
+      photos: all.flatMap(e => e.photos || []),
+      sounds: all.flatMap(e => e.sounds || []),
+      files: all.flatMap(e => e.files || []),
+      rating: Math.max(...all.map(e => e.rating || 0)),
+      features: [...new Set(all.flatMap(e => e.features || []))],
+      cost: all.reduce((t, e) => t + (e.cost || 0), 0),
+      path: all.flatMap(e => e.path || []),
+      blogHide: all.every(e => e.blogHide),
+    };
+    if (!hasPos(base)) { const p = rest.find(hasPos); if (p) Object.assign(merged, { lat: p.lat, lng: p.lng, acc: p.acc || null, country: p.country || merged.country }); }
+    save('entries', merged);
+    const ids = new Set(rest.map(e => e.id));
+    // Verknüpftes umhängen: Herzen/Kommentare (games), Kassenbuchungen, Tankbuch, Strecken einer Wanderung
+    S.games.filter(g => ids.has(g.entryId)).forEach(g => save('games', { ...g, entryId: base.id }));
+    S.expenses.filter(x => ids.has(x.entryId)).forEach(x => save('expenses', { ...x, entryId: base.id }));
+    S.fuel.filter(f => ids.has(f.entryId)).forEach(f => save('fuel', { ...f, entryId: base.id }));
+    S.tracks.filter(k => ids.has(k.entryId)).forEach(k => save('tracks', { ...k, entryId: base.id }));
+    rest.forEach(e => remove('entries', e.id));
+    done(`Zu „${name(merged)}“ zusammengeführt`);
+  };
+
   // Falsch gesetzte Orte (z. B. alle Notizen am Startpunkt): aus den Fotos übernehmen oder entfernen
   ACTIONS['sel-photopos'] = () => {
     let n = 0;

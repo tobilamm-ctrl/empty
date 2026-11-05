@@ -136,6 +136,20 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 73: Fotos zum richtigen Eintrag (Praxistest Paket B)
+
+- **„Wohin mit dem Foto?“** Beim Hineinziehen am PC, beim Foto-Knopf (lange auf „+ Eintrag“ drücken) und beim Teilen
+  aus der Galerie mit „Teilen › LAMMping“ fragt LAMMping, ob das Foto zu einem Eintrag gehört: Oben steht der passende
+  Eintrag (kurz davor/danach, gleicher Ort, „passt“), darunter die letzten Einträge der Reise mit Uhrzeit und
+  Vorschaubild, dazu „Neuer Eintrag“. Beim Ziehen und beim Foto-Knopf kommt die Frage, wenn etwas passt oder in den
+  letzten 3 Stunden eingetragen wurde; beim Teilen immer.
+- **📷+ am Eintrag:** Im Tagebuch neben den Herzen – ein Tipp öffnet Kamera bzw. Galerie, die Fotos kommen direkt in
+  diesen Eintrag.
+- **Einträge zusammenführen:** Mehrfachauswahl (lange drücken, am PC Strg-Klick) › **⧉ Zusammenführen**. Der früheste
+  Eintrag bleibt mit Art, Titel und Ort; Fotos, Texte, Sprachnotizen und PDFs kommen dazu, Herzen, Kommentare und Kosten
+  wandern mit.
+- Der Foto-Knopf sichert das Kamera-Foto wie „Foto aufnehmen“ zusätzlich aufs Handy.
+
 ## Neu in Version 72: Erfahrungen aus dem Praxistest (Paket A + C)
 
 **Standort und neue Einträge**

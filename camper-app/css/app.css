@@ -2553,3 +2553,15 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .stop-badge.snd.on { background: var(--petrol); color: #fff; border-color: var(--petrol); }
 .today-wx small .wx-place { color: var(--ink); font-weight: 600; }
 .gallery-save { order: -1; }
+
+/* ---------- Version 73: Paket B – Fotos zum richtigen Eintrag ---------- */
+.where-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.where-list button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--surface); text-align: left; cursor: pointer; color: var(--ink); }
+.where-list button.hit { border-color: var(--petrol); box-shadow: inset 0 0 0 1.5px var(--petrol); }
+.where-list img, .where-list .where-ic { width: 48px; height: 48px; flex: none; border-radius: 8px; object-fit: cover; }
+.where-list .where-ic { display: grid; place-items: center; background: var(--mist); color: var(--wood); }
+.where-list .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.where-list .txt small { color: var(--muted); }
+.where-list em { font-style: normal; font: 700 12px var(--body); color: #fff; background: var(--petrol); padding: 2px 8px; border-radius: 999px; }
+.stop-badge.add-photo { display: inline-flex; align-items: center; }

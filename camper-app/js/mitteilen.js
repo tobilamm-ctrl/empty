@@ -214,7 +214,18 @@ export default function installMitteilen(app) {
   ACTIONS['shared-entry'] = async () => {
     const s = shared;
     const pos = coordsOf(s.url) || coordsOf(s.text);
+    const imgs = s.files.filter(x => /^image\//.test(x.type));
     await clearShared(); shared = null;
+    // Nur Fotos geteilt: erst fragen, ob sie zu einem Eintrag von eben gehören (letzte Einträge zur Auswahl)
+    if (imgs.length && !s.text && !s.url && app.whereTo) {
+      go('tagebuch');
+      const ex = app.readExif ? await app.readExif(imgs[0]).catch(() => ({})) : {};
+      setTimeout(() => app.whereTo(imgs, ex, () => newFromShared(s, pos), true), 300);
+      return;
+    }
+    newFromShared(s, pos);
+  };
+  function newFromShared(s, pos) {
     go('tagebuch');
     setTimeout(async () => {
       app.openEntryForm({ type: pos ? 'sight' : 'notiz', title: s.title || '', text: [s.text, s.url].filter(Boolean).join('\n'), date: nowLocal(), ...(pos || {}) });
@@ -222,7 +233,7 @@ export default function installMitteilen(app) {
         try { app.addFormPhoto({ id: newId(), thumb: await shrink(f, 360, 0.7), data: await shrink(f, 1920, 0.78) }); } catch { /* Format nicht lesbar */ }
       }
     }, 300);
-  };
+  }
   ACTIONS['shared-place'] = () => {
     const s = shared, pos = coordsOf(s.url) || coordsOf(s.text);
     save('places', { id: newId(), createdAt: Date.now(), by: me(), kind: 'poi', name: nameOf(s), place: '', note: [s.text, s.url].filter(Boolean).join('\n'),

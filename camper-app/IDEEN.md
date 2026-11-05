@@ -151,12 +151,12 @@ P4. **✅ (Lieferung 72) „Ich bin hier …“ › Notiz ohne Standort.** Im Te
     **Ergänzung:** „Ich bin hier …“ (und neue Einträge am Handy allgemein) sollen sich genauso verhalten wie das
     Hineinziehen von Fotos am PC: Standort bestimmen, Ortsname eintragen und den Platz in der Nähe (POI:
     Sehenswürdigkeit, Campingplatz, Restaurant …) als Titel vorschlagen, mit den Vorschlags-Chips unter dem Titel.
-P5. **Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim Hineinziehen.** Auch am Handy (Foto-Knopf,
+P5. **✅ (Lieferung 73) Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim Hineinziehen.** Auch am Handy (Foto-Knopf,
     „Ich bin hier …“, Fotos aus der Galerie) soll LAMMping erkennen, wenn es kurz davor an fast derselben Stelle schon
     einen Eintrag gibt, und „Dazulegen“ anbieten statt einen neuen Eintrag anzulegen. Dazu: zwei vorhandene Einträge
     nachträglich zu einem zusammenführen (z. B. in der Mehrfachauswahl „Zusammenführen“: Fotos, Texte, frühester
     Zeitpunkt bleiben).
-P6. **„+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines Plus direkt neben dem Titel eines Eintrags
+P6. **✅ (Lieferung 73) „+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines Plus direkt neben dem Titel eines Eintrags
     öffnet Kamera/Galerie und legt das Foto gleich in diesen Eintrag (ohne erst „Bearbeiten“ zu öffnen).
 P7. **✅ (Lieferung 72) Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
     sollen im Tagebuch sichtbar markiert sein (z. B. kleines durchgestrichenes Auge 🙈 „nicht im Reiseblog“ neben dem
@@ -170,7 +170,7 @@ P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen i
        „Log to custom URL“; iPhone: OwnTracks HTTP oder Overland). Neue api/index.php mit Schlüssel je Crew/Person;
        Strecke wächst von selbst, „Unterwegs mit Freunden“ sieht den Standort live (mittel).
     **Entschieden (4.11.2026): 1 + 2 als Standard, 4 zusätzlich.**
-P9. **Foto über „Teilen › LAMMping“ zu einem vorhandenen Eintrag legen.** Wird nach einem Eintrag ein weiteres Bild
+P9. **✅ (Lieferung 73) Foto über „Teilen › LAMMping“ zu einem vorhandenen Eintrag legen.** Wird nach einem Eintrag ein weiteres Bild
     mit LAMMping geteilt, gleich fragen: „Zum letzten Eintrag ‚…‘ dazulegen?“ Darunter eine Auswahl der letzten
     Einträge (z. B. die letzten 5 der Reise, mit Uhrzeit und Vorschaubild), plus „Neuer Eintrag“. Passt ein Eintrag
     nach Zeit/Ort (wie beim Hineinziehen, P5), steht er oben und ist vorausgewählt.
@@ -243,7 +243,7 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 **Lieferplan Praxistest (Stand 5.11.2026, Reihenfolge nach der Rückkehr):**
 1. ✅ **Paket A – Standort und neue Einträge (Lieferung 72):** P15, P1, P4, P2 (nur App)
    **+ Paket C – Tagebuch aufgeräumt:** P12, P7, Tagebuch-Teil von P14 (nur App) – zusammen ausliefern
-2. **Paket B – Fotos zum richtigen Eintrag:** P5, P9, P6, P3 (nur App)
+2. ✅ **Paket B – Fotos zum richtigen Eintrag (Lieferung 73):** P5, P9, P6, P3 (nur App)
 3. **Paket D – Server-Lieferung (eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
    P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
 4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (evtl. api/index.php)
