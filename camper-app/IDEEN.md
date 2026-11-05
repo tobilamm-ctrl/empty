@@ -246,7 +246,35 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 2. ✅ **Paket B – Fotos zum richtigen Eintrag (Lieferung 73):** P5, P9, P6, P3 (nur App)
 3. ✅ **Paket D – Server-Lieferung (Lieferung 74, eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
    P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
-4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (evtl. api/index.php)
+4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (neue api/index.php wegen der 24-Stunden-Erinnerung)
+
+**Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
+- **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,
+  🏍️ Motorrad, 🚗 Auto + Unterkunft, ✈️ Flugreise, 🚢 Kreuzfahrt, 🚆 Bahnreise, 🚲 Radtour, 🥾 Wandertour,
+  ⛵ Segeln/Boot, 🔀 Gemischt.
+- **Abschnitte: Variante A** – keine eigene Abschnittsliste; Abschnitte ergeben sich aus Einträgen (Flug, Bahnfahrt,
+  Fähre mit von–nach, Mietwagen-Übernahme/-Rückgabe); dazwischen gilt die Hauptart.
+- **Bereiche ausblenden nur als Vorschlag** (bestätigen), nichts wird gelöscht; schon benutzte Bereiche bleiben sichtbar.
+  Tabelle: Tankbuch bei Camping, Zelten, Motorrad, Auto, Segeln; Zuladung bei Camping, Motorrad; Autarkie bei Camping,
+  Segeln; Stellplatz-Suche bei Camping, Zelten, Motorrad, Rad, Wandern; Wasserwaage nur Camping; Fahrzeug-Check bei
+  Camping, Zelten, Motorrad, Auto, Segeln; Packliste/Boxen immer.
+- **Neue Eintragsarten:** 🏨 Unterkunft (Übernachtung), ✈️ Flug, 🚆 Bahnfahrt, 🚢 Hafen/Landgang, 🚗 Mietwagen,
+  🏔️ Berghütte (Übernachtung), 🎢 Freizeitpark; Fähre bekommt von–nach. Kein eigener Zeltplatz (Stellplatz reicht).
+  Obere Arten richten sich nach der Reiseart.
+- **Karte:** Flug als Großkreis-Bogen (gestrichelt, mit ✈️-Symbol), Fähre/Schiff blau gestrichelt, Bahn gepunktet,
+  Auto/Motorrad/Camper wie heute, Rad/Wandern grün mit Rad-/Fußweg-Routing; „Straße folgen“ nur für Straßenabschnitte;
+  bei Flugreisen keine Autolinie von zu Hause. Gilt auch für Reiseblog, Freunde, Reisebuch.
+- **Statistik:** Nächte je Übernachtungsart, km je Verkehrsmittel, Reisen je Reiseart im Jahr.
+- **Tickets:** Flug (Flugnummer, Terminal, Gate, Sitz), Kabine/Bordkarte, Bahn (Wagen/Platz), Unterkunft (Check-in/-out);
+  aus Ticket auf Wunsch gleich den Eintrag anlegen; bei Flügen zusätzlich **Erinnerung 24 Stunden vorher**
+  (Online-Check-in, Server).
+- **CO₂ (P10):** genaueste Quelle je Strecke (Tankbuch → km × Verbrauch; Elektro; Flug Kurz-/Langstrecke inkl.
+  Klima-Aufschlag; Fähre je Person + Fahrzeug; Kreuzfahrt je Tag; Bahn; Gas; **Unterkunft je Nacht**; Rad/Wandern 0).
+  **Strom am Stellplatz nicht.** Faktoren mit Quelle, anpassbar; Personen aus den Mitreisenden; fehlende Angaben als
+  Hinweis, nichts raten.
+- **Anzeige:** Karte „CO₂-Bilanz“ in der Reise-Übersicht, Jahresstatistik, optional Reisebuch; gesamt, pro Person,
+  pro Tag, Aufteilung je Quelle, Grundlage (genau/geschätzt). **Vergleich** mit anderen Reisearten und Vorjahr,
+  Einordnung (≈ 10 t/Jahr), **Ausgleich-Hinweis** (Bäume, Kosten, Link). **Nicht im Reiseblog.**
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
