@@ -219,6 +219,27 @@ P16. **Echte Größe jeder Reise.** Heute zeigt Einstellungen › Bedienung › 
     148 MB auf diesem Handy“; dazu Gesamtgröße je Crew (für den Super-Admin: Platz auf dem Webspace). Braucht neue
     api/index.php.
 
+P17. **Foto direkt im Eintrag aufnehmen** („📷 Foto aufnehmen“ öffnet sofort die Kamera) – das Foto soll in voller
+    Auflösung auch in der Handy-Galerie landen (= P3): Android als Download (Album „Download“, in den Einstellungen
+    einschaltbar), iPhone über „In Fotos sichern“ (Teilen › Bild sichern).
+P18. **Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussicht, Natur & Tiere, Markt, Fest/Veranstaltung, Begegnung,
+    Fahrt. Oben die 9 meistbenutzten Arten, der Rest hinter „Mehr Arten …“.
+
+**Entscheidungen zu Paket A + C (5.11.2026):**
+- P15: bis 10 s genauer messen (Ziel < 20 m); Ort = nur Gemeinde („Manching“), Ortsteil („Pichl“) als Vorschlag.
+- P1: jedes „+ Eintrag“ ortet automatisch; Foto-Ort ersetzt immer den GPS-Ort; nachgetragene Einträge (älter als
+  2 Stunden) nicht automatisch orten; Bearbeiten ändert den Ort nie von selbst; „Ort entfernen“ per ✕.
+- P4: auch die Notiz unter „Ich bin hier …“ mit Standort; bester Vorschlag gleich als Titel (Variante a).
+- P2: Wetter mit Ort in Heute-Karte und Wetter-Seite; ohne Standort Ort des letzten Eintrags „(letzter Eintrag)“;
+  Tageszeile im Tagebuch ohne Ort.
+- P12: Reise-Leiste nur noch Beenden · Fotos · Packliste · Danach („Nach der Reise“ heißt „Danach“, Straße folgen
+  dort); „Aufzeichnen“ aus der Leiste: „Tour aufzeichnen“ bei Wanderung/Radtour unter „Ich bin hier …“ und am
+  „+ Eintrag“-Knopf, „Weg aufzeichnen“ im Wanderungs-Eintrag.
+- P7: 🙈 „nicht im Blog“ nur bei eingeschaltetem Reiseblog; Tipp darauf blendet (mit Rückfrage) wieder ein.
+- P14 (Tagebuch): „🎙️ 0:42“ am Eintrag, Tipp spielt direkt ab (⏸ zum Anhalten).
+- P13 (Paket D): Herzen aus dem Reiseblog im Tagebuch sichtbar, von den Herzen der Familie unterscheidbar.
+- Paket A + C umfasst zusätzlich P17 und P18.
+
 **Lieferplan Praxistest (Stand 5.11.2026, Reihenfolge nach der Rückkehr):**
 1. **Paket A – Standort und neue Einträge:** P15, P1, P4, P2 (nur App)
    **+ Paket C – Tagebuch aufgeräumt:** P12, P7, Tagebuch-Teil von P14 (nur App) – zusammen ausliefern
