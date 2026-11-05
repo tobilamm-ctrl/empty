@@ -116,3 +116,14 @@ Kosten pro Foto 10 × 15 (Händlerpreise, recherchiert 04.11.2026, können sich 
 | Mitsubishi CP-D90DW-P | CK-D746, 800 Drucke | ca. 126 CHF (nur CH-Preis gefunden) | ca. 0,16 € | ca. 130 € (ganzes Set) |
 Ab etwa 700 Drucken ist der DNP DS-RX1HS beim Material günstiger als der Selphy (ohne Druckerkauf).
 Fotostreifen: DNP druckt zwei Streifen auf ein 10 × 15 und schneidet sie, Kosten pro Streifen also halb.
+
+Entscheidung (Stand 05.11.2026): Tendenz zu **zwei Canon Selphys**, die abwechselnd drucken.
+
+Kamera-Vergleich 200D vs. 2000D:
+- 200D: Dual-Pixel-Autofokus (schnell und sicher im Livebild), DIGIC 7, ISO bis 25600, 5 Bilder/s,
+  dreh- und schwenkbarer Touchscreen, Bluetooth, Mikrofoneingang, Akku LP-E17.
+- 2000D: langsamer Kontrast-Autofokus im Livebild, DIGIC 4+, ISO bis 6400 (12800 erweitert),
+  3 Bilder/s, fester Bildschirm ohne Touch, Akku LP-E10.
+- Für die Fotobox zählt vor allem der Autofokus im Livebild und das bessere Rauschverhalten bei
+  wenig Licht → 200D klar besser. Umgehen lässt sich das bei der 2000D mit manuell fest eingestelltem
+  Fokus (Markierung auf dem Boden, Blende f/5.6–8).
