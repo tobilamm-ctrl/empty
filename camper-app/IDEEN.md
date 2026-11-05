@@ -213,6 +213,19 @@ P15. **Standortermittlung: falscher Ort, langsam, ungenau.** Beobachtet bei Manc
     - **Ungenau:** Es zählt der erste GPS-Wert (oft grob aus WLAN/Mobilfunk, bis 30 s alt). Künftig einige Sekunden
       weiter messen, bis die Genauigkeit unter ca. 20 m liegt (mit Anzeige „wird genauer …“), und erst dann Ort und
       Vorschläge bestimmen; alte Werte nicht wiederverwenden.
+P16. **Echte Größe jeder Reise.** Heute zeigt Einstellungen › Bedienung › „Speicherplatz ansehen“ nur, was auf dem
+    eigenen Gerät liegt (angesehene Fotos), ohne PDFs, Sprachnotizen und Texte. Künftig liefert der Server je Reise
+    die tatsächliche Größe: alle Fotos, PDFs und Sprachnotizen, z. B. „Norwegen 2025: 1,2 GB auf dem Server, davon
+    148 MB auf diesem Handy“; dazu Gesamtgröße je Crew (für den Super-Admin: Platz auf dem Webspace). Braucht neue
+    api/index.php.
+
+**Lieferplan Praxistest (Stand 5.11.2026, Reihenfolge nach der Rückkehr):**
+1. **Paket A – Standort und neue Einträge:** P15, P1, P4, P2 (nur App)
+   **+ Paket C – Tagebuch aufgeräumt:** P12, P7, Tagebuch-Teil von P14 (nur App) – zusammen ausliefern
+2. **Paket B – Fotos zum richtigen Eintrag:** P5, P9, P6, P3 (nur App)
+3. **Paket D – Server-Lieferung (eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
+   P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
+4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (evtl. api/index.php)
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
