@@ -202,6 +202,17 @@ P14. **Sprachnotizen im Reiseblog und im Tagebuch.** Sprachnotizen eines Eintrag
     und dort abspielbar sein (außer bei „Im Reiseblog ausblenden“). Im Tagebuch soll am Eintrag erkennbar sein, dass
     eine Sprachnotiz hinterlegt ist (z. B. 🎙️ mit Länge, Tipp spielt sie ab). Braucht neue api/index.php (Blog liefert
     die Tonaufnahmen wie die Fotos aus).
+P15. **Standortermittlung: falscher Ort, langsam, ungenau.** Beobachtet bei Manching: vorgeschlagen wurde „Pichl“
+    (Ortsteil, einige km entfernt), GPS ± 53 m, Vorschläge kamen spät. Ursachen im Code und Lösungen:
+    - **Falscher Ort:** LAMMping nimmt bisher zuerst den kleinsten Ortsnamen aus OpenStreetMap (Dorf/Ortsteil vor
+      Gemeinde/Stadt). Künftig die Gemeinde bzw. Stadt als Ort, den Ortsteil nur als Zusatz („Manching, Pichl“) bzw.
+      als weiterer Vorschlag.
+    - **Langsam:** Ortsname (Nominatim) und Plätze in der Nähe (Overpass, bis 7 s) werden zusammen abgewartet.
+      Künftig den Ortsnamen sofort zeigen und die Plätze in der Nähe nachreichen; Ergebnisse für nahe Punkte
+      länger merken.
+    - **Ungenau:** Es zählt der erste GPS-Wert (oft grob aus WLAN/Mobilfunk, bis 30 s alt). Künftig einige Sekunden
+      weiter messen, bis die Genauigkeit unter ca. 20 m liegt (mit Anzeige „wird genauer …“), und erst dann Ort und
+      Vorschläge bestimmen; alte Werte nicht wiederverwenden.
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
