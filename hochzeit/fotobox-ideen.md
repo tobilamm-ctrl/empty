@@ -174,3 +174,19 @@ Windows statt Linux:
   automatische Anmeldung.
 - Empfehlung: **Windows** (Mini-PC meist schon damit ausgeliefert, offizieller Selphy-Treiber, Canon-EDSDK).
   Software plattformunabhängig bauen, damit später ein Wechsel zu Linux möglich bleibt.
+
+## Auswahl für die Gäste am iPad (Stand 05.11.2026)
+
+Grundsatz: höchstens 3 Schritte bis zum Foto, große Kacheln, sinnvolle Vorauswahl, nach ca. 45 s ohne
+Eingabe zurück zum Start. Im Admin-Bereich legt das Brautpaar fest, welche Optionen sichtbar sind.
+
+Ablauf: Start → Modus → (Rahmen/Filter) → Countdown → Vorschau → Aktionen → Danke-Bildschirm
+
+1. Modus: Einzelfoto · Fotostreifen (4 Bilder) · GIF/Boomerang · Video-Gruß · Tisch-Aufgabe/Bingo
+2. Vor dem Foto (optional): Rahmen/Design (2–3 Varianten) · Filter (Farbe, Schwarzweiß, Vintage) ·
+   Zufalls-Pose („Überrasch uns“) · Hintergrund (nur mit Greenscreen)
+3. Vorschau: Nochmal · Weiter (Anzahl Wiederholungen begrenzen)
+4. Aktionen: Drucken + Anzahl (1–4, Obergrenze im Admin) · Aufs Handy (QR) · Ins Gästebuch (Name antippen,
+   Gruß tippen oder mit dem Finger unterschreiben) · Mit dem Finger malen/Sticker · „Nicht in der Diashow zeigen“ · Fertig
+Weitere Ideen: Sprache Deutsch/Englisch, Gruß direkt ans Brautpaar (nur für das Paar sichtbar).
+Erste Version: Einzelfoto + Fotostreifen, ein Rahmen, Schwarzweiß-Filter, Nochmal, Drucken mit Anzahl, Fertig.
