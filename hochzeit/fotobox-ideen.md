@@ -172,3 +172,5 @@ Windows statt Linux:
 - Drucker: offizielle Canon-Treiber für den Selphy, Drucken ohne Dialog möglich – einfacher als unter Linux.
 - Vor der Hochzeit: Windows-Updates pausieren, Energiesparen und Ruhezustand aus, Autostart der Software,
   automatische Anmeldung.
+- Empfehlung: **Windows** (Mini-PC meist schon damit ausgeliefert, offizieller Selphy-Treiber, Canon-EDSDK).
+  Software plattformunabhängig bauen, damit später ein Wechsel zu Linux möglich bleibt.
