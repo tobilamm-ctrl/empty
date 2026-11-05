@@ -193,3 +193,24 @@ Erste Version: Einzelfoto + Fotostreifen, ein Rahmen, Schwarzweiß-Filter, Nochm
 
 Erster klickbarer Entwurf (05.11.2026): `hochzeit/fotobox-entwurf.html`,
 online: https://claude.ai/artifact/Xe98ZcmKghsuhbzjTtkz9y (Kamera und Drucker simuliert, Admin-PIN 2580).
+
+## Gestaltung wie die Einladungen (Vorgabe, 05.11.2026)
+
+Farben und Schrift der Fotobox (Oberfläche **und** Druckrahmen) sollen genau zu den Einladungen passen.
+Am besten beim Import der Gästeliste aus dem Sitzplantool gleich mit übernehmen.
+
+Was das Sitzplantool dafür schon hat (`tobilamm-ctrl/hochzeit-sitzplan`):
+- `js/theme.js`: Einstellungen `theme` (10 Farbwelten, z. B. „Salbei & Eukalyptus“, „Champagner & Gold“),
+  eigene Akzentfarbe `accent`, Seitenfarben `color1`/`color2`, Schriftstil `font`
+  (klassisch = Cormorant Garamond, romantisch = Cormorant + Great Vibes für Namen, modern = Josefin Sans),
+  Namen `partner1`/`partner2`, Datum, Ort.
+- Kartenentwurf der Einladungskarten (Karten-Editor): Hintergrund, Schriften, Farben, Monogramm, eigene
+  Schriftdateien (in der Sitzplan-Datei gespeichert). Schriften liegen lokal in `fonts/` (woff2).
+
+Plan für die Fotobox:
+- Import der Sitzplan-Datei liest Gästeliste **und** Namen, Datum, Farbwelt, Akzentfarbe, Schrift,
+  Monogramm und ggf. eigene Schriften der Einladungskarte.
+- Fotobox nutzt daraus: Akzentfarbe für Knöpfe, Schrift für Überschriften/Namen, Rahmen im Stil der Einladung.
+- Schriften lokal mitliefern (offline), keine Verbindung zu Google Fonts.
+- Ohne Import: Farbwelt und Schrift im Admin-Bereich von Hand wählen (gleiche Liste wie im Sitzplantool).
+- Die Farbwelten des Sitzplantools sind hell – für den Abend evtl. eine dunkle Variante mit derselben Akzentfarbe anbieten.
