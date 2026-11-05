@@ -62,7 +62,7 @@ p { margin: 0; }
 .st.bw canvas { filter: grayscale(1) contrast(1.05); }
 .st-tag { position: absolute; top: 1.2em; left: 1.2em; font-size: .85em; background: rgba(0,0,0,.55); color: #fff; padding: .35em .9em; border-radius: 99px; }
 .st-msg { position: absolute; left: 50%; bottom: 2em; transform: translateX(-50%); background: rgba(10,16,13,.78); padding: .7em 1.6em; border-radius: 99px; font-size: 1.5em; white-space: nowrap; }
-.st-count { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-size: 30cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
+.st-count { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--f-display); font-size: 25cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
 .pulse { animation: pulse 1s ease-out; }
 @keyframes pulse { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
 .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
@@ -203,6 +203,7 @@ p { margin: 0; }
             <span class="st-tag">Demo-Livebild · gespiegelt</span>
             <span class="st-shotlbl" id="tvShot" hidden></span>
             <div class="st-count" id="tvCount"></div>
+            <div class="st-msg" id="tvShootMsg">Schaut in die Kamera!</div>
             <div class="flash" id="flash"></div>
           </div>
           <div class="st st-result" id="st-result" hidden>
@@ -520,7 +521,8 @@ p { margin: 0; }
     for (let i = 0; i < n; i++) {
       const lbl = `Bild ${i + 1} von ${n}`;
       $("tvShot").textContent = lbl; $("iShot").textContent = lbl;
-      $("iShootMsg").textContent = i === 0 ? "Schaut in die Kamera!" : "Neue Pose fürs nächste Bild!";
+      const msg = i === 0 ? "Schaut in die Kamera!" : "Neue Pose fürs nächste Bild!";
+      $("iShootMsg").textContent = msg; $("tvShootMsg").textContent = msg;
       for (let c = 3; c >= 1; c--) {
         [$("tvCount"), $("iCount")].forEach(el => { el.textContent = c; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); });
         await sleep(1000);
@@ -530,7 +532,7 @@ p { margin: 0; }
       S.shots.push(capture(S.sceneSeed + i * 13, S.filter));
       await sleep(i < n - 1 ? 900 : 350);
     }
-    $("iShootMsg").textContent = "Einen Moment …"; $("iCount").textContent = "";
+    $("iShootMsg").textContent = "Einen Moment …"; $("tvShootMsg").textContent = "Einen Moment …"; $("iCount").textContent = "";
     S.composed = await compose(S.mode, S.shots);
     ["tvRes", "tvThanks", "iThumb", "iThumb2"].forEach(id => { $(id).src = S.composed; });
     renderRetry();
