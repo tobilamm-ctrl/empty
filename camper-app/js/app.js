@@ -51,11 +51,12 @@ import installHeute from './heute.js';
 import installMitteilungen from './mitteilungen.js';
 import installSpuren from './spuren.js';
 import installReisearten from './reisearten.js';
+import installStarthilfe from './starthilfe.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 76;
+const APP_VERSION = 77;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2212,6 +2213,8 @@ function installText() {
 }
 
 function installHint() {
+  // Version 77: Start-Hilfe (starthilfe.js) ersetzt den alten Hinweis
+  if (APP.startHelp) return APP.startHelp();
   if (isStandalone() || LS.get('installHintDone', false) || !(installPrompt || isIOS)) return '';
   return `<aside class="install-hint">
     <svg class="hint-sheep" aria-hidden="true"><use href="#schaf"/></svg>
@@ -2889,7 +2892,7 @@ const APP = {
   refit: () => { lastFit = null; },
   mapClickHooks, MINOR, applyType, titleHints, checkTripRange, photoGeo, replaceFormPhoto, tripForDate, tripForm, newTripThen, saveToGallery, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
-  session: () => session, store: () => store, shrink, TRIP_KINDS, tripKind, kindInfo, isNight, NIGHT_TYPES, splitLegs, legOf, legKm, drawSpecialLegs, routePts, typesByUse,
+  session: () => session, store: () => store, shrink, installState: () => ({ standalone: isStandalone(), prompt: !!installPrompt, ios: isIOS, shareIcon: SHARE_ICON }), TRIP_KINDS, tripKind, kindInfo, isNight, NIGHT_TYPES, splitLegs, legOf, legKm, drawSpecialLegs, routePts, typesByUse,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,
   get map() { return map; },
   get routeLayer() { return routeLayer; },
@@ -2945,6 +2948,7 @@ installHeute(APP);
 installMitteilungen(APP);
 installSpuren(APP);
 installReisearten(APP);
+installStarthilfe(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

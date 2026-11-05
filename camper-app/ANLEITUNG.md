@@ -136,6 +136,20 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 77: Start-Hilfe für Startbildschirm und Mitteilungen
+
+Oben im Tagebuch erscheint eine kleine Start-Hilfe, aber nur, solange noch etwas fehlt:
+
+- **Läuft LAMMping noch im Browser**, steht dort „LAMMping auf den Startbildschirm legen“. Die Hilfe sagt dazu, warum das wichtig ist:
+  zuverlässiger, ohne Netz, Mitteilungen (auf dem iPhone nur so), „Teilen › LAMMping“ für Fotos.
+  Darunter steht die passende Anleitung für iPhone, Android-Chrome, Samsung Internet, Firefox und den PC. Wo der Browser es erlaubt, gibt es direkt einen Knopf „Installieren“.
+- **Läuft LAMMping installiert, sind Mitteilungen aber noch nicht erlaubt**, steht dort „🔔 Mitteilungen einschalten?“.
+  „Einschalten“ öffnet gleich das Erlaubnis-Fenster des Handys und meldet das Gerät an.
+  Ganz automatisch beim Start geht das nicht: Handys zeigen das Erlaubnis-Fenster nur nach einem Tipp.
+- **„Später“** fragt nach 3 Tagen wieder. **„Nein, danke“** fragt bei den Mitteilungen nie wieder. Einschalten geht weiter unter Einstellungen › Mitteilungen.
+- Sind Mitteilungen auf dem Handy blockiert, erscheint keine Frage. Wie man sie wieder erlaubt, steht unter Einstellungen › Mitteilungen.
+- In der Kinderansicht erscheint die Start-Hilfe nicht.
+
 ## Neu in Version 76: Bescheid, wenn andere Crews losfahren oder folgen möchten
 
 **Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).

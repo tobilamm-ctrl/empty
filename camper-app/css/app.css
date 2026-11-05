@@ -2590,3 +2590,10 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .kind-stats span { white-space: nowrap; }
 .kind-badge { margin-right: 4px; }
 .tk-fields-view { color: var(--muted); }
+
+/* ---------- Version 77: Start-Hilfe (Startbildschirm, Mitteilungen) ---------- */
+.start-help { align-items: flex-start; }
+.start-help .sh-body { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.start-help .sh-body p { margin: 0; }
+.start-help .sh-how { font-size: 15px; }
+.start-help .sh-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
