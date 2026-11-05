@@ -4,7 +4,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: zwei Geräte nebeneinander, synchron – links der große Bildschirm (16:9, Bühne), rechts das iPad (4:3, Bedienung).
+/* Schriftgrößen in cqw beziehen sich auf .tv bzw. .ipad (Container), damit beide Geräte maßstabsgetreu skalieren.
+   Layout: zwei Geräte nebeneinander, synchron – links der große Bildschirm (16:9, Bühne), rechts das iPad (4:3, Bedienung).
    Innenmaße in cqw bzw. em, damit beide Geräte maßstabsgetreu mitskalieren. Bewusst nur ein dunkles Farbschema:
    die Fotobox steht abends im Saal, ein heller Bildschirm würde blenden. */
 :root {
@@ -42,11 +43,11 @@ p { margin: 0; }
 .dev { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .dev-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
 .dev-label i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
-.tv { background: var(--bezel); border-radius: 10px; padding: 1.1%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
-.tv-screen { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; container-type: inline-size; background: #0b120f; border-radius: 3px; font-size: 2cqw; }
+.tv { container-type: inline-size; background: var(--bezel); border-radius: 10px; padding: 1.1%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
+.tv-screen { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; background: #0b120f; border-radius: 3px; font-size: 2cqw; }
 .tv-foot { width: 22%; height: 10px; margin: 0 auto; background: var(--bezel); border-radius: 0 0 8px 8px; }
-.ipad { background: var(--bezel); border: 1px solid var(--line); border-radius: 26px; padding: 4%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
-.ipad-screen { aspect-ratio: 4 / 3; max-width: 100%; position: relative; overflow: hidden; container-type: inline-size; background: var(--bg); border-radius: 10px; font-size: 3.4cqw; display: flex; flex-direction: column; }
+.ipad { container-type: inline-size; background: var(--bezel); border: 1px solid var(--line); border-radius: 26px; padding: 4%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
+.ipad-screen { aspect-ratio: 4 / 3; max-width: 100%; position: relative; overflow: hidden; background: var(--bg); border-radius: 10px; font-size: 3.4cqw; display: flex; flex-direction: column; }
 
 /* ---------- Bühne (großer Bildschirm) ---------- */
 .st { position: absolute; inset: 0; }
@@ -77,7 +78,7 @@ p { margin: 0; }
 
 /* ---------- iPad ---------- */
 .i-head { display: flex; align-items: center; gap: .7em; padding: .9em 1.3em .4em; flex: none; }
-.mono { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--brass); background: transparent; color: var(--brass); font-family: var(--f-display); font-size: .9em; flex: none; display: grid; place-items: center; }
+.mono { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--brass); background: transparent; color: var(--brass); font-family: var(--f-display); font-size: .75em; flex: none; display: grid; place-items: center; }
 .mono.pressing { background: var(--surface-2); }
 .couple { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .couple b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
