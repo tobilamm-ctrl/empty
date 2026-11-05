@@ -158,3 +158,17 @@ Internet: Nicht nötig. Alles läuft über das eigene Fotobox-WLAN (auch QR-Down
 Fotobox-WLAN einwählen; zwei QR-Codes: erst WLAN, dann Foto). Internet nur für: Download über mobile Daten,
 Online-Galerie/Cloud-Upload, Variante 2 (Upload von Gäste-Handys), E-Mail, Warnungen außerhalb der WLAN-Reichweite.
 Notlösung vor Ort: Handy-Hotspot oder Router mit SIM-Karte. Der Mini-PC braucht keinen Bildschirm im Betrieb.
+
+## Mini-PC mit Windows, Tablet = iPad (Stand 05.11.2026)
+
+Kommunikation: Die Fotobox-Software auf dem Mini-PC ist ein kleiner Webserver. Das iPad öffnet die Seite
+in Safari über das Fotobox-WLAN (feste Adresse per Router, z. B. http://192.168.8.10:8080), als Web-App
+im Vollbild + Geführter Zugriff. Befehle (Auslösen, Drucken) per HTTP, Live-Updates (Countdown, Status,
+Livebild) per WebSocket bzw. MJPEG-Stream. WLAN möglichst 5 GHz, Router nah an der Fotobox.
+
+Windows statt Linux:
+- Kamera: Canon EDSDK (kostenlos, Registrierung bei Canon) oder digiCamControl (kostenlos, Windows).
+  gPhoto2 gibt es nur unter Linux.
+- Drucker: offizielle Canon-Treiber für den Selphy, Drucken ohne Dialog möglich – einfacher als unter Linux.
+- Vor der Hochzeit: Windows-Updates pausieren, Energiesparen und Ruhezustand aus, Autostart der Software,
+  automatische Anmeldung.
