@@ -20,7 +20,7 @@ export default function installExport(app) {
   const toolsOf = (t, st) => app.tripTools.map(f => f(t, st)).filter(Boolean).sort((a, b) => a.order - b.order);
   app.tripBar = (t, st) => {
     const tools = toolsOf(t, st), bar = tools.filter(x => !x.later);
-    if (tools.some(x => x.later)) bar.push({ action: 'trip-later', icon: 'archive', label: 'Nach der Reise', title: 'Rückblick, Buch, Export, Archiv', main: !!t.ended });
+    if (tools.some(x => x.later)) bar.push({ action: 'trip-later', icon: 'archive', label: 'Danach', title: 'Danach: Rückblick, Buch, Export, Strecke, Archiv', main: !!t.ended });
     return `${t.ended ? `<p class="trip-ended">${icon('flag')}Reise beendet${t.end ? ` am ${fmtShort(t.end)}` : ''}${t.archived ? ', im Archiv' : ''}.</p>` : ''}
       <div class="trip-tools">${bar.map(x => `<button class="tool${x.main ? ' main' : ''}" data-action="${x.action}" data-id="${t.id}" title="${x.title || x.label}" aria-label="${x.title || x.label}">
         ${icon(x.icon)}<small>${x.label}</small></button>`).join('')}</div>`;
@@ -29,7 +29,7 @@ export default function installExport(app) {
     const t = tripById(el.dataset.id);
     if (!t) return;
     const later = toolsOf(t, tripStats(t)).filter(x => x.later);
-    openSheet(`<div>${app.sheetHead('Nach der Reise')}<div class="later-rows">${later.map(x => `<button data-action="later-go" data-a="${x.action}" data-id="${t.id}">
+    openSheet(`<div>${app.sheetHead('Danach')}<div class="later-rows">${later.map(x => `<button data-action="later-go" data-a="${x.action}" data-id="${t.id}">
       ${icon(x.icon)}<span><b>${x.title || x.label}</b>${x.desc ? `<small>${x.desc}</small>` : ''}</span></button>`).join('')}</div></div>`);
   };
   // Erst das Fenster schließen, dann die eigentliche Aktion (öffnet oft selbst ein Fenster)

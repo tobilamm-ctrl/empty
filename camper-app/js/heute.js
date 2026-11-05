@@ -35,4 +35,59 @@ export default function installHeute(app) {
     if (grid) grid.after(holder.firstElementChild); else card.appendChild(holder.firstElementChild);
     return box.innerHTML;
   };
+
+  /* ---------- Am Eintrag im Tagebuch: „nicht im Blog“ und Sprachnotizen ---------- */
+
+  const { S, ACTIONS, esc, save, toast } = app;
+  const secs = n => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
+  const extra = app.stopExtra;
+  app.stopExtra = e => {
+    const html = extra ? extra(e) : '<div class="react-row"></div>';
+    const badges = [];
+    // Nur sinnvoll, wenn es für die Reise einen Reiseblog gibt
+    if (e.blogHide && app.blogOn && app.blogOn(e.tripId)) {
+      badges.push(`<button class="stop-badge blog-off" data-action="blog-unhide" data-id="${e.id}" title="Im Reiseblog ausgeblendet – antippen zum Einblenden">🙈 nicht im Blog</button>`);
+    }
+    const snd = e.sounds || [];
+    if (snd.length) {
+      const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
+      badges.push(`<button class="stop-badge snd" data-action="snd-play" data-id="${e.id}" aria-label="Sprachnotiz abspielen">🎙️ ${snd.length > 1 ? `${snd.length} · ` : ''}${secs(total)}</button>`);
+    }
+    if (!badges.length) return html;
+    const i = html.lastIndexOf('</div>');
+    return i < 0 ? html + badges.join('') : `${html.slice(0, i)}${badges.join('')}${html.slice(i)}`;
+  };
+  ACTIONS['blog-unhide'] = el => {
+    const e = S.entries.find(x => x.id === el.dataset.id);
+    if (!e || !confirm(`„${e.title || 'Eintrag'}“ im Reiseblog wieder zeigen?`)) return;
+    save('entries', { ...e, blogHide: false });
+    toast('Steht wieder im Reiseblog');
+  };
+  // Sprachnotizen direkt abspielen (mehrere nacheinander); zweiter Tipp hält an
+  let player = null, playing = null;
+  const stop = () => {
+    if (player) { player.pause(); player = null; }
+    if (playing) { const b = document.querySelector(`[data-action=snd-play][data-id="${playing}"]`); if (b) b.classList.remove('on'); playing = null; }
+  };
+  ACTIONS['snd-play'] = async el => {
+    const id = el.dataset.id;
+    if (playing === id) return stop();
+    stop();
+    const e = S.entries.find(x => x.id === id);
+    if (!e) return;
+    playing = id;
+    el.classList.add('on');
+    for (const s of e.sounds || []) {
+      if (playing !== id) return;
+      let src = '';
+      try { const d = await app.store().get('photos', s.id); src = d && d.data; } catch { /* offline */ }
+      if (!src) { toast('Die Sprachnotiz ist gerade nicht erreichbar (offline?).'); break; }
+      await new Promise(res => {
+        player = new Audio(src);
+        player.onended = res; player.onerror = res;
+        player.play().catch(res);
+      });
+    }
+    if (playing === id) stop();
+  };
 }

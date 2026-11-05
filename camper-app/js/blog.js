@@ -7,6 +7,8 @@ const TYPE = {
   stellplatz: 'Stellplatz', sight: 'Sehenswert', museum: 'Museum', wanderung: 'Wanderung / Radtour', baden: 'Baden',
   restaurant: 'Café / Restaurant', kinder: 'Kinder-Highlight', tank: 'Tankstopp', service: 'Ver- & Entsorgung',
   einkauf: 'Einkauf', pause: 'Pause', faehre: 'Fähre & Maut', werkstatt: 'Werkstatt', waesche: 'Wäsche', notiz: 'Notiz',
+  stadtbummel: 'Stadtbummel / Spaziergang', aussicht: 'Aussicht', natur: 'Natur & Tiere', markt: 'Markt',
+  fest: 'Fest / Veranstaltung', begegnung: 'Begegnung', fahrt: 'Fahrt',
 };
 const SKIP = ['tank', 'service', 'einkauf', 'werkstatt', 'waesche'];   // Unterwegs-Kleinkram nur auf der Karte, nicht in der Zeitleiste
 

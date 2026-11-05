@@ -317,8 +317,10 @@ export default function installBedienung(app) {
     <label class="check"><input type="checkbox" data-action="opt-set" data-k="wakeLock"${opt('wakeLock') ? ' checked' : ''}><span>Bildschirm anlassen bei „Wie lange noch?“, Wasserwaage, Kochen, Spielen und im Einkaufsmodus</span></label>
     <label class="check"><input type="checkbox" data-action="opt-set" data-k="resume"${opt('resume') ? ' checked' : ''}><span>Beim Öffnen dort weitermachen, wo ich war (bis 12 Stunden später; nur wenn als Startseite „Wie gewohnt“ gewählt ist)</span></label>
     <label class="check"><input type="checkbox" data-action="opt-set" data-k="headSmall"${opt('headSmall') ? ' checked' : ''}><span>Kopfzeile beim Herunterscrollen verkleinern</span></label>
+    <label class="check"><input type="checkbox" data-action="gallery-copy"${LS.get('galleryCopy', true) !== false ? ' checked' : ''}><span>Mit „Foto aufnehmen“ gemachte Fotos zusätzlich in voller Auflösung aufs Handy speichern (Android: Album „Download“; iPhone: Knopf „In Fotos sichern“)</span></label>
     <div class="btnrow"><button class="ghost" data-action="storage-check">Speicherplatz ansehen</button><button class="ghost" data-action="keys-help">Tastenkürzel am PC</button></div>
   </section>`);
+  CHANGES['gallery-copy'] = el => LS.set('galleryCopy', el.checked);
   CHANGES['opt-set'] = el => { LS.set(el.dataset.k, el.checked); syncLock(); if (el.dataset.k === 'headSmall' && !el.checked) document.body.classList.remove('head-small'); };
 
 }

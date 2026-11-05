@@ -52,7 +52,7 @@ import installMitteilungen from './mitteilungen.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 71;
+const APP_VERSION = 72;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -114,8 +114,16 @@ const ICONS = {
   faehre: '<path d="M3 15h18l-2.5 4.5h-13zM6 15v-4h12v4M9 11V7h5v4M11 7V4"/><path d="M2 21.5c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1"/>',
   werkstatt: '<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 0-2-2zM4 20l3-3"/>',
   waesche: '<path d="M8 3 4 6l2 3 2-1v13h8V8l2 1 2-3-4-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3z"/>',
+  // Version 72: weitere Eintragsarten
+  stadtbummel: "<path d=\"M8 6.5a4 4 0 0 1 8 0V9H8zM12 9v13M8.5 22h7\"/>",
+  aussicht: "<path d=\"M2 20l6-9 4 5 3-4 7 8z\"/><circle cx=\"17\" cy=\"6\" r=\"2.5\"/>",
+  natur: "<path d=\"M5 19C5 10 10 5 20 4c0 9-5 15-15 15z\"/><path d=\"M5 19l8-8\"/>",
+  markt: "<path d=\"M3 9l2-5h14l2 5\"/><path d=\"M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0\"/><path d=\"M5 12v9h14v-9\"/>",
+  fest: "<path d=\"M2 5q10 6 20 0\"/><path d=\"M4 6.1 8 7.5 6 12.5ZM10 7.9h4l-2 5.1ZM16 7.5l4-1.4-2 6.4Z\"/>",
+  begegnung: "<circle cx=\"6.5\" cy=\"7\" r=\"3\"/><path d=\"M2.5 21v-5a4 4 0 0 1 8 0v5\"/><circle cx=\"17.5\" cy=\"7\" r=\"3\"/><path d=\"M13.5 21v-5a4 4 0 0 1 8 0v5\"/>",
+  fahrt: "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M9.8 13.25 4.2 16.5M14.2 13.25l5.6 3.25M12 9.5V3\"/>",
 };
-const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.notiz}</svg>`;
 
 // Eintragsarten: was das Formular zeigt (Kosten, Bewertung, Ausstattung, Tankdaten, Zusatzfelder),
 // wohin Kosten gebucht werden (cost = Kategorie der Kasse) und in welcher Tagebuch-Gruppe sie stehen.
@@ -148,8 +156,24 @@ const TYPES = {
     catOf: x => (x.kind === 'Fähre' || !x.kind ? 'Fähre' : 'Maut & Vignette') },
   werkstatt: { label: 'Werkstatt / Panne', many: 'Werkstatt', hint: 'Reparatur, Pannenhilfe', cost: 'Werkstatt', minor: true, group: 'unterwegs' },
   waesche: { label: 'Wäsche', many: 'Wäsche', hint: 'Waschsalon, Waschmaschine', cost: 'Wäsche', minor: true, group: 'unterwegs' },
+  // Version 72: Erlebnisse ohne festen Platz
+  stadtbummel: { label: 'Stadtbummel / Spaziergang', many: 'Stadtbummel', hint: 'Gassen, Hafen, Altstadt', rating: true, group: 'erleben' },
+  aussicht: { label: 'Aussicht', many: 'Aussichten', hint: 'Aussichtspunkt, Panorama, Sonnenuntergang', rating: true, group: 'erleben' },
+  natur: { label: 'Natur & Tiere', many: 'Natur & Tiere', hint: 'Tiere beobachten, Wasserfall, Landschaft', rating: true, group: 'erleben' },
+  markt: { label: 'Markt', many: 'Märkte', hint: 'Wochenmarkt, Flohmarkt, Hofladen', cost: 'Lebensmittel', rating: true, group: 'erleben' },
+  fest: { label: 'Fest / Veranstaltung', many: 'Feste', hint: 'Dorffest, Konzert, Feuerwerk', cost: 'Eintritt', rating: true, group: 'erleben' },
+  begegnung: { label: 'Begegnung', many: 'Begegnungen', hint: 'Nette Leute getroffen', group: 'erleben' },
+  fahrt: { label: 'Fahrt', many: 'Fahrten', hint: 'Passstraße, schöne Strecke, Stau', rating: true, minor: true, group: 'unterwegs' },
   notiz: { label: 'Notiz', many: 'Notizen', hint: 'Gedanken zum Tag' },
 };
+// Häufigste Arten zuerst (für die Auswahl: 9 oben, der Rest hinter „Mehr Arten …“)
+function typesByUse() {
+  const n = {};
+  S.entries.forEach(e => { n[e.type] = (n[e.type] || 0) + 1; });
+  const base = Object.keys(TYPES);
+  return base.slice().sort((a, b) => (n[b] || 0) - (n[a] || 0) || base.indexOf(a) - base.indexOf(b));
+}
+const TOP_TYPES = 9;
 const MINOR = Object.keys(TYPES).filter(k => TYPES[k].minor);
 const typesIn = group => Object.keys(TYPES).filter(k => TYPES[k].group === group);
 const costCat = (type, extra = {}) => (TYPES[type].catOf ? TYPES[type].catOf(extra) : TYPES[type].cost);
@@ -382,17 +406,33 @@ function nextColor() {
 // Testmodus (testdaten.js) kann einen simulierten Standort liefern
 let simulatedPos = () => null;
 
-function getPos() {
+// Standort: bis zu `wait` ms weiter messen, bis die Genauigkeit unter `good` Metern liegt (der erste Wert kommt oft
+// grob aus WLAN/Mobilfunk). onUpdate bekommt jeden besseren Zwischenwert. Alte, zwischengespeicherte Werte zählen nicht.
+function getPos({ wait = 10000, good = 20, onUpdate = null } = {}) {
   const sim = simulatedPos();
   if (sim) return Promise.resolve(sim);
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Dieses Gerät liefert keinen Standort.'));
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
-      e => reject(new Error(e.code === 1
-        ? 'Der Standort ist nicht freigegeben. Erlaube ihn in den Browser-Einstellungen für diese Seite.'
-        : 'Der Standort ließ sich nicht bestimmen. Versuch es unter freiem Himmel noch einmal.')),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+    let best = null, done = false, id = null, timer = null;
+    const finish = err => {
+      if (done) return;
+      done = true;
+      if (id !== null) navigator.geolocation.clearWatch(id);
+      clearTimeout(timer);
+      if (best) resolve(best); else reject(err || new Error('Der Standort ließ sich nicht bestimmen. Versuch es unter freiem Himmel noch einmal.'));
+    };
+    id = navigator.geolocation.watchPosition(p => {
+      const cur = { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) };
+      if (best && cur.acc >= best.acc) return;
+      best = cur;
+      if (onUpdate) { try { onUpdate(cur); } catch { /* Anzeige egal */ } }
+      if (cur.acc <= good) finish();
+    }, e => finish(new Error(e.code === 1
+      ? 'Der Standort ist nicht freigegeben. Erlaube ihn in den Browser-Einstellungen für diese Seite.'
+      : 'Der Standort ließ sich nicht bestimmen. Versuch es unter freiem Himmel noch einmal.')),
+    { enableHighAccuracy: true, timeout: wait + 10000, maximumAge: 0 });
+    // Nach `wait` den besten Wert nehmen; ganz ohne Wert noch bis 20 s auf den ersten warten
+    timer = setTimeout(() => { if (best) finish(); else timer = setTimeout(() => finish(), 10000); }, wait);
   });
 }
 
@@ -432,25 +472,47 @@ async function nearPois(p) {
   } catch { return []; } finally { clearTimeout(timer); }
 }
 
-async function placeInfo(p) {
-  const key = `${(+p.lat).toFixed(4)},${(+p.lng).toFixed(4)}`;
-  if (PLACE_CACHE.has(key)) return PLACE_CACHE.get(key);
-  const around = navigator.onLine ? nearPois(p) : Promise.resolve([]);
+// Ortsname schnell (nur Adresssuche): als Ort zählt die Gemeinde bzw. Stadt, der Ortsteil (Dorf, Weiler, Stadtteil)
+// ist ein zusätzlicher Vorschlag. Ergebnisse bleiben auf dem Gerät gemerkt (ca. 100 m Raster).
+const QUICK_CACHE = new Map(Object.entries(LS.get('placeCache', {})));
+const skipAdmin = n => (n && !/^(Verwaltungsgemeinschaft|VG |Amt |Samtgemeinde|Verbandsgemeinde)/.test(n) ? n : '');
+async function placeQuick(p) {
+  const key = `${(+p.lat).toFixed(3)},${(+p.lng).toFixed(3)}`;
+  if (QUICK_CACHE.has(key)) return QUICK_CACHE.get(key);
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=de&lat=${p.lat}&lon=${p.lng}`);
     const j = await r.json();
     const a = j.address || {};
-    const name = a.village || a.town || a.city || a.municipality || a.hamlet || a.suburb || a.county || '';
-    const rev = j.name && POI_CATS.includes(j.category) && !POI_SKIP.includes(j.type) && j.name !== name ? j.name : '';
-    // Bester Kandidat aus der Umgebung; der Treffer der Adresssuche zählt als Gebäude dazu
-    const near = (await around).filter(x => x.name !== name);
-    const pois = [...new Set([...near.filter(x => !rev || x.score >= 8).map(x => x.name), rev, ...near.map(x => x.name)].filter(Boolean))];
-    const poi = pois[0] || '';
-    const hints = [...new Set([poi, pois[1] || '', poi && name ? `${poi}, ${name}` : '', name, a.city && a.city !== name ? a.city : ''].filter(Boolean))].slice(0, 5);
-    const info = { name, cc: (a.country_code || '').toUpperCase(), poi, hints };
-    if (j.address) PLACE_CACHE.set(key, info);
+    const name = a.city || a.town || skipAdmin(a.municipality) || a.village || a.hamlet || a.suburb || a.county || '';
+    const sub = [a.village, a.hamlet, a.suburb, a.quarter, a.neighbourhood].find(x => x && x !== name) || '';
+    const rev = j.name && POI_CATS.includes(j.category) && !POI_SKIP.includes(j.type) && j.name !== name && j.name !== sub ? j.name : '';
+    const info = { name, sub, cc: (a.country_code || '').toUpperCase(), rev };
+    if (j.address) {
+      QUICK_CACHE.set(key, info);
+      // Höchstens 300 Orte merken
+      const keep = [...QUICK_CACHE.entries()].slice(-300);
+      try { LS.set('placeCache', Object.fromEntries(keep)); } catch { /* Speicher voll: egal */ }
+    }
     return info;
-  } catch { return { name: '', cc: '', poi: '', hints: [] }; }
+  } catch { return { name: '', sub: '', cc: '', rev: '' }; }
+}
+const quickHints = q => [...new Set([q.rev, q.name, q.sub].filter(Boolean))].slice(0, 5);
+// Vollständig: dazu die Plätze in der Nähe (Overpass) als Titelvorschläge
+async function placeInfo(p) {
+  const key = `${(+p.lat).toFixed(4)},${(+p.lng).toFixed(4)}`;
+  if (PLACE_CACHE.has(key)) return PLACE_CACHE.get(key);
+  const around = navigator.onLine ? nearPois(p) : Promise.resolve([]);
+  const q = await placeQuick(p);
+  if (!q.name && !q.rev) return { name: '', cc: '', poi: '', hints: [] };
+  const { name, sub, rev } = q;
+  // Bester Kandidat aus der Umgebung; der Treffer der Adresssuche zählt als Gebäude dazu
+  const near = (await around).filter(x => x.name !== name && x.name !== sub);
+  const pois = [...new Set([...near.filter(x => !rev || x.score >= 8).map(x => x.name), rev, ...near.map(x => x.name)].filter(Boolean))];
+  const poi = pois[0] || '';
+  const hints = [...new Set([poi, pois[1] || '', poi && name ? `${poi}, ${name}` : '', name, sub].filter(Boolean))].slice(0, 5);
+  const info = { name, sub, cc: q.cc, poi, hints };
+  PLACE_CACHE.set(key, info);
+  return info;
 }
 
 // Titelvorschläge unter dem Titelfeld; mit fill wird der beste gleich eingetragen (nur wenn der Titel noch leer ist)
@@ -460,7 +522,8 @@ function titleHints(form, info, fill) {
   let box = form.querySelector('.title-hints');
   if (!box) { box = document.createElement('div'); box.className = 'title-hints'; t.closest('.field').after(box); }
   box.innerHTML = `<span class="sub">Vorschlag:</span>${info.hints.map(h => `<button type="button" class="chip" data-action="title-hint">${esc(h)}</button>`).join('')}`;
-  if (fill && !t.value.trim()) { t.value = info.hints[0]; t.dataset.suggested = '1'; }
+  // Leer oder noch der automatische Vorschlag (vom Nutzer unverändert): durch den besten Vorschlag ersetzen
+  if (fill && (!t.value.trim() || t.value === t.dataset.suggested)) { t.value = info.hints[0]; t.dataset.suggested = info.hints[0]; }
 }
 
 /* ---------- Fotos ---------- */
@@ -846,8 +909,12 @@ function entryForm(e = {}) {
   const type = e.type || 'stellplatz';
   formPhotos = { keep: (e.photos || []).slice(), add: [], drop: [] };
   const linked = !isNew && S.expenses.some(x => x.entryId === e.id);
-  const typeRadios = Object.entries(TYPES).map(([k, v]) =>
-    `<label><input type="radio" name="type" value="${k}"${k === type ? ' checked' : ''}><span>${icon(k)}${v.label}</span></label>`).join('');
+  // Die 9 meistbenutzten Arten oben (die gewählte immer sichtbar), der Rest hinter „Mehr Arten …“
+  const order = typesByUse(), top = order.slice(0, TOP_TYPES);
+  if (!top.includes(type)) top[TOP_TYPES - 1] = type;
+  const typeRadios = [...top, ...order.filter(k => !top.includes(k))].map(k =>
+    `<label${top.includes(k) ? '' : ' class="more-type" hidden'}><input type="radio" name="type" value="${k}"${k === type ? ' checked' : ''}><span>${icon(k)}${TYPES[k].label}</span></label>`).join('')
+    + `<button type="button" class="more-types" data-action="types-more">Mehr Arten …</button>`;
   const fuel = !isNew && S.fuel.find(f => f.entryId === e.id) || {};
   const numVal = v => (v ? String(v).replace('.', ',') : '');
   const feats = FEATURES.map(f =>
@@ -871,7 +938,8 @@ function entryForm(e = {}) {
     <label class="field voice-field"><span>Was war los?</span>${APP.voiceBtn ? APP.voiceBtn('text') : ''}<textarea name="text" rows="4" placeholder="Eindrücke, Tipps, was ihr nächstes Mal anders macht …">${esc(e.text)}</textarea></label>
     <div class="field"><span>Fotos</span>
       <div class="photo-grid" id="photoGrid">${photoGrid()}</div>
-      <div class="btnrow photo-btns"><label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
+      <div class="btnrow photo-btns"><label class="ghost file">${icon('camera')}Foto aufnehmen<input type="file" accept="image/*" capture="environment" data-action="add-photos" data-camera="1"></label>
+      <label class="ghost file">${icon('plus')}Fotos hinzufügen<input type="file" accept="image/*" multiple data-action="add-photos"></label>
       ${APP.entryFormExtra ? APP.entryFormExtra(e) : ''}</div>
     </div>
     <div class="field" data-show="rating"><span>Bewertung</span><input type="hidden" name="rating" value="${e.rating || 0}"><div class="stars">${stars}</div></div>
@@ -889,7 +957,8 @@ function entryForm(e = {}) {
     <div class="field pos-field">
       <span>Position</span>
       <input type="hidden" name="lat" value="${e.lat ?? ''}"><input type="hidden" name="lng" value="${e.lng ?? ''}"><input type="hidden" name="acc" value="${e.acc ?? ''}"><input type="hidden" name="country" value="${esc(e.country)}">
-      <p class="pos" id="posText">${hasPos(e) ? posLabel(e) : 'Noch keine Position'}</p>
+      <p class="pos"><span id="posText">${hasPos(e) ? posLabel(e) : 'Noch keine Position'}</span>
+        <button type="button" class="icon-btn small pos-clear" data-action="pos-clear" aria-label="Ort entfernen" title="Ort entfernen"${hasPos(e) ? '' : ' hidden'}>${icon('close')}</button></p>
       <div class="btnrow">
         <button type="button" class="ghost" data-action="pos-here">${icon('pin')}Aktuelle Position</button>
         <button type="button" class="ghost" data-action="pos-pick">Auf Karte wählen</button>
@@ -936,14 +1005,19 @@ async function addPhotoFiles(files) {
   files = files.filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name));
   if (!files.length) return;
   toast(files.length > 1 ? `${files.length} Fotos werden verkleinert …` : 'Foto wird verkleinert …');
-  // Neuer Eintrag noch ohne Position: Ort und Aufnahmezeit aus dem ersten Foto mit GPS übernehmen
+  // Neuer Eintrag: Ort (und Aufnahmezeit) des ersten Fotos mit GPS ersetzen immer den GPS-Ort.
+  // Beim Bearbeiten eines vorhandenen Eintrags ändert sich der Ort nie von selbst.
   const form = $('#sheetBody form[data-form=entry]');
-  if (form && !form.dataset.id && !form.lat.value && APP.readExif) {
+  if (form && !form.dataset.id && APP.readExif && !form.dataset.photoPos) {
     for (const f of files.slice(0, 5)) {
       const ex = await APP.readExif(f).catch(() => ({}));
       if (typeof ex.lat !== 'number') continue;
+      const had = !!form.lat.value;
+      form.dataset.posSrc = 'photo';
+      form.dataset.photoPos = '1';
       if (ex.date && form.date) form.date.value = ex.date;
       setFormPos(form, ex, true, true);
+      if (had) toast('Ort aus dem Foto übernommen');
       break;
     }
   }
@@ -957,6 +1031,33 @@ async function addPhotoFiles(files) {
     } catch { toast('Ein Foto ließ sich nicht lesen.'); }
   }
 }
+// Kamera-Foto zusätzlich in der Galerie: Web-Apps dürfen dort nicht selbst speichern.
+// Android: als Download (erscheint in der Galerie im Album „Download“), abschaltbar in den Einstellungen.
+// iPhone/iPad: über das Teilen-Menü („Bild sichern“) – dafür ein Knopf, weil das nur nach einem Tipp geht.
+function saveToGallery(file) {
+  if (LS.get('galleryCopy', true) === false) return;
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+  const named = new File([file], `LAMMping_${stamp}.jpg`, { type: file.type || 'image/jpeg' });
+  if (isIOS) {
+    if (!(navigator.canShare && navigator.canShare({ files: [named] }))) return;
+    const box = document.querySelector('#sheet[open] .photo-btns');
+    if (!box) return;
+    box.querySelector('.gallery-save')?.remove();
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ghost gallery-save'; b.textContent = '⬇ In Fotos sichern';
+    b.addEventListener('click', async () => { try { await navigator.share({ files: [named] }); b.remove(); } catch { /* abgebrochen */ } });
+    box.prepend(b);
+    return;
+  }
+  const url = URL.createObjectURL(named);
+  const a = document.createElement('a');
+  a.href = url; a.download = named.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  // Nach einem möglichen „Ort aus dem Foto übernommen“ melden
+  setTimeout(() => toast('Foto auch im Handy gesichert (Album „Download“)'), 2600);
+}
+
 // Ort und Aufnahmezeit eines Fotos (aus EXIF), nur was vorhanden ist
 function photoGeo(ex) {
   const g = {};
@@ -1054,25 +1155,50 @@ function setFormPos(form, p, fillPlace, fillTitle = false) {
   form.lng.value = p.lng;
   form.acc.value = p.acc || '';
   $('#posText').textContent = posLabel(p);
+  const clr = form.querySelector('[data-action=pos-clear]');
+  if (clr) clr.hidden = false;
   if (pickMarker) pickMarker.setLatLng([p.lat, p.lng]);
-  if (fillPlace) placeInfo(p).then(info => {
-    if (info.name && form.place && !form.place.value) form.place.value = info.name;
-    if (form.country) form.country.value = info.cc;
+  if (!fillPlace) return;
+  // Späte Antworten zu einem älteren Punkt nicht mehr eintragen
+  const seq = String(+(form.dataset.posSeq || 0) + 1);
+  form.dataset.posSeq = seq;
+  const fresh = () => form.isConnected && form.dataset.posSeq === seq;
+  const putPlace = name => {
+    if (!name || !form.place) return;
+    // Leer oder automatisch gefüllt: ersetzen; selbst geschrieben: lassen
+    if (!form.place.value || form.place.value === form.dataset.placeAuto) { form.place.value = name; form.dataset.placeAuto = name; }
+  };
+  // Erst der Ortsname (schnell), dann die Plätze in der Nähe als Vorschläge
+  placeQuick(p).then(q => {
+    if (!fresh()) return;
+    putPlace(q.name);
+    if (form.country && q.cc) form.country.value = q.cc;
+    titleHints(form, { hints: quickHints(q) }, fillTitle);
+  });
+  placeInfo(p).then(info => {
+    if (!fresh()) return;
+    putPlace(info.name);
+    if (form.country && info.cc) form.country.value = info.cc;
     titleHints(form, info, fillTitle);
   });
 }
 
-async function locateInto(form) {
+async function locateInto(form, { fillTitle = false, quiet = false } = {}) {
   const btn = form.querySelector('[data-action="pos-here"]');
-  btn.disabled = true;
-  $('#posText').textContent = 'Position wird bestimmt …';
+  if (btn) btn.disabled = true;
+  form.dataset.posSrc = 'gps';
+  const txt = $('#posText');
+  if (txt) txt.textContent = 'Position wird bestimmt …';
+  // Ein Foto mit Ort hat Vorrang: dann die GPS-Messung nicht mehr eintragen
+  const byPhoto = () => form.dataset.posSrc === 'photo';
   try {
-    setFormPos(form, await getPos(), true);
+    const p = await getPos({ onUpdate: cur => { if (!byPhoto() && form.isConnected && txt) txt.textContent = `Standort wird genauer … ± ${cur.acc} m`; } });
+    if (!byPhoto() && form.isConnected) setFormPos(form, p, true, fillTitle);
   } catch (err) {
-    $('#posText').textContent = form.lat.value ? posLabel({ lat: +form.lat.value, lng: +form.lng.value }) : 'Noch keine Position';
-    toast(err.message);
+    if (txt && !byPhoto()) txt.textContent = form.lat.value ? posLabel({ lat: +form.lat.value, lng: +form.lng.value }) : 'Noch keine Position';
+    if (!quiet || !/freigegeben/.test(err.message)) toast(err.message);
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1103,13 +1229,16 @@ function applyType(form) {
   }
 }
 
+// Neuer Eintrag „jetzt“ (nicht nachgetragen): Standort gleich bestimmen, Ort und Titel vorschlagen
+const recentDate = d => !d || Math.abs(new Date(d) - Date.now()) < 2 * 3600e3;
 function openEntryForm(e, opts = {}) {
   if (!currentTrip()) { toast('Legt zuerst eine Reise an.'); return tripForm(); }
+  const auto = !e.id && !hasPos(e) && !opts.at && opts.locate !== false && recentDate(e.date);
   openSheet(entryForm(e), form => {
     applyType(form);
     form.addEventListener('change', ev => { if (ev.target.name === 'type') applyType(form); });
-    if (opts.locate) locateInto(form);
-    if (opts.at) setFormPos(form, opts.at, true);
+    if (opts.locate || auto) locateInto(form, { fillTitle: true, quiet: auto && !opts.locate });
+    if (opts.at) setFormPos(form, opts.at, true, !e.id);
   });
 }
 
@@ -2090,14 +2219,27 @@ const ACTIONS = {
   'here-menu': () => openSheet(`<div>
     <div class="sheet-head"><h2>Ich bin hier …</h2><button type="button" class="icon-btn" data-action="close" aria-label="Schließen">${icon('close')}</button></div>
     <div class="here-grid">
-      ${Object.entries(TYPES).filter(([k]) => k !== 'notiz').map(([k, v]) =>
-        `<button data-action="new-here" data-type="${k}">${icon(k)}<b>${v.label}</b><small>${v.hint}</small></button>`).join('')}
+      ${(() => { const order = typesByUse().filter(k => k !== 'notiz'), top = order.slice(0, TOP_TYPES);
+        return order.map(k => `<button data-action="new-here" data-type="${k}"${top.includes(k) ? '' : ' class="more-type" hidden'}>${icon(k)}<b>${TYPES[k].label}</b><small>${TYPES[k].hint}</small></button>`).join(''); })()}
+      <button data-action="new-here" data-type="notiz">${icon('notiz')}<b>Notiz</b><small>Mit diesem Ort</small></button>
+      ${APP.canRecord && APP.canRecord() ? `<button data-action="rec-start" data-kind="hike">${icon('wanderung')}<b>Tour aufzeichnen</b><small>Wanderung oder Radtour per GPS</small></button>` : ''}
       <button data-action="park-here">${icon('car')}<b>Auto geparkt</b><small>Standort merken</small></button>
-      <button data-action="new-here" data-type="notiz">${icon('notiz')}<b>Notiz</b><small>Ohne Position</small></button>
+      <button type="button" class="more-types" data-action="types-more">Mehr Arten …</button>
     </div></div>`),
-  'new-here': el => {
-    const type = el.dataset.type;
-    openEntryForm({ type }, { locate: type !== 'notiz' });
+  'new-here': el => openEntryForm({ type: el.dataset.type }, { locate: true }),
+  // Weitere Eintragsarten aufklappen (Formular und „Ich bin hier …“)
+  'types-more': el => {
+    const box = el.parentElement;
+    box.querySelectorAll('.more-type').forEach(x => { x.hidden = false; });
+    el.remove();
+  },
+  'pos-clear': el => {
+    const form = el.form;
+    form.lat.value = ''; form.lng.value = ''; form.acc.value = '';
+    form.dataset.posSeq = String(+(form.dataset.posSeq || 0) + 1);
+    if (form.place && form.place.value === form.dataset.placeAuto) form.place.value = '';
+    $('#posText').textContent = 'Noch keine Position';
+    el.hidden = true;
   },
   locate: async el => {
     el.disabled = true;
@@ -2154,7 +2296,7 @@ const ACTIONS = {
     pendingFocus = { lat: e.lat, lng: e.lng, id: e.id };
     go('karte');
   },
-  'pos-here': el => locateInto(el.form),
+  'pos-here': el => locateInto(el.form, { fillTitle: !el.form.dataset.id }),
   'pos-pick': el => { if (!pickMap) openPicker(el.form); },
   rate: el => {
     const form = el.form, v = +el.dataset.v;
@@ -2539,8 +2681,11 @@ document.addEventListener('change', async ev => {
   const el = ev.target;
   if (el.dataset.action === 'add-photos') {
     const files = [...el.files];
+    const camera = el.dataset.camera === '1';
     el.value = '';
     await addPhotoFiles(files);
+    // Mit der Kamera aufgenommen: Original in voller Auflösung auch fürs Handy sichern
+    if (camera && files[0]) saveToGallery(files[0]);
   }
   if (el.dataset.action === 'import' && el.files[0]) { importAll(el.files[0]); el.value = ''; }
   if (CHANGES[el.dataset.action]) CHANGES[el.dataset.action](el);
@@ -2667,7 +2812,7 @@ const APP = {
   S, ui, LS, VIEWS, ACTIONS, FORMS, CHANGES, mapHooks,
   $, esc, money, num, icon, art, pageHead, newId, save, remove, toast, render, go, openSheet, closeSheet,
   today, nowLocal, fmtDay, fmtShort, fmtTime, fmtRange, ago, km, fmtKm, hasPos, navUrl, byDate, sortTrips,
-  getPos, placeInfo, locateInto, openPicker, setFormPos, posLabel, pinIcon, entryPopup,
+  getPos, placeInfo, placeQuick, locateInto, openPicker, setFormPos, posLabel, pinIcon, entryPopup,
   currentTrip, tripColor, tripStats, tripEntries, members, me, personName, canCash, defaultSplit,
   openEntryForm, itemListId, listsOf, listForm, extrasOf, isPacked, itemForm, FEATURES, TYPES, CATS, SETTLE,
   setPendingFocus: f => { pendingFocus = f; },

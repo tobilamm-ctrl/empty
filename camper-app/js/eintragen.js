@@ -24,7 +24,8 @@ export default function installEintragen(app) {
     fan.style.right = `${innerWidth - r.right}px`;
     fan.style.bottom = `${innerHeight - r.top + 10}px`;
     fan.innerHTML = `${QUICK.map(([k, l]) => `<button data-action="quick-entry" data-type="${k}">${icon(k)}<span>${l}</span></button>`).join('')}
-      <label class="fan-photo">${icon('camera')}<span>Foto</span><input type="file" accept="image/*" capture="environment" data-action="photo-entry" hidden></label>`;
+      <label class="fan-photo">${icon('camera')}<span>Foto</span><input type="file" accept="image/*" capture="environment" data-action="photo-entry" hidden></label>
+      ${app.canRecord && app.canRecord() ? `<button data-action="rec-start" data-kind="hike">${icon('wanderung')}<span>Tour aufzeichnen</span></button>` : ''}`;
     document.body.appendChild(fan);
     if (navigator.vibrate) navigator.vibrate(15);
   }

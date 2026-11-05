@@ -134,18 +134,18 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 
 ## Praxistest November 2026 (nur gemerkt, Umsetzung nach der Rückkehr)
 
-P1. **Neuer Eintrag: Standort immer gleich vorschlagen.** Sobald Standortdaten da sind – aus einem Foto (EXIF) oder
+P1. **✅ (Lieferung 72) Neuer Eintrag: Standort immer gleich vorschlagen.** Sobald Standortdaten da sind – aus einem Foto (EXIF) oder
     per GPS – soll ein neuer Eintrag den Ort sofort übernehmen bzw. vorschlagen (Position, Ortsname, Titelvorschlag),
     ohne dass man erst „Aktuelle Position“ tippen muss. (Heute: nur bei hineingezogenen Fotos, beim Foto-Knopf und bei
     „Ich bin hier …“; das normale „+ Eintrag“ startet ohne Ort.)
-P2. **Wetter mit Ortsnamen.** Die Wetteranzeige (Heute-Karte im Tagebuch und Wetter-Seite) soll dazuschreiben, für
+P2. **✅ (Lieferung 72) Wetter mit Ortsnamen.** Die Wetteranzeige (Heute-Karte im Tagebuch und Wetter-Seite) soll dazuschreiben, für
     welchen Ort sie gilt (z. B. „7° Bedeckt · Bardolino“).
-P3. **In der App aufgenommene Fotos auch in der Galerie speichern.** Wer über LAMMping fotografiert (Foto-Knopf,
+P3. **✅ (Lieferung 72) In der App aufgenommene Fotos auch in der Galerie speichern.** Wer über LAMMping fotografiert (Foto-Knopf,
     Kamera im Eintrag), soll das Foto zusätzlich in der normalen Fotogalerie des Handys haben – in Originalqualität,
     nicht nur verkleinert in der App. (Hinweis für die Umsetzung: Eine Web-App darf nicht selbst in die Galerie
     schreiben; Wege: Aufnahme über die System-Kamera mit „speichern“, oder nach der Aufnahme „In Galerie sichern“ über
     Teilen/Herunterladen anbieten.)
-P4. **„Ich bin hier …“ › Notiz ohne Standort.** Im Test kam bei „Ich bin hier …“ kein Standort. Ursache: Dort ist die
+P4. **✅ (Lieferung 72) „Ich bin hier …“ › Notiz ohne Standort.** Im Test kam bei „Ich bin hier …“ kein Standort. Ursache: Dort ist die
     Notiz absichtlich „ohne Position“ (steht klein unter dem Knopf); alle anderen Arten holen den Standort. Gehört zu P1:
     auch Notizen unter „Ich bin hier …“ sollen den Standort bekommen (abschaltbar bzw. im Eintrag entfernbar).
     **Ergänzung:** „Ich bin hier …“ (und neue Einträge am Handy allgemein) sollen sich genauso verhalten wie das
@@ -158,7 +158,7 @@ P5. **Kurz bzw. nah aufeinanderfolgende Einträge zusammenführen – wie beim H
     Zeitpunkt bleiben).
 P6. **„+“ neben dem Eintragsnamen im Tagebuch: Foto ergänzen.** Ein kleines Plus direkt neben dem Titel eines Eintrags
     öffnet Kamera/Galerie und legt das Foto gleich in diesen Eintrag (ohne erst „Bearbeiten“ zu öffnen).
-P7. **Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
+P7. **✅ (Lieferung 72) Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
     sollen im Tagebuch sichtbar markiert sein (z. B. kleines durchgestrichenes Auge 🙈 „nicht im Reiseblog“ neben dem
     Titel), damit man auf einen Blick sieht, was Oma, Opa und Mitreisende nicht sehen.
 P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen im Hintergrund (Handy gesperrt, App zu)
@@ -190,7 +190,7 @@ P11. **Nicht nur Campingreisen: Flugreisen, Kreuzfahrten usw.** Eine Reise bekom
     - Karte: Flüge als Bogen zwischen Flughäfen, Schiffsrouten gestrichelt, keine „Straße folgen“ für diese Abschnitte;
     - Statistik und Nächte je Reiseart, CO₂-Bilanz je Abschnitt nach Verkehrsmittel (P10);
     - Tickets (Flug, Bordkarte, Kabine) passen dazu.
-P12. **Text unter den Symbolen der Reise-Leiste anpassen** (Beenden · Fotos · Aufzeichnen · Packliste · Straße folgen ·
+P12. **✅ (Lieferung 72) Text unter den Symbolen der Reise-Leiste anpassen** (Beenden · Fotos · Aufzeichnen · Packliste · Straße folgen ·
     Nach der Reise). Am Handy überlappen die Wörter („Straße folge‑Nach der Reise“), „Aufzeichnen“ ist zu breit.
     Lösung: kurze Wörter (z. B. „Strecke“, „Aufnahme“, „Später“), notfalls zweizeilig umbrechen bzw. kleinere Schrift;
     selten Gebrauchtes (Straße folgen) eher unter „Nach der Reise“.
@@ -198,11 +198,11 @@ P13. **Liken im Reiseblog.** Leser des Reiseblogs (Oma, Opa, Freunde – ohne Ko
     liken; im Blog steht die Zahl, im Tagebuch sieht die Familie „❤️ 3 im Reiseblog“ (evtl. mit Namen, wenn der Leser
     einen angibt). Passt zu Punkt 36 (Gästebuch im Reiseblog). Braucht neue api/index.php (Likes je Eintrag, gegen
     Mehrfachklicks pro Gerät).
-P14. **Sprachnotizen im Reiseblog und im Tagebuch.** Sprachnotizen eines Eintrags sollen auch im Reiseblog erscheinen
+P14. **Sprachnotizen im Reiseblog und im Tagebuch.** Tagebuch-Teil ✅ (Lieferung 72), Blog-Teil mit Paket D. Sprachnotizen eines Eintrags sollen auch im Reiseblog erscheinen
     und dort abspielbar sein (außer bei „Im Reiseblog ausblenden“). Im Tagebuch soll am Eintrag erkennbar sein, dass
     eine Sprachnotiz hinterlegt ist (z. B. 🎙️ mit Länge, Tipp spielt sie ab). Braucht neue api/index.php (Blog liefert
     die Tonaufnahmen wie die Fotos aus).
-P15. **Standortermittlung: falscher Ort, langsam, ungenau.** Beobachtet bei Manching: vorgeschlagen wurde „Pichl“
+P15. **✅ (Lieferung 72) Standortermittlung: falscher Ort, langsam, ungenau.** Beobachtet bei Manching: vorgeschlagen wurde „Pichl“
     (Ortsteil, einige km entfernt), GPS ± 53 m, Vorschläge kamen spät. Ursachen im Code und Lösungen:
     - **Falscher Ort:** LAMMping nimmt bisher zuerst den kleinsten Ortsnamen aus OpenStreetMap (Dorf/Ortsteil vor
       Gemeinde/Stadt). Künftig die Gemeinde bzw. Stadt als Ort, den Ortsteil nur als Zusatz („Manching, Pichl“) bzw.
@@ -219,10 +219,10 @@ P16. **Echte Größe jeder Reise.** Heute zeigt Einstellungen › Bedienung › 
     148 MB auf diesem Handy“; dazu Gesamtgröße je Crew (für den Super-Admin: Platz auf dem Webspace). Braucht neue
     api/index.php.
 
-P17. **Foto direkt im Eintrag aufnehmen** („📷 Foto aufnehmen“ öffnet sofort die Kamera) – das Foto soll in voller
+P17. **✅ (Lieferung 72) Foto direkt im Eintrag aufnehmen** („📷 Foto aufnehmen“ öffnet sofort die Kamera) – das Foto soll in voller
     Auflösung auch in der Handy-Galerie landen (= P3): Android als Download (Album „Download“, in den Einstellungen
     einschaltbar), iPhone über „In Fotos sichern“ (Teilen › Bild sichern).
-P18. **Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussicht, Natur & Tiere, Markt, Fest/Veranstaltung, Begegnung,
+P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussicht, Natur & Tiere, Markt, Fest/Veranstaltung, Begegnung,
     Fahrt. Oben die 9 meistbenutzten Arten, der Rest hinter „Mehr Arten …“.
 
 **Entscheidungen zu Paket A + C (5.11.2026):**
@@ -241,7 +241,7 @@ P18. **Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussicht, Natur & Tiere, M
 - Paket A + C umfasst zusätzlich P17 und P18.
 
 **Lieferplan Praxistest (Stand 5.11.2026, Reihenfolge nach der Rückkehr):**
-1. **Paket A – Standort und neue Einträge:** P15, P1, P4, P2 (nur App)
+1. ✅ **Paket A – Standort und neue Einträge (Lieferung 72):** P15, P1, P4, P2 (nur App)
    **+ Paket C – Tagebuch aufgeräumt:** P12, P7, Tagebuch-Teil von P14 (nur App) – zusammen ausliefern
 2. **Paket B – Fotos zum richtigen Eintrag:** P5, P9, P6, P3 (nur App)
 3. **Paket D – Server-Lieferung (eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),

@@ -2540,3 +2540,16 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .push-cron { margin-top: 12px; }
 .push-cron summary { cursor: pointer; font-weight: 600; }
 .cron-url code { display: block; padding: 8px 10px; background: var(--mist); border-radius: 8px; font-size: 12px; word-break: break-all; }
+
+/* ---------- Version 72: Paket A + C (Praxistest) ---------- */
+.type-grid [hidden], .here-grid [hidden] { display: none !important; }
+.more-types { grid-column: 1 / -1; justify-self: center; margin: 2px 0 4px; padding: 8px 18px; border: 1.5px dashed var(--line); border-radius: 999px;
+  background: none; color: var(--petrol); font: 700 14px var(--body); cursor: pointer; }
+.pos { display: flex; align-items: center; gap: 6px; }
+.pos .pos-clear { width: 30px; height: 30px; flex: none; }
+.pos .pos-clear .ic { width: 14px; height: 14px; }
+.stop-badge { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 3px 10px; font: 600 12px var(--body); cursor: pointer; }
+.stop-badge.blog-off { color: #8A5A00; background: #FFF4D6; border-color: #EBD49A; }
+.stop-badge.snd.on { background: var(--petrol); color: #fff; border-color: var(--petrol); }
+.today-wx small .wx-place { color: var(--ink); font-weight: 600; }
+.gallery-save { order: -1; }

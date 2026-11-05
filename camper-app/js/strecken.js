@@ -70,7 +70,7 @@ export default function installStrecken(app) {
   }
   const driveTracks = t => S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
 
-  app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 5, action: 'route-roads', icon: 'route', label: 'Straße folgen', title: 'Der Straße folgen', desc: 'Strecke zwischen den Stopps entlang der Straßen berechnen', later: !!t.ended || !!t.archived } : null));
+  app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 5, action: 'route-roads', icon: 'route', label: 'Straße folgen', title: 'Der Straße folgen', desc: 'Strecke zwischen den Stopps entlang der Straßen berechnen', later: true } : null));
   const roadsOf = t => driveTracks(t).find(x => x.auto === 'roads');
   ACTIONS['route-roads'] = el => {
     const t = tripById(el.dataset.id) || currentTrip();
@@ -173,12 +173,13 @@ export default function installStrecken(app) {
     formPath = (e.path || []).slice();
     setTimeout(pathVisibility, 0);
     return `${extra ? extra(e) : ''}<label class="ghost file hike-path">${icon('wanderung')}<span>Weg aus Fotos${formPath.length ? ` (${formPath.length})` : ''}</span>
-      <input type="file" accept="image/*" multiple data-action="hike-path"></label>`;
+      <input type="file" accept="image/*" multiple data-action="hike-path"></label>
+      ${!e.id ? `<button type="button" class="ghost hike-path" data-action="${rec ? 'rec-open' : 'rec-start'}" data-kind="hike">${icon(rec ? 'pause' : 'play')}${rec ? 'Aufnahme läuft' : 'Weg aufzeichnen'}</button>` : ''}`;
   };
   function pathVisibility() {
     const form = document.querySelector('#sheet form[data-form=entry]');
-    const b = form && form.querySelector('.hike-path');
-    if (b) b.hidden = (form.querySelector('[name=type]:checked') || {}).value !== 'wanderung';
+    const hike = form && (form.querySelector('[name=type]:checked') || {}).value === 'wanderung';
+    if (form) form.querySelectorAll('.hike-path').forEach(b => { b.hidden = !hike; });
   }
   document.addEventListener('change', ev => { if (ev.target.name === 'type' && ev.target.closest('form[data-form=entry]')) pathVisibility(); });
   CHANGES['hike-path'] = async el => {
@@ -219,7 +220,9 @@ export default function installStrecken(app) {
   const recKm = () => { let d = 0; const p = rec.pts; for (let i = 1; i < p.length; i++) d += dist(p[i - 1], p[i]); return d; };
   const persist = () => LS.set('rec', rec);
 
-  app.tripTools.push(t => (t.ended ? null : { order: 3.2, action: 'rec-open', icon: rec ? 'pause' : 'play', label: rec ? 'Aufnahme' : 'Aufzeichnen', title: 'Strecke aufzeichnen' }));
+  // Aufzeichnen nicht mehr in der Reise-Leiste: „Tour aufzeichnen“ unter „Ich bin hier …“, am „+ Eintrag“-Knopf und
+  // „Weg aufzeichnen“ im Eintrag einer Wanderung; die rote Leiste oben zeigt eine laufende Aufnahme
+  app.canRecord = () => !!navigator.geolocation;
   ACTIONS['rec-open'] = () => {
     if (rec) return recSheet();
     const t = currentTrip();
@@ -234,7 +237,9 @@ export default function installStrecken(app) {
   };
   ACTIONS['rec-start'] = async el => {
     const t = currentTrip();
-    const kind = el.dataset.kind;
+    if (!t) return toast('Legt zuerst eine Reise an.');
+    if (rec) return recSheet();
+    const kind = el.dataset.kind || 'hike';
     rec = { id: newId(), tripId: t.id, kind, started: Date.now(), paused: false, pts: [] };
     persist();
     closeSheet();

@@ -29,6 +29,12 @@ export default function installTeilen(app) {
     if (app.ui.route === 'reiseblog') app.render();
   }
 
+  // Für das Tagebuch: Ist für diese Reise ein Reiseblog eingeschaltet? (lädt beim ersten Mal still nach)
+  app.blogOn = tripId => {
+    if (!shares && !failed && !loading && navigator.onLine) load().then(() => { if (app.ui.route === 'tagebuch') app.render(); });
+    return (shares || []).some(x => x.trip === tripId);
+  };
+
   // Eigene Seite unter „Mehr“ (nur Verwalter)
   app.VIEWS.reiseblog = () => {
     if (!isAdmin()) return '<p class="hint">Den Reiseblog verwalten nur Verwalter.</p>';

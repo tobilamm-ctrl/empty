@@ -307,18 +307,37 @@ export default function installUnterwegs(app) {
   /* Heute-Karte oben im Tagebuch                                            */
   /* ====================================================================== */
 
+  // Standort fürs Wetter still auffrischen, wenn die Erlaubnis schon erteilt ist (nie selbst danach fragen)
+  let hereBusy = false;
+  async function refreshHere() {
+    if (hereBusy || !navigator.geolocation) return;
+    hereBusy = true;
+    try {
+      const perm = navigator.permissions ? await navigator.permissions.query({ name: 'geolocation' }) : null;
+      if (!perm || perm.state !== 'granted') return;
+      const pos = await app.getPos({ wait: 4000, good: 500 });
+      const q = app.placeQuick ? await app.placeQuick(pos) : {};
+      LS.set('wx.here', { lat: pos.lat, lng: pos.lng, at: Date.now(), name: q.name || '' });
+      if (app.ui.route === 'tagebuch') app.render();
+    } catch { /* ohne Standort weiter */ } finally { hereBusy = false; }
+  }
   app.todayCard = (t, st) => {
     const d = today();
     if (t.ended || !t.start || t.start > d || (t.end && t.end < d)) return '';
     const day = Math.round((new Date(d + 'T12:00') - new Date(t.start + 'T12:00')) / 864e5) + 1;
     const lastPos = st.stops.slice().pop();
+    // Wetter für den aktuellen Standort (höchstens 2 Stunden alt), sonst für den letzten Eintrag – mit Ortsnamen
     const here = LS.get('wx.here', null);
-    const p = lastPos || here;
+    const fresh = here && Date.now() - here.at < 2 * 3600e3;
+    const p = fresh ? here : (lastPos || here);
+    const lastName = lastPos ? (lastPos.place || lastPos.title || '') : '';
+    const where = !p ? '' : fresh ? (here.name || '') : lastPos ? (lastName ? `${lastName} (letzter Eintrag)` : '') : (here.name || '');
+    if (!fresh) refreshHere();
     let wxHtml = '';
     if (p && app.wx) {
       const c = LS.get(app.wx.wxKey(p), null);
       app.wx.loadWeather(p);
-      if (c && c.data.current) wxHtml = `<a class="today-wx" href="#/wetter">${app.wx.wxIcon(c.data.current.weather_code)}<b>${Math.round(c.data.current.temperature_2m)}°</b><small>${app.wx.wx(c.data.current.weather_code)[1]}</small></a>`;
+      if (c && c.data.current) wxHtml = `<a class="today-wx" href="#/wetter">${app.wx.wxIcon(c.data.current.weather_code)}<b>${Math.round(c.data.current.temperature_2m)}°</b><small>${app.wx.wx(c.data.current.weather_code)[1]}${where ? ` · <span class="wx-place">${esc(where)}</span>` : ''}</small></a>`;
     }
     const car = S.meta.find(m => m.id === 'car');
     const next = etaTargets()[0];

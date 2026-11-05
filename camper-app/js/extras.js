@@ -86,7 +86,7 @@ export default function installExtras(app) {
     const t = currentTrip();
     const here = LS.get('wx.here', null);
     const cards = [];
-    if (here) cards.push(wxCard('Hier', `Standort ${ago(here.at)}`, here));
+    if (here) cards.push(wxCard(here.name ? `Hier: ${here.name}` : 'Hier', `Standort ${ago(here.at)}`, here));
     if (t) {
       const last = tripEntries(t).filter(e => hasPos(e) && e.type === 'stellplatz').sort(byDate).pop();
       if (last) cards.push(wxCard(last.title || last.place || 'Letzter Stellplatz', `Letzter Stellplatz, ${fmtDay(last.date.slice(0, 10))}`, last));
@@ -102,8 +102,9 @@ export default function installExtras(app) {
   ACTIONS['wx-here'] = async el => {
     el.disabled = true;
     try {
-      const p = await getPos();
-      LS.set('wx.here', { lat: p.lat, lng: p.lng, at: Date.now() });
+      const p = await getPos({ wait: 5000, good: 200 });
+      const q = app.placeQuick ? await app.placeQuick(p) : {};
+      LS.set('wx.here', { lat: p.lat, lng: p.lng, at: Date.now(), name: q.name || '' });
       render();
     } catch (e) { toast(e.message); } finally { el.disabled = false; }
   };

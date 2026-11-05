@@ -136,6 +136,37 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 72: Erfahrungen aus dem Praxistest (Paket A + C)
+
+**Standort und neue Einträge**
+- **Genauere Ortung:** LAMMping misst bis zu 10 Sekunden weiter, bis der Standort auf etwa 20 m genau ist („Standort
+  wird genauer … ± 53 m“). Alte, zwischengespeicherte Werte zählen nicht mehr.
+- **Richtiger Ort:** Als Ort steht die Gemeinde bzw. Stadt („Manching“), der Ortsteil („Pichl“) ist ein Vorschlag.
+- **Schneller:** Der Ortsname erscheint sofort, Plätze in der Nähe (Museum, Campingplatz …) kommen als Vorschlag nach.
+  Orte merkt sich das Gerät.
+- **Jeder neue Eintrag ortet von selbst** (auch die Notiz unter „Ich bin hier …“) und trägt den besten Vorschlag als
+  Titel ein. Nachgetragene Einträge (mehr als 2 Stunden zurück) werden nicht geortet. Bearbeiten ändert den Ort nie
+  von selbst. Mit dem ✕ neben der Position lässt sich der Ort entfernen.
+- **Foto mit Ortsangabe:** Kommt bei einem neuen Eintrag ein Foto mit GPS dazu, ersetzt sein Ort den GPS-Ort
+  („Ort aus dem Foto übernommen“).
+- **Wetter mit Ort:** „5° Bedeckt · Manching“ in der Heute-Karte, „Hier: Manching“ auf der Wetter-Seite. Ohne
+  aktuellen Standort gilt der letzte Eintrag („… (letzter Eintrag)“).
+
+**Fotos und Eintragsarten**
+- **📷 Foto aufnehmen** im Eintrag öffnet sofort die Kamera. Das Foto kommt zusätzlich in voller Auflösung aufs Handy:
+  Android als Download (in der Galerie im Album „Download“), iPhone über den Knopf „In Fotos sichern“. Abschaltbar
+  unter Einstellungen › Komfort.
+- **7 neue Arten:** Stadtbummel / Spaziergang, Aussicht, Natur & Tiere, Markt, Fest / Veranstaltung, Begegnung, Fahrt.
+  Oben stehen die 9 meistbenutzten Arten, der Rest hinter **Mehr Arten …**.
+
+**Tagebuch**
+- **Reise-Leiste:** nur noch Beenden · Fotos · Packliste · **Danach** (früher „Nach der Reise“; dort jetzt auch
+  „Straße folgen“). **Aufzeichnen** gibt es als „Tour aufzeichnen“ unter „Ich bin hier …“ und beim langen Drücken
+  auf „+ Eintrag“, im Eintrag einer Wanderung als „Weg aufzeichnen“.
+- **🙈 nicht im Blog:** Bei eingeschaltetem Reiseblog sind ausgeblendete Einträge gekennzeichnet; antippen blendet
+  sie (nach Rückfrage) wieder ein.
+- **🎙️ 0:42:** Einträge mit Sprachnotiz zeigen deren Länge; antippen spielt sie direkt ab, nochmal antippen hält an.
+
 ## Neu in Version 71: Erste Crew selbst gründen
 
 - Wer „Darf eigene Crews gründen“ hat, aber noch zu keiner Crew gehört, sieht nach der Anmeldung jetzt
