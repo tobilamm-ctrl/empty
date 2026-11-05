@@ -165,8 +165,8 @@ export default function installTickets(app) {
     });
     closeSheet();
     toast('Ticket gespeichert');
-    // Flug, Bahn, Fähre: gleich als Eintrag (Abschnitt der Reise) übernehmen?
-    const leg = { flug: 'flug', bahn: 'bahnfahrt', faehre: 'faehre' }[form.kindKey.value];
+    // Flug und Bahn: gleich als Eintrag (Abschnitt der Reise) übernehmen?
+    const leg = { flug: 'flug', bahn: 'bahnfahrt' }[form.kindKey.value];
     if (!old && leg && t && form.date.value) {
       const x = { id, title: form.title.value.trim() };
       setTimeout(() => openSheet(`<div>${sheetHead('Auch ins Tagebuch?')}

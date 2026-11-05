@@ -159,7 +159,7 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Geflogene Kilometer zählen nicht mehr als „gefahren“. Im Reiseblog stehen sie extra als „geflogen“.
 - **Tickets:**
   - **Neue Arten:** ✈️ Flug (Flugnummer, Terminal, Gate, Sitzplatz), 🚢 Kabine / Bordkarte (Kabine, Deck), 🏨 Unterkunft (Anreise, Check-in, Abreise). Bahn hat jetzt Zug, Wagen und Plätze.
-  - **Eintrag aus dem Ticket:** Nach dem Speichern eines neuen Flug-, Bahn- oder Fährtickets fragt LAMMping, ob es auch ins Tagebuch soll.
+  - **Eintrag aus dem Ticket:** Nach dem Speichern eines neuen Flug- oder Bahntickets fragt LAMMping, ob es auch ins Tagebuch soll.
     Aus „Palma – Hamburg“ werden dann Von und Ziel.
   - **Erinnerung:** Bei Flügen kommt mit eingeschalteten Mitteilungen 24 Stunden vorher eine Erinnerung an den **Online-Check-in**.
 - **Sprach-Schnelleintrag** erkennt jetzt auch Flug, Zug, Hotel, Hütte, Hafen und Freizeitpark.
