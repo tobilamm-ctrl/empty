@@ -150,8 +150,11 @@ export default function installMitreisen(app) {
     const stops = d.entries.filter(e => typeof e.lat === 'number').sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     const pts = stops.map(e => [e.lat, e.lng]);
     const drive = d.tracks.filter(t => t.kind !== 'hike' && t.kind !== 'plan');
-    const lines = drive.length ? drive.map(t => app.decodePts(t.pts)) : [pts];
+    // Abschnitte wie auf der eigenen Karte: Flug als Bogen, Schiff und Bahn gestrichelt
+    const legs = app.splitLegs(stops.map(e => ({ lat: e.lat, lng: e.lng, e })), app.tripKind(d.trip));
+    const lines = drive.length ? drive.map(t => app.decodePts(t.pts)) : legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).map(l => l.pts);
     lines.forEach(l => { if (l.length > 1) L.polyline(l, { color, weight: big ? 4 : 3, opacity: big ? 0.95 : 0.7, dashArray: big ? null : '6 6' }).addTo(layer); });
+    lines.push(app.drawSpecialLegs(L, layer, legs, { plane: big }));
     stops.forEach(e => L.circleMarker([e.lat, e.lng], { radius: big ? 6 : 4, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 })
       .bindPopup(`<b>${esc(e.title || (TYPES[e.type] || TYPES.notiz).label)}</b><br>${esc(e.place || '')}${e.date ? `<br><small>${fmtDay(e.date.slice(0, 10))}</small>` : ''}`).addTo(layer));
     const at = d.live ? [d.live.lat, d.live.lng] : pts[pts.length - 1];

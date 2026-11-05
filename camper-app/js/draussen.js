@@ -16,7 +16,7 @@ export default function installDraussen(app) {
   // Wo stehen wir? Letzter Stellplatz der laufenden Reise, sonst „Wetter hier“
   function spot() {
     const t = currentTrip();
-    const last = t && tripEntries(t).filter(e => hasPos(e) && e.type === 'stellplatz').sort(byDate).pop();
+    const last = t && tripEntries(t).filter(e => hasPos(e) && app.isNight(e.type)).sort(byDate).pop();
     if (last) return { lat: last.lat, lng: last.lng, name: last.title || last.place || 'Stellplatz', place: last.place || '' };
     const here = LS.get('wx.here', null);
     return here ? { lat: here.lat, lng: here.lng, name: 'Standort', place: '' } : null;

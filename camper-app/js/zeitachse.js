@@ -228,7 +228,7 @@ export default function installZeitachse(app) {
   function reviewSheet() {
     const byDay = {};
     plan.items.forEach(i => (byDay[i.date.slice(0, 10)] ||= []).push(i));
-    const nights = plan.items.filter(i => i.type === 'stellplatz').length;
+    const nights = plan.items.filter(i => app.isNight(i.type)).length;
     openSheet(`<form data-form="tl-save" class="tl-form">${sheetHead('Prüfen und übernehmen')}
       <p class="sub">${plan.items.length} Orte, davon ${nights} Übernachtungen${plan.track.length ? `, Strecke ${fmtKm(plan.dist)}` : ''}. Abwählen, was nicht übernommen werden soll; Art und Name könnt ihr hier ändern.</p>
       ${Object.entries(byDay).map(([d, list]) => `<h3 class="date-head">${fmtDay(d)}</h3><ul class="tl-list">${list.map(i => `<li>

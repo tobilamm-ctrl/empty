@@ -134,7 +134,7 @@ export default function installFamilienleben(app) {
   ACTIONS['friend-form'] = el => {
     const f = S.games.find(g => g.id === (el && el.dataset.id)) || {};
     const t = currentTrip();
-    const stay = t && tripEntries(t).filter(e => e.type === 'stellplatz').sort(byDate).pop();
+    const stay = t && tripEntries(t).filter(e => app.isNight(e.type)).sort(byDate).pop();
     friendPhoto = f.photo ? { ...f.photo, keep: true } : null;
     openSheet(`<form data-form="friend" data-id="${f.id || ''}">${sheetHead(f.id ? 'Freunde bearbeiten' : 'Neue Freunde')}
       ${FIELDS.map(([k, l, ph]) => `<label class="field"><span>${l}</span>${k === 'note' || k === 'fav' ? `<textarea name="${k}" rows="2" placeholder="${ph}">${esc(f[k])}</textarea>`

@@ -6,7 +6,15 @@ export default function installTickets(app) {
   const { S, VIEWS, ACTIONS, FORMS, CHANGES, esc, icon, pageHead, newId, save, remove, toast, openSheet, closeSheet, currentTrip, today, fmtDay, shrink } = app;
   const sheetHead = app.sheetHead;
   const KINDS = [['faehre', 'Fähre', '⛴️'], ['camping', 'Campingplatz', '🏕️'], ['eintritt', 'Eintritt', '🎟️'], ['vignette', 'Vignette / Maut', '🛣️'],
-    ['bahn', 'Zug, Bus, Seilbahn', '🚆'], ['sonst', 'Sonstiges', '📄']];
+    ['bahn', 'Zug, Bus, Seilbahn', '🚆'], ['flug', 'Flug', '✈️'], ['kabine', 'Kabine / Bordkarte', '🚢'], ['unterkunft', 'Unterkunft', '🏨'], ['sonst', 'Sonstiges', '📄']];
+  // Zusatzfelder je Art (Version 75)
+  const FIELDS = {
+    flug: [['flight', 'Flugnummer', 'z. B. LH 1234'], ['terminal', 'Terminal', 'z. B. 2'], ['gate', 'Gate', ''], ['seat', 'Sitzplatz', 'z. B. 23A, 23B']],
+    kabine: [['cabin', 'Kabine', 'z. B. 8123'], ['deck', 'Deck', 'z. B. 8']],
+    bahn: [['train', 'Zug', 'z. B. ICE 597'], ['coach', 'Wagen', ''], ['seat', 'Plätze', 'z. B. 61, 63']],
+    faehre: [['deck', 'Deck / Kabine', '']],
+  };
+  const fieldText = x => (FIELDS[x.kindKey] || []).filter(([k]) => x[k]).map(([k, l]) => `${l} ${esc(x[k])}`).join(' · ');
   const kind = k => KINDS.find(x => x[0] === k) || KINDS[KINDS.length - 1];
   const tickets = t => S.games.filter(g => g.kind === 'ticket' && (!t || g.tripId === t.id));
   const when = x => `${x.date || '9999-12-31'}T${x.time || '00:00'}`;
@@ -31,7 +39,7 @@ export default function installTickets(app) {
     setTimeout(() => all.forEach(x => (x.images || []).forEach(im => app.store().get('photos', im.id).then(p => { if (p && p.data && !p.data.startsWith('data:')) fetch(p.data).catch(() => {}); }).catch(() => {}))), 300);
     const row = x => `<li><button data-action="ticket-view" data-id="${x.id}">
       <span class="tk-ic">${kind(x.kindKey)[2]}</span>
-      <span class="txt"><b>${esc(x.title)}</b><small>${x.date ? fmtDay(x.date) : 'ohne Datum'}${x.time ? `, ${x.time} Uhr` : ''}${x.until && x.until !== x.date ? ` bis ${fmtDay(x.until)}` : ''}${x.number ? ` · ${esc(x.number)}` : ''}</small></span>
+      <span class="txt"><b>${esc(x.title)}</b><small>${x.date ? fmtDay(x.date) : 'ohne Datum'}${x.time ? `, ${x.time} Uhr` : ''}${x.until && x.until !== x.date ? ` bis ${fmtDay(x.until)}` : ''}${x.number ? ` · ${esc(x.number)}` : ''}${fieldText(x) ? ` · ${fieldText(x)}` : ''}</small></span>
       <span class="due ${countdown(x).startsWith('in') && !countdown(x).includes('Tagen') ? 'soon' : ''}">${countdown(x)}</span></button></li>`;
     return `${pageHead('tickets', 'Tickets', t ? `Für „${esc(t.name)}“, auch ohne Netz` : 'Fähre, Campingplatz, Eintritt')}
       <div class="btnrow"><button class="primary" data-action="ticket-form">${icon('plus')}Ticket oder Reservierung</button></div>
@@ -45,6 +53,7 @@ export default function installTickets(app) {
     openSheet(`<div class="ticket-view">${sheetHead(`${kind(x.kindKey)[2]} ${esc(x.title)}`)}
       <p class="tk-when">${x.date ? fmtDay(x.date) : ''}${x.time ? `, ${x.time} Uhr` : ''}${x.until && x.until !== x.date ? ` bis ${fmtDay(x.until)}` : ''} <b>${countdown(x)}</b></p>
       ${x.place ? `<p>${esc(x.place)}</p>` : ''}
+      ${fieldText(x) ? `<p class="tk-fields-view">${fieldText(x)}</p>` : ''}
       ${x.number ? `<p class="tk-number"><span>Buchungsnummer</span><b>${esc(x.number)}</b><button class="ghost small-btn" data-action="ticket-copy" data-n="${esc(x.number)}">Kopieren</button></p>` : ''}
       ${(x.images || []).map(im => `<img class="tk-img" data-photo="${im.id}" src="${im.thumb}" alt="Ticket">`).join('')}
       ${(x.files || []).length ? `<div class="pdf-list">${app.pdf.chips(x.files)}</div>` : ''}
@@ -55,6 +64,18 @@ export default function installTickets(app) {
         <button class="primary" data-action="ticket-form" data-id="${x.id}">Bearbeiten</button></div></div>`, root => {
       root.querySelectorAll('[data-photo]').forEach(img => app.store().get('photos', img.dataset.photo).then(p => { if (p && p.data) img.src = p.data; }).catch(() => {}));
     });
+  };
+  // Aus einem Ticket den Eintrag machen: „A – B“ oder „A → B“ in der Bezeichnung wird zu Von und Ziel
+  ACTIONS['ticket-entry'] = el => {
+    const x = S.games.find(g => g.id === el.dataset.id);
+    if (!x) return;
+    const type = { flug: 'flug', bahn: 'bahnfahrt', faehre: 'faehre' }[x.kindKey] || 'fahrt';
+    const m = (x.place || x.title || '').match(/^(.+?)\s*(?:–|—|->|→| - | nach )\s*(.+)$/);
+    const extra = { ...(type === 'faehre' ? { kind: 'Fähre' } : {}), ...(m ? { from: m[1].trim() } : {}),
+      ...(x.flight ? { no: x.flight } : x.train ? { no: x.train } : {}) };
+    closeSheet();
+    // Erst nach dem Schließen öffnen (das Schließen leert sonst das neue Fenster)
+    setTimeout(() => app.openEntryForm({ type, title: x.title, date: `${x.date}T${x.time || '12:00'}`, place: m ? m[2].trim() : '', extra, tripId: x.tripId || undefined }, { locate: false }), 150);
   };
   ACTIONS['ticket-copy'] = async el => { try { await navigator.clipboard.writeText(el.dataset.n); toast('Kopiert'); } catch { toast(el.dataset.n); } };
   ACTIONS['ticket-del'] = el => {
@@ -71,8 +92,11 @@ export default function installTickets(app) {
     const x = S.games.find(g => g.id === (el && el.dataset && el.dataset.id)) || { kindKey: 'faehre', date: today(), images: [], ...(pre || {}) };
     draft = { keep: (x.images || []).slice(), add: [], drop: [], files: (x.files || []).slice(), fdrop: [] };
     openSheet(`<form data-form="ticket" data-id="${x.id || ''}">${sheetHead(x.id ? 'Ticket bearbeiten' : 'Neues Ticket')}
-      <div class="chips wrap">${KINDS.map(([k, l, e]) => `<label class="chip"><input type="radio" name="kindKey" value="${k}"${x.kindKey === k ? ' checked' : ''}><span>${e} ${l}</span></label>`).join('')}</div>
+      <div class="chips wrap">${KINDS.map(([k, l, e]) => `<label class="chip"><input type="radio" name="kindKey" value="${k}" data-action="ticket-kind"${x.kindKey === k ? ' checked' : ''}><span>${e} ${l}</span></label>`).join('')}</div>
       <label class="field"><span>Bezeichnung</span><input name="title" required maxlength="80" value="${esc(x.title)}" placeholder="z. B. Fähre Piombino – Portoferraio"></label>
+      ${Object.entries(FIELDS).map(([k, fs]) => `<div class="row2 tk-fields" data-for="${k}"${x.kindKey === k ? '' : ' hidden'}>${fs.map(([f, l, ph]) =>
+        `<label class="field"><span>${l}</span><input name="f_${k}_${f}" maxlength="40" value="${esc(x.kindKey === k ? x[f] || '' : '')}" placeholder="${ph}"></label>`).join('')}</div>`).join('')}
+      <p class="sub tk-hint" data-for="unterkunft"${x.kindKey === 'unterkunft' ? '' : ' hidden'}>Datum = Anreise (Uhrzeit = Check-in), „Bis“ = Abreise.</p>
       <div class="row2"><label class="field"><span>Datum</span><input type="date" name="date" value="${x.date || ''}"></label>
         <label class="field"><span>Uhrzeit</span><input type="time" name="time" value="${x.time || ''}"></label></div>
       <label class="field"><span>Bis (bei mehreren Tagen)</span><input type="date" name="until" value="${x.until || ''}"></label>
@@ -86,6 +110,10 @@ export default function installTickets(app) {
         <label class="ghost file">📎 PDF anhängen<input type="file" accept="application/pdf,.pdf" multiple data-action="ticket-pdf"></label>
         <p class="sub">Braucht Internet zum Hochladen. Einmal geöffnet, geht das PDF auch offline.</p></div>
       <div class="sheet-foot"><button class="primary">Speichern</button></div></form>`);
+  };
+  CHANGES['ticket-kind'] = el => {
+    const f = el.closest('form');
+    f.querySelectorAll('[data-for]').forEach(d => { d.hidden = d.dataset.for !== el.value; });
   };
   function grid() {
     return [...draft.keep, ...draft.add].map(p => `<figure><img src="${p.thumb}" alt=""><button type="button" data-action="ticket-img-drop" data-id="${p.id}" aria-label="Bild entfernen">${icon('close')}</button></figure>`).join('');
@@ -131,11 +159,21 @@ export default function installTickets(app) {
       ...(old || { id, kind: 'ticket', by: app.me(), createdAt: Date.now(), tripId: t ? t.id : null }),
       kindKey: form.kindKey.value, title: form.title.value.trim(), date: form.date.value, time: form.time.value, until: form.until.value,
       place: form.place.value.trim(), number: form.number.value.trim(), link: form.link.value.trim(), note: form.note.value.trim(),
+      ...Object.fromEntries((FIELDS[form.kindKey.value] || []).map(([f]) => [f, (form[`f_${form.kindKey.value}_${f}`] || {}).value?.trim() || ''])),
       images: [...draft.keep, ...draft.add].map(({ id: pid, thumb }) => ({ id: pid, thumb })),
       files: draft.files,
     });
     closeSheet();
     toast('Ticket gespeichert');
+    // Flug, Bahn, Fähre: gleich als Eintrag (Abschnitt der Reise) übernehmen?
+    const leg = { flug: 'flug', bahn: 'bahnfahrt', faehre: 'faehre' }[form.kindKey.value];
+    if (!old && leg && t && form.date.value) {
+      const x = { id, title: form.title.value.trim() };
+      setTimeout(() => openSheet(`<div>${sheetHead('Auch ins Tagebuch?')}
+        <p>„${esc(x.title)}“ als Eintrag übernehmen? Dann erscheint die Strecke auf der Karte${leg === 'flug' ? ' als Flugbogen' : ''}.</p>
+        <p class="sub">Im Eintrag „Von“ und den Zielort prüfen (Ort = Ziel).</p>
+        <div class="sheet-foot"><button class="ghost" data-action="close">Nein</button><button class="primary" data-action="ticket-entry" data-id="${x.id}">Eintrag anlegen</button></div></div>`), 400);
+    }
   };
 
   // Heute-Karte: was in den nächsten 2 Tagen ansteht

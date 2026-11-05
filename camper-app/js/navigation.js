@@ -66,7 +66,7 @@ export default function installNavigation(app) {
   const myBar = () => {
     const d = S.meta.find(m => m.id === barId());
     const list = d && Array.isArray(d.tabs) ? d.tabs : DEFAULT;
-    return list.filter(k => (CORE[k] || (app.TILES || []).some(t => t.route === k)) && (!app.allowed || app.allowed(k))).slice(0, MAX);
+    return list.filter(k => (CORE[k] || (app.TILES || []).some(t => t.route === k)) && (!app.allowed || app.allowed(k)) && !(app.tripHides && app.tripHides(k))).slice(0, MAX);
   };
   app.myBar = myBar;
   const label = k => (CORE[k] ? CORE[k][0] : ((app.TILES || []).find(t => t.route === k) || {}).title || k);

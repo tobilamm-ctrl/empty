@@ -2581,3 +2581,12 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .trk-help ol { margin: 4px 0 8px; padding-left: 20px; }
 .trk-help li { margin: 4px 0; }
 .trk-url { display: block; word-break: break-all; font-size: 13px; margin: 4px 0; }
+
+/* ---------- Version 75: Reisearten ---------- */
+.trip-kinds .chip span { white-space: nowrap; }
+.leg-plane { background: none; border: 0; }
+.leg-plane span { display: block; font-size: 18px; line-height: 22px; text-align: center; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
+.kind-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 10px; }
+.kind-stats span { white-space: nowrap; }
+.kind-badge { margin-right: 4px; }
+.tk-fields-view { color: var(--muted); }

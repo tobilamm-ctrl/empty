@@ -112,7 +112,7 @@ export default function installMore(app) {
       `<button class="${m === k ? 'on' : ''}" data-action="tiles-mode" data-m="${k}">${l}</button>`).join('')}</div></div>
       <div class="btnrow"><button class="ghost" data-action="tiles-themes">Nach Themen ordnen</button></div>`;
   };
-  const available = () => TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route)));
+  const available = () => TILES.filter(t => (!t.cash || canCash()) && (!t.admin || app.session().user.isAdmin) && (!app.allowed || app.allowed(t.route)) && !(app.tripHides && app.tripHides(t.route)));
   const label = t => (t.alt && !(app.session().user.isAdmin) ? t.alt : t.title);
 
   // Kacheln über die gemeinsame Tafel (kacheln.js): Reihenfolge, Trennlinien, Ausblenden, Größe

@@ -98,7 +98,7 @@ export default function installFilm(app) {
         if (k > 0) await draw(prev, at[k]);
         prev = at[k];
         if (!f.alive) return;
-        L.circleMarker([e.lat, e.lng], { radius: e.type === 'stellplatz' ? 8 : 5, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).addTo(map);
+        L.circleMarker([e.lat, e.lng], { radius: app.isNight(e.type) ? 8 : 5, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).addTo(map);
         // Kleinkram unterwegs nur als Punkt, Erlebnisse und Stellplätze mit Titel und Fotos
         if (TYPES[e.type].minor && !(e.photos || []).length) continue;
         cap.innerHTML = `<small>${esc(TYPES[e.type].label)}${e.place ? ` · ${esc(e.place)}` : ''}</small><b>${esc(e.title || TYPES[e.type].label)}</b>${e.rating ? `<span>${'★'.repeat(e.rating)}</span>` : ''}`;

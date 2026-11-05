@@ -92,7 +92,7 @@ export default function installExtras(app) {
     const cards = [];
     if (here) cards.push(wxCard(here.name ? `Hier: ${here.name}` : 'Hier', `Standort ${ago(here.at)}`, here));
     if (t) {
-      const last = tripEntries(t).filter(e => hasPos(e) && e.type === 'stellplatz').sort(byDate).pop();
+      const last = tripEntries(t).filter(e => hasPos(e) && app.isNight(e.type)).sort(byDate).pop();
       if (last) cards.push(wxCard(last.title || last.place || 'Letzter Stellplatz', `Letzter Stellplatz, ${fmtDay(last.date.slice(0, 10))}`, last));
       S.places.filter(p => p.tripId === t.id && !p.done && hasPos(p))
         .sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9')).slice(0, 3)

@@ -8,6 +8,12 @@ export default function installSprache(app) {
 
   // Schlüsselwörter je Eintragsart (erste passende gewinnt)
   const KEYS = [
+    ['flug', /\b(flug|flughafen|gelandet|abflug|geflogen)\b/],
+    ['bahnfahrt', /\b(zug|bahnhof|bahnfahrt|ice|regionalbahn)\b/],
+    ['huette', /\b(berghütte|hütte|alm)\b/],
+    ['unterkunft', /\b(hotel|ferienwohnung|pension|unterkunft|eingecheckt)\b/],
+    ['hafen', /\b(hafen|landgang|angelegt)\b/],
+    ['freizeitpark', /\b(freizeitpark|achterbahn|wasserpark)\b/],
     ['tank', /\b(tank\w*|getankt|diesel|benzin|adblue)\b/],
     ['service', /\b(entsorg\w*|ver- und entsorgung|grauwasser|frischwasser|toilette geleert|kassette)\b/],
     ['stellplatz', /\b(stellplatz|campingplatz|camping|übernacht\w*|schlafplatz|frei stehen)\b/],
@@ -17,7 +23,7 @@ export default function installSprache(app) {
     ['baden', /\b(baden|gebadet|strand|freibad|badesee|schwimmen)\b/],
     ['museum', /\b(museum|schloss|burg|kirche|dom|ausstellung)\b/],
     ['wanderung', /\b(wander\w*|radtour|fahrradtour|tour|gipfel)\b/],
-    ['kinder', /\b(spielplatz|tierpark|zoo|freizeitpark)\b/],
+    ['kinder', /\b(spielplatz|tierpark|zoo)\b/],
     ['pause', /\b(pause|rast|rastplatz|picknick)\b/],
     ['sight', /\b(sehenswürdigkeit|aussicht|altstadt|besichtig\w*|ausflug)\b/],
   ];

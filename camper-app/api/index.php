@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 28;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 29;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -273,6 +273,9 @@ function ticketReminders(): int {
             if ($time) {
                 $at = new DateTime($t['date'] . ' ' . $time, $tz);
                 $mins = ($at->getTimestamp() - $now->getTimestamp()) / 60;
+                // Flug: einen Tag vorher an den Online-Check-in erinnern (zwischen 25 und 20 Stunden vorher)
+                if (($t['kindKey'] ?? '') === 'flug' && $mins > 20 * 60 && $mins <= 25 * 60) $msgs['c'] = 'Online-Check-in: Abflug ' . ($t['date'] === $now->format('Y-m-d') ? 'heute' : 'morgen') . ' um ' . $time . ' Uhr'
+                    . (!empty($t['flight']) ? ' (' . $t['flight'] . ')' : '') . (!empty($t['number']) ? ' · Buchung ' . $t['number'] : '');
                 if ($mins > 0 && $mins <= 180) $msgs['h'] = ($t['date'] === $now->format('Y-m-d') ? 'Heute' : 'Morgen') . ' um ' . $time . ' Uhr' . (!empty($t['place']) ? ', ' . $t['place'] : '') . (!empty($t['number']) ? ' · Buchung ' . $t['number'] : '');
             }
             // Morgens am Tag selbst (bei frühen Abfahrten reicht die Erinnerung 3 Stunden vorher)
@@ -788,7 +791,7 @@ case 'blog-like':
     }
     out([
         'highlights' => $highlights, 'greeting' => (string) $opt('greeting', ''), 'likesOn' => (bool) $opt('likes'), 'showMap' => (bool) $opt('map'), 'delayed' => (bool) $opt('delay', false),
-        'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
+        'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended']), 'kind' => (string) ($trip['kind'] ?? '')],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
         // Herzen der Leser je Eintrag
         'likes' => (object) array_column(array_map(fn($r) => [$r['entry_id'], (int) $r['n']],
@@ -1079,6 +1082,7 @@ case 'follow-photo':
         $entries[] = [
             'id' => $e['id'], 'type' => $e['type'] ?? 'notiz', 'title' => $e['title'] ?? '', 'place' => $e['place'] ?? '', 'date' => $e['date'] ?? '',
             'text' => $e['text'] ?? '', 'rating' => $e['rating'] ?? 0, 'country' => $e['country'] ?? '', 'lat' => $e['lat'] ?? null, 'lng' => $e['lng'] ?? null,
+            'extra' => array_intersect_key(is_array($e['extra'] ?? null) ? $e['extra'] : [], array_flip(['kind', 'from', 'fromLat', 'fromLng'])),
             'photos' => array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
                 fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
         ];
@@ -1104,7 +1108,7 @@ case 'follow-photo':
     $live = runningTrip($of) ? one('SELECT lat, lng, at FROM livepos WHERE crew_id = ? AND at > ?', [$of, now() - 2 * 86400000]) : null;
     out([
         'crew' => crewName($of), 'running' => (bool) runningTrip($of),
-        'trip' => ['id' => $trip['id'], 'name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670'],
+        'trip' => ['id' => $trip['id'], 'name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'kind' => (string) ($trip['kind'] ?? '')],
         'entries' => $entries, 'tracks' => $tracks,
         'live' => $live ? ['lat' => (float) $live['lat'], 'lng' => (float) $live['lng'], 'at' => (int) $live['at']] : null,
     ]);

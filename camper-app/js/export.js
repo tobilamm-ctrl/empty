@@ -1,6 +1,8 @@
 // Reise beenden und exportieren: GPX-Datei (Strecke, Stopps, geplante Route) und ein druckfertiges
 // Reiseheft mit Streckenkarte, Etappen und Notizen, das der Browser als PDF speichert.
 
+import { arcPts } from './reiseweg.js';
+
 export default function installExport(app) {
   const {
     S, ACTIONS, FORMS, esc, icon, save, toast, openSheet, closeSheet,
@@ -168,7 +170,7 @@ ${trks}
     const xy = (la, ln) => { const [px, py] = proj(la, ln, z); return [(px - left).toFixed(1), (py - top).toFixed(1)]; };
     const poly = (line, style) => `<polyline points="${line.map(p => xy(p[0], p[1]).join(',')).join(' ')}" ${style}/>`;
     const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
-      ${lines.map(l => poly(l.pts, l.hike ? `fill="none" stroke="#2F8F4E" stroke-width="3" stroke-dasharray="6 5"` : l.plan ? `fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"` : `fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/><polyline points="${l.pts.map(p => xy(p[0], p[1]).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`)).join('')}
+      ${lines.map(l => poly(l.pts, l.leg ? `fill="none" stroke="${{ air: '#5B6B7A', ship: '#2E7FB8', rail: '#7A4E9C' }[l.leg]}" stroke-width="2.5" stroke-dasharray="${l.leg === 'rail' ? '1 6' : '7 7'}" stroke-linecap="round"` : l.hike ? `fill="none" stroke="#2F8F4E" stroke-width="3" stroke-dasharray="6 5"` : l.plan ? `fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"` : `fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/><polyline points="${l.pts.map(p => xy(p[0], p[1]).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`)).join('')}
       ${marks.map(m => { const [mx, my] = xy(m.lat, m.lng); return m.label
         ? `<circle cx="${mx}" cy="${my}" r="10" fill="${m.plan ? '#fff' : color}" stroke="${m.plan ? color : '#fff'}" stroke-width="2.5"/><text x="${mx}" y="${(+my + 4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${m.plan ? color : '#fff'}">${m.label}</text>`
         : `<circle cx="${mx}" cy="${my}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/>`; }).join('')}
@@ -234,12 +236,12 @@ ${trks}
     st.es.slice().sort(byDate).forEach(e => (days[e.date.slice(0, 10)] ||= []).push(e));
     let last = null;
     const no = new Map();                  // Nummer je Stellplatz, gleich wie auf der Karte
-    st.es.filter(e => e.type === 'stellplatz').sort(byDate).forEach((e, i) => no.set(e.id, i + 1));
+    st.es.filter(e => app.isNight(e.type)).sort(byDate).forEach((e, i) => no.set(e.id, i + 1));
     const list = Object.entries(days).map(([day, es]) => {
       const from = last;
       let dist = 0, prev = last;
       es.filter(hasPos).forEach(e => { if (prev) dist += km(prev, e); prev = e; });
-      const nights = es.filter(e => e.type === 'stellplatz');
+      const nights = es.filter(e => app.isNight(e.type));
       const to = nights[nights.length - 1] || null;
       if (prev) last = prev;
       const n = st.firstDay ? Math.round((new Date(day + 'T12:00') - new Date(st.firstDay + 'T12:00')) / 864e5) + 1 : 0;
@@ -256,14 +258,17 @@ ${trks}
     const tracks = tracksOf(t);
     const drive = tracks.filter(k => k.kind !== 'hike');
     const plan = plannedOf(t);
+    const legs = app.splitLegs(st.stops.map(e => ({ lat: e.lat, lng: e.lng, e })), app.tripKind(t));
     const lines = [
-      ...(drive.length ? drive.map(k => ({ pts: k.line })) : st.stops.length > 1 ? [{ pts: st.stops.map(e => [e.lat, e.lng]) }] : []),
+      ...(drive.length ? drive.map(k => ({ pts: k.line })) : legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).map(l => ({ pts: l.pts }))),
+      // Flug als Bogen, Schiff und Bahn gestrichelt (wie auf der Karte)
+      ...legs.filter(l => ['air', 'ship', 'rail'].includes(l.mode)).map(l => ({ pts: l.mode === 'air' ? arcPts(l.pts[0], l.pts[1]) : l.pts, leg: l.mode })),
       ...tracks.filter(k => k.kind === 'hike').map(k => ({ pts: k.line, hike: true })),
       ...(plan.length ? [{ pts: [...(st.stops.length ? [st.stops[st.stops.length - 1]] : []), ...plan].map(p => [p.lat, p.lng]), plan: true }] : []),
     ];
     const marks = [
-      ...st.stops.filter(e => e.type !== 'stellplatz').map(e => ({ lat: e.lat, lng: e.lng })),
-      ...st.stops.filter(e => e.type === 'stellplatz').map(e => ({ lat: e.lat, lng: e.lng, label: no.get(e.id) })),
+      ...st.stops.filter(e => !app.isNight(e.type)).map(e => ({ lat: e.lat, lng: e.lng })),
+      ...st.stops.filter(e => app.isNight(e.type)).map(e => ({ lat: e.lat, lng: e.lng, label: no.get(e.id) })),
       ...plan.map((p, i) => ({ lat: p.lat, lng: p.lng, label: String.fromCharCode(65 + (i % 26)), plan: true })),
     ];
     return { lines, marks, color, plan };

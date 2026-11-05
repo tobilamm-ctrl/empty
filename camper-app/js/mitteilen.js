@@ -70,8 +70,8 @@ export default function installMitteilen(app) {
     let dist = 0;
     const i0 = st.stops.findIndex(e => e.date.slice(0, 10) === d);
     if (i0 >= 0) for (let i = Math.max(1, i0); i < st.stops.length && st.stops[i].date.slice(0, 10) === d; i++) dist += km(st.stops[i - 1], st.stops[i]);
-    const stay = es.filter(e => e.type === 'stellplatz').pop();
-    const stops = es.filter(e => e.type !== 'stellplatz' && e.type !== 'notiz' && !(app.MINOR || []).includes(e.type) && (e.title || e.place));
+    const stay = es.filter(e => app.isNight(e.type)).pop();
+    const stops = es.filter(e => !app.isNight(e.type) && e.type !== 'notiz' && !(app.MINOR || []).includes(e.type) && (e.title || e.place));
     const hls = S.games.filter(g => g.kind === 'highlight' && g.tripId === t.id && g.day === d && (g.text || g.emoji));
     const q = S.games.find(g => g.id === `qotd_${t.id}_${d}`);
     const photos = es.flatMap(e => e.photos || []);

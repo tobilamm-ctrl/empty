@@ -2,6 +2,7 @@
 // der Server liefert nur Strecke und Einträge dieser einen Reise (ohne Kosten und Namen).
 
 import { flagImg } from './flaggen.js';
+import { isNight, splitLegs, legKm, drawSpecialLegs, LEG_STYLE, tripKind, kindInfo } from './reiseweg.js';
 
 const TYPE = {
   stellplatz: 'Stellplatz', sight: 'Sehenswert', museum: 'Museum', wanderung: 'Wanderung / Radtour', baden: 'Baden',
@@ -9,8 +10,9 @@ const TYPE = {
   einkauf: 'Einkauf', pause: 'Pause', faehre: 'Fähre & Maut', werkstatt: 'Werkstatt', waesche: 'Wäsche', notiz: 'Notiz',
   stadtbummel: 'Stadtbummel / Spaziergang', aussicht: 'Aussicht', natur: 'Natur & Tiere', markt: 'Markt',
   fest: 'Fest / Veranstaltung', begegnung: 'Begegnung', fahrt: 'Fahrt',
+  unterkunft: 'Unterkunft', huette: 'Berghütte', flug: 'Flug', bahnfahrt: 'Bahnfahrt', hafen: 'Hafen / Landgang', mietwagen: 'Mietwagen', freizeitpark: 'Freizeitpark',
 };
-const SKIP = ['tank', 'service', 'einkauf', 'werkstatt', 'waesche'];   // Unterwegs-Kleinkram nur auf der Karte, nicht in der Zeitleiste
+const SKIP = ['tank', 'service', 'einkauf', 'werkstatt', 'waesche', 'mietwagen'];   // Unterwegs-Kleinkram nur auf der Karte, nicht in der Zeitleiste
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -60,9 +62,11 @@ function show({ trip, entries, tracks, at, highlights = [], greeting = '', showM
   const stops = es.filter(hasPos);
   const drive = tracks.filter(t => t.kind !== 'hike');
   let dist = 0;
+  const legs = splitLegs(stops.map(e => ({ lat: e.lat, lng: e.lng, e })), tripKind(trip));
   if (drive.length) drive.forEach(t => { const p = pts(t.pts); for (let i = 1; i < p.length; i++) dist += km({ lat: p[i - 1][0], lng: p[i - 1][1] }, { lat: p[i][0], lng: p[i][1] }); });
-  else for (let i = 1; i < stops.length; i++) dist += km(stops[i - 1], stops[i]);
-  const nights = es.filter(e => e.type === 'stellplatz').length;
+  else legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).forEach(l => { dist += legKm(l); });
+  const flown = legs.filter(l => l.mode === 'air').reduce((s, l) => s + legKm(l), 0);
+  const nights = es.filter(e => isNight(e.type)).length;
   const first = trip.start || (es[0] || {}).date?.slice(0, 10);
   const countries = [...new Set(es.map(e => e.country).filter(Boolean))];
   const range = first ? `${long(first)}${trip.end ? ` bis ${long(trip.end)}` : trip.ended ? '' : ', wir sind noch unterwegs'}` : '';
@@ -88,11 +92,12 @@ function show({ trip, entries, tracks, at, highlights = [], greeting = '', showM
   }).join('');
 
   $('#blog').innerHTML = `<header class="trip-head blog-head">
-      <h1>${esc(trip.name)}</h1><p class="sub">${esc(range)}</p>
+      <h1>${tripKind(trip) !== 'camping' ? `${kindInfo(tripKind(trip))[2]} ` : ''}${esc(trip.name)}</h1><p class="sub">${esc(range)}</p>
       <div class="facts">
         ${first ? `<div><b>${Math.max(1, Math.round(((trip.end && trip.end < today() ? new Date(trip.end + 'T12:00') : new Date()) - new Date(first + 'T12:00')) / 864e5) + 1)}</b><span>Tage</span></div>` : ''}
         <div><b>${nights}</b><span>${nights === 1 ? 'Nacht' : 'Nächte'}</span></div>
         ${dist >= 1 ? `<div><b>${Math.round(dist).toLocaleString('de-DE')} km</b><span>${drive.length ? 'gefahren' : 'Luftlinie'}</span></div>` : ''}
+        ${flown >= 1 ? `<div><b>${Math.round(flown).toLocaleString('de-DE')} km</b><span>geflogen</span></div>` : ''}
         ${countries.length ? `<div><b>${countries.map(flag).join(' ')}</b><span>${countries.length === 1 ? 'Land' : 'Länder'}</span></div>` : ''}
       </div></header>
     ${greeting ? `<p class="blog-greeting">${esc(greeting).replace(/\n/g, '<br>')}</p>` : ''}
@@ -154,11 +159,16 @@ function drawMap(trip, stops, tracks) {
   const map = L.map('blogMap', { scrollWheelZoom: false });
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
   const drive = tracks.filter(t => t.kind !== 'hike');
-  const lines = drive.length ? drive.map(t => pts(t.pts)) : [stops.map(e => [e.lat, e.lng])];
-  lines.forEach(l => L.polyline(l, { color: trip.color, weight: 4 }).addTo(map));
+  // Abschnitte: Flug als Bogen, Schiff und Bahn gestrichelt, dazwischen die Straße in Reisefarbe
+  const legs = splitLegs(stops.map(e => ({ lat: e.lat, lng: e.lng, e })), tripKind(trip));
+  const road = legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode));
+  const lines = drive.length ? drive.map(t => pts(t.pts)) : road.map(l => l.pts);
+  if (drive.length) lines.forEach(l => L.polyline(l, { color: trip.color, weight: 4 }).addTo(map));
+  else road.forEach(l => L.polyline(l.pts, LEG_STYLE[l.mode] || { color: trip.color, weight: 4 }).addTo(map));
+  lines.push(drawSpecialLegs(L, map, legs));
   tracks.filter(t => t.kind === 'hike').forEach(t => L.polyline(pts(t.pts), { color: '#2F8F4E', weight: 3, dashArray: '6 6' }).addTo(map));
   stops.forEach(e => {
-    const big = e.type === 'stellplatz';
+    const big = isNight(e.type);
     L.circleMarker([e.lat, e.lng], { radius: big ? 8 : 5, color: '#fff', weight: 2, fillColor: trip.color, fillOpacity: 1 })
       .bindPopup(`<b>${esc(e.title || TYPE[e.type])}</b><br>${esc(e.place)}<br><small>${day(e.date.slice(0, 10))}</small>`).addTo(map);
   });

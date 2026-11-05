@@ -3,6 +3,8 @@
 // solange die App offen ist.
 
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+// Rad und zu Fuß: Routenplaner der OpenStreetMap-Community mit Rad- bzw. Fußwegen
+const OSRM_BY = { road: OSRM, bike: 'https://routing.openstreetmap.de/routed-bike/route/v1/driving/', walk: 'https://routing.openstreetmap.de/routed-foot/route/v1/driving/' };
 
 export default function installStrecken(app) {
   const { S, LS, ACTIONS, CHANGES, esc, icon, newId, save, remove, toast, render, openSheet, closeSheet, currentTrip, tripEntries, hasPos, byDate, km, fmtKm, fmtDay } = app;
@@ -18,17 +20,22 @@ export default function installStrecken(app) {
   // Wegpunkte für die Straßenführung. Standard: nur Stopps, zu denen man mit dem Camper fährt (Übernachtung, Tanken,
   // Ver-/Entsorgung, Fähre, Pause, Werkstatt). Sehenswertes, Baden, Wanderungen, Restaurants und Fotos erreicht man oft
   // zu Fuß; mit dem Auto dorthin und zurück ergäbe viele Umwege. Nahe Punkte (2 km) werden zusammengefasst.
-  const DRIVE = ['stellplatz', 'tank', 'service', 'faehre', 'pause', 'werkstatt'];
+  const DRIVE = ['stellplatz', 'unterkunft', 'tank', 'service', 'faehre', 'pause', 'werkstatt', 'flug', 'bahnfahrt', 'hafen', 'mietwagen'];
   // Drei Varianten:
   //  tage:  alle Einträge, aber Punkte bis 5 km zusammengefasst (Rundgänge im Ort fallen weg, echte Fahrten bleiben)
   //  fahrt: Fahrt-Stopps plus erster und letzter Eintrag jedes Tages (kein Tag fehlt), 2 km zusammengefasst
   //  alle:  jeder Eintrag mit Ort, 1 km zusammengefasst (meist zu viel: Fußwege werden zu Autofahrten)
   const MODES = ['tage', 'fahrt', 'alle'];
   const mode = () => (MODES.includes(LS.get('roadsMode', 'tage')) ? LS.get('roadsMode', 'tage') : 'tage');
-  function waypoints(t, m = mode()) {
+  // Abschnitte auf der Straße (ohne Flug, Schiff, Bahn), jeweils als Liste von Wegpunkten [lat, lng]
+  function runs(t, m = mode()) {
+    const legs = app.splitLegs(thinned(t, m), app.tripKind(t));
+    return legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).map(l => Object.assign(l.pts, { how: l.mode }));
+  }
+  const waypoints = (t, m = mode()) => runs(t, m).flat();
+  function thinned(t, m) {
     // Einträge plus Foto-Standorte und still gemerkte Punkte (spuren.js) als „spur“, nach Zeit sortiert
-    const all = (app.routePoints ? app.routePoints(t) : tripEntries(t).filter(hasPos).sort(byDate).map(e => ({ lat: e.lat, lng: e.lng, date: e.date, e })))
-      .map(p => ({ lat: p.lat, lng: p.lng, date: p.date, type: p.e ? p.e.type : 'spur' }));
+    const all = app.routePts(t).map(p => ({ lat: p.lat, lng: p.lng, date: p.date, type: p.e ? p.e.type : 'spur', e: p.e }));
     let list = all, near = { tage: 5, fahrt: 2, alle: 1 }[m];
     if (m === 'fahrt') {
       const keep = new Set();
@@ -38,16 +45,19 @@ export default function installStrecken(app) {
       list = all.filter(e => keep.has(e) || DRIVE.includes(e.type));
     }
     const out = [];
+    const at = o => [o.lat, o.lng];
+    const leg = o => !!(o && o.e && app.legOf(o.e));
     list.forEach((e, k) => {
-      const p = [e.lat, e.lng];
+      // Abschnitte (Flug, Fähre …) bleiben immer erhalten
+      if (!out.length || dist(at(out[out.length - 1]), at(e)) > near || leg(e)) out.push(e);
       // Der letzte Punkt eines Tages (meist die Übernachtung) ersetzt einen nahen Punkt davor
-      if (!out.length || dist(out[out.length - 1], p) > near) out.push(p);
-      else if (k === list.length - 1 || list[k + 1].date.slice(0, 10) !== e.date.slice(0, 10)) out[out.length - 1] = p;
+      else if ((k === list.length - 1 || list[k + 1].date.slice(0, 10) !== e.date.slice(0, 10)) && !leg(out[out.length - 1])) out[out.length - 1] = e;
     });
     return out;
   }
   const airline = wps => { let d = 0; for (let i = 1; i < wps.length; i++) d += dist(wps[i - 1], wps[i]); return d; };
-  async function routeThrough(wps, onStep) {
+  async function routeThrough(wps, onStep, how = 'road') {
+    const base = OSRM_BY[how] || OSRM;
     let pts = [], total = 0, straight = 0;
     // Höchstens 25 Punkte je Anfrage, die Abschnitte überlappen um einen Punkt
     for (let i = 0; i < wps.length - 1; i += 24) {
@@ -55,7 +65,7 @@ export default function installStrecken(app) {
       onStep(i, wps.length);
       let seg = null;
       try {
-        const r = await fetch(`${OSRM}${part.map(p => `${p[1]},${p[0]}`).join(';')}?overview=full&geometries=geojson`);
+        const r = await fetch(`${base}${part.map(p => `${p[1]},${p[0]}`).join(';')}?overview=full&geometries=geojson`);
         const j = await r.json();
         if (j.code === 'Ok') seg = { pts: j.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]), km: j.routes[0].distance / 1000 };
       } catch { /* dann gerade */ }
@@ -73,7 +83,8 @@ export default function installStrecken(app) {
   const driveTracks = t => S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike');
 
   app.tripTools.push((t, st) => (st.stops.length > 1 ? { order: 5, action: 'route-roads', icon: 'route', label: 'Straße folgen', title: 'Der Straße folgen', desc: 'Strecke zwischen den Stopps entlang der Straßen berechnen', later: true } : null));
-  const roadsOf = t => driveTracks(t).find(x => x.auto === 'roads');
+  const roadsOf = t => driveTracks(t).find(x => x.auto === 'roads' && !x.part);
+  const roadsAll = t => driveTracks(t).filter(x => x.auto === 'roads');
   ACTIONS['route-roads'] = el => {
     const t = tripById(el.dataset.id) || currentTrip();
     if (!t) return;
@@ -116,7 +127,7 @@ export default function installStrecken(app) {
   ACTIONS['route-roads-undo'] = el => {
     const t = tripById(el.dataset.id), tr = t && roadsOf(t);
     if (!tr) return;
-    remove('tracks', tr.id);
+    roadsAll(t).forEach(x => remove('tracks', x.id));
     closeSheet();
     toast('Berechnete Strecke entfernt, die Karte zeigt wieder gerade Linien zwischen den Stopps');
     render();
@@ -126,17 +137,26 @@ export default function installStrecken(app) {
     if (!t) return;
     saveOdo(t, form);
     if (!navigator.onLine) return toast('Dafür braucht es eine Internetverbindung.');
-    const wps = waypoints(t);
+    const parts = runs(t).filter(r => r.length > 1);
+    const total = parts.reduce((s, r) => s + r.length, 0) || 1;
     const btn = form.querySelector('.sheet-foot .primary');
     btn.disabled = true;
-    const res = await routeThrough(wps, (i, n) => { btn.textContent = `Wird berechnet … ${Math.round(i / n * 100)} %`; });
+    // Jeder Straßen-Abschnitt für sich (zwischen Flug, Fähre, Bahn wird nicht gefahren)
+    const res = { km: 0, straight: 0, parts: [] };
+    let done = 0;
+    for (const wps of parts) {
+      const r = await routeThrough(wps, i => { btn.textContent = `Wird berechnet … ${Math.round((done + i) / total * 100)} %`; }, wps.how);
+      done += wps.length;
+      res.km += r.km; res.straight += r.straight; res.parts.push({ wps, r });
+    }
     const old = roadsOf(t);
+    roadsAll(t).filter(x => x !== old).forEach(x => remove('tracks', x.id));
     // Gespeichert wird eine vereinfachte Linie (höchstens 4000 Punkte), damit der Abgleich klein bleibt
-    save('tracks', {
-      ...(old || { id: newId(), tripId: t.id, createdAt: Date.now() }),
-      kind: 'drive', auto: 'roads', name: 'Entlang der Straßen', routed: true, mode: mode(),
-      wps: enc(app.simplifyTo(wps, 150)), pts: enc(app.simplifyTo(res.pts, 4000)), km: Math.round(res.km * 10) / 10,
-    });
+    res.parts.forEach(({ wps, r }, i) => save('tracks', {
+      ...(i === 0 && old ? old : { id: newId(), tripId: t.id, createdAt: Date.now() }),
+      kind: 'drive', auto: 'roads', name: 'Entlang der Straßen', routed: true, mode: mode(), part: i,
+      wps: enc(app.simplifyTo(wps, 150)), pts: enc(app.simplifyTo(r.pts, Math.max(500, Math.round(4000 * wps.length / total)))), km: Math.round(r.km * 10) / 10,
+    }));
     closeSheet();
     const odo = parseInt(String(form.odo.value).replace(/\D/g, ''), 10) || 0;
     const diff = odo ? ` (Tacho: ${fmtKm(odo)}, ${res.km > odo ? '+' : '−'}${Math.round(Math.abs(res.km - odo) / odo * 100)} %)` : '';

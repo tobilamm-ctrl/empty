@@ -69,7 +69,7 @@ export default function installUnterwegs(app) {
   ACTIONS.near = () => {
     const cat = LS.get('near.cat', 'wasser'), r = LS.get('near.r', 5);
     openSheet(`<form data-form="near">${sheetHead('Was ist in der Nähe?')}
-      <div class="field"><span>Was sucht ihr?</span><div class="chips wrap">${Object.entries(NEAR).filter(([, c]) => !c.sos).map(([k, c]) =>
+      <div class="field"><span>Was sucht ihr?</span><div class="chips wrap">${Object.entries(NEAR).filter(([k, c]) => !c.sos && !(app.tripHides && ['stellplatz', 'camping', 'entsorgung'].includes(k) && app.tripHides('stellplatzsuche'))).map(([k, c]) =>
         `<label class="chip"><input type="radio" name="cat" value="${k}"${k === cat ? ' checked' : ''} hidden>${icon(c.icon)}${c.label}</label>`).join('')}</div></div>
       <div class="field"><span>Gesundheit</span><div class="chips wrap">${Object.entries(NEAR).filter(([, c]) => c.sos).map(([k, c]) =>
         `<label class="chip sos-chip"><input type="radio" name="cat" value="${k}"${k === cat ? ' checked' : ''} hidden>${icon(c.icon)}${c.label}</label>`).join('')}</div>

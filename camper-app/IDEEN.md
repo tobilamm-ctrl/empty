@@ -182,7 +182,7 @@ P10. **CO₂-Bilanz der Reise, auf verschiedene Arten.** Ideen für die Berechnu
       Ferienwohnung) und mit dem Vorjahr; optional Hinweis „so viel Bäume / Ausgleich kostet etwa …“.
     „Verschiedene Arten“ meint (laut Tobi) auch verschiedene **Reisearten** – siehe P11: CO₂ je Abschnitt nach
     Verkehrsmittel (Camper, Flug, Schiff/Kreuzfahrt, Bahn, Auto, Fähre).
-P11. **Nicht nur Campingreisen: Flugreisen, Kreuzfahrten usw.** Eine Reise bekommt eine **Art** (Camping, Flug,
+P11. **✅ (Lieferung 75) Nicht nur Campingreisen: Flugreisen, Kreuzfahrten usw.** Eine Reise bekommt eine **Art** (Camping, Flug,
     Kreuzfahrt, Bahn, Auto + Hotel, Rad …), auch gemischt in **Abschnitten** (z. B. Flug + Mietwagen, Fähre + Camper).
     Folgen für die App:
     - Bereiche passend ein- bzw. ausblenden (Tankbuch, Stellplätze, Zuladung, Autarkie nur bei Camper/Auto);
@@ -246,7 +246,7 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 2. ✅ **Paket B – Fotos zum richtigen Eintrag (Lieferung 73):** P5, P9, P6, P3 (nur App)
 3. ✅ **Paket D – Server-Lieferung (Lieferung 74, eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
    P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
-4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (neue api/index.php wegen der 24-Stunden-Erinnerung)
+4. **Paket E – Reisearten und CO₂:** ✅ P11 (Lieferung 75, mit neuer api/index.php), dann P10 (Lieferung 76)
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
 - **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,

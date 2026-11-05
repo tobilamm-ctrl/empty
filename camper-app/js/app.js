@@ -1,4 +1,5 @@
 import { SyncStore, api, newId } from './store.js';
+import { TRIP_KINDS, tripKind, kindInfo, isNight, NIGHT_TYPES, splitLegs, legKm, legOf, drawSpecialLegs, LEG_STYLE } from './reiseweg.js';
 import installKacheln from './kacheln.js';
 import installNavigation from './navigation.js';
 import installMore from './mehr.js';
@@ -49,11 +50,12 @@ import installZuschnitt from './zuschnitt.js';
 import installHeute from './heute.js';
 import installMitteilungen from './mitteilungen.js';
 import installSpuren from './spuren.js';
+import installReisearten from './reisearten.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 74;
+const APP_VERSION = 75;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -122,6 +124,14 @@ const ICONS = {
   markt: "<path d=\"M3 9l2-5h14l2 5\"/><path d=\"M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0\"/><path d=\"M5 12v9h14v-9\"/>",
   fest: "<path d=\"M2 5q10 6 20 0\"/><path d=\"M4 6.1 8 7.5 6 12.5ZM10 7.9h4l-2 5.1ZM16 7.5l4-1.4-2 6.4Z\"/>",
   begegnung: "<circle cx=\"6.5\" cy=\"7\" r=\"3\"/><path d=\"M2.5 21v-5a4 4 0 0 1 8 0v5\"/><circle cx=\"17.5\" cy=\"7\" r=\"3\"/><path d=\"M13.5 21v-5a4 4 0 0 1 8 0v5\"/>",
+  // Version 75: Reisearten
+  unterkunft: '<path d="M3 18V7M3 13h18v5M21 13a3 3 0 0 0-3-3h-7v3"/><circle cx="7" cy="10.5" r="1.8"/>',
+  huette: '<path d="M2 20 8.5 9l3 5M10 20l6-10 6 10z"/><path d="M14.5 20v-3h3v3"/>',
+  flug: '<path d="M21 15.5 13 11V5.5a1.5 1.5 0 0 0-3 0V11l-8 4.5V17l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-4.5l8 2.5z"/>',
+  bahnfahrt: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9" cy="14" r=".8"/><circle cx="15" cy="14" r=".8"/>',
+  hafen: '<circle cx="12" cy="5" r="2"/><path d="M12 7v14M8 10h8M4 13a8 8 0 0 0 16 0"/>',
+  mietwagen: '<path d="M3 16v-4l2-5h14l2 5v4H3zM3 12h18"/><circle cx="7.5" cy="16.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/><path d="M14 4h6M18 4v2"/>',
+  freizeitpark: '<circle cx="12" cy="10" r="7"/><path d="M12 3v14M5 10h14M7 5l10 10M17 5 7 15M8 21l4-4 4 4"/>',
   fahrt: "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M9.8 13.25 4.2 16.5M14.2 13.25l5.6 3.25M12 9.5V3\"/>",
 };
 const icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.notiz}</svg>`;
@@ -165,14 +175,50 @@ const TYPES = {
   fest: { label: 'Fest / Veranstaltung', many: 'Feste', hint: 'Dorffest, Konzert, Feuerwerk', cost: 'Eintritt', rating: true, group: 'erleben' },
   begegnung: { label: 'Begegnung', many: 'Begegnungen', hint: 'Nette Leute getroffen', group: 'erleben' },
   fahrt: { label: 'Fahrt', many: 'Fahrten', hint: 'Passstraße, schöne Strecke, Stau', rating: true, minor: true, group: 'unterwegs' },
+  // Version 75: andere Reisearten (Flug, Bahn, Kreuzfahrt, Hotel …). Flug, Bahnfahrt und Fähre sind selbst ein Abschnitt:
+  // der Ort ist das Ziel, „Von“ (optional) der Start; ohne „Von“ beginnt der Abschnitt beim Eintrag davor.
+  unterkunft: { label: 'Unterkunft', many: 'Unterkünfte', hint: 'Hotel, Ferienwohnung, Pension', cost: 'Unterkunft', rating: true,
+    extras: [{ key: 'stay', label: 'Art', options: ['Hotel', 'Ferienwohnung', 'Pension', 'Hütte', 'Bei Freunden'] },
+      { key: 'checkout', label: 'Abreise bis', text: true, ph: 'z. B. 10 Uhr' }, { key: 'again', label: 'Wiederkommen?', options: ['Gern wieder', 'Vielleicht', 'Lieber nicht'] }] },
+  huette: { label: 'Berghütte', many: 'Berghütten', hint: 'Übernachtung auf der Hütte', cost: 'Unterkunft', rating: true,
+    extras: [{ key: 'height', label: 'Höhe in m', num: true }, { key: 'again', label: 'Wiederkommen?', options: ['Gern wieder', 'Vielleicht', 'Lieber nicht'] }] },
+  flug: { label: 'Flug', many: 'Flüge', hint: 'Ort = Ziel, „Von“ = Start', cost: 'Flug', group: 'unterwegs',
+    extras: [{ key: 'from', label: 'Von', text: true, ph: 'z. B. München Flughafen' }, { key: 'no', label: 'Flugnummer', text: true, ph: 'z. B. LH 1234' }] },
+  bahnfahrt: { label: 'Bahnfahrt', many: 'Bahnfahrten', hint: 'Ort = Ziel, „Von“ = Start', cost: 'Bahn & Bus', group: 'unterwegs',
+    extras: [{ key: 'from', label: 'Von', text: true, ph: 'z. B. München Hbf' }, { key: 'no', label: 'Zug', text: true, ph: 'z. B. ICE 597' }] },
+  hafen: { label: 'Hafen / Landgang', many: 'Häfen', hint: 'Anlegen, Landgang, Ausflug vom Schiff', cost: 'Eintritt', rating: true, group: 'erleben' },
+  mietwagen: { label: 'Mietwagen', many: 'Mietwagen', hint: 'Übernahme oder Rückgabe', cost: 'Mietwagen', minor: true, group: 'unterwegs',
+    extras: [{ key: 'what', label: 'Was?', options: ['Übernahme', 'Rückgabe'] }, { key: 'firm', label: 'Firma', text: true, ph: 'z. B. Sixt' }] },
+  freizeitpark: { label: 'Freizeitpark', many: 'Freizeitparks', hint: 'Achterbahn, Wasserpark, Zoo', cost: 'Eintritt', rating: true, group: 'erleben' },
   notiz: { label: 'Notiz', many: 'Notizen', hint: 'Gedanken zum Tag' },
 };
+// Welche Arten je Reiseart vorn stehen (danach die am häufigsten benutzten)
+const KIND_TYPES = {
+  camping: ['stellplatz', 'sight', 'wanderung', 'tank', 'pause'],
+  zelten: ['stellplatz', 'sight', 'wanderung', 'baden', 'pause'],
+  motorrad: ['stellplatz', 'fahrt', 'pause', 'tank', 'aussicht'],
+  auto: ['unterkunft', 'sight', 'restaurant', 'stadtbummel', 'tank'],
+  flug: ['unterkunft', 'flug', 'sight', 'restaurant', 'stadtbummel'],
+  kreuzfahrt: ['hafen', 'sight', 'stadtbummel', 'restaurant', 'baden'],
+  bahn: ['unterkunft', 'bahnfahrt', 'sight', 'stadtbummel', 'restaurant'],
+  rad: ['unterkunft', 'stellplatz', 'pause', 'aussicht', 'natur'],
+  wandern: ['huette', 'unterkunft', 'pause', 'aussicht', 'natur'],
+  segeln: ['hafen', 'baden', 'natur', 'restaurant', 'einkauf'],
+  gemischt: [],
+};
 // Häufigste Arten zuerst (für die Auswahl: 9 oben, der Rest hinter „Mehr Arten …“)
-function typesByUse() {
+function typesByUse(t = null) {
   const n = {};
   S.entries.forEach(e => { n[e.type] = (n[e.type] || 0) + 1; });
   const base = Object.keys(TYPES);
-  return base.slice().sort((a, b) => (n[b] || 0) - (n[a] || 0) || base.indexOf(a) - base.indexOf(b));
+  const used = base.slice().sort((a, b) => (n[b] || 0) - (n[a] || 0) || base.indexOf(a) - base.indexOf(b));
+  // Passend zur Reiseart zuerst (bei Camping wie bisher nur nach Häufigkeit, wenn schon etwas eingetragen ist)
+  let trip = t;
+  try { trip = trip || currentTrip(); } catch { trip = null; }
+  const kind = tripKind(trip);
+  if (kind === 'camping' && S.entries.length) return used;
+  const pref = (KIND_TYPES[kind] || []).filter(k => TYPES[k]);
+  return [...pref, ...used.filter(k => !pref.includes(k))];
 }
 const TOP_TYPES = 9;
 const MINOR = Object.keys(TYPES).filter(k => TYPES[k].minor);
@@ -186,7 +232,7 @@ function extraText(e) {
     .join(', ');
 }
 const FEATURES = ['Strom', 'Wasser', 'Entsorgung', 'WC', 'Dusche', 'Ruhig', 'Eben', 'Aussicht', 'Kostenlos'];
-const CATS = ['Stellplatz', 'Sprit', 'Lebensmittel', 'Essen gehen', 'Eintritt', 'Maut & Vignette', 'Fähre', 'Werkstatt', 'Wäsche', 'Ausrüstung', 'Sonstiges'];
+const CATS = ['Stellplatz', 'Unterkunft', 'Sprit', 'Lebensmittel', 'Essen gehen', 'Eintritt', 'Maut & Vignette', 'Fähre', 'Flug', 'Bahn & Bus', 'Mietwagen', 'Werkstatt', 'Wäsche', 'Ausrüstung', 'Sonstiges'];
 const SETTLE = 'Ausgleich';
 
 /* ---------- Zustand ---------- */
@@ -373,9 +419,10 @@ function tripStatsNow(t) {
   // Berechnete Strecke „Entlang der Straßen“ deckt die ganze Reise ab; aufgezeichnete Teile nicht doppelt zählen.
   // Andere Strecken zählen nur, wenn sie zusammen den Großteil der Reise abdecken (sonst bleibt die Luftlinie).
   const roads = tracks.find(x => x.auto === 'roads');
+  const roadsKm = tracks.filter(x => x.auto === 'roads').reduce((sum, x) => sum + (x.km || 0), 0);
   const trackKm = tracks.reduce((sum, x) => sum + (x.km || 0), 0);
   const driven = !!roads || (tracks.length > 0 && trackKm >= dist * 0.6);
-  if (driven) dist = roads ? roads.km || 0 : trackKm;
+  if (driven) dist = roads ? roadsKm : trackKm;
   // Eingetragener Tachostand geht vor
   if (t.odoKm > 0) dist = t.odoKm;
   const cost = S.expenses.filter(x => x.tripId === t.id && x.cat !== SETTLE).reduce((s, x) => s + (x.amount || 0), 0);
@@ -390,9 +437,16 @@ function tripStatsNow(t) {
   if (lastEntry && lastEntry > lastDay && lastEntry <= today()) lastDay = lastEntry;
   const days = firstDay && firstDay <= lastDay ? Math.round((dayDate(lastDay) - dayDate(firstDay)) / 864e5) + 1 : 0;
   // Nächte: so viele, wie die Reise dauert (bis heute), mindestens so viele wie Stellplatz-Einträge
-  const nights = Math.max(es.filter(e => e.type === 'stellplatz').length, Math.max(0, days - 1));
+  const nights = Math.max(es.filter(e => isNight(e.type)).length, Math.max(0, days - 1));
+  // Kilometer je Verkehrsmittel (Flug, Schiff, Bahn als Luftlinie bzw. Strecke des Abschnitts)
+  const legs = splitLegs(routePts(t), tripKind(t));
+  const byMode = {};
+  legs.forEach(l => { byMode[l.mode] = (byMode[l.mode] || 0) + legKm(l); });
+  const special = (byMode.air || 0) + (byMode.ship || 0) + (byMode.rail || 0);
+  // Ohne Strecke und Tacho: Flüge, Schiff und Bahn zählen nicht als gefahren
+  if (!driven && !(t.odoKm > 0)) dist = Math.max(0, legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).reduce((s, l) => s + legKm(l), 0));
   return {
-    es, stops, dist, driven: driven || t.odoKm > 0, odo: t.odoKm > 0, cost, days, firstDay, nights,
+    es, stops, dist, driven: driven || t.odoKm > 0, odo: t.odoKm > 0, cost, days, firstDay, nights, byMode, special,
     sights: es.filter(e => e.type === 'sight' || e.type === 'museum').length,
   };
 }
@@ -655,7 +709,7 @@ function routeBand(t) {
   const es = tripEntries(t).filter(e => e.type !== 'notiz').sort(byDate).slice(-24);
   const step = 100 / (es.length + 1);
   return es.map((e, i) =>
-    `<i class="${e.type === 'stellplatz' ? 'b-stop' : 'b-tick'}" style="left:${(step * (i + 1)).toFixed(2)}%"></i>`).join('');
+    `<i class="${isNight(e.type) ? 'b-stop' : 'b-tick'}" style="left:${(step * (i + 1)).toFixed(2)}%"></i>`).join('');
 }
 
 /* ---------- Karte ---------- */
@@ -712,28 +766,38 @@ function entryPopup(e, t) {
   </div>`;
 }
 
+// Punkte einer Reise nach Zeit: Einträge, Foto-Standorte und gemerkte Punkte (spuren.js)
+function routePts(t) {
+  if (APP.routePoints) return APP.routePoints(t);
+  return tripEntries(t).filter(hasPos).sort(byDate).map(e => ({ lat: e.lat, lng: e.lng, date: e.date, e }));
+}
 function drawRoute(t, emphasis) {
   const color = tripColor(t);
   const stops = tripEntries(t).filter(hasPos).sort(byDate);
-  // Die Linie läuft auch durch Foto-Standorte und still gemerkte Punkte (spuren.js), nach Zeit sortiert
-  const pts = (APP.routePoints ? APP.routePoints(t) : stops).map(e => [e.lat, e.lng]);
+  // Abschnitte: Flug als Bogen, Schiff und Bahn gestrichelt; nur die Straßen-Abschnitte laufen als Linie in Reisefarbe
+  const rp = routePts(t), legs = splitLegs(rp, tripKind(t));
+  const road = legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode));
+  const pts = [...rp.map(e => [e.lat, e.lng]), ...legs.flatMap(l => l.pts)];
   // Mit GPX-Strecke zeigt die Linie zwischen den Stopps nur noch die Reihenfolge (gestrichelt)
   // Nur wenn eine Strecke die Reise wirklich abdeckt, zeigt die Linie zwischen den Stopps bloß die Reihenfolge.
   // Kurze Stücke (z. B. eine Aufzeichnung oder ein GPX von einem Tag) oder leere Strecken zählen nicht:
   // dann bleibt die Verbindung durchgezogen.
-  let air = 0;
-  for (let i = 1; i < stops.length; i++) air += km(stops[i - 1], stops[i]);
+  const air = road.reduce((s, l) => s + legKm(l), 0);
   const drawable = S.tracks.filter(x => x.tripId === t.id && x.kind !== 'hike' && (x.pts || '').includes(';') && !(x.id === APP.editingTrackId && ui.mapEdit === 'strecke'));
   const tracked = drawable.some(x => x.auto === 'roads') || drawable.reduce((sum, x) => sum + (x.km || 0), 0) >= air * 0.6;
-  if (pts.length > 1 && !tracked) {
-    L.polyline(pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
-    L.polyline(pts, { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);
-  } else if (pts.length > 1 && ui.mapPins !== 'keine') {
-    L.polyline(pts, { color, weight: 2, opacity: 0.6, dashArray: '2 8' }).addTo(routeLayer);
-  }
+  road.forEach(l => {
+    if (!tracked) {
+      const st = LEG_STYLE[l.mode];
+      L.polyline(l.pts, { color: '#fff', weight: emphasis ? 8 : 6, opacity: 0.9 }).addTo(routeLayer);
+      L.polyline(l.pts, st ? { ...st, weight: emphasis ? st.weight + 1 : st.weight } : { color, weight: emphasis ? 4 : 3, opacity: emphasis ? 1 : 0.85 }).addTo(routeLayer);
+    } else if (ui.mapPins !== 'keine') {
+      L.polyline(l.pts, { color, weight: 2, opacity: 0.6, dashArray: '2 8' }).addTo(routeLayer);
+    }
+  });
+  drawSpecialLegs(L, routeLayer, legs);
   const movable = emphasis && ui.mapEdit === 'orte';
   // Beim Bearbeiten immer alle Orte zeigen, sonst nach Wahl im Ebenen-Knopf
-  const show = e => movable || ui.mapPins === 'alle' || (ui.mapPins === 'nacht' && e.type === 'stellplatz');
+  const show = e => movable || ui.mapPins === 'alle' || (ui.mapPins === 'nacht' && isNight(e.type));
   stops.filter(show).forEach(e => {
     const small = !emphasis || e.type === 'notiz';
     const m = L.marker([e.lat, e.lng], { icon: pinIcon(e.type, color, small && !movable), draggable: movable })
@@ -908,7 +972,8 @@ let formPhotos = { keep: [], add: [], drop: [] };
 
 function entryForm(e = {}) {
   const isNew = !e.id;
-  const type = e.type || 'stellplatz';
+  // Neue Einträge: bei Camping wie bisher Stellplatz, sonst die erste passende Art der Reise (z. B. Unterkunft)
+  const type = e.type || (tripKind(currentTrip()) === 'camping' ? 'stellplatz' : typesByUse()[0]);
   formPhotos = { keep: (e.photos || []).slice(), add: [], drop: [] };
   const linked = !isNew && S.expenses.some(x => x.entryId === e.id);
   // Die 9 meistbenutzten Arten oben (die gewählte immer sichtbar), der Rest hinter „Mehr Arten …“
@@ -1791,6 +1856,8 @@ function tripForm(id) {
       <label class="field"><span>Start</span><input type="date" name="start" value="${t.start || ''}"></label>
       <label class="field"><span>Ende</span><input type="date" name="end" value="${t.end || ''}"></label>
     </div>
+    <div class="field"><span>Art der Reise</span><div class="chips wrap trip-kinds">${TRIP_KINDS.map(([k, l, ic]) =>
+      `<label class="chip"><input type="radio" name="kind" value="${k}"${tripKind(t) === k ? ' checked' : ''}><span>${ic} ${l}</span></label>`).join('')}</div></div>
     <div class="field"><span>Farbe der Reise</span><div class="swatches">${swatches}</div></div>
     ${canCash() ? `<label class="field"><span>Reisebudget in € (optional)</span><input name="budget" inputmode="decimal" value="${t.budget ? String(t.budget).replace('.', ',') : ''}" placeholder="z. B. 1500"></label>` : ''}
     ${members().length > 1 ? `<div class="field"><span>Wer ist dabei? (für den Reisepass)</span><div class="chips wrap">${members().map(m =>
@@ -2561,6 +2628,7 @@ const FORMS = {
       ...(old || { id: newId(), createdAt: Date.now(), archived: false }),
       name: form.name.value.trim(), start: form.start.value, end: form.end.value,
       color: form.color.value || nextColor(),
+      kind: form.kind ? form.kind.value || 'camping' : tripKind(old),
       archived: old ? form.archived.checked : false,
       budget: form.budget ? num(form.budget.value) || 0 : (old && old.budget) || 0,
       noDuties: form.duties ? !form.duties.checked : !!(old && old.noDuties),
@@ -2821,7 +2889,7 @@ const APP = {
   refit: () => { lastFit = null; },
   mapClickHooks, MINOR, applyType, titleHints, checkTripRange, photoGeo, replaceFormPhoto, tripForDate, tripForm, newTripThen, saveToGallery, settingsPanels, showMe, payers, typesIn, costCat, extraText,
   crewId: () => crew.id, crewName: () => crew.name, chromeHooks, api, ROUTE_ARGS, sheetHead, nextColor, setTrip, tripHead, afterDraw, openEntry,
-  session: () => session, store: () => store, shrink,
+  session: () => session, store: () => store, shrink, TRIP_KINDS, tripKind, kindInfo, isNight, NIGHT_TYPES, splitLegs, legOf, legKm, drawSpecialLegs, routePts, typesByUse,
   setSimulator: f => { simulatedPos = f; }, addFormPhoto, addPhotoFiles, formPhotos: () => formPhotos, submitEntry,
   get map() { return map; },
   get routeLayer() { return routeLayer; },
@@ -2876,6 +2944,7 @@ installZuschnitt(APP);
 installHeute(APP);
 installMitteilungen(APP);
 installSpuren(APP);
+installReisearten(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

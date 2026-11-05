@@ -302,7 +302,7 @@ export default function installInfos(app) {
     const here = LS.get('wx.here', null);
     if (here) pts.push(['Hier', here]);
     if (t) {
-      const last = tripEntries(t).filter(e => hasPos(e) && e.type === 'stellplatz').sort(byDate).pop();
+      const last = tripEntries(t).filter(e => hasPos(e) && app.isNight(e.type)).sort(byDate).pop();
       if (last) pts.push([last.title || last.place || 'Letzter Stellplatz', last]);
       S.places.filter(p => p.tripId === t.id && !p.done && hasPos(p)).sort((a, b) => (a.planDate || '9').localeCompare(b.planDate || '9')).slice(0, 3).forEach(p => pts.push([p.name, p]));
     }
