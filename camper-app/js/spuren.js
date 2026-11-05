@@ -40,7 +40,9 @@ export default function installSpuren(app) {
   let busy = false;
   async function ping() {
     if (busy || !on() || document.hidden || !app.session || !app.session()) return;
-    const t = app.currentTrip && app.currentTrip(), d = app.today();
+    let t = null;
+    try { t = app.currentTrip(); } catch { return; }      // noch keine Crew gewählt
+    const d = app.today();
     if (!t || t.ended || !t.start || t.start > d || (t.end && t.end < d)) return;
     if (LS.get('rec', null)) return;                        // eine Aufzeichnung läuft ohnehin
     const last = pings(t).slice(-1)[0];
