@@ -37,10 +37,13 @@ export default function installExtras(app) {
 
   const wxKey = p => `wx.${p.lat.toFixed(2)},${p.lng.toFixed(2)}`;
   const wxLoading = new Set();
+  const wxFailed = new Map();
   async function loadWeather(p) {
     const key = wxKey(p);
     const cached = LS.get(key, null);
     if (cached && Date.now() - cached.at < 30 * 60000) return;
+    // Nach einem Fehlschlag (kein Netz, Dienst gestört) erst nach 5 Minuten wieder fragen – sonst lädt die Seite endlos neu
+    if (Date.now() - (wxFailed.get(key) || 0) < 5 * 60000) return;
     if (wxLoading.has(key)) return;
     wxLoading.add(key);
     try {
@@ -51,6 +54,7 @@ export default function installExtras(app) {
       if (!r.ok) throw new Error();
       LS.set(key, { at: Date.now(), data: await r.json() });
     } catch {
+      wxFailed.set(key, Date.now());
       if (!cached) LS.set(key + '.err', Date.now());
     } finally {
       wxLoading.delete(key);

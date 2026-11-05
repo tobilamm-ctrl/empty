@@ -39,7 +39,21 @@ async function load() {
 }
 function fail(msg) { $('#blog').innerHTML = `<section class="empty"><h1>Schade</h1><p>${esc(msg)}</p></section>`; }
 
-function show({ trip, entries, tracks, at, highlights = [], greeting = '', showMap = true, delayed = false }) {
+// Herzen: eines je Gerät; das Gerät merkt sich, welche Einträge es schon mag, und den Namen (freiwillig)
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* privat */ } },
+};
+const device = () => {
+  let d = store.get('blogDevice', '');
+  if (!/^[a-f0-9]{32}$/.test(d)) { d = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); store.set('blogDevice', d); }
+  return d;
+};
+const likedKey = `blogLiked-${token}`;
+const secs = n => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
+
+function show({ trip, entries, tracks, at, highlights = [], greeting = '', showMap = true, delayed = false, likes = {}, likesOn = false }) {
+  const liked = new Set(store.get(likedKey, []));
   document.title = `${trip.name} · Reiseblog`;
   document.documentElement.style.setProperty('--trip', trip.color);
   const es = entries.filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
@@ -67,7 +81,9 @@ function show({ trip, entries, tracks, at, highlights = [], greeting = '', showM
           <strong>${esc(e.title || TYPE[e.type] || '')}</strong>
           ${e.place || e.rating ? `<span class="meta">${esc(e.place)}${e.rating ? ` ${'★'.repeat(e.rating)}` : ''}</span>` : ''}
           ${e.text ? `<span class="text">${esc(e.text)}</span>` : ''}
+          ${(e.sounds || []).length ? `<span class="blog-sounds">${e.sounds.map(x => `<button type="button" class="blog-snd" data-snd="${esc(x.id)}" aria-label="Sprachnotiz anhören">🎙️ <span>Anhören</span>${x.sec ? ` <small>${secs(x.sec)}</small>` : ''}</button>`).join('')}</span>` : ''}
           ${e.photos.length ? `<span class="blog-photos">${e.photos.map((p, i) => `<img class="${i === 0 ? 'hero-photo' : ''}" src="${p.thumb}" data-id="${esc(p.id)}" alt="">`).join('')}</span>` : ''}
+          ${likesOn ? `<button type="button" class="blog-like${liked.has(e.id) ? ' on' : ''}" data-like="${esc(e.id)}" aria-pressed="${liked.has(e.id)}" aria-label="Herz geben">${liked.has(e.id) ? '❤️' : '🤍'} <span>${likes[e.id] || ''}</span></button>` : ''}
         </span></div></li>`).join('')}</ol></li>`;
   }).join('');
 
@@ -91,6 +107,39 @@ function show({ trip, entries, tracks, at, highlights = [], greeting = '', showM
     v.querySelector('img').src = img.src;
     v.querySelector('img').src = `api/?a=blogphoto&t=${token}&id=${encodeURIComponent(img.dataset.id)}`;
     v.showModal();
+  }));
+  // Sprachnotizen: antippen spielt ab, nochmal antippen hält an
+  let player = null, playBtn = null;
+  const stopSnd = () => { if (player) player.pause(); player = null; if (playBtn) playBtn.classList.remove('on'); playBtn = null; };
+  document.querySelectorAll('.blog-snd').forEach(b => b.addEventListener('click', () => {
+    if (playBtn === b) return stopSnd();
+    stopSnd();
+    playBtn = b; b.classList.add('on');
+    player = new Audio(`api/?a=blogaudio&t=${token}&id=${encodeURIComponent(b.dataset.snd)}`);
+    player.onended = stopSnd;
+    player.onerror = () => { stopSnd(); alert('Die Sprachnotiz lässt sich gerade nicht abspielen.'); };
+    player.play().catch(() => {});
+  }));
+  // Herzen
+  document.querySelectorAll('.blog-like').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.like, off = liked.has(id);
+    let name = store.get('blogName', null);
+    if (!off && name === null) {
+      name = (prompt('Schön, dass es dir gefällt! Magst du deinen Namen dazuschreiben? (freiwillig)', '') || '').trim().slice(0, 40);
+      store.set('blogName', name);
+    }
+    b.disabled = true;
+    try {
+      const r = await fetch('api/?a=blog-like', { method: 'POST', credentials: 'omit', headers: { 'X-Lammping': '1', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ t: token, id, d: device(), name: name || '', off }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      if (off) liked.delete(id); else liked.add(id);
+      store.set(likedKey, [...liked]);
+      b.classList.toggle('on', !off); b.setAttribute('aria-pressed', String(!off));
+      b.innerHTML = `${off ? '🤍' : '❤️'} <span>${j.n || ''}</span>`;
+    } catch (e) { alert(e.message || 'Hat gerade nicht geklappt. Bitte später noch einmal.'); }
+    b.disabled = false;
   }));
   // Große Fotos in voller Auflösung nachladen
   document.querySelectorAll('.blog-photos img.hero-photo').forEach(img => {

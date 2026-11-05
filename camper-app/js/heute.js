@@ -48,6 +48,12 @@ export default function installHeute(app) {
     if (e.blogHide && app.blogOn && app.blogOn(e.tripId)) {
       badges.push(`<button class="stop-badge blog-off" data-action="blog-unhide" data-id="${e.id}" title="Im Reiseblog ausgeblendet – antippen zum Einblenden">🙈 nicht im Blog</button>`);
     }
+    // Herzen von Lesern des Reiseblogs (ohne Konto) – anders als eure eigenen Herzen links
+    const bl = blogLikes()[e.id];
+    if (bl && bl.n) {
+      const who = bl.names.length ? `${bl.names.join(', ')}${bl.n > bl.names.length ? ` und ${bl.n - bl.names.length} ${bl.n - bl.names.length === 1 ? 'weitere Person' : 'weitere'}` : ''}` : `${bl.n} ${bl.n === 1 ? 'Person' : 'Personen'} ohne Namen`;
+      badges.push(`<button class="stop-badge blog-likes" data-action="blog-likes-who" data-who="${esc(who)}" title="${esc(who)}">❤️ ${bl.n} im Reiseblog</button>`);
+    }
     const snd = e.sounds || [];
     if (snd.length) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
@@ -58,6 +64,23 @@ export default function installHeute(app) {
     const i = html.lastIndexOf('</div>');
     return i < 0 ? html + badges.join('') : `${html.slice(0, i)}${badges.join('')}${html.slice(i)}`;
   };
+  // Herzen aus dem Reiseblog: beim Start und alle 10 Minuten vom Server holen (nur wenn es einen Reiseblog gibt)
+  const blogLikes = () => app.LS.get('blogLikes', {}) || {};
+  let likesAt = 0;
+  async function loadLikes() {
+    if (!app.session || !app.session() || !navigator.onLine || document.hidden || Date.now() - likesAt < 10 * 60000) return;
+    if (!S.trips.some(t => app.blogOn && app.blogOn(t.id))) return;
+    likesAt = Date.now();
+    try {
+      const r = await app.api('blog-likes', undefined, `&crew=${encodeURIComponent(app.crewId())}`);
+      const now = JSON.stringify(r.likes || {});
+      if (now !== JSON.stringify(blogLikes())) { app.LS.set('blogLikes', r.likes || {}); if (app.ui.route === 'tagebuch') app.render(); }
+    } catch { /* alter Server oder offline */ }
+  }
+  setTimeout(loadLikes, 5000);
+  setInterval(loadLikes, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLikes(); });
+  ACTIONS['blog-likes-who'] = el => toast(`❤️ im Reiseblog: ${el.dataset.who}`);
   app.CHANGES['stop-photo'] = el => {
     const files = [...el.files]; el.value = '';
     if (files.length && app.attachTo) app.attachTo(el.dataset.id, files);

@@ -26,7 +26,9 @@ export default function installStrecken(app) {
   const MODES = ['tage', 'fahrt', 'alle'];
   const mode = () => (MODES.includes(LS.get('roadsMode', 'tage')) ? LS.get('roadsMode', 'tage') : 'tage');
   function waypoints(t, m = mode()) {
-    const all = tripEntries(t).filter(hasPos).sort(byDate);
+    // Einträge plus Foto-Standorte und still gemerkte Punkte (spuren.js) als „spur“, nach Zeit sortiert
+    const all = (app.routePoints ? app.routePoints(t) : tripEntries(t).filter(hasPos).sort(byDate).map(e => ({ lat: e.lat, lng: e.lng, date: e.date, e })))
+      .map(p => ({ lat: p.lat, lng: p.lng, date: p.date, type: p.e ? p.e.type : 'spur' }));
     let list = all, near = { tage: 5, fahrt: 2, alle: 1 }[m];
     if (m === 'fahrt') {
       const keep = new Set();

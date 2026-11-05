@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 27;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 28;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -66,6 +66,10 @@ function db(): PDO {
         'push_subs' => 'id CHAR(40) PRIMARY KEY, user_id VARCHAR(32) NOT NULL, endpoint TEXT NOT NULL, p256dh VARCHAR(200) NOT NULL, auth VARCHAR(64) NOT NULL, tz VARCHAR(64), pins INT NOT NULL DEFAULT 1, tickets INT NOT NULL DEFAULT 1, created BIGINT NOT NULL',
         'push_log' => 'k VARCHAR(160) PRIMARY KEY, at BIGINT NOT NULL',
         'kv' => 'k VARCHAR(40) PRIMARY KEY, v TEXT NOT NULL',
+        // Herzen im Reiseblog (Leser ohne Konto): eines je Gerät und Eintrag, Name freiwillig
+        'blog_likes' => 'token CHAR(32) NOT NULL, entry_id VARCHAR(64) NOT NULL, device CHAR(40) NOT NULL, name VARCHAR(60), at BIGINT NOT NULL, PRIMARY KEY (token, entry_id, device)',
+        // Tracker-App (GPSLogger, OwnTracks, Overland): geheimer Schlüssel je Person und Crew
+        'gps_keys' => 'k CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, user_id VARCHAR(32) NOT NULL, created BIGINT NOT NULL, last BIGINT NOT NULL DEFAULT 0',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
@@ -114,9 +118,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 $body = [];
 if ($method === 'POST') {
     // Eigener Header: Formulare fremder Seiten können ihn nicht setzen (Schutz vor CSRF)
-    if (($_SERVER['HTTP_X_LAMMPING'] ?? '') !== '1') fail('Ungültige Anfrage', 403);
+    // Ausnahme: Tracker-Apps melden Standorte ohne eigenen Header, geschützt durch ihren geheimen Schlüssel (siehe 'gps')
+    if ($action !== 'gps' && ($_SERVER['HTTP_X_LAMMPING'] ?? '') !== '1') fail('Ungültige Anfrage', 403);
     // PDFs kommen roh (siehe 'file'), alles andere als JSON
-    $body = $action === 'file' ? [] : json_decode(file_get_contents('php://input') ?: '[]', true);
+    $raw = file_get_contents('php://input') ?: '';
+    $body = $action === 'file' ? [] : json_decode($raw ?: '[]', true);
+    if ($action === 'gps' && !is_array($body)) $body = [];
     if (!is_array($body)) fail('Ungültige Daten');
 }
 
@@ -646,7 +653,7 @@ case 'share':
         if (!validId($trip)) fail('Ungültige Reise');
         $old = one('SELECT * FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
         if (empty($body['on'])) { q('DELETE FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]); out(['token' => null]); }
-        $opts = is_array($body['opts'] ?? null) ? json_encode(array_intersect_key($body['opts'], array_flip(['photos', 'texts', 'highlights', 'map', 'delay', 'greeting'])), JSON_UNESCAPED_UNICODE) : ($old['opts'] ?? null);
+        $opts = is_array($body['opts'] ?? null) ? json_encode(array_intersect_key($body['opts'], array_flip(['photos', 'texts', 'highlights', 'map', 'delay', 'greeting', 'sounds', 'likes'])), JSON_UNESCAPED_UNICODE) : ($old['opts'] ?? null);
         if ($old && empty($body['renew'])) {
             q('UPDATE shares SET opts = ? WHERE token = ?', [$opts, $old['token']]);
             out(['token' => $old['token'], 'opts' => json_decode((string) $opts, true)]);
@@ -696,8 +703,10 @@ case 'plaetze':
 
 case 'blog':
 case 'blogphoto':
+case 'blogaudio':
+case 'blog-like':
     header('X-Robots-Tag: noindex, nofollow');
-    $token = (string) ($_GET['t'] ?? '');
+    $token = (string) ($_GET['t'] ?? ($body['t'] ?? ''));
     $share = preg_match('/^[a-f0-9]{32}$/', $token) ? one('SELECT * FROM shares WHERE token = ?', [$token]) : null;
     if (!$share) fail('Diesen Reiseblog gibt es nicht (mehr).', 404);
     $crew = $share['crew_id'];
@@ -720,7 +729,38 @@ case 'blogphoto':
             'lat' => $e['lat'] ?? null, 'lng' => $e['lng'] ?? null, 'extra' => $e['extra'] ?? new stdClass(),
             'photos' => !$opt('photos') ? [] : array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
                 fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
+            // Sprachnotizen: nur Kennung und Länge, den Ton liefert 'blogaudio'
+            'sounds' => !$opt('sounds') ? [] : array_values(array_filter(array_map(fn($x) => ['id' => $x['id'] ?? '', 'sec' => (int) ($x['sec'] ?? 0)], $e['sounds'] ?? []),
+                fn($x) => validId($x['id']))),
         ];
+    }
+    if ($action === 'blog-like') {
+        if ($method !== 'POST') fail('Nur POST');
+        if (!$opt('likes')) fail('Herzen sind für diesen Reiseblog ausgeschaltet.', 403);
+        $id = (string) ($body['id'] ?? ''); $dev = strtolower((string) ($body['d'] ?? ''));
+        if (!preg_match('/^[a-f0-9]{16,40}$/', $dev) || !in_array($id, array_column($entries, 'id'), true)) fail('Ungültiges Herz');
+        q('DELETE FROM blog_likes WHERE token = ? AND entry_id = ? AND device = ?', [$token, $id, $dev]);
+        if (empty($body['off'])) {
+            if ((int) one('SELECT COUNT(*) AS n FROM blog_likes WHERE token = ?', [$token])['n'] >= 20000) fail('Zu viele Herzen', 429);
+            $name = trim(preg_replace('/[\x00-\x1f<>]/u', '', mb_substr((string) ($body['name'] ?? ''), 0, 40)));
+            q('INSERT INTO blog_likes (token, entry_id, device, name, at) VALUES (?, ?, ?, ?, ?)', [$token, $id, $dev, $name, now()]);
+        }
+        out(['ok' => true, 'n' => (int) one('SELECT COUNT(*) AS n FROM blog_likes WHERE token = ? AND entry_id = ?', [$token, $id])['n']]);
+    }
+    if ($action === 'blogaudio') {
+        $id = (string) ($_GET['id'] ?? '');
+        $ok = false;
+        foreach ($entries as $e) foreach ($e['sounds'] as $x) if ($x['id'] === $id) $ok = true;
+        $path = $ok ? photoPath($crew, $id) : '';
+        if (!$path || !is_file($path)) fail('Sprachnotiz nicht gefunden', 404);
+        $type = mediaType((string) file_get_contents($path, false, null, 0, 16));
+        if (!str_starts_with($type, 'audio/')) fail('Sprachnotiz nicht gefunden', 404);
+        header('Content-Type: ' . $type);
+        header('Cache-Control: private, max-age=86400');
+        header('Content-Length: ' . filesize($path));
+        header('Accept-Ranges: none');
+        readfile($path);
+        exit;
     }
     if ($action === 'blogphoto') {
         $id = (string) ($_GET['id'] ?? '');
@@ -747,10 +787,179 @@ case 'blogphoto':
         }
     }
     out([
-        'highlights' => $highlights, 'greeting' => (string) $opt('greeting', ''), 'showMap' => (bool) $opt('map'), 'delayed' => (bool) $opt('delay', false),
+        'highlights' => $highlights, 'greeting' => (string) $opt('greeting', ''), 'likesOn' => (bool) $opt('likes'), 'showMap' => (bool) $opt('map'), 'delayed' => (bool) $opt('delay', false),
         'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended'])],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
+        // Herzen der Leser je Eintrag
+        'likes' => (object) array_column(array_map(fn($r) => [$r['entry_id'], (int) $r['n']],
+            all('SELECT entry_id, COUNT(*) AS n FROM blog_likes WHERE token = ? GROUP BY entry_id', [$token])), 1, 0),
     ]);
+
+/* ----- Herzen aus dem Reiseblog fürs Tagebuch ----- */
+
+case 'blog-likes':
+    $u = requireUser();
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    $res = [];
+    foreach (all('SELECT l.entry_id, l.name, l.at FROM blog_likes l JOIN shares s ON s.token = l.token WHERE s.crew_id = ? ORDER BY l.at', [$crew]) as $r) {
+        $x = &$res[$r['entry_id']];
+        $x ??= ['n' => 0, 'names' => [], 'at' => 0];
+        $x['n']++;
+        if ($r['name'] !== null && $r['name'] !== '' && !in_array($r['name'], $x['names'], true)) $x['names'][] = $r['name'];
+        $x['at'] = max($x['at'], (int) $r['at']);
+        unset($x);
+    }
+    out(['likes' => (object) $res]);
+
+/* ----- Wie viel Platz belegt was auf dem Server? ----- */
+
+case 'sizes':
+    $u = requireUser();
+    $crew = requireCrew($u, $_GET['crew'] ?? '');
+    // Welche Datei gehört zu welcher Reise (über Einträge, Tickets, Fotos mit Reise)
+    $owner = []; $kind = [];
+    foreach (all("SELECT coll, data FROM docs WHERE crew_id = ? AND deleted = 0 AND coll IN ('entries', 'games', 'documents', 'photos')", [$crew]) as $r) {
+        $d = json_decode($r['data'], true);
+        if (!is_array($d)) continue;
+        $tid = (string) ($d['tripId'] ?? '');
+        if ($r['coll'] === 'photos') { if ($tid !== '' && validId($d['id'] ?? null) && !isset($owner[$d['id']])) $owner[$d['id']] = $tid; continue; }
+        foreach (['photos' => 'photo', 'images' => 'photo', 'sounds' => 'sound', 'files' => 'pdf'] as $k => $kd) {
+            foreach (is_array($d[$k] ?? null) ? $d[$k] : [] as $p) {
+                if (!is_array($p) || !validId($p['id'] ?? null)) continue;
+                $owner[$p['id']] = $tid; $kind[$p['id']] = $kd;
+            }
+        }
+    }
+    $trips = [];
+    foreach (crewTrips($crew) as $t) if (validId($t['id'] ?? null)) $trips[$t['id']] = ['id' => $t['id'], 'name' => $t['name'] ?? '', 'start' => $t['start'] ?? '', 'photo' => 0, 'sound' => 0, 'pdf' => 0, 'n' => 0];
+    $none = ['photo' => 0, 'sound' => 0, 'pdf' => 0, 'n' => 0];
+    $total = 0;
+    $dir = photoDir($crew);
+    foreach (is_dir($dir) ? scandir($dir) : [] as $f) {
+        if (!preg_match('/^([A-Za-z0-9_-]{1,64})\.(jpg|pdf)$/', $f, $m)) continue;
+        $size = (int) @filesize("$dir/$f");
+        $total += $size;
+        $kd = $m[2] === 'pdf' ? 'pdf' : ($kind[$m[1]] ?? 'photo');
+        $tid = $owner[$m[1]] ?? '';
+        if (isset($trips[$tid])) { $trips[$tid][$kd] += $size; $trips[$tid]['n']++; }
+        else { $none[$kd] += $size; $none['n']++; }
+    }
+    $res = ['trips' => array_values($trips), 'other' => $none, 'total' => $total,
+        'db' => (int) strlen(implode('', array_column(all('SELECT data FROM docs WHERE crew_id = ? AND deleted = 0', [$crew]), 'data')))];
+    // Super-Admin: der ganze Webspace von LAMMping (alle Crews, Datenbank, Sicherungen, Papierkorb)
+    if ((int) $u['is_admin']) {
+        $sum = function (string $d) use (&$sum): int {
+            $n = 0;
+            foreach (is_dir($d) ? scandir($d) : [] as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $n += is_dir("$d/$f") ? $sum("$d/$f") : (int) @filesize("$d/$f");
+            }
+            return $n;
+        };
+        global $CFG;
+        $dbFile = str_starts_with((string) $CFG['db'], 'sqlite:') ? substr((string) $CFG['db'], 7) : '';
+        $res['server'] = [
+            'photos' => $sum(rtrim($CFG['photos'], '/')), 'backups' => $sum(backupDir()), 'trash' => $sum(trashDir()),
+            'db' => $dbFile && is_file($dbFile) ? (int) filesize($dbFile) + (int) @filesize("$dbFile-wal") : 0,
+            'free' => @disk_free_space(rtrim($CFG['photos'], '/')) ?: null,
+            'crews' => array_map(fn($c) => ['name' => $c['name'], 'size' => $sum(photoDir($c['id']))], all('SELECT id, name FROM crews ORDER BY name')),
+        ];
+    }
+    out($res);
+
+/* ----- Tracker-App: Standorte im Hintergrund (GPSLogger, OwnTracks, Overland) ----- */
+
+case 'gps-key':
+    $u = requireUser();
+    $crew = requireCrew($u, $method === 'POST' ? ($body['crew'] ?? '') : ($_GET['crew'] ?? ''));
+    $row = one('SELECT k, last FROM gps_keys WHERE crew_id = ? AND user_id = ?', [$crew, $u['id']]);
+    if ($method === 'POST') {
+        q('DELETE FROM gps_keys WHERE crew_id = ? AND user_id = ?', [$crew, $u['id']]);
+        if (!empty($body['off'])) out(['key' => null]);
+        $row = ['k' => bin2hex(random_bytes(16)), 'last' => 0];
+        q('INSERT INTO gps_keys (k, crew_id, user_id, created, last) VALUES (?, ?, ?, ?, 0)', [$row['k'], $crew, $u['id'], now()]);
+    }
+    if (!$row) out(['key' => null]);
+    $base = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? '') . strtok($_SERVER['REQUEST_URI'] ?? '/api/', '?');
+    out(['key' => $row['k'], 'url' => $base . '?a=gps&k=' . $row['k'], 'last' => (int) $row['last']]);
+
+case 'gps':
+    $k = (string) ($_GET['k'] ?? ($body['k'] ?? ''));
+    $key = preg_match('/^[a-f0-9]{32}$/', $k) ? one('SELECT * FROM gps_keys WHERE k = ?', [$k]) : null;
+    if (!$key) fail('Unbekannter Schlüssel', 403);
+    // Punkte einsammeln, je nach App in anderer Form
+    $pts = [];
+    $time = function ($v): int {
+        if (is_numeric($v)) { $v = (float) $v; return (int) ($v > 1e11 ? $v : $v * 1000); }
+        $t = strtotime((string) $v); return $t ? $t * 1000 : now();
+    };
+    $add = function ($lat, $lng, $at, $acc) use (&$pts) {
+        if (!is_numeric($lat) || !is_numeric($lng) || abs((float) $lat) > 90 || abs((float) $lng) > 180) return;
+        if ((float) $lat == 0 && (float) $lng == 0) return;
+        if (is_numeric($acc) && (float) $acc > 100) return;          // zu ungenau
+        $pts[] = [round((float) $lat, 5), round((float) $lng, 5), $at];
+    };
+    $reply = ['ok' => true];
+    if (isset($body['locations']) && is_array($body['locations'])) {                 // Overland
+        foreach (array_slice($body['locations'], 0, 1000) as $l) {
+            $c = $l['geometry']['coordinates'] ?? null; $pr = $l['properties'] ?? [];
+            if (is_array($c) && count($c) >= 2) $add($c[1], $c[0], $time($pr['timestamp'] ?? now()), $pr['horizontal_accuracy'] ?? null);
+        }
+        $reply = ['result' => 'ok'];
+    } elseif (($body['_type'] ?? '') !== '') {                                     // OwnTracks
+        if ($body['_type'] === 'location') $add($body['lat'] ?? null, $body['lon'] ?? null, $time($body['tst'] ?? now()), $body['acc'] ?? null);
+        $reply = [];
+    } else {                                                                       // GPSLogger & Co. (Adresse oder Formular)
+        $p = array_merge($_GET, $_POST, $body);
+        $add($p['lat'] ?? $p['latitude'] ?? null, $p['lon'] ?? $p['lng'] ?? $p['longitude'] ?? null, $time($p['time'] ?? $p['timestamp'] ?? $p['tst'] ?? now()), $p['acc'] ?? $p['accuracy'] ?? null);
+    }
+    $crew = $key['crew_id'];
+    q('UPDATE gps_keys SET last = ? WHERE k = ?', [now(), $k]);
+    $trip = runningTrip($crew);
+    if (!$pts || !$trip) out($reply);
+    usort($pts, fn($a, $b) => $a[2] <=> $b[2]);
+    $tid = 'gps' . substr(hash('sha256', $trip['id'] . '|' . $key['user_id']), 0, 20);
+    $old = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND id = ? AND deleted = 0", [$crew, $tid]);
+    $doc = $old ? json_decode($old['data'], true) : null;
+    $user = one('SELECT name FROM users WHERE id = ?', [$key['user_id']]);
+    if (!is_array($doc)) $doc = ['id' => $tid, 'tripId' => $trip['id'], 'kind' => 'drive', 'auto' => 'tracker', 'by' => $key['user_id'],
+        'name' => 'Aufgezeichnet' . ($user ? ' (' . $user['name'] . ')' : ''), 'pts' => '', 'km' => 0, 'createdAt' => now()];
+    $line = $doc['pts'] !== '' ? array_map(fn($x) => array_map('floatval', explode(',', $x)), explode(';', $doc['pts'])) : [];
+    $last = $doc['last'] ?? null;     // [lat, lng, ms] des letzten Punkts
+    $dist = function ($a, $b): float {
+        $r = M_PI / 180; $h = sin(($b[0] - $a[0]) * $r / 2) ** 2 + cos($a[0] * $r) * cos($b[0] * $r) * sin(($b[1] - $a[1]) * $r / 2) ** 2;
+        return 12742 * asin(min(1, sqrt($h)));
+    };
+    $changed = false; $km = (float) ($doc['km'] ?? 0);
+    foreach ($pts as $pt) {
+        if ($last && $pt[2] <= $last[2]) continue;                      // schon da (oder älter)
+        if ($last) {
+            $d = $dist($last, $pt);
+            if ($d < 0.05) continue;                                    // steht (unter 50 m): nichts Neues
+            $h = max(1, $pt[2] - $last[2]) / 3600000;
+            if ($d / $h > 1000) continue;                               // Ausreißer (über 1000 km/h)
+            $km += $d;
+        }
+        $line[] = [$pt[0], $pt[1]];
+        $last = $pt; $changed = true;
+    }
+    // Live-Standort für „Unterwegs mit Freunden“, wenn die Crew ihn teilt
+    $meta = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'meta' AND id = 'follow' AND deleted = 0", [$crew]);
+    $end = end($pts);
+    if ($meta && !empty(json_decode($meta['data'], true)['live']) && $end[2] > now() - 2 * 3600000) {
+        q('DELETE FROM livepos WHERE crew_id = ?', [$crew]);
+        q('INSERT INTO livepos (crew_id, lat, lng, at, by_user) VALUES (?, ?, ?, ?, ?)', [$crew, $end[0], $end[1], min(now(), $end[2]), $key['user_id']]);
+    }
+    if (!$changed) out($reply);
+    if (count($line) > 20000) $line = array_slice($line, -20000);
+    $doc['pts'] = implode(';', array_map(fn($x) => sprintf('%.5f,%.5f', $x[0], $x[1]), $line));
+    $doc['km'] = round($km, 1); $doc['last'] = $last; $doc['updatedAt'] = now();
+    q("UPDATE counter SET value = value + 1 WHERE name = 'rev'");
+    $rev = (int) one("SELECT value FROM counter WHERE name = 'rev'")['value'];
+    q("DELETE FROM docs WHERE crew_id = ? AND coll = 'tracks' AND id = ?", [$crew, $tid]);
+    q("INSERT INTO docs (crew_id, coll, id, data, deleted, rev, by_user) VALUES (?, 'tracks', ?, ?, 0, ?, ?)",
+        [$crew, $tid, json_encode($doc, JSON_UNESCAPED_UNICODE), $rev, $key['user_id']]);
+    out($reply);
 
 /* ----- Mitteilungen ----- */
 

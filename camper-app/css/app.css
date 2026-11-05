@@ -2565,3 +2565,19 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .where-list .txt small { color: var(--muted); }
 .where-list em { font-style: normal; font: 700 12px var(--body); color: #fff; background: var(--petrol); padding: 2px 8px; border-radius: 999px; }
 .stop-badge.add-photo { display: inline-flex; align-items: center; }
+
+/* ---------- Version 74: Herzen und Sprachnotizen im Reiseblog, Tracker-App ---------- */
+.blog-sounds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.blog-snd, .blog-like { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+.blog-snd.on { background: color-mix(in srgb, var(--trip, #0F6670) 16%, var(--surface)); border-color: var(--trip, #0F6670); }
+.blog-snd small { color: var(--muted); }
+.blog-like { margin-top: 8px; align-self: flex-start; }
+.blog-like.on { border-color: #D9455F; background: color-mix(in srgb, #D9455F 10%, var(--surface)); }
+.blog-like span:empty { display: none; }
+.stop-badge.blog-likes { border-style: dashed; }
+.trk-help { margin: 8px 0; }
+.trk-help summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.trk-help ol { margin: 4px 0 8px; padding-left: 20px; }
+.trk-help li { margin: 4px 0; }
+.trk-url { display: block; word-break: break-all; font-size: 13px; margin: 4px 0; }

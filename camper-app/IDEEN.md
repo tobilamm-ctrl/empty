@@ -161,7 +161,7 @@ P6. **✅ (Lieferung 73) „+“ neben dem Eintragsnamen im Tagebuch: Foto ergä
 P7. **✅ (Lieferung 72) Für den Reiseblog ausgeblendete Einträge im Tagebuch kennzeichnen.** Einträge mit „Im Reiseblog ausblenden“
     sollen im Tagebuch sichtbar markiert sein (z. B. kleines durchgestrichenes Auge 🙈 „nicht im Reiseblog“ neben dem
     Titel), damit man auf einen Blick sieht, was Oma, Opa und Mitreisende nicht sehen.
-P8. **Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen im Hintergrund (Handy gesperrt, App zu)
+P8. **✅ (Lieferung 74) Tracking verbessern, möglichst automatisch.** Grenze: Web-Apps bekommen im Hintergrund (Handy gesperrt, App zu)
     keinen Standort. Möglich:
     1. Beim Öffnen der App während einer laufenden Reise still einen Streckenpunkt merken (grobe Route, klein).
     2. Strecke automatisch aus den GPS-Daten aller Fotos eines Tages, Lücken mit „Straße folgen“ (mittel).
@@ -194,11 +194,11 @@ P12. **✅ (Lieferung 72) Text unter den Symbolen der Reise-Leiste anpassen** (B
     Nach der Reise). Am Handy überlappen die Wörter („Straße folge‑Nach der Reise“), „Aufzeichnen“ ist zu breit.
     Lösung: kurze Wörter (z. B. „Strecke“, „Aufnahme“, „Später“), notfalls zweizeilig umbrechen bzw. kleinere Schrift;
     selten Gebrauchtes (Straße folgen) eher unter „Nach der Reise“.
-P13. **Liken im Reiseblog.** Leser des Reiseblogs (Oma, Opa, Freunde – ohne Konto) können Einträge mit einem Herz
+P13. **✅ (Lieferung 74) Liken im Reiseblog.** Leser des Reiseblogs (Oma, Opa, Freunde – ohne Konto) können Einträge mit einem Herz
     liken; im Blog steht die Zahl, im Tagebuch sieht die Familie „❤️ 3 im Reiseblog“ (evtl. mit Namen, wenn der Leser
     einen angibt). Passt zu Punkt 36 (Gästebuch im Reiseblog). Braucht neue api/index.php (Likes je Eintrag, gegen
     Mehrfachklicks pro Gerät).
-P14. **Sprachnotizen im Reiseblog und im Tagebuch.** Tagebuch-Teil ✅ (Lieferung 72), Blog-Teil mit Paket D. Sprachnotizen eines Eintrags sollen auch im Reiseblog erscheinen
+P14. **✅ (Lieferung 72 und 74) Sprachnotizen im Reiseblog und im Tagebuch.** Tagebuch-Teil Lieferung 72, Blog-Teil Lieferung 74. Sprachnotizen eines Eintrags sollen auch im Reiseblog erscheinen
     und dort abspielbar sein (außer bei „Im Reiseblog ausblenden“). Im Tagebuch soll am Eintrag erkennbar sein, dass
     eine Sprachnotiz hinterlegt ist (z. B. 🎙️ mit Länge, Tipp spielt sie ab). Braucht neue api/index.php (Blog liefert
     die Tonaufnahmen wie die Fotos aus).
@@ -213,7 +213,7 @@ P15. **✅ (Lieferung 72) Standortermittlung: falscher Ort, langsam, ungenau.** 
     - **Ungenau:** Es zählt der erste GPS-Wert (oft grob aus WLAN/Mobilfunk, bis 30 s alt). Künftig einige Sekunden
       weiter messen, bis die Genauigkeit unter ca. 20 m liegt (mit Anzeige „wird genauer …“), und erst dann Ort und
       Vorschläge bestimmen; alte Werte nicht wiederverwenden.
-P16. **Echte Größe jeder Reise.** Heute zeigt Einstellungen › Bedienung › „Speicherplatz ansehen“ nur, was auf dem
+P16. **✅ (Lieferung 74) Echte Größe jeder Reise.** Heute zeigt Einstellungen › Bedienung › „Speicherplatz ansehen“ nur, was auf dem
     eigenen Gerät liegt (angesehene Fotos), ohne PDFs, Sprachnotizen und Texte. Künftig liefert der Server je Reise
     die tatsächliche Größe: alle Fotos, PDFs und Sprachnotizen, z. B. „Norwegen 2025: 1,2 GB auf dem Server, davon
     148 MB auf diesem Handy“; dazu Gesamtgröße je Crew (für den Super-Admin: Platz auf dem Webspace). Braucht neue
@@ -244,7 +244,7 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 1. ✅ **Paket A – Standort und neue Einträge (Lieferung 72):** P15, P1, P4, P2 (nur App)
    **+ Paket C – Tagebuch aufgeräumt:** P12, P7, Tagebuch-Teil von P14 (nur App) – zusammen ausliefern
 2. ✅ **Paket B – Fotos zum richtigen Eintrag (Lieferung 73):** P5, P9, P6, P3 (nur App)
-3. **Paket D – Server-Lieferung (eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
+3. ✅ **Paket D – Server-Lieferung (Lieferung 74, eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
    P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
 4. **Paket E – Reisearten und CO₂:** erst P11, dann P10 (evtl. api/index.php)
 

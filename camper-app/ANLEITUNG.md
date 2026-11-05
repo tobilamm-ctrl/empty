@@ -136,6 +136,30 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 74: Strecke von selbst, Herzen und Sprachnotizen im Reiseblog, Speicherplatz (Praxistest Paket D)
+
+**Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen). Die neuen Tabellen legt der Server beim ersten Aufruf selbst an.
+
+- **Strecke von selbst.** Läuft eine Reise, merkt sich LAMMping beim Öffnen still den Standort (höchstens alle 10 Minuten,
+  nur wenn ihr euch seit dem letzten Mal bewegt habt). Nach der Erlaubnis fragt die App dafür nie. Die Linie auf der Karte läuft jetzt
+  nach der Uhrzeit durch die Einträge, durch die **Standorte der Fotos** und durch diese gemerkten Punkte. „Der Straße folgen“
+  nutzt dieselben Punkte. Abschalten lässt sich das unter Einstellungen › **Strecke automatisch**.
+- **Im Hintergrund mit einer Tracker-App.** Unter Einstellungen › Strecke automatisch erzeugt jede Person ihre eigene geheime
+  Tracker-Adresse. Diese Adresse tragt ihr in einer kleinen Tracker-App ein. Für Android ist das **GPSLogger** („Log to custom URL“), fürs iPhone
+  **OwnTracks** (Modus HTTP) oder **Overland**. Die Schritte stehen direkt darunter. Die Tracker-App meldet ihre Punkte auch, wenn LAMMping zu ist,
+  und daraus wächst die Strecke „Aufgezeichnet (Name)“ der laufenden Reise. Ungenaue Punkte (über 100 m), Stillstand und Ausreißer fallen weg.
+  Teilt ihr euren Standort unter „Unterwegs mit Freunden“, sehen eure Freunde ihn so immer aktuell. „Neue Adresse“ macht die alte ungültig.
+- **Herzen im Reiseblog.** Leser des Reiseblogs geben ohne Konto ein Herz, eines je Gerät. Beim ersten Herz dürfen sie ihren Namen dazuschreiben, müssen aber nicht.
+  Im Blog steht die Zahl. Im Tagebuch steht am Eintrag „❤️ 3 im Reiseblog“ mit gestricheltem Rand, so unterscheidet es sich von euren eigenen Herzen.
+  Antippen zeigt, wer es war. Ausschalten könnt ihr das in den Einstellungen des Reiseblogs („Leser dürfen Herzen geben“).
+- **Sprachnotizen im Reiseblog.** Sprachnotizen erscheinen im Blog als Knopf „🎙️ Anhören“ und lassen sich dort abspielen.
+  Einträge mit „Im Reiseblog ausblenden“ bleiben außen vor. Abschaltbar ist das in den Einstellungen des Reiseblogs.
+- **Speicherplatz je Reise.** Einstellungen › Bedienung › „Speicherplatz ansehen“ zeigt jetzt je Reise, wie viel auf dem
+  **Server** liegt (Fotos, Sprachnotizen, PDFs) und wie viel davon auf diesem Gerät, z. B. „1,2 GB auf dem Server, davon 148 MB auf diesem Gerät“.
+  Darüber steht, wie viel eure ganze Crew belegt. Der Super-Admin sieht zusätzlich den ganzen Webspace: alle Crews, Datenbank, Sicherungen, Papierkorb und den freien Platz.
+- **Behoben:** War der Wetterdienst nicht erreichbar (z. B. ohne Netz), lud das Tagebuch ständig neu und kostete Akku.
+  Jetzt fragt die App nach einem Fehlschlag erst nach 5 Minuten wieder.
+
 ## Neu in Version 73: Fotos zum richtigen Eintrag (Praxistest Paket B)
 
 - **„Wohin mit dem Foto?“** Beim Hineinziehen am PC, beim Foto-Knopf (lange auf „+ Eintrag“ drücken) und beim Teilen

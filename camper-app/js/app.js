@@ -48,11 +48,12 @@ import installStrecken from './strecken.js';
 import installZuschnitt from './zuschnitt.js';
 import installHeute from './heute.js';
 import installMitteilungen from './mitteilungen.js';
+import installSpuren from './spuren.js';
 
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 73;
+const APP_VERSION = 74;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -714,7 +715,8 @@ function entryPopup(e, t) {
 function drawRoute(t, emphasis) {
   const color = tripColor(t);
   const stops = tripEntries(t).filter(hasPos).sort(byDate);
-  const pts = stops.map(e => [e.lat, e.lng]);
+  // Die Linie läuft auch durch Foto-Standorte und still gemerkte Punkte (spuren.js), nach Zeit sortiert
+  const pts = (APP.routePoints ? APP.routePoints(t) : stops).map(e => [e.lat, e.lng]);
   // Mit GPX-Strecke zeigt die Linie zwischen den Stopps nur noch die Reihenfolge (gestrichelt)
   // Nur wenn eine Strecke die Reise wirklich abdeckt, zeigt die Linie zwischen den Stopps bloß die Reihenfolge.
   // Kurze Stücke (z. B. eine Aufzeichnung oder ein GPX von einem Tag) oder leere Strecken zählen nicht:
@@ -2873,6 +2875,7 @@ installStrecken(APP);
 installZuschnitt(APP);
 installHeute(APP);
 installMitteilungen(APP);
+installSpuren(APP);
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

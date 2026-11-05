@@ -251,7 +251,7 @@ export default function installBedienung(app) {
   async function photoIndex() {
     // Foto → Reise (Einträge, Reisefotos, Tickets)
     const map = new Map();
-    S.entries.forEach(e => (e.photos || []).forEach(p => map.set(p.id, e.tripId)));
+    S.entries.forEach(e => [...(e.photos || []), ...(e.sounds || [])].forEach(p => map.set(p.id, e.tripId)));
     S.games.forEach(g => { if (g.photoId) map.set(g.photoId, g.tripId); (g.images || []).forEach(im => map.set(im.id, g.tripId)); });
     return map;
   }
@@ -274,23 +274,46 @@ export default function installBedienung(app) {
     try { out.tiles = (await (await caches.open('lammping-tiles')).keys()).length; } catch { /* kein Speicher */ }
     return out;
   }
+  // Größe lesbar: ab 1 GB in GB
+  const size = n => (n >= 1073741824 ? `${(n / 1073741824).toLocaleString('de-DE', { maximumFractionDigits: 1 })} GB` : n < 1048576 ? `${Math.max(n ? 1 : 0, Math.round(n / 1024))} KB` : mb(n));
   ACTIONS['storage-check'] = async () => {
-    openSheet(`<div class="storage">${sheetHead('Speicherplatz auf diesem Gerät')}<p class="sub">Wird berechnet …</p></div>`);
-    const m = await measure();
-    const trips = Object.entries(m.byTrip).sort((a, b) => b[1].bytes - a[1].bytes).map(([id, x]) => {
-      const t = S.trips.find(y => y.id === id);
-      return `<li><span class="txt"><b>${t ? esc(t.name) : 'Ohne Reise'}</b><small>${x.n} Fotos · ${mb(x.bytes)}${t && t.archived ? ' · Archiv' : ''}</small></span>
-        ${t ? `<button class="ghost small-btn" data-action="storage-free" data-id="${t.id}">Vom Handy entfernen</button>` : ''}</li>`;
+    openSheet(`<div class="storage">${sheetHead('Speicherplatz')}<p class="sub">Wird berechnet …</p></div>`);
+    // Gerät und Server gleichzeitig fragen; ohne Netz oder mit altem Server nur das Gerät
+    const [m, srv] = await Promise.all([measure(), navigator.onLine
+      ? app.api('sizes', undefined, `&crew=${encodeURIComponent(app.crewId())}`).catch(() => null) : Promise.resolve(null)]);
+    const rows = {};
+    Object.entries(m.byTrip).forEach(([id, x]) => { rows[id] = { id, here: x.bytes, hereN: x.n, srv: null }; });
+    if (srv) {
+      srv.trips.forEach(x => { const r = rows[x.id] ||= { id: x.id, here: 0, hereN: 0 }; r.srv = x; });
+      const o = srv.other; if (o && o.n) { const r = rows[''] ||= { id: '', here: 0, hereN: 0 }; r.srv = o; }
+    }
+    const tot = x => (x ? x.photo + x.sound + x.pdf : 0);
+    const parts = x => [x.photo ? `Fotos ${size(x.photo)}` : '', x.sound ? `Sprachnotizen ${size(x.sound)}` : '', x.pdf ? `PDFs ${size(x.pdf)}` : ''].filter(Boolean).join(' · ');
+    const trips = Object.values(rows).filter(r => r.here || tot(r.srv)).sort((a, b) => (tot(b.srv) || b.here) - (tot(a.srv) || a.here)).map(r => {
+      const t = S.trips.find(y => y.id === r.id);
+      return `<li><span class="txt"><b>${t ? esc(t.name) : 'Ohne Reise'}</b>
+        <small>${r.srv ? `<b>${size(tot(r.srv))}</b> auf dem Server, ${r.here ? `davon ${size(r.here)} auf diesem Gerät` : 'nichts davon auf diesem Gerät'}` : `${r.hereN} Fotos · ${mb(r.here)} auf diesem Gerät`}${t && t.archived ? ' · Archiv' : ''}</small>
+        ${r.srv && tot(r.srv) ? `<small>${parts(r.srv)}</small>` : ''}</span>
+        ${t && r.here ? `<button class="ghost small-btn" data-action="storage-free" data-id="${t.id}">Vom Gerät entfernen</button>` : ''}</li>`;
     }).join('');
+    const sv = srv && srv.server;
     const body = document.querySelector('#sheetBody .storage');
     if (!body) return;
-    body.innerHTML = `${sheetHead('Speicherplatz auf diesem Gerät')}
+    body.innerHTML = `${sheetHead('Speicherplatz')}
+      ${srv ? `<p>Eure Crew belegt auf dem Server <b>${size(srv.total + srv.db)}</b> (Fotos, Sprachnotizen und PDFs ${size(srv.total)}, Einträge und Listen ${size(srv.db)}).</p>` : navigator.onLine ? '<p class="sub">Die Größen auf dem Server zeigt erst die neue api/index.php (Lieferung 74).</p>' : '<p class="sub">Ohne Netz nur dieses Gerät.</p>'}
       ${m.total != null ? `<div class="storage-bar"><i style="width:${Math.min(100, (m.total / m.quota) * 100).toFixed(1)}%"></i></div>
-        <p>LAMMping belegt <b>${mb(m.total)}</b>${m.quota ? ` von ${mb(m.quota)} verfügbaren` : ''}.</p>` : ''}
-      <dl class="facts-list"><div><dt>Gespeicherte Fotos</dt><dd>${m.photos} (${mb(m.photoBytes)})</dd></div>
+        <p>Auf diesem Gerät belegt LAMMping <b>${mb(m.total)}</b>${m.quota ? ` von ${size(m.quota)} verfügbaren` : ''}.</p>` : ''}
+      <dl class="facts-list"><div><dt>Fotos auf diesem Gerät</dt><dd>${m.photos} (${mb(m.photoBytes)})</dd></div>
         <div><dt>Kartenausschnitte</dt><dd>${m.tiles.toLocaleString('de-DE')}</dd></div></dl>
-      ${trips ? `<h3 class="date-head">Fotos je Reise</h3><ul class="ledger storage-trips">${trips}</ul>` : ''}
-      <p class="sub">„Vom Handy entfernen“ löscht nur die gespeicherten Bilder auf diesem Gerät. Auf dem Server bleibt alles; mit Netz werden die Fotos beim Ansehen wieder geladen.</p>
+      ${trips ? `<h3 class="date-head">Je Reise</h3><ul class="ledger storage-trips">${trips}</ul>` : ''}
+      ${sv ? `<h3 class="date-head">Webspace (nur Super-Admin)</h3>
+        <dl class="facts-list"><div><dt>Alle Crews: Fotos, Ton, PDFs</dt><dd>${size(sv.photos)}</dd></div>
+          <div><dt>Datenbank</dt><dd>${size(sv.db)}</dd></div><div><dt>Sicherungen</dt><dd>${size(sv.backups)}</dd></div>
+          <div><dt>Papierkorb (30 Tage)</dt><dd>${size(sv.trash)}</dd></div>
+          <div><dt>Zusammen</dt><dd><b>${size(sv.photos + sv.db + sv.backups + sv.trash)}</b></dd></div>
+          ${sv.free ? `<div><dt>Noch frei</dt><dd>${size(sv.free)}</dd></div>` : ''}
+          ${sv.crews.map(c => `<div><dt>Crew ${esc(c.name)}</dt><dd>${size(c.size)}</dd></div>`).join('')}</dl>` : ''}
+      <p class="sub">„Vom Gerät entfernen“ löscht nur die gespeicherten Bilder auf diesem Gerät. Auf dem Server bleibt alles; mit Netz werden die Fotos beim Ansehen wieder geladen.</p>
       <div class="sheet-foot"><button class="ghost" data-action="storage-tiles">Kartenausschnitte löschen</button></div>`;
   };
   ACTIONS['storage-free'] = async el => {
