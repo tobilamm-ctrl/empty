@@ -153,3 +153,8 @@ Erreichbarkeit im Betrieb:
 - Service-Seite fürs Handy (über das Fotobox-WLAN): Papierstand beider Drucker, Fehlermeldungen,
   Nachdruck, Neustart; Warnung bei wenig Papier.
 - Admin-Bereich mit PIN auch am Tablet.
+
+Internet: Nicht nötig. Alles läuft über das eigene Fotobox-WLAN (auch QR-Download, wenn Gäste sich ins
+Fotobox-WLAN einwählen; zwei QR-Codes: erst WLAN, dann Foto). Internet nur für: Download über mobile Daten,
+Online-Galerie/Cloud-Upload, Variante 2 (Upload von Gäste-Handys), E-Mail, Warnungen außerhalb der WLAN-Reichweite.
+Notlösung vor Ort: Handy-Hotspot oder Router mit SIM-Karte. Der Mini-PC braucht keinen Bildschirm im Betrieb.
