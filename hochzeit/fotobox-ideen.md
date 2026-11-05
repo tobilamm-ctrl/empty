@@ -127,3 +127,29 @@ Kamera-Vergleich 200D vs. 2000D:
 - Für die Fotobox zählt vor allem der Autofokus im Livebild und das bessere Rauschverhalten bei
   wenig Licht → 200D klar besser. Umgehen lässt sich das bei der 2000D mit manuell fest eingestelltem
   Fokus (Markierung auf dem Boden, Blende f/5.6–8).
+
+## Geräteliste (Stand 05.11.2026)
+
+Geplant: Canon 200D, 2 × Canon Selphy CP1500, Mini-PC, Tablet mit Touchscreen.
+
+Zusätzlich nötig:
+- Kamera: Objektiv (Kit 18–55 mm reicht), Netzteil mit Akku-Attrappe (LP-E17), USB-Kabel
+  (Anschluss vor dem Kauf prüfen), SD-Karte als zweite Sicherung, Stativ oder feste Halterung.
+- Mini-PC (z. B. Intel N100, 8–16 GB RAM, SSD, Linux): steuert Kamera und Drucker, speichert Fotos.
+  Aktiver USB-Hub, falls die Anschlüsse nicht reichen (Kamera, 2 Drucker, Buzzer, USB-Stick).
+- Kleiner Reise-Router: eigenes WLAN für Tablet, Service-Handy und QR-Download, unabhängig vom Saal-WLAN.
+- Tablet: Halterung, Ladekabel mit Dauerstrom, Kiosk-Modus (Android: Kiosk-Browser, iPad: Geführter Zugriff).
+  Alternative: Touch-Monitor direkt am Mini-PC (ohne WLAN, robuster).
+- Drucker: 2 USB-Kabel, Verbrauchsmaterial (KP-108IN), am besten je eine zweite Papierkassette zum
+  schnellen Tauschen. Hinter dem Selphy ca. 10–15 cm frei lassen (Papier läuft beim Druck hinten raus).
+- Licht: LED-Softbox oder Ringlicht. Optional: Buzzer (USB), Hintergrund, Requisiten.
+- Strom: Mehrfachsteckdose, langes Verlängerungskabel, Kabelbinder, Gaffa-Tape. Optional kleine USV.
+- Sicherung: USB-Stick. Kleine Funktastatur/Maus für Wartung am Mini-PC.
+- Datenschutz-Schild.
+
+Erreichbarkeit im Betrieb:
+- Gehäuse mit Serviceklappe hinten oder an der Seite; Drucker so einbauen, dass Papierkassette
+  und Farbband ohne Werkzeug erreichbar sind, Fotoausgabe vorne für die Gäste.
+- Service-Seite fürs Handy (über das Fotobox-WLAN): Papierstand beider Drucker, Fehlermeldungen,
+  Nachdruck, Neustart; Warnung bei wenig Papier.
+- Admin-Bereich mit PIN auch am Tablet.
