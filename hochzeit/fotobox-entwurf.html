@@ -4,389 +4,368 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: ein Bildschirm wie am iPad im Querformat – eine Aufgabe pro Ansicht, große Kacheln, Bedienung rechts, Bild links.
-   Bewusst nur ein dunkles Farbschema: die Fotobox steht abends im Saal, ein heller Bildschirm würde blenden. */
+/* Layout: zwei Geräte nebeneinander, synchron – links der große Bildschirm (16:9, Bühne), rechts das iPad (4:3, Bedienung).
+   Innenmaße in cqw bzw. em, damit beide Geräte maßstabsgetreu mitskalieren. Bewusst nur ein dunkles Farbschema:
+   die Fotobox steht abends im Saal, ein heller Bildschirm würde blenden. */
 :root {
-  --bg: #13201b;        /* Flaschengrün, Grund */
-  --surface: #1b2b24;   /* Kacheln, Felder */
-  --surface-2: #233830; /* gedrückt, Hover */
+  --bg: #13201b;        /* Flaschengrün */
+  --surface: #1b2b24;
+  --surface-2: #233830;
   --line: #34493f;
-  --ink: #efe7d6;       /* Champagner, Text */
+  --ink: #efe7d6;       /* Champagner */
   --muted: #a8b3a7;
   --brass: #cda45e;     /* Messing, Hauptaktion */
   --brass-ink: #1d1609;
   --warn: #e7a25f;
   --ok: #8fc79c;
   --danger: #e57d6e;
+  --bezel: #070b09;
   --f-display: "Marcellus", "Cormorant Garamond", Georgia, serif;
   --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --r: 18px;
   color-scheme: dark;
 }
-html, body { height: 100%; }
+html, body { min-height: 100%; }
 body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--f-body);
-  font-size: 17px;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px;
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
 }
 button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--brass); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
 h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; margin: 0; }
+p { margin: 0; }
 
-.app {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  box-sizing: border-box;
-}
-.demo-bar {
-  display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between;
-  padding-block: 8px; font-size: 13px; color: var(--muted);
-  border-bottom: 1px solid var(--line);
-}
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 24px; }
+.demo-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: space-between; padding-block: 10px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .demo-bar strong { color: var(--ink); font-weight: 600; }
 
-.top {
-  display: flex; align-items: center; gap: 14px; padding-block: 14px;
-}
-.mono {
-  width: 52px; height: 52px; border-radius: 50%; flex: none;
-  border: 1.5px solid var(--brass); background: transparent;
-  font-family: var(--f-display); font-size: 17px; color: var(--brass);
-  display: grid; place-items: center; letter-spacing: .02em;
-}
-.mono.pressing { background: var(--surface-2); }
-.couple { display: flex; flex-direction: column; min-width: 0; }
-.couple b { font-family: var(--f-display); font-weight: 400; font-size: 22px; }
-.couple span { font-size: 13px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
-.top .spacer { flex: 1; }
-.step { font-size: 14px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-.pill {
-  font-size: 13px; padding: 6px 12px; border-radius: 999px;
-  background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn);
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
-}
+.devices { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 22px 0; max-width: 1500px; margin: 0 auto; }
+.dev { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dev-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.dev-label i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.tv { background: var(--bezel); border-radius: 10px; padding: 1.1%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
+.tv-screen { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; container-type: inline-size; background: #0b120f; border-radius: 3px; font-size: 2cqw; }
+.tv-foot { width: 22%; height: 10px; margin: 0 auto; background: var(--bezel); border-radius: 0 0 8px 8px; }
+.ipad { background: var(--bezel); border: 1px solid var(--line); border-radius: 26px; padding: 4%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
+.ipad-screen { aspect-ratio: 4 / 3; max-width: 100%; position: relative; overflow: hidden; container-type: inline-size; background: var(--bg); border-radius: 10px; font-size: 3.4cqw; display: flex; flex-direction: column; }
 
-.screens { flex: 1; min-height: 0; position: relative; }
-.screen {
-  position: absolute; inset: 0; overflow: auto;
-  display: flex; flex-direction: column; justify-content: center;
-  padding-block: 8px 24px; gap: 24px;
-}
-.screen h2 { font-size: clamp(30px, 4.4vw, 48px); }
-.lead { color: var(--muted); max-width: 46ch; line-height: 1.5; margin: 0; }
-
-/* Start */
-.start-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 40px; align-items: center; }
-.slides {
-  position: relative; aspect-ratio: 3 / 2; max-width: 100%;
-  border-radius: 6px; overflow: hidden; background: var(--surface);
-  box-shadow: 0 30px 60px -30px rgba(0,0,0,.7);
-}
-.slides img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0e1713; opacity: 0; transition: opacity 1.2s ease; }
-.slides img.on { opacity: 1; }
-.slides .cap { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); background: rgba(10,16,13,.7); padding: 4px 10px; border-radius: 999px; }
-.start-copy { display: flex; flex-direction: column; gap: 22px; }
-.start-copy h1 { font-size: clamp(40px, 6vw, 72px); line-height: 1.02; }
-.how { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; color: var(--muted); padding: 0; margin: 0; list-style: none; }
-.how li { display: flex; gap: 8px; align-items: center; }
-.how li b { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 13px; color: var(--ink); font-weight: 600; }
-
-.btn {
-  border: 0; border-radius: var(--r); padding: 20px 30px; font-size: 20px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px;
-  transition: transform .12s ease, background .2s ease;
-}
-.btn:active { transform: scale(.97); }
-.btn-primary { background: var(--brass); color: var(--brass-ink); }
-.btn-ghost { background: transparent; border: 1.5px solid var(--line); color: var(--ink); }
-.btn-ghost:active { background: var(--surface-2); }
-.btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
-.btn-xl { font-size: 26px; padding: 26px 44px; min-height: 84px; align-self: flex-start; }
-.back { align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: 16px; padding: 8px 0; }
-
-/* Kacheln */
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.tile {
-  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r);
-  padding: 24px; text-align: left; display: flex; flex-direction: column; gap: 16px; min-width: 0;
-  transition: background .2s ease, border-color .2s ease, transform .12s ease;
-}
-.tile:active { transform: scale(.98); background: var(--surface-2); border-color: var(--brass); }
-.tile .t { font-family: var(--f-display); font-size: 30px; }
-.tile .d { color: var(--muted); font-size: 16px; line-height: 1.45; }
-.tile .art { height: 150px; display: grid; place-items: center; }
-.tile canvas { width: 100%; max-width: 100%; aspect-ratio: 3 / 2; height: auto; border-radius: 8px; display: block; }
-.tile canvas.bw { filter: grayscale(1) contrast(1.05); }
-
-/* Countdown */
-.shoot { align-items: center; text-align: center; gap: 14px; }
-.live-wrap { position: relative; width: min(100%, calc((100vh - 230px) * 1.5)); aspect-ratio: 3 / 2; max-width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
-.live-wrap canvas { width: 100%; height: 100%; display: block; }
-.live-wrap.bw canvas { filter: grayscale(1) contrast(1.05); }
-.count {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: var(--f-display); font-size: clamp(120px, 22vw, 240px); color: #fff;
-  text-shadow: 0 6px 40px rgba(0,0,0,.55);
-}
-.count.pulse { animation: pulse 1s ease-out; }
+/* ---------- Bühne (großer Bildschirm) ---------- */
+.st { position: absolute; inset: 0; }
+.st-slides img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 1.2s ease; }
+.st-slides img.on { opacity: 1; }
+.st-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 1.4em; }
+.st-band { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 1em; padding: 4em 2.4em 1.6em; background: linear-gradient(to top, rgba(6,10,8,.85), rgba(6,10,8,0)); }
+.st-band b { font-family: var(--f-display); font-weight: 400; font-size: 2.4em; display: block; }
+.st-band span { font-size: .95em; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.st-band .cta { font-size: 1.1em; color: var(--brass); text-align: right; }
+.st-live canvas, .st-shoot canvas { width: 100%; height: 100%; display: block; transform: scaleX(-1); }
+.st.bw canvas { filter: grayscale(1) contrast(1.05); }
+.st-tag { position: absolute; top: 1.2em; left: 1.2em; font-size: .85em; background: rgba(0,0,0,.55); color: #fff; padding: .35em .9em; border-radius: 99px; }
+.st-msg { position: absolute; left: 50%; bottom: 2em; transform: translateX(-50%); background: rgba(10,16,13,.78); padding: .7em 1.6em; border-radius: 99px; font-size: 1.5em; white-space: nowrap; }
+.st-count { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-size: 30cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
+.pulse { animation: pulse 1s ease-out; }
 @keyframes pulse { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
 .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .flash.go { animation: flash .45s ease-out; }
 @keyframes flash { from { opacity: .95; } to { opacity: 0; } }
-.live-tag { position: absolute; top: 10px; left: 10px; font-size: 12px; background: rgba(0,0,0,.55); color: #fff; padding: 4px 10px; border-radius: 999px; }
-.shot-label { position: absolute; top: 10px; right: 10px; font-size: 15px; font-weight: 600; background: var(--brass); color: var(--brass-ink); padding: 6px 12px; border-radius: 999px; }
-.shoot .hint { color: var(--muted); margin: 0; }
+.st-shotlbl { position: absolute; top: 1.2em; right: 1.2em; background: var(--brass); color: var(--brass-ink); font-weight: 600; padding: .4em 1em; border-radius: 99px; font-size: 1.1em; }
+.st-result { display: grid; place-items: center; padding: 3% 3% 9%; box-sizing: border-box; }
+.st-result img { max-width: 100%; max-height: 100%; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); border-radius: 2px; }
+.st-thanks { display: flex; align-items: center; justify-content: center; gap: 5%; padding: 0 6%; }
+.st-thanks img { max-height: 70%; max-width: 45%; border-radius: 2px; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); }
+.st-thanks h2 { font-size: 6em; color: var(--brass); }
+.st-thanks p { font-size: 1.4em; color: var(--muted); margin-top: .4em; }
 
-/* Vorschau + Druck */
-.split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: center; }
-.result { max-width: 100%; max-height: calc(100vh - 220px); justify-self: center; border-radius: 4px; box-shadow: 0 30px 60px -28px rgba(0,0,0,.8); background: #f6f1e6; }
-.side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.side .btn { width: 100%; }
-.note { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; }
+/* ---------- iPad ---------- */
+.i-head { display: flex; align-items: center; gap: .7em; padding: .9em 1.3em .4em; flex: none; }
+.mono { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--brass); background: transparent; color: var(--brass); font-family: var(--f-display); font-size: .9em; flex: none; display: grid; place-items: center; }
+.mono.pressing { background: var(--surface-2); }
+.couple { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.couple b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
+.couple span { font-size: .62em; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.i-head .sp { flex: 1; }
+.step { font-size: .62em; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.pill { font-size: .6em; padding: .4em .8em; border-radius: 99px; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); }
+.i-screens { flex: 1; position: relative; min-height: 0; }
+.is { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: .9em; padding: 0 1.4em 1.2em; overflow: auto; }
+.is h2 { font-size: 1.75em; }
+.is .lead { color: var(--muted); font-size: .8em; line-height: 1.45; }
+.is.center { align-items: center; text-align: center; }
+.back { align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: .75em; padding: 0; }
 
-.stepper { display: flex; align-items: center; gap: 18px; }
-.stepper button { width: 72px; height: 72px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); font-size: 34px; line-height: 1; }
-.stepper button:active { background: var(--surface-2); }
+.btn { border: 0; border-radius: .7em; padding: .75em 1.2em; font-size: 1em; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: .5em; transition: transform .12s ease, background .2s ease; }
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--brass); color: var(--brass-ink); }
+.btn-ghost { background: transparent; border: 1.5px solid var(--line); }
+.btn-ghost:active { background: var(--surface-2); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-xl { font-size: 1.6em; padding: .9em 1.8em; border-radius: .6em; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: .8em; }
+.tile { background: var(--surface); border: 1.5px solid var(--line); border-radius: .8em; padding: .9em; text-align: left; display: flex; flex-direction: column; gap: .5em; min-width: 0; transition: background .2s, border-color .2s, transform .12s; }
+.tile:active { transform: scale(.98); background: var(--surface-2); border-color: var(--brass); }
+.tile .t { font-family: var(--f-display); font-size: 1.3em; }
+.tile .d { color: var(--muted); font-size: .7em; line-height: 1.4; }
+.tile svg { width: 100%; height: 4.6em; }
+.tile canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; max-width: 100%; border-radius: .4em; display: block; transform: scaleX(-1); }
+.tile canvas.bw { filter: grayscale(1) contrast(1.05); }
+
+.i-count { font-family: var(--f-display); font-size: 5em; line-height: 1; color: var(--brass); font-variant-numeric: tabular-nums; min-height: 1em; }
+.side-by { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1em; align-items: center; }
+.thumb { max-width: 100%; max-height: 13em; justify-self: center; border-radius: 3px; background: #f6f1e6; }
+.col { display: flex; flex-direction: column; gap: .6em; min-width: 0; }
+.col .btn { width: 100%; }
+.check { display: flex; gap: .55em; align-items: center; font-size: .75em; color: var(--ink); }
+.check input { width: 1.4em; height: 1.4em; accent-color: var(--brass); }
+.note { font-size: .65em; color: var(--muted); line-height: 1.45; }
+
+.stepper { display: flex; align-items: center; gap: .8em; }
+.stepper button { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); font-size: 1.3em; line-height: 1; }
 .stepper button[disabled] { opacity: .35; }
-.stepper output { font-family: var(--f-display); font-size: 64px; min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
-.alert { border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--ink); border-radius: 12px; padding: 14px 16px; line-height: 1.45; font-size: 15px; }
+.stepper output { font-family: var(--f-display); font-size: 2.6em; min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.alert { border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 14%, transparent); border-radius: .6em; padding: .6em .8em; font-size: .7em; line-height: 1.4; }
 
-.jobs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-.jobs li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
-.jobs .bar { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.jobs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .45em; }
+.jobs li { background: var(--surface); border: 1px solid var(--line); border-radius: .5em; padding: .5em .7em; display: grid; grid-template-columns: 1fr auto; gap: .35em .6em; font-size: .72em; }
+.jobs .bar { grid-column: 1 / -1; height: .45em; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .jobs .bar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .2s linear; }
-.jobs .st { font-size: 14px; color: var(--muted); }
-.jobs li.done .st { color: var(--ok); }
+.jobs .st-t { color: var(--muted); }
+.jobs li.done .st-t { color: var(--ok); }
 
-.thanks { align-items: center; text-align: center; }
-.thanks h2 { font-size: clamp(56px, 9vw, 110px); color: var(--brass); }
-
-/* Überlagerungen */
-.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(8,13,11,.82); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 28px; width: min(560px, 100%); box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; max-height: calc(100vh - 48px); overflow: auto; }
-.card h2 { font-size: 30px; }
-.idle-num { font-family: var(--f-display); font-size: 64px; color: var(--brass); font-variant-numeric: tabular-nums; }
-
-.pin-dots { display: flex; gap: 14px; justify-content: center; }
-.pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--muted); }
+/* Überlagerungen im iPad */
+.iover { position: absolute; inset: 0; z-index: 5; background: rgba(8,13,11,.86); display: grid; place-items: center; padding: 1em; }
+.icard { background: var(--surface); border: 1px solid var(--line); border-radius: .9em; padding: 1em 1.2em; width: 100%; max-width: 22em; max-height: 100%; box-sizing: border-box; overflow: auto; display: flex; flex-direction: column; gap: .7em; }
+.icard h2 { font-size: 1.3em; }
+.icard.wide { max-width: 30em; font-size: .82em; }
+.idle-num { font-family: var(--f-display); font-size: 2.6em; color: var(--brass); text-align: center; font-variant-numeric: tabular-nums; }
+.pin-dots { display: flex; gap: .7em; justify-content: center; }
+.pin-dots i { width: .8em; height: .8em; border-radius: 50%; border: 1.5px solid var(--muted); }
 .pin-dots i.f { background: var(--brass); border-color: var(--brass); }
 .pin-dots.shake { animation: shake .35s; }
-@keyframes shake { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.pad button { height: 64px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); font-size: 24px; }
-.pad button:active { background: var(--line); }
-
-.adm { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
-.adm label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); min-width: 0; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45em; }
+.pad button { height: 2.3em; border-radius: .5em; background: var(--surface-2); border: 1px solid var(--line); font-size: 1em; }
+.adm { display: grid; grid-template-columns: 1fr 1fr; gap: .6em .8em; }
+.adm label { display: flex; flex-direction: column; gap: .3em; font-size: .8em; color: var(--muted); min-width: 0; }
 .adm label.full { grid-column: 1 / -1; }
-.adm label.check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 16px; }
-.adm input[type=text], .adm select { font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
-.adm input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--brass); }
-.printer { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
-.printer .bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+.adm label.chk { flex-direction: row; align-items: center; gap: .5em; color: var(--ink); }
+.adm input[type=text], .adm select { font: inherit; font-size: 1em; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: .4em; padding: .45em .55em; min-width: 0; }
+.adm input[type=checkbox] { width: 1.2em; height: 1.2em; accent-color: var(--brass); }
+.printer { display: grid; grid-template-columns: 1fr auto; gap: .4em .6em; align-items: center; padding: .55em .7em; border: 1px solid var(--line); border-radius: .5em; font-size: .85em; }
+.printer .bar { grid-column: 1 / -1; height: .35em; border-radius: 99px; background: var(--bg); overflow: hidden; }
 .printer .bar i { display: block; height: 100%; background: var(--ok); }
 .printer.low .bar i { background: var(--warn); }
 .printer.empty .bar i { background: var(--danger); }
-.printer button { font-size: 14px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
-.printer .n { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.stats { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.sec-t { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 6px 0 -6px; }
+.printer button { font-size: .85em; padding: .35em .6em; border-radius: .4em; background: var(--surface-2); border: 1px solid var(--line); }
+.printer .n, .stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats { font-size: .8em; }
+.sec-t { font-size: .7em; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: -.3em; }
 
-@media (max-width: 760px) {
-  .start-grid, .split { grid-template-columns: 1fr; gap: 24px; }
-  .tiles { grid-template-columns: 1fr; }
-  .btn-xl { align-self: stretch; }
-  .screen { justify-content: flex-start; }
-  .result { max-height: none; }
-  .adm { grid-template-columns: 1fr; }
+.explain { max-width: 1500px; margin: 22px auto 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.explain b { color: var(--ink); font-weight: 600; display: block; margin-bottom: 2px; }
+
+@media (max-width: 860px) {
+  .devices { grid-template-columns: minmax(0, 1fr); }
+  .ipad-screen { font-size: 3.8cqw; }
+  .explain { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .count.pulse, .flash.go, .pin-dots.shake { animation: none; }
-  .slides img { transition: none; }
+  .pulse, .flash.go, .pin-dots.shake { animation: none; }
+  .st-slides img { transition: none; }
 }
 </style>
 
-<div class="app">
+<div class="page">
   <div class="demo-bar">
-    <span><strong>Klickbarer Entwurf</strong> · Kamera und Drucker werden simuliert</span>
-    <span>Admin: Monogramm 1 Sek. gedrückt halten · PIN 2580</span>
+    <span><strong>Klickbarer Entwurf</strong> · Bedient wird rechts am iPad, links seht ihr, was der große Bildschirm gleichzeitig zeigt. Kamera und Drucker sind simuliert.</span>
+    <span>Admin: Monogramm am iPad 1 Sek. gedrückt halten · PIN 2580</span>
   </div>
 
-  <div class="top">
-    <button class="mono" id="mono" aria-label="Monogramm (lange drücken für Admin)">A&amp;M</button>
-    <div class="couple"><b id="hdrNames">Anna &amp; Max</b><span id="hdrDate">14. Juni 2027</span></div>
-    <div class="spacer"></div>
-    <span class="pill" id="paperPill" hidden></span>
-    <span class="step" id="stepLbl"></span>
-  </div>
-
-  <div class="screens">
-    <!-- Start -->
-    <section class="screen" id="s-start">
-      <div class="start-grid">
-        <div class="slides" id="slides">
-          <img id="slA" alt="Foto aus der Diashow">
-          <img id="slB" alt="Foto aus der Diashow">
-          <span class="cap" id="slCap">Diashow</span>
-        </div>
-        <div class="start-copy">
-          <h1>Lächeln,<br>bitte!</h1>
-          <p class="lead">Tippt auf den Knopf, sucht euch aus, was für ein Foto ihr wollt, und stellt euch auf die Markierung am Boden.</p>
-          <button class="btn btn-primary btn-xl" id="goStart">Foto machen</button>
-          <ol class="how">
-            <li><b>1</b>Art wählen</li>
-            <li><b>2</b>Posieren</li>
-            <li><b>3</b>Drucken</li>
-          </ol>
-        </div>
-      </div>
-    </section>
-
-    <!-- Modus -->
-    <section class="screen" id="s-mode" hidden>
-      <button class="back" data-go="start">← Zurück</button>
-      <h2>Was für ein Foto?</h2>
-      <div class="tiles">
-        <button class="tile" id="pickSingle">
-          <div class="art"><svg width="170" height="120" viewBox="0 0 170 120" aria-hidden="true"><rect x="4" y="4" width="162" height="112" rx="4" fill="none" stroke="#cda45e" stroke-width="2"/><rect x="14" y="14" width="142" height="76" rx="2" fill="#34493f"/><rect x="55" y="100" width="60" height="5" rx="2.5" fill="#a8b3a7"/></svg></div>
-          <span class="t">Einzelfoto</span>
-          <span class="d">Ein großes Bild im Format 10 × 15 cm.</span>
-        </button>
-        <button class="tile" id="pickStrip">
-          <div class="art"><svg width="130" height="150" viewBox="0 0 130 150" aria-hidden="true"><rect x="4" y="4" width="122" height="142" rx="4" fill="none" stroke="#cda45e" stroke-width="2"/><g fill="#34493f"><rect x="12" y="12" width="48" height="26" rx="2"/><rect x="12" y="42" width="48" height="26" rx="2"/><rect x="12" y="72" width="48" height="26" rx="2"/><rect x="12" y="102" width="48" height="26" rx="2"/><rect x="70" y="12" width="48" height="26" rx="2"/><rect x="70" y="42" width="48" height="26" rx="2"/><rect x="70" y="72" width="48" height="26" rx="2"/><rect x="70" y="102" width="48" height="26" rx="2"/></g><line x1="65" y1="8" x2="65" y2="142" stroke="#a8b3a7" stroke-dasharray="4 4"/></svg></div>
-          <span class="t">Fotostreifen</span>
-          <span class="d">Vier Bilder hintereinander. Ihr bekommt zwei Streifen – einen zum Behalten, einen zum Verschenken.</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Filter -->
-    <section class="screen" id="s-filter" hidden>
-      <button class="back" id="filterBack">← Zurück</button>
-      <h2>In Farbe oder Schwarzweiß?</h2>
-      <div class="tiles">
-        <button class="tile" id="pickColor"><canvas id="thColor" width="480" height="320"></canvas><span class="t">Farbe</span></button>
-        <button class="tile" id="pickBW"><canvas id="thBW" class="bw" width="480" height="320"></canvas><span class="t">Schwarzweiß</span></button>
-      </div>
-    </section>
-
-    <!-- Countdown -->
-    <section class="screen shoot" id="s-shoot" hidden>
-      <div class="live-wrap" id="liveWrap">
-        <canvas id="live" width="960" height="640"></canvas>
-        <span class="live-tag">Demo-Livebild</span>
-        <span class="shot-label" id="shotLbl" hidden></span>
-        <div class="count" id="count"></div>
-        <div class="flash" id="flash"></div>
-      </div>
-      <p class="hint" id="shootHint">Schaut in die Kamera über dem Bildschirm!</p>
-    </section>
-
-    <!-- Vorschau -->
-    <section class="screen" id="s-preview" hidden>
-      <div class="split">
-        <img class="result" id="resImg" alt="Euer fertiges Foto mit Rahmen">
-        <div class="side">
-          <h2>Gefällt’s euch?</h2>
-          <button class="btn btn-primary" id="toPrint">Weiter</button>
-          <button class="btn btn-ghost" id="retry">Nochmal</button>
-          <p class="note" id="stripNote" hidden>Das Blatt wird in der Mitte geschnitten – so bekommt ihr zwei Streifen.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Drucken -->
-    <section class="screen" id="s-print" hidden>
-      <div class="split">
-        <img class="result" id="resImg2" alt="Euer Foto">
-        <div class="side">
-          <h2>Wie viele Abzüge?</h2>
-          <div class="stepper">
-            <button id="minus" aria-label="Einen weniger">−</button>
-            <output id="copies">1</output>
-            <button id="plus" aria-label="Einen mehr">+</button>
+  <div class="devices">
+    <!-- Großer Bildschirm -->
+    <div class="dev">
+      <span class="dev-label"><i></i>Großer Bildschirm · HDMI am Mini-PC</span>
+      <div class="tv">
+        <div class="tv-screen" id="tv">
+          <div class="st st-slides" id="st-slides">
+            <img id="slA" alt="Foto aus der Diashow"><img id="slB" alt="Foto aus der Diashow">
+            <div class="st-empty" id="slEmpty" hidden>Hier laufen gleich eure Fotos.</div>
+            <div class="st-band"><div><b id="tvNames">Anna &amp; Max</b><span id="tvDate">14. Juni 2027</span></div><div class="cta" id="slCap">Zum Mitmachen aufs iPad tippen</div></div>
           </div>
-          <p class="note" id="copiesNote">Zum Beispiel einen für jede Person auf dem Foto. Höchstens 4.</p>
-          <div class="alert" id="noPaper" hidden>Die Drucker sind gerade nicht bereit. Euer Foto ist trotzdem gespeichert. Sagt bitte dem Brautpaar oder einem Helfer Bescheid.</div>
-          <button class="btn btn-primary" id="doPrint">Drucken</button>
-          <button class="btn btn-ghost" id="noPrint">Ohne Druck fertig</button>
+          <div class="st st-live" id="st-live" hidden>
+            <canvas id="liveA" width="960" height="540"></canvas>
+            <span class="st-tag">Demo-Livebild · gespiegelt</span>
+            <div class="st-msg" id="liveMsg">Stellt euch auf die Markierung am Boden</div>
+          </div>
+          <div class="st st-shoot" id="st-shoot" hidden>
+            <canvas id="liveB" width="960" height="540"></canvas>
+            <span class="st-tag">Demo-Livebild · gespiegelt</span>
+            <span class="st-shotlbl" id="tvShot" hidden></span>
+            <div class="st-count" id="tvCount"></div>
+            <div class="flash" id="flash"></div>
+          </div>
+          <div class="st st-result" id="st-result" hidden>
+            <img id="tvRes" alt="Euer fertiges Foto">
+            <div class="st-msg" id="resMsg"></div>
+          </div>
+          <div class="st st-thanks" id="st-thanks" hidden>
+            <img id="tvThanks" alt="Euer Foto">
+            <div><h2>Danke!</h2><p id="thanksMsg">Euer Foto läuft gleich in der Diashow.</p></div>
+          </div>
         </div>
       </div>
-    </section>
+      <div class="tv-foot"></div>
+    </div>
 
-    <!-- Druckt -->
-    <section class="screen" id="s-printing" hidden>
-      <div class="split">
-        <img class="result" id="resImg3" alt="Euer Foto">
-        <div class="side">
-          <h2>Wird gedruckt …</h2>
-          <ul class="jobs" id="jobs"></ul>
-          <p class="note">Holt eure Abzüge gleich unten am Ausgabefach ab. Im echten Betrieb dauert ein Druck etwa 45 Sekunden, hier ist es verkürzt.</p>
-          <button class="btn btn-primary" id="printDone">Fertig</button>
+    <!-- iPad -->
+    <div class="dev">
+      <span class="dev-label"><i></i>iPad · Bedienung</span>
+      <div class="ipad">
+        <div class="ipad-screen" id="ipad">
+          <div class="i-head">
+            <button class="mono" id="mono" aria-label="Monogramm (lange drücken für Admin)">A&amp;M</button>
+            <div class="couple"><b id="hdrNames">Anna &amp; Max</b><span id="hdrDate">14. Juni 2027</span></div>
+            <div class="sp"></div>
+            <span class="pill" id="paperPill" hidden></span>
+            <span class="step" id="stepLbl"></span>
+          </div>
+          <div class="i-screens">
+            <section class="is center" id="i-start">
+              <h2>Lächeln, bitte!</h2>
+              <button class="btn btn-primary btn-xl" id="goStart">Foto machen</button>
+              <p class="lead">Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.</p>
+            </section>
+
+            <section class="is" id="i-mode" hidden>
+              <button class="back" data-go="start">← Zurück</button>
+              <h2>Was für ein Foto?</h2>
+              <div class="tiles">
+                <button class="tile" id="pickSingle">
+                  <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="20" y="4" width="130" height="100" rx="4" fill="none" stroke="#cda45e" stroke-width="2"/><rect x="29" y="13" width="112" height="64" rx="2" fill="#34493f"/><rect x="60" y="88" width="50" height="5" rx="2.5" fill="#a8b3a7"/></svg>
+                  <span class="t">Einzelfoto</span><span class="d">Ein großes Bild, 10 × 15 cm</span>
+                </button>
+                <button class="tile" id="pickStrip">
+                  <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="45" y="4" width="80" height="102" rx="3" fill="none" stroke="#cda45e" stroke-width="2"/><g fill="#34493f"><rect x="51" y="10" width="31" height="19" rx="1.5"/><rect x="51" y="33" width="31" height="19" rx="1.5"/><rect x="51" y="56" width="31" height="19" rx="1.5"/><rect x="51" y="79" width="31" height="19" rx="1.5"/><rect x="88" y="10" width="31" height="19" rx="1.5"/><rect x="88" y="33" width="31" height="19" rx="1.5"/><rect x="88" y="56" width="31" height="19" rx="1.5"/><rect x="88" y="79" width="31" height="19" rx="1.5"/></g><line x1="85" y1="7" x2="85" y2="103" stroke="#a8b3a7" stroke-dasharray="3 3"/></svg>
+                  <span class="t">Fotostreifen</span><span class="d">4 Bilder hintereinander, ihr bekommt zwei Streifen</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="is" id="i-filter" hidden>
+              <button class="back" id="filterBack">← Zurück</button>
+              <h2>Farbe oder Schwarzweiß?</h2>
+              <div class="tiles">
+                <button class="tile" id="pickColor"><canvas id="thColor" width="360" height="240"></canvas><span class="t">Farbe</span></button>
+                <button class="tile" id="pickBW"><canvas id="thBW" class="bw" width="360" height="240"></canvas><span class="t">Schwarzweiß</span></button>
+              </div>
+            </section>
+
+            <section class="is center" id="i-shoot" hidden>
+              <p class="lead" id="iShot">Bild 1 von 1</p>
+              <div class="i-count" id="iCount"></div>
+              <h2 id="iShootMsg">Schaut in die Kamera!</h2>
+              <p class="lead">Den Countdown seht ihr groß auf dem Bildschirm.</p>
+            </section>
+
+            <section class="is" id="i-preview" hidden>
+              <div class="side-by">
+                <img class="thumb" id="iThumb" alt="Euer Foto (klein)">
+                <div class="col">
+                  <h2>Gefällt’s euch?</h2>
+                  <button class="btn btn-primary" id="toPrint">Weiter</button>
+                  <button class="btn btn-ghost" id="retry">Nochmal</button>
+                  <label class="check"><input type="checkbox" id="inSlides" checked>In der Diashow zeigen</label>
+                </div>
+              </div>
+            </section>
+
+            <section class="is" id="i-print" hidden>
+              <div class="side-by">
+                <img class="thumb" id="iThumb2" alt="Euer Foto (klein)">
+                <div class="col">
+                  <h2>Wie viele Abzüge?</h2>
+                  <div class="stepper">
+                    <button id="minus" aria-label="Einen weniger">−</button>
+                    <output id="copies">1</output>
+                    <button id="plus" aria-label="Einen mehr">+</button>
+                  </div>
+                  <p class="note" id="copiesNote"></p>
+                  <div class="alert" id="noPaper" hidden>Die Drucker sind gerade nicht bereit. Euer Foto ist gespeichert. Sagt bitte einem Helfer Bescheid.</div>
+                  <button class="btn btn-primary" id="doPrint">Drucken</button>
+                  <button class="btn btn-ghost" id="noPrint">Ohne Druck fertig</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="is" id="i-printing" hidden>
+              <h2>Wird gedruckt …</h2>
+              <ul class="jobs" id="jobs"></ul>
+              <p class="note">Holt eure Abzüge gleich unten am Ausgabefach ab. Echt dauert ein Druck ca. 45 Sekunden, hier ist es verkürzt.</p>
+              <button class="btn btn-primary" id="printDone">Fertig</button>
+            </section>
+
+            <section class="is center" id="i-thanks" hidden>
+              <h2 style="font-size:3em;color:var(--brass)">Danke!</h2>
+              <p class="lead">Viel Spaß noch beim Feiern.</p>
+            </section>
+          </div>
+
+          <!-- Noch da? -->
+          <div class="iover" id="idle" hidden>
+            <div class="icard" style="text-align:center">
+              <h2>Seid ihr noch da?</h2>
+              <div class="idle-num" id="idleNum">10</div>
+              <p class="note">Sonst geht es gleich zurück zum Start, damit die Nächsten drankommen.</p>
+              <button class="btn btn-primary" id="idleStay">Weitermachen</button>
+            </div>
+          </div>
+
+          <!-- PIN -->
+          <div class="iover" id="pin" hidden>
+            <div class="icard" style="max-width:13em">
+              <h2 style="text-align:center">Admin-Bereich</h2>
+              <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+              <div class="pad" id="pad">
+                <button>1</button><button>2</button><button>3</button>
+                <button>4</button><button>5</button><button>6</button>
+                <button>7</button><button>8</button><button>9</button>
+                <button data-k="x" aria-label="Abbrechen">✕</button><button>0</button><button data-k="del" aria-label="Löschen">⌫</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div class="iover" id="admin" hidden>
+            <div class="icard wide">
+              <h2>Admin-Bereich</h2>
+              <p class="sec-t">Drucker</p>
+              <div id="printerList" style="display:flex;flex-direction:column;gap:.45em"></div>
+              <p class="sec-t">Einstellungen</p>
+              <form class="adm" id="admForm">
+                <label>Namen<input type="text" id="setNames"></label>
+                <label>Datum<input type="text" id="setDate"></label>
+                <label>Abzüge pro Foto höchstens
+                  <select id="setMaxCopies"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>„Nochmal“ höchstens
+                  <select id="setMaxRetries"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
+                <label class="full">Neue Fotos in der Diashow
+                  <select id="setDelay"><option value="0">sofort</option><option value="15000">nach 2 Minuten (im Entwurf: 15 Sekunden)</option></select></label>
+                <label class="chk full"><input type="checkbox" id="setStrip">Fotostreifen anbieten</label>
+                <label class="chk full"><input type="checkbox" id="setFilter">Schwarzweiß anbieten</label>
+              </form>
+              <p class="stats" id="stats"></p>
+              <button class="btn btn-primary" id="admClose">Schließen</button>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
-
-    <!-- Danke -->
-    <section class="screen thanks" id="s-thanks" hidden>
-      <h2>Danke!</h2>
-      <p class="lead">Euer Foto läuft ab jetzt auch in der Diashow.</p>
-    </section>
-  </div>
-</div>
-
-<!-- Noch da? -->
-<div class="overlay" id="idle" hidden>
-  <div class="card" style="text-align:center;align-items:center">
-    <h2>Seid ihr noch da?</h2>
-    <div class="idle-num" id="idleNum">10</div>
-    <p class="note">Sonst geht es gleich zurück zum Start, damit die Nächsten drankommen.</p>
-    <button class="btn btn-primary" id="idleStay">Weitermachen</button>
-  </div>
-</div>
-
-<!-- PIN -->
-<div class="overlay" id="pin" hidden>
-  <div class="card" style="width:min(360px,100%)">
-    <h2 style="text-align:center">Admin-Bereich</h2>
-    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
-    <div class="pad" id="pad">
-      <button>1</button><button>2</button><button>3</button>
-      <button>4</button><button>5</button><button>6</button>
-      <button>7</button><button>8</button><button>9</button>
-      <button data-k="x" aria-label="Abbrechen">✕</button><button>0</button><button data-k="del" aria-label="Löschen">⌫</button>
     </div>
   </div>
-</div>
 
-<!-- Admin -->
-<div class="overlay" id="admin" hidden>
-  <div class="card" style="width:min(640px,100%)">
-    <h2>Admin-Bereich</h2>
-    <p class="sec-t">Drucker</p>
-    <div id="printerList" style="display:flex;flex-direction:column;gap:10px"></div>
-    <p class="sec-t">Einstellungen</p>
-    <form class="adm" id="admForm">
-      <label>Namen<input type="text" id="setNames"></label>
-      <label>Datum<input type="text" id="setDate"></label>
-      <label>Abzüge pro Foto höchstens
-        <select id="setMaxCopies"><option>1</option><option>2</option><option>3</option><option>4</option></select>
-      </label>
-      <label>„Nochmal“ pro Foto höchstens
-        <select id="setMaxRetries"><option>0</option><option>1</option><option>2</option><option>3</option></select>
-      </label>
-      <label class="check full"><input type="checkbox" id="setStrip">Fotostreifen anbieten</label>
-      <label class="check full"><input type="checkbox" id="setFilter">Schwarzweiß anbieten</label>
-    </form>
-    <p class="stats" id="stats"></p>
-    <button class="btn btn-primary" id="admClose">Schließen</button>
+  <div class="explain">
+    <p><b>Großer Bildschirm</b>Diashow im Leerlauf, gespiegeltes Livebild, großer Countdown und das fertige Foto. Die Gäste schauen so automatisch Richtung Kamera.</p>
+    <p><b>iPad</b>Nur zum Antippen: Art des Fotos, Farbe, Nochmal, Anzahl der Abzüge. Das iPad zeigt das Foto nur klein zur Kontrolle.</p>
+    <p><b>Diashow</b>Mit „In der Diashow zeigen“ entscheiden die Gäste selbst. Im Admin-Bereich lässt sich einstellen, dass neue Fotos erst nach 2 Minuten erscheinen.</p>
   </div>
 </div>
 
@@ -398,14 +377,14 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   const DEMO_PRINT_MS = 6000;   // echt ca. 45 s
   const PIN = "2580";
 
-  const defaults = { names: "Anna & Max", date: "14. Juni 2027", maxCopies: 4, maxRetries: 2, offerStrip: true, offerFilter: true };
+  const defaults = { names: "Anna & Max", date: "14. Juni 2027", maxCopies: 4, maxRetries: 2, offerStrip: true, offerFilter: true, slideDelay: 0 };
   let settings = { ...defaults };
   try { const s = JSON.parse(localStorage.getItem("fotobox-settings") || "null"); if (s) settings = { ...defaults, ...s }; } catch (e) {}
   const saveSettings = () => { try { localStorage.setItem("fotobox-settings", JSON.stringify(settings)); } catch (e) {} };
 
   const S = {
     screen: "start", mode: "single", filter: "color", shots: [], composed: null, retriesLeft: 0,
-    copies: 1, photos: [], prints: 0, sceneSeed: 7, sessionJobs: [],
+    copies: 1, photos: [], prints: 0, sceneSeed: 7, sessionJobs: [], saved: false,
     printers: [{ name: "Selphy 1", paper: CASSETTE, queue: [] }, { name: "Selphy 2", paper: CASSETTE, queue: [] }],
   };
 
@@ -428,9 +407,10 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     const n = 2 + Math.floor(r() * 3);
     const people = [];
     for (let i = 0; i < n; i++) people.push({ i, cl: CLOTHES[Math.floor(r() * CLOTHES.length)], sk: SKIN[Math.floor(r() * SKIN.length)], hr: HAIR[Math.floor(r() * HAIR.length)], s: 0.92 + r() * 0.16, dy: r() * 0.06, veil: i === 0 && r() < 0.6 });
+    const unit = Math.min(h, w / 1.5);
     people.forEach(p => {
-      const cx = w * (0.5 + (p.i - (n - 1) / 2) * (0.62 / Math.max(n - 1, 1)) * (n > 1 ? 1 : 0)) + Math.sin(t * 0.9 + p.i) * w * 0.006;
-      const hr = h * 0.085 * p.s;
+      const cx = w * (0.5 + (p.i - (n - 1) / 2) * (0.62 / (n - 1))) * 1 + Math.sin(t * 0.9 + p.i) * w * 0.006;
+      const hr = unit * 0.085 * p.s;
       const hy = h * (0.42 + p.dy) + Math.sin(t * 1.3 + p.i * 1.7) * h * 0.008;
       if (p.veil) { ctx.fillStyle = "rgba(255,255,255,.28)"; ctx.beginPath(); ctx.moveTo(cx - hr * 0.9, hy - hr * 0.4); ctx.lineTo(cx + hr * 0.9, hy - hr * 0.4); ctx.lineTo(cx + hr * 2.1, h); ctx.lineTo(cx - hr * 2.1, h); ctx.closePath(); ctx.fill(); }
       ctx.fillStyle = p.veil ? "#f2eee6" : p.cl;
@@ -442,7 +422,7 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
       ctx.strokeStyle = "#5a2a22"; ctx.lineWidth = Math.max(2, hr * 0.08); ctx.lineCap = "round";
       ctx.beginPath(); ctx.arc(cx, hy + hr * 0.25, hr * 0.38, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
     });
-    const v = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.95);
+    const v = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)");
     ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
   }
@@ -496,61 +476,75 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     return c.toDataURL("image/jpeg", 0.88);
   }
 
-  /* ---------- Ansichten ---------- */
+  /* ---------- Ansichten: iPad und großer Bildschirm laufen synchron ---------- */
   const SCREENS = ["start", "mode", "filter", "shoot", "preview", "print", "printing", "thanks"];
+  const STAGE = { start: "slides", mode: "live", filter: "live", shoot: "shoot", preview: "result", print: "result", printing: "result", thanks: "thanks" };
+  const STAGES = ["slides", "live", "shoot", "result", "thanks"];
+  const RES_MSG = { preview: "Gefällt’s euch? Entscheidet am iPad.", print: "Wie viele Abzüge? Wählt am iPad.", printing: "Wird gedruckt – gleich unten am Ausgabefach." };
   function stepsTotal() { return 1 + (settings.offerStrip ? 1 : 0) + (settings.offerFilter ? 1 : 0); }
   function show(name) {
     S.screen = name;
-    SCREENS.forEach(s => { $("s-" + s).hidden = s !== name; });
+    SCREENS.forEach(s => { $("i-" + s).hidden = s !== name; });
+    STAGES.forEach(s => { $("st-" + s).hidden = s !== STAGE[name]; });
     idle = 0; hideIdle();
-    const lbl = $("stepLbl");
-    if (name === "mode") lbl.textContent = `Schritt 1 von ${stepsTotal()}`;
-    else if (name === "filter") lbl.textContent = `Schritt ${settings.offerStrip ? 2 : 1} von ${stepsTotal()}`;
-    else if (name === "print" || name === "printing") lbl.textContent = `Schritt ${stepsTotal()} von ${stepsTotal()}`;
-    else lbl.textContent = "";
+    const lbl = $("stepLbl"), tot = stepsTotal();
+    lbl.textContent = name === "mode" ? `Schritt 1 von ${tot}`
+      : name === "filter" ? `Schritt ${settings.offerStrip ? 2 : 1} von ${tot}`
+      : name === "print" || name === "printing" ? `Schritt ${tot} von ${tot}` : "";
+    $("liveMsg").textContent = name === "mode" ? "Stellt euch auf die Markierung am Boden" : "Gleich geht’s los …";
+    if (RES_MSG[name]) $("resMsg").textContent = RES_MSG[name];
     if (name === "start") startSlides(); else stopSlides();
     if (name === "print") renderPrint();
-    if (name === "thanks") setTimeout(() => { if (S.screen === "thanks") show("start"); }, 4000);
+    if (name === "thanks") {
+      $("thanksMsg").textContent = !S.showInSlides ? "Euer Foto ist gespeichert, aber nicht in der Diashow."
+        : settings.slideDelay ? "Euer Foto erscheint gleich in der Diashow." : "Euer Foto läuft ab jetzt in der Diashow.";
+      setTimeout(() => { if (S.screen === "thanks") show("start"); }, 4000);
+    }
   }
 
   function begin() {
     S.sceneSeed = Math.floor(Math.random() * 1e6);
-    S.retriesLeft = settings.maxRetries;
-    S.copies = 1;
+    S.retriesLeft = settings.maxRetries; S.copies = 1; S.saved = false;
+    S.showInSlides = true; $("inSlides").checked = true;
     if (settings.offerStrip) show("mode"); else { S.mode = "single"; afterMode(); }
   }
   function afterMode() { if (settings.offerFilter) show("filter"); else { S.filter = "color"; shoot(); } }
 
   async function shoot() {
     show("shoot");
-    $("liveWrap").classList.toggle("bw", S.filter === "bw");
+    $("st-shoot").classList.toggle("bw", S.filter === "bw");
     const n = S.mode === "strip" ? 4 : 1;
-    const count = $("count"), lbl = $("shotLbl"), hint = $("shootHint");
     S.shots = [];
-    lbl.hidden = n === 1;
+    $("tvShot").hidden = n === 1;
     for (let i = 0; i < n; i++) {
-      lbl.textContent = `Bild ${i + 1} von ${n}`;
-      hint.textContent = i === 0 ? "Schaut in die Kamera über dem Bildschirm!" : "Super! Neue Pose fürs nächste Bild …";
+      const lbl = `Bild ${i + 1} von ${n}`;
+      $("tvShot").textContent = lbl; $("iShot").textContent = lbl;
+      $("iShootMsg").textContent = i === 0 ? "Schaut in die Kamera!" : "Neue Pose fürs nächste Bild!";
       for (let c = 3; c >= 1; c--) {
-        count.textContent = c; count.classList.remove("pulse"); void count.offsetWidth; count.classList.add("pulse");
+        [$("tvCount"), $("iCount")].forEach(el => { el.textContent = c; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); });
         await sleep(1000);
       }
-      count.textContent = "";
+      $("tvCount").textContent = ""; $("iCount").textContent = "📸";
       const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
       S.shots.push(capture(S.sceneSeed + i * 13, S.filter));
       await sleep(i < n - 1 ? 900 : 350);
     }
-    hint.textContent = "Einen Moment …";
+    $("iShootMsg").textContent = "Einen Moment …"; $("iCount").textContent = "";
     S.composed = await compose(S.mode, S.shots);
-    ["resImg", "resImg2", "resImg3"].forEach(id => { $(id).src = S.composed; });
-    $("stripNote").hidden = S.mode !== "strip";
+    ["tvRes", "tvThanks", "iThumb", "iThumb2"].forEach(id => { $(id).src = S.composed; });
     renderRetry();
     show("preview");
   }
   function renderRetry() {
     const b = $("retry");
     b.disabled = S.retriesLeft <= 0;
-    b.textContent = S.retriesLeft > 0 ? `Nochmal (noch ${S.retriesLeft}×)` : "Nochmal (nicht mehr möglich)";
+    b.textContent = S.retriesLeft > 0 ? `Nochmal (noch ${S.retriesLeft}×)` : "Nochmal nicht mehr möglich";
+  }
+  function savePhoto() {
+    if (S.saved || !S.composed) return;
+    S.saved = true;
+    S.photos.unshift({ src: S.composed, t: Date.now(), show: S.showInSlides !== false });
+    if (S.photos.length > 30) S.photos.pop();
   }
 
   /* ---------- Drucker-Simulation ---------- */
@@ -558,18 +552,14 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   function renderPrint() {
     const max = Math.min(settings.maxCopies, paperLeft());
     if (S.copies > max) S.copies = Math.max(1, max);
-    $("copies").textContent = S.copies;
-    $("minus").disabled = S.copies <= 1;
-    $("plus").disabled = S.copies >= max;
-    $("copiesNote").textContent = settings.maxCopies > 1 ? `Zum Beispiel einen für jede Person auf dem Foto. Höchstens ${settings.maxCopies}.` : "Pro Foto gibt es einen Abzug.";
     const none = paperLeft() === 0;
+    $("copies").textContent = S.copies;
+    $("minus").disabled = none || S.copies <= 1;
+    $("plus").disabled = none || S.copies >= max;
+    $("copiesNote").textContent = settings.maxCopies > 1 ? `Zum Beispiel einen für jede Person auf dem Foto. Höchstens ${settings.maxCopies}.` : "Pro Foto gibt es einen Abzug.";
     $("noPaper").hidden = !none;
     $("doPrint").disabled = none;
-    $("minus").disabled = $("minus").disabled || none;
-    $("plus").disabled = $("plus").disabled || none;
   }
-  function savePhoto() { S.photos.unshift(S.composed); if (S.photos.length > 24) S.photos.pop(); }
-
   function startPrint() {
     S.sessionJobs = [];
     for (let k = 0; k < S.copies; k++) {
@@ -586,19 +576,18 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   function renderJobs() {
     const ul = $("jobs"); ul.innerHTML = "";
     S.sessionJobs.forEach(j => {
-      const li = document.createElement("li");
-      const done = j.progress >= 100;
+      const li = document.createElement("li"), done = j.progress >= 100;
       if (done) li.className = "done";
-      const queued = !j.started && !done;
-      li.innerHTML = `<span>Abzug ${j.n} · ${j.printer}</span><span class="st">${done ? "Fertig ✓" : queued ? "Wartet" : Math.round(j.progress) + " %"}</span><div class="bar"><i style="width:${j.progress}%"></i></div>`;
+      li.innerHTML = `<span>Abzug ${j.n} · ${j.printer}</span><span class="st-t">${done ? "Fertig ✓" : !j.started ? "Wartet" : Math.round(j.progress) + " %"}</span><div class="bar"><i style="width:${j.progress}%"></i></div>`;
       ul.appendChild(li);
     });
+    const left = S.sessionJobs.filter(j => j.progress < 100).length;
+    if (S.screen === "printing") $("resMsg").textContent = left ? `Wird gedruckt – noch ${left} ${left === 1 ? "Abzug" : "Abzüge"}. Gleich unten am Ausgabefach.` : "Fertig gedruckt – holt eure Abzüge unten ab!";
   }
   setInterval(() => {
     let changed = false;
     S.printers.forEach(p => {
-      const j = p.queue[0];
-      if (!j) return;
+      const j = p.queue[0]; if (!j) return;
       j.started = true; j.progress = Math.min(100, j.progress + 100 * 200 / DEMO_PRINT_MS); changed = true;
       if (j.progress >= 100) p.queue.shift();
     });
@@ -609,28 +598,32 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     const low = S.printers.filter(p => p.paper <= 3);
     const pill = $("paperPill");
     pill.hidden = low.length === 0;
-    pill.textContent = low.map(p => p.paper === 0 ? `${p.name}: Papier leer` : `${p.name}: noch ${p.paper} Blatt`).join(" · ");
+    pill.textContent = low.map(p => p.paper === 0 ? `${p.name} leer` : `${p.name}: ${p.paper} Blatt`).join(" · ");
     const list = $("printerList"); list.innerHTML = "";
-    S.printers.forEach((p, i) => {
+    S.printers.forEach(p => {
       const d = document.createElement("div");
       d.className = "printer" + (p.paper === 0 ? " empty" : p.paper <= 3 ? " low" : "");
       d.innerHTML = `<span>${p.name} <span class="n">· ${p.paper} / ${CASSETTE} Blatt${p.queue.length ? " · druckt" : ""}</span></span><button type="button">Kassette getauscht</button><div class="bar"><i style="width:${p.paper / CASSETTE * 100}%"></i></div>`;
       d.querySelector("button").onclick = () => { p.paper = CASSETTE; renderPaper(); };
       list.appendChild(d);
     });
-    $("stats").textContent = `Fotos bisher: ${S.photos.length} · Abzüge gedruckt: ${S.prints}`;
+    const hidden = S.photos.filter(p => !p.show).length;
+    $("stats").textContent = `Fotos bisher: ${S.photos.length} (davon ${hidden} nicht in der Diashow) · Abzüge gedruckt: ${S.prints}`;
   }
 
-  /* ---------- Diashow ---------- */
+  /* ---------- Diashow auf dem großen Bildschirm ---------- */
   let slideTimer = null, slideIdx = 0, slideFront = "slA";
+  const visiblePhotos = () => S.photos.filter(p => p.show && Date.now() - p.t >= settings.slideDelay);
   function showSlide() {
-    if (!S.photos.length) return;
+    const list = visiblePhotos();
+    $("slEmpty").hidden = list.length > 0;
+    if (!list.length) { $(slideFront).classList.remove("on"); return; }
     const back = slideFront === "slA" ? "slB" : "slA";
-    $(back).src = S.photos[slideIdx % S.photos.length];
+    $(back).src = list[slideIdx % list.length].src;
     $(back).classList.add("on"); $(slideFront).classList.remove("on");
-    slideFront = back;
-    $("slCap").textContent = `Diashow · Foto ${(slideIdx % S.photos.length) + 1} von ${S.photos.length}`;
-    slideIdx++;
+    slideFront = back; slideIdx++;
+    const waiting = S.photos.filter(p => p.show && Date.now() - p.t < settings.slideDelay).length;
+    $("slCap").textContent = waiting ? `${waiting} neue${waiting === 1 ? "s Foto" : " Fotos"} gleich in der Diashow · Zum Mitmachen aufs iPad tippen` : "Zum Mitmachen aufs iPad tippen";
   }
   function startSlides() { stopSlides(); slideIdx = 0; showSlide(); slideTimer = setInterval(showSlide, 4000); }
   function stopSlides() { clearInterval(slideTimer); slideTimer = null; }
@@ -638,7 +631,9 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   /* ---------- Livebild-Schleife ---------- */
   function loop(ts) {
     const t = ts / 1000;
-    if (S.screen === "shoot") { const c = $("live"); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed + S.shots.length * 13); }
+    const st = STAGE[S.screen];
+    if (st === "live") { const c = $("liveA"); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed); }
+    if (st === "shoot") { const c = $("liveB"); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed + S.shots.length * 13); }
     if (S.screen === "filter") ["thColor", "thBW"].forEach(id => { const c = $(id); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed); });
     requestAnimationFrame(loop);
   }
@@ -654,16 +649,14 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     if (idle >= 35 && idle < 45) { $("idle").hidden = false; $("idleNum").textContent = 45 - idle; }
     if (idle >= 45) { if (S.screen === "preview" || S.screen === "print") savePhoto(); show("start"); }
   }, 1000);
-  document.addEventListener("pointerdown", (e) => { if (!$("idle").contains(e.target)) { idle = 0; hideIdle(); } }, true);
+  $("ipad").addEventListener("pointerdown", (e) => { if (!$("idle").contains(e.target)) { idle = 0; hideIdle(); } }, true);
   $("idleStay").onclick = () => { idle = 0; hideIdle(); };
 
   /* ---------- Admin ---------- */
   let pressT = null;
   const mono = $("mono");
-  const pressStart = (e) => { e.preventDefault(); mono.classList.add("pressing"); pressT = setTimeout(() => { mono.classList.remove("pressing"); openPin(); }, 1000); };
-  const pressEnd = () => { mono.classList.remove("pressing"); clearTimeout(pressT); };
-  mono.addEventListener("pointerdown", pressStart);
-  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => mono.addEventListener(ev, pressEnd));
+  mono.addEventListener("pointerdown", (e) => { e.preventDefault(); mono.classList.add("pressing"); pressT = setTimeout(() => { mono.classList.remove("pressing"); openPin(); }, 1000); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => mono.addEventListener(ev, () => { mono.classList.remove("pressing"); clearTimeout(pressT); }));
   mono.addEventListener("contextmenu", e => e.preventDefault());
 
   let pinBuf = "";
@@ -677,7 +670,7 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     if (pinBuf.length >= 4) return;
     pinBuf += b.textContent; drawPin();
     if (pinBuf.length === 4) {
-      if (pinBuf === PIN) { setTimeout(() => { $("pin").hidden = true; openAdmin(); }, 150); }
+      if (pinBuf === PIN) setTimeout(() => { $("pin").hidden = true; openAdmin(); }, 150);
       else { const d = $("pinDots"); d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake"); setTimeout(() => { pinBuf = ""; drawPin(); }, 400); }
     }
   });
@@ -685,6 +678,7 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   function openAdmin() {
     $("setNames").value = settings.names; $("setDate").value = settings.date;
     $("setMaxCopies").value = String(settings.maxCopies); $("setMaxRetries").value = String(settings.maxRetries);
+    $("setDelay").value = String(settings.slideDelay);
     $("setStrip").checked = settings.offerStrip; $("setFilter").checked = settings.offerFilter;
     renderPaper();
     $("admin").hidden = false;
@@ -694,14 +688,15 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
     settings.names = $("setNames").value.trim() || defaults.names;
     settings.date = $("setDate").value.trim() || defaults.date;
     settings.maxCopies = +$("setMaxCopies").value; settings.maxRetries = +$("setMaxRetries").value;
+    settings.slideDelay = +$("setDelay").value;
     settings.offerStrip = $("setStrip").checked; settings.offerFilter = $("setFilter").checked;
-    saveSettings(); applyHeader();
+    saveSettings(); applyNames();
   });
-  $("admClose").onclick = () => { $("admin").hidden = true; };
+  $("admClose").onclick = () => { $("admin").hidden = true; if (S.screen === "start") startSlides(); };
 
-  function applyHeader() {
-    $("hdrNames").textContent = settings.names;
-    $("hdrDate").textContent = settings.date;
+  function applyNames() {
+    ["hdrNames", "tvNames"].forEach(id => { $(id).textContent = settings.names; });
+    ["hdrDate", "tvDate"].forEach(id => { $(id).textContent = settings.date; });
     const parts = settings.names.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
     mono.textContent = parts.length >= 2 ? `${parts[0][0]}&${parts[1][0]}` : settings.names.slice(0, 2);
   }
@@ -715,6 +710,7 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   $("pickColor").onclick = () => { S.filter = "color"; shoot(); };
   $("pickBW").onclick = () => { S.filter = "bw"; shoot(); };
   $("retry").onclick = () => { if (S.retriesLeft > 0) { S.retriesLeft--; shoot(); } };
+  $("inSlides").onchange = (e) => { S.showInSlides = e.target.checked; };
   $("toPrint").onclick = () => { savePhoto(); show("print"); };
   $("minus").onclick = () => { S.copies = Math.max(1, S.copies - 1); renderPrint(); };
   $("plus").onclick = () => { S.copies++; renderPrint(); };
@@ -723,16 +719,16 @@ h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; ma
   $("printDone").onclick = () => show("thanks");
 
   /* ---------- Start: Beispielfotos für die Diashow ---------- */
-  applyHeader();
+  applyNames();
   renderPaper();
+  show("start");
   (async () => {
     const samples = [[311, "single", "color"], [4242, "strip", "bw"], [97, "single", "bw"], [1508, "single", "color"]];
     for (const [seed, mode, filter] of samples) {
       const shots = mode === "strip" ? [0, 1, 2, 3].map(i => capture(seed + i * 13, filter)) : [capture(seed, filter)];
-      S.photos.push(await compose(mode, shots));
+      S.photos.push({ src: await compose(mode, shots), t: 0, show: true });
     }
     if (S.screen === "start") startSlides();
   })();
-  show("start");
 })();
 </script>
