@@ -194,6 +194,10 @@ P12. **Text unter den Symbolen der Reise-Leiste anpassen** (Beenden · Fotos · 
     Nach der Reise). Am Handy überlappen die Wörter („Straße folge‑Nach der Reise“), „Aufzeichnen“ ist zu breit.
     Lösung: kurze Wörter (z. B. „Strecke“, „Aufnahme“, „Später“), notfalls zweizeilig umbrechen bzw. kleinere Schrift;
     selten Gebrauchtes (Straße folgen) eher unter „Nach der Reise“.
+P13. **Liken im Reiseblog.** Leser des Reiseblogs (Oma, Opa, Freunde – ohne Konto) können Einträge mit einem Herz
+    liken; im Blog steht die Zahl, im Tagebuch sieht die Familie „❤️ 3 im Reiseblog“ (evtl. mit Namen, wenn der Leser
+    einen angibt). Passt zu Punkt 36 (Gästebuch im Reiseblog). Braucht neue api/index.php (Likes je Eintrag, gegen
+    Mehrfachklicks pro Gerät).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
