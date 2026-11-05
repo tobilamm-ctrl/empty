@@ -190,3 +190,6 @@ Ablauf: Start → Modus → (Rahmen/Filter) → Countdown → Vorschau → Aktio
    Gruß tippen oder mit dem Finger unterschreiben) · Mit dem Finger malen/Sticker · „Nicht in der Diashow zeigen“ · Fertig
 Weitere Ideen: Sprache Deutsch/Englisch, Gruß direkt ans Brautpaar (nur für das Paar sichtbar).
 Erste Version: Einzelfoto + Fotostreifen, ein Rahmen, Schwarzweiß-Filter, Nochmal, Drucken mit Anzahl, Fertig.
+
+Erster klickbarer Entwurf (05.11.2026): `hochzeit/fotobox-entwurf.html`,
+online: https://claude.ai/artifact/Xe98ZcmKghsuhbzjTtkz9y (Kamera und Drucker simuliert, Admin-PIN 2580).
