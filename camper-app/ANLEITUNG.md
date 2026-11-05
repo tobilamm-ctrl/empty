@@ -136,6 +136,19 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 76: Bescheid, wenn andere Crews losfahren oder folgen möchten
+
+**Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
+
+- **👋 Hinweis in der App.** Oben neben der Pinnwand erscheint ein Hinweis:
+  - „Familie Franz ist losgefahren“, wenn eine andere Crew in den letzten Tagen eine Reise begonnen hat, der ihr noch nicht folgt.
+  - „Familie Franz möchte folgen“ für Crew-Leiter, wenn eine Anfrage wartet.
+  - Antippen öffnet „Unterwegs mit Freunden“. Dort fragt ihr mit einem Tipp an bzw. nehmt an oder lehnt ab. Danach verschwindet der Hinweis.
+- **Mitteilung aufs Handy** (Einstellungen › Mitteilungen › „👋 Andere Crews“, für eingeschaltete Geräte schon an):
+  - „👋 Familie Franz ist losgefahren“. Wer schon folgt, sieht den Namen der Reise. Alle anderen nur, dass die Crew unterwegs ist (wie bisher in der Übersicht).
+  - „👋 Familie Franz möchte euch folgen“ an die Crew-Leiter.
+  - Eine alte, nie beendete Reise gilt dabei nicht als „losgefahren“. Gemeldet wird nur eine Reise, die vor höchstens 2 Tagen begonnen hat.
+
 ## Neu in Version 75: Reisearten – nicht nur Camping (Praxistest Paket E, Teil 1)
 
 **Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen). Sie bringt die Erinnerung an den Online-Check-in.

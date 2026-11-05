@@ -25,6 +25,16 @@ export default function installMitreisen(app) {
   const isNew = c => c.follow === 'ok' && c.rev && (seen()[c.id] || 0) < c.rev;
   const markSeen = c => { const s = seen(); s[c.id] = c.rev || 0; LS.set('followSeen', s); };
   const leader = () => !!(travel && travel.leader);
+  // Auch ohne Folgen: Crew ist neu losgefahren, oder (für Crew-Leiter) eine Anfrage wartet. Gesehen = Seite geöffnet.
+  const noted = () => LS.get('followNoted', {});
+  const recent = d => { const x = new Date(); x.setDate(x.getDate() - 3); return d >= x.toISOString().slice(0, 10); };
+  const started = c => c.travelling && c.follow !== 'ok' && c.since && recent(c.since) && noted()['s:' + c.id] !== c.since;
+  const asking = c => leader() && c.follower === 'requested' && !noted()['a:' + c.id];
+  const markNoted = () => {
+    const n = {};
+    list().forEach(c => { if (c.travelling && c.since) n['s:' + c.id] = c.since; if (c.follower === 'requested') n['a:' + c.id] = 1; });
+    LS.set('followNoted', n);
+  };
 
   async function feed(id, force) {
     const f = feeds[id];
@@ -196,16 +206,20 @@ export default function installMitreisen(app) {
   note.type = 'button'; note.className = 'mr-note'; note.hidden = true; note.dataset.action = 'mr-goto';
   if (brand) (document.querySelector('.brandbar .pin-note') || brand).after(note);
   app.chromeHooks.push(() => {
-    const fresh = app.session && app.session() ? list().filter(isNew) : [];
+    const on = app.session && app.session();
+    if (on && app.ui.route === 'mitreisen' && list().some(c => started(c) || asking(c))) markNoted();
+    const fresh = on ? list().filter(c => isNew(c) || started(c) || asking(c)) : [];
     note.hidden = !fresh.length;
     if (fresh.length) {
-      note.innerHTML = `<span aria-hidden="true">👋</span><small>${fresh.length === 1 ? esc(fresh[0].name) : `${fresh.length} Crews`}</small><b>${fresh.length}</b>`;
-      note.setAttribute('aria-label', `Neues von ${fresh.map(c => c.name).join(', ')}`);
+      const one = fresh.length === 1 ? fresh[0] : null;
+      const what = one ? (asking(one) ? `${one.name} möchte folgen` : started(one) ? `${one.name} ist losgefahren` : one.name) : `${fresh.length} Crews`;
+      note.innerHTML = `<span aria-hidden="true">👋</span><small>${esc(what)}</small><b>${fresh.length}</b>`;
+      note.setAttribute('aria-label', `Neues bei Unterwegs mit Freunden: ${fresh.map(c => c.name).join(', ')}`);
     }
   });
   ACTIONS['mr-goto'] = () => {
     const fresh = list().filter(isNew);
-    if (fresh.length === 1) { go('mitreisen'); setTimeout(() => ACTIONS['mr-open']({ dataset: { id: fresh[0].id } }), 300); }
+    if (fresh.length === 1 && isNew(fresh[0])) { go('mitreisen'); setTimeout(() => ACTIONS['mr-open']({ dataset: { id: fresh[0].id } }), 300); }
     else go('mitreisen');
   };
 

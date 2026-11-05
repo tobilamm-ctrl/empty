@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 29;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 30;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -99,6 +99,10 @@ function db(): PDO {
     $scols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM shares')->fetchAll(), 'Field')
                     : array_column($pdo->query('PRAGMA table_info(shares)')->fetchAll(), 'name');
     if (!in_array('opts', $scols, true)) $pdo->exec('ALTER TABLE shares ADD COLUMN opts TEXT');
+    // Mitteilungen über andere Crews (losgefahren, Folge-Anfragen); bestehende Geräte: ja
+    $pcols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM push_subs')->fetchAll(), 'Field')
+                    : array_column($pdo->query('PRAGMA table_info(push_subs)')->fetchAll(), 'name');
+    if (!in_array('friends', $pcols, true)) $pdo->exec('ALTER TABLE push_subs ADD COLUMN friends INT NOT NULL DEFAULT 1');
     $pdo->exec("INSERT INTO counter (name, value) SELECT 'rev', 0 WHERE NOT EXISTS (SELECT 1 FROM counter WHERE name = 'rev')");
     return $pdo;
 }
@@ -307,6 +311,39 @@ function maybeReminders(): void {
     if (now() - $last < 5 * 60000) return;
     kvSet('cron_last', (string) now());
     try { ticketReminders(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
+    try { friendStarts(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
+}
+// Andere Crew ist losgefahren (ihre Reise läuft seit eben): allen anderen Crews Bescheid geben.
+// Wer schon folgt, bekommt „ansehen“, die anderen „folgen anfragen“. Den Namen der Reise erfährt nur, wer folgt.
+function friendStarts(?string $only = null): int {
+    $sent = 0;
+    $crews = $only ? [['id' => $only, 'name' => crewName($only)]] : all('SELECT id, name FROM crews');
+    $d = date('Y-m-d');
+    foreach ($crews as $c) {
+        // Die zuletzt begonnene laufende Reise (eine alte, nie beendete Reise soll eine neue nicht verdecken)
+        $run = array_filter(crewTrips($c['id']), fn($x) => empty($x['ended']) && empty($x['archived']) && ($x['start'] ?? '') !== '' && $x['start'] <= $d && (($x['end'] ?? '') === '' || $x['end'] >= $d));
+        usort($run, fn($a, $b) => strcmp((string) $b['start'], (string) $a['start']));
+        $t = $run[0] ?? null;
+        $k = 'run_' . $c['id'];
+        $prev = kvGet($k);
+        $now = $t ? (string) $t['id'] : '-';
+        if ($prev === $now) continue;
+        kvSet($k, $now);
+        // Beim ersten Mal (neue api/index.php) nur merken, nicht melden; nur frisch begonnene Reisen (Start höchstens 2 Tage her),
+        // damit eine alte, nie beendete Reise nicht als „losgefahren“ gilt
+        if ($prev === null || !$t || (string) ($t['start'] ?? '') < date('Y-m-d', time() - 2 * 86400)) continue;
+        $subs = all('SELECT s.*, m.crew_id FROM push_subs s JOIN members m ON m.user_id = s.user_id WHERE m.crew_id <> ? AND s.friends = 1', [$c['id']]);
+        foreach ($subs as $sub) {
+            $f = one("SELECT status FROM follows WHERE crew_id = ? AND follower_crew = ?", [$c['id'], $sub['crew_id']]);
+            $ok = $f && $f['status'] === 'ok';
+            try {
+                pushSend($sub, ['title' => '👋 ' . $c['name'] . ' ist losgefahren', 'body' => $ok ? '„' . mb_substr((string) ($t['name'] ?? ''), 0, 60) . '“ – jetzt mitverfolgen' : ($f ? 'Eure Anfrage zum Folgen läuft noch.' : 'Antippen, um zu fragen, ob ihr folgen dürft.'),
+                    'url' => './#/mitreisen', 'tag' => 'start-' . $c['id']]);
+                $sent++;
+            } catch (Throwable $e) { /* weiter */ }
+        }
+    }
+    return $sent;
 }
 
 function crewName(string $id): string { return (string) (one('SELECT name FROM crews WHERE id = ?', [$id])['name'] ?? ''); }
@@ -580,6 +617,8 @@ case 'push':
         $mysql ? $pdo->rollBack() : $pdo->exec('ROLLBACK');
         throw $e;
     }
+    // Reise gestartet (oder beendet)? Dann gleich den anderen Crews Bescheid geben
+    if (array_filter($changes, fn($c) => ($c['coll'] ?? '') === 'trips')) { try { friendStarts($crew); } catch (Throwable $e) { /* weiter */ } }
     foreach (array_slice($newPins, 0, 5) as $pin) {
         pushCrew($crew, 'pins', ['title' => '📌 ' . $u['name'] . ' an der Pinnwand', 'body' => mb_substr((string) ($pin['text'] ?? ''), 0, 160),
             'url' => './#/pinnwand', 'tag' => 'pin-' . ($pin['id'] ?? '')], $u['id']);
@@ -978,8 +1017,8 @@ case 'push-key':
         $res['cron'] = $base . '?a=cron&k=' . kvGet('cron_key');
         $res['cronLast'] = (int) (kvGet('cron_seen') ?? 0);
     }
-    $res['subs'] = array_map(fn($r) => ['id' => $r['id'], 'pins' => (bool) (int) $r['pins'], 'tickets' => (bool) (int) $r['tickets']],
-        all('SELECT id, pins, tickets FROM push_subs WHERE user_id = ?', [$u['id']]));
+    $res['subs'] = array_map(fn($r) => ['id' => $r['id'], 'pins' => (bool) (int) $r['pins'], 'tickets' => (bool) (int) $r['tickets'], 'friends' => (bool) (int) $r['friends']],
+        all('SELECT id, pins, tickets, friends FROM push_subs WHERE user_id = ?', [$u['id']]));
     out($res);
 
 case 'push-sub':
@@ -992,8 +1031,8 @@ case 'push-sub':
     if (strlen(b64ud($p)) !== 65 || strlen(b64ud($a)) < 16) fail('Ungültige Schlüssel');
     $id = sha1($ep);
     q('DELETE FROM push_subs WHERE id = ?', [$id]);
-    q('INSERT INTO push_subs (id, user_id, endpoint, p256dh, auth, tz, pins, tickets, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [$id, $u['id'], $ep, $p, $a,
-        mb_substr((string) ($body['tz'] ?? 'Europe/Berlin'), 0, 64), empty($body['pins']) ? 0 : 1, empty($body['tickets']) ? 0 : 1, now()]);
+    q('INSERT INTO push_subs (id, user_id, endpoint, p256dh, auth, tz, pins, tickets, friends, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [$id, $u['id'], $ep, $p, $a,
+        mb_substr((string) ($body['tz'] ?? 'Europe/Berlin'), 0, 64), empty($body['pins']) ? 0 : 1, empty($body['tickets']) ? 0 : 1, array_key_exists('friends', $body) && empty($body['friends']) ? 0 : 1, now()]);
     out(['ok' => true, 'id' => $id]);
 
 case 'push-unsub':
@@ -1014,7 +1053,9 @@ case 'cron':
     if (!$k || !hash_equals($k, (string) ($_GET['k'] ?? ''))) fail('Falscher Schlüssel', 403);
     kvSet('cron_seen', (string) now());
     kvSet('cron_last', (string) now());
-    out(['ok' => true, 'sent' => ticketReminders()]);
+    $sent = ticketReminders();
+    try { $sent += friendStarts(); } catch (Throwable $e) { /* weiter */ }
+    out(['ok' => true, 'sent' => $sent]);
 
 /* ----- Mitverfolgen: Reisen anderer Crews (nach Freigabe) ----- */
 
@@ -1049,7 +1090,16 @@ case 'follow':
         q('INSERT INTO follows (crew_id, follower_crew, status, created, by_user) VALUES (?, ?, ?, ?, ?)', [$a, $b, $st, now(), $u['id']]);
     };
     if ($op === 'request') {                 // wir möchten ihnen folgen
-        if (!$row($target, $crew)) $set($target, $crew, 'requested');
+        if (!$row($target, $crew)) {
+            $set($target, $crew, 'requested');
+            // Crew-Leiter der anderen Crew aufs Handy
+            if (function_exists('curl_init') && function_exists('openssl_pkey_derive')) {
+                foreach (all('SELECT s.* FROM push_subs s JOIN members m ON m.user_id = s.user_id WHERE m.crew_id = ? AND m.leader = 1 AND s.friends = 1', [$target]) as $sub) {
+                    try { pushSend($sub, ['title' => '👋 ' . crewName($crew) . ' möchte euch folgen', 'body' => 'Antippen zum Annehmen oder Ablehnen (Unterwegs mit Freunden).', 'url' => './#/mitreisen', 'tag' => 'ask-' . $crew]); }
+                    catch (Throwable $e) { /* weiter */ }
+                }
+            }
+        }
     } elseif ($op === 'invite') {            // sie dürfen uns folgen (gleich freigegeben)
         if (!isLeader($u, $crew)) fail('Nur Crew-Leiter geben eure Reisen frei.', 403);
         $set($crew, $target, 'ok');

@@ -36,12 +36,13 @@ export default function installMitteilungen(app) {
       return;
     }
     const on = !!(s.sub && s.row && s.perm === 'granted');
-    const pins = s.row ? s.row.pins : true, tickets = s.row ? s.row.tickets : true;
+    const pins = s.row ? s.row.pins : true, tickets = s.row ? s.row.tickets : true, friends = s.row ? s.row.friends !== false : true;
     box.innerHTML = `${s.perm === 'denied' ? `<p class="hint">Mitteilungen sind für LAMMping blockiert. Erlauben lässt es sich in den Einstellungen des Browsers bzw. des Handys
         (Android: Einstellungen › Apps › LAMMping › Benachrichtigungen; PC: Schloss links neben der Adresse › Benachrichtigungen).</p>` : ''}
       <p class="sub">${on ? '✅ Auf diesem Gerät eingeschaltet.' : 'Auf diesem Gerät aus. Mitteilungen kommen auch, wenn LAMMping geschlossen ist.'}</p>
       <label class="check"><input type="checkbox" data-action="push-pref" name="pins"${pins ? ' checked' : ''}><span>📌 Neue Zettel an der Pinnwand (von den anderen)</span></label>
       <label class="check"><input type="checkbox" data-action="push-pref" name="tickets"${tickets ? ' checked' : ''}><span>🎟️ Tickets: am Morgen des Tages und 3 Stunden vor Abfahrt, bei Flügen auch 24 Stunden vorher (Online-Check-in)</span></label>
+      <label class="check"><input type="checkbox" data-action="push-pref" name="friends"${friends ? ' checked' : ''}><span>👋 Andere Crews: wenn eine losfährt, und Anfragen zum Folgen (an Crew-Leiter)</span></label>
       <div class="btnrow">${on ? `<button class="ghost" data-action="push-test">Test-Mitteilung</button><button class="ghost danger" data-action="push-off">Ausschalten</button>`
         : `<button class="primary" data-action="push-on"${s.perm === 'denied' ? ' disabled' : ''}>Mitteilungen auf diesem Gerät einschalten</button>`}</div>
       ${s.srv.cron ? `<details class="push-cron"><summary>Für pünktliche Ticket-Erinnerungen: Cronjob (nur Super-Admin)</summary>
@@ -54,7 +55,7 @@ export default function installMitteilungen(app) {
 
   const prefs = () => {
     const f = document.getElementById('pushBody');
-    return { pins: !!(f && f.querySelector('[name=pins]:checked')), tickets: !!(f && f.querySelector('[name=tickets]:checked')) };
+    return { pins: !!(f && f.querySelector('[name=pins]:checked')), tickets: !!(f && f.querySelector('[name=tickets]:checked')), friends: !!(f && f.querySelector('[name=friends]:checked')) };
   };
   async function register(sub) {
     const j = sub.toJSON();
@@ -105,7 +106,7 @@ export default function installMitteilungen(app) {
       if (!sub) return;
       const s = await api('push-key'), id = await sha1(sub.endpoint), row = (s.subs || []).find(x => x.id === id);
       await api('push-sub', { endpoint: sub.endpoint, p256dh: sub.toJSON().keys.p256dh, auth: sub.toJSON().keys.auth, tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        pins: row ? row.pins : true, tickets: row ? row.tickets : true });
+        pins: row ? row.pins : true, tickets: row ? row.tickets : true, friends: row ? row.friends !== false : true });
       app.LS.set('pushRefresh', Date.now());
     } catch { /* später noch einmal */ }
   }, 8000);

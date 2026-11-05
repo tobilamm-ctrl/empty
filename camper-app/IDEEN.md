@@ -246,7 +246,8 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 2. ✅ **Paket B – Fotos zum richtigen Eintrag (Lieferung 73):** P5, P9, P6, P3 (nur App)
 3. ✅ **Paket D – Server-Lieferung (Lieferung 74, eine neue api/index.php):** P8 (Tracking: Standard + Tracker-App-Adresse),
    P13 (Likes im Reiseblog), Blog-Teil von P14 (Sprachnotizen im Blog), P16 (echte Größe je Reise)
-4. **Paket E – Reisearten und CO₂:** ✅ P11 (Lieferung 75, mit neuer api/index.php), dann P10 (Lieferung 76)
+4. **Paket E – Reisearten und CO₂:** ✅ P11 (Lieferung 75, mit neuer api/index.php), dann P10 (Lieferung 77 – Tobi ist sich noch unsicher)
+   **Zwischendurch ✅ Lieferung 76:** Bescheid, wenn andere Crews losfahren, und Mitteilung bei Folge-Anfragen (Hinweis 👋 und Push)
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
 - **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,
