@@ -198,6 +198,10 @@ P13. **Liken im Reiseblog.** Leser des Reiseblogs (Oma, Opa, Freunde – ohne Ko
     liken; im Blog steht die Zahl, im Tagebuch sieht die Familie „❤️ 3 im Reiseblog“ (evtl. mit Namen, wenn der Leser
     einen angibt). Passt zu Punkt 36 (Gästebuch im Reiseblog). Braucht neue api/index.php (Likes je Eintrag, gegen
     Mehrfachklicks pro Gerät).
+P14. **Sprachnotizen im Reiseblog und im Tagebuch.** Sprachnotizen eines Eintrags sollen auch im Reiseblog erscheinen
+    und dort abspielbar sein (außer bei „Im Reiseblog ausblenden“). Im Tagebuch soll am Eintrag erkennbar sein, dass
+    eine Sprachnotiz hinterlegt ist (z. B. 🎙️ mit Länge, Tipp spielt sie ab). Braucht neue api/index.php (Blog liefert
+    die Tonaufnahmen wie die Fotos aus).
 
 ## Bau-Reihenfolge (Pakete, Stand: Lieferung 36)
 
