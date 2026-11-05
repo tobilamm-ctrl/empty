@@ -214,3 +214,17 @@ Plan für die Fotobox:
 - Schriften lokal mitliefern (offline), keine Verbindung zu Google Fonts.
 - Ohne Import: Farbwelt und Schrift im Admin-Bereich von Hand wählen (gleiche Liste wie im Sitzplantool).
 - Die Farbwelten des Sitzplantools sind hell – für den Abend evtl. eine dunkle Variante mit derselben Akzentfarbe anbieten.
+
+## Großer Bildschirm zusätzlich zum iPad (05.11.2026)
+
+Geht: Fernseher/Monitor/Beamer per HDMI am Mini-PC. Der Mini-PC zeigt dort im Vollbild eine zweite Seite
+der Fotobox-Software („Bühne“), das iPad ist nur noch Bedienung. Beide hängen per WebSocket am selben Server.
+- Bühne zeigt: Diashow im Leerlauf, Livebild (gespiegelt wie ein Spiegel) und große Countdown-Zahlen,
+  danach die große Vorschau, Hinweise wie „Wird gedruckt“.
+- iPad zeigt: nur Knöpfe und Auswahl, kleine Vorschau.
+- Aufstellung A: Bildschirm direkt an der Fotobox, unter oder über der Kamera (Gäste schauen Richtung Kamera).
+- Aufstellung B: zusätzlich Diashow im Saal (Beamer/TV). Viele Mini-PCs haben 2 HDMI-Ausgänge.
+  Lange Wege: aktives HDMI-Kabel oder HDMI-über-LAN-Verlängerung; alternativ Smart-TV/Streaming-Stick,
+  der die Diashow-Seite übers Fotobox-WLAN öffnet.
+- Diashow im Saal mit Verzögerung (z. B. 2 Minuten) oder Freigabe im Admin, damit unpassende Fotos
+  vorher ausgeblendet werden können; „Nicht in der Diashow zeigen“ gilt auch hier.
