@@ -35,7 +35,8 @@ main { flex: 1; position: relative; min-height: 0; }
 .kachel .t { font-family: var(--kopf); font-size: 1.6rem; font-weight: 600; }
 .kachel .b { color: var(--leise); font-size: .85rem; line-height: 1.4; }
 .kachel svg { width: 100%; height: 6.5rem; }
-.kachel img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: .5rem; transform: scaleX(-1); background: #000; display: block; }
+.kachel img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: .5rem; background: #000; display: block; }
+.gespiegelt .kachel img { transform: scaleX(-1); }
 .kachel img.sw { filter: grayscale(1) contrast(1.05); }
 
 .zahl { font-family: var(--kopf); font-size: 7rem; line-height: 1; color: var(--akzent); min-height: 1em; font-variant-numeric: tabular-nums; }
@@ -75,9 +76,9 @@ main { flex: 1; position: relative; min-height: 0; }
 
 <main>
   <section class="ansicht mitte" id="a-start">
-    <h2>Lächeln, bitte!</h2>
+    <h2 id="startTitel">Lächeln, bitte!</h2>
     <button class="btn btn-haupt gross" data-aktion="start">Foto machen</button>
-    <p class="leise">Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.</p>
+    <p class="leise" id="startText">Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.</p>
   </section>
 
   <section class="ansicht" id="a-modus" hidden>
@@ -149,8 +150,12 @@ main { flex: 1; position: relative; min-height: 0; }
   </section>
 
   <section class="ansicht mitte" id="a-danke" hidden>
-    <h2 style="font-size:4.5rem;color:var(--akzent)">Danke!</h2>
-    <p class="leise">Viel Spaß noch beim Feiern.</p>
+    <h2 style="font-size:4.5rem;color:var(--akzent)" id="dankeTitel">Danke!</h2>
+    <p class="leise" id="dankeText">Viel Spaß noch beim Feiern.</p>
+  </section>
+
+  <section class="ansicht mitte" id="a-pause" hidden>
+    <h2 id="pauseText">Kurze Pause</h2>
   </section>
 
   <section class="ansicht mitte" id="a-stoerung" hidden>
@@ -174,7 +179,7 @@ main { flex: 1; position: relative; min-height: 0; }
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'druck', 'drucken', 'danke', 'stoerung'];
+  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'druck', 'drucken', 'danke', 'stoerung', 'pause'];
   let z = null, vorschauTimer = null, letzteZahl = null;
 
   document.addEventListener('click', (e) => {
@@ -209,6 +214,10 @@ main { flex: 1; position: relative; min-height: 0; }
     const e = z.einstellungen;
     ANSICHTEN.forEach((a) => { $('a-' + a).hidden = a !== z.ansicht; });
     $('namen').textContent = e.namen; $('datum').textContent = e.datum;
+    document.body.classList.toggle('gespiegelt', e.spiegeln);
+    $('startTitel').textContent = e.texte.startTitel; $('startText').textContent = e.texte.start;
+    $('dankeTitel').textContent = e.texte.danke; $('dankeText').textContent = e.texte.dankeKlein;
+    $('pauseText').textContent = z.pauseText;
     const teile = e.namen.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
     $('mono').textContent = teile.length >= 2 ? `${teile[0][0]}&${teile[1][0]}` : e.namen.slice(0, 2);
 

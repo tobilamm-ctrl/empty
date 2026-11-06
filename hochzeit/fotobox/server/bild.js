@@ -4,6 +4,7 @@
  *   layout 'rahmen': Foto kleiner mit hellem Rand, Text darunter. layout 'vollbild': Foto randlos, Text weiß
  *   auf einem dunklen Verlauf im Bild – mit mindestens 90 px (ca. 7,5 mm) Abstand zum Rand, weil der Selphy
  *   beim randlosen Druck an den Kanten etwas abschneidet.
+ *   logo: Bild (PNG/JPEG) statt der Namen, z. B. das Monogramm der Einladung.
  */
 'use strict';
 const fs = require('fs');
@@ -63,9 +64,10 @@ function schatten(ctx, an) {
 }
 
 // { modus: 'einzel'|'streifen', layout: 'rahmen'|'vollbild', fotos: [jpeg-Buffer], g: gestaltung(), namen, datum } → jpeg-Buffer
-async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum }) {
+async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum, logo = null }) {
   const bilder = await Promise.all(fotos.map((f) => loadImage(f)));
-  if (layout === 'vollbild') return vollbild({ modus, bilder, g, namen, datum });
+  const logoBild = logo ? await loadImage(logo).catch(() => null) : null;
+  if (layout === 'vollbild') return vollbild({ modus, bilder, g, namen, datum, logoBild });
   const tinte = '#262521';
   const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
   const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
@@ -78,8 +80,8 @@ async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum
       const ox = k * 600;
       bilder.slice(0, 4).forEach((b, j) => cover(ctx, b, ox + 40, 40 + j * 365, 520, 345));
       ctx.textAlign = 'center'; ctx.fillStyle = tinte;
-      passend(ctx, namen, namenFont, schreibschrift ? 78 : 58, 520);
-      ctx.fillText(namen, ox + 300, 1612);
+      if (logoBild) einpassen(ctx, logoBild, ox + 300, 1496, 520, 128);
+      else { passend(ctx, namen, namenFont, schreibschrift ? 78 : 58, 520); ctx.fillText(namen, ox + 300, 1612); }
       ctx.fillStyle = g.akzent; passend(ctx, datum.toUpperCase(), datumFont, 26, 520);
       ctx.fillText(datum.toUpperCase(), ox + 300, 1672);
     }
@@ -91,15 +93,15 @@ async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum
     cover(ctx, bilder[0], 70, 70, 1660, 900);
     ctx.strokeStyle = g.akzent; ctx.lineWidth = 3; ctx.strokeRect(46, 46, 1708, 948);
     ctx.textAlign = 'center'; ctx.fillStyle = tinte;
-    passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500);
-    ctx.fillText(namen, 900, 1100);
+    if (logoBild) einpassen(ctx, logoBild, 900, 1008, 1200, 116);
+    else { passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500); ctx.fillText(namen, 900, 1100); }
     ctx.fillStyle = g.akzent; passend(ctx, datum.toUpperCase(), datumFont, 34, 1500);
     ctx.fillText(datum.toUpperCase(), 900, 1160);
   }
   return c.toBuffer('image/jpeg', 92);
 }
 
-function vollbild({ modus, bilder, g, namen, datum }) {
+function vollbild({ modus, bilder, g, namen, datum, logoBild }) {
   const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
   const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
   const schreibschrift = /vibes|script|parisienne/i.test(g.namenSchrift);
@@ -113,8 +115,8 @@ function vollbild({ modus, bilder, g, namen, datum }) {
       bilder.slice(0, 4).forEach((b, j) => cover(ctx, b, ox, j * 450, 600, 450));
       verlauf(ctx, ox, 1530, 600, 270);
       ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
-      passend(ctx, namen, namenFont, schreibschrift ? 72 : 54, 440);
-      ctx.fillText(namen, ox + 300, 1668);
+      if (logoBild) { schatten(ctx, false); einpassen(ctx, logoBild, ox + 300, 1566, 440, 112); schatten(ctx, true); }
+      else { passend(ctx, namen, namenFont, schreibschrift ? 72 : 54, 440); ctx.fillText(namen, ox + 300, 1668); }
       passend(ctx, datumText, datumFont, 24, 440);
       ctx.fillText(datumText, ox + 300, 1712);
       schatten(ctx, false);
@@ -126,8 +128,8 @@ function vollbild({ modus, bilder, g, namen, datum }) {
     cover(ctx, bilder[0], 0, 0, 1800, 1200);
     verlauf(ctx, 0, 820, 1800, 380);
     ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
-    passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500);
-    ctx.fillText(namen, 900, 1040);
+    if (logoBild) { schatten(ctx, false); einpassen(ctx, logoBild, 900, 906, 1200, 140); schatten(ctx, true); }
+    else { passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500); ctx.fillText(namen, 900, 1040); }
     passend(ctx, datumText, datumFont, 34, 1500);
     ctx.fillText(datumText, 900, 1100);
     schatten(ctx, false);
@@ -135,4 +137,19 @@ function vollbild({ modus, bilder, g, namen, datum }) {
   return c.toBuffer('image/jpeg', 92);
 }
 
-module.exports = { schriftenLaden, schwarzweiss, zusammensetzen };
+// Logo/Monogramm statt der Namen: mittig bei cx, oben bei y, in maxB × maxH eingepasst (Seitenverhältnis bleibt)
+function einpassen(ctx, img, cx, y, maxB, maxH) {
+  const s = Math.min(maxB / img.width, maxH / img.height), w = img.width * s, h = img.height * s;
+  ctx.drawImage(img, cx - w / 2, y + (maxH - h) / 2, w, h);
+}
+
+// Feinkorrektur für den Drucker: ganzes Bild um mm verschieben (300 dpi), frei werdender Rand in „farbe“
+async function versetzen(jpeg, mmX, mmY, farbe) {
+  const img = await loadImage(jpeg);
+  const c = createCanvas(img.width, img.height), ctx = c.getContext('2d');
+  ctx.fillStyle = farbe; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(img, Math.round(mmX * 300 / 25.4), Math.round(mmY * 300 / 25.4));
+  return c.toBuffer('image/jpeg', 92);
+}
+
+module.exports = { schriftenLaden, schwarzweiss, zusammensetzen, versetzen };

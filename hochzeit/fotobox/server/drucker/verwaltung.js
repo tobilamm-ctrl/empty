@@ -4,9 +4,10 @@
  *
  * new DruckerVerwaltung({ treiber: [treiber], kassette: 18, dauerMs, papier?: [n, n] })
  *   drucken(datei, anzahl, fotoId) → [auftrag]   auftrag: { id, nr, fotoId, drucker, status, fortschritt }
- *   kassetteGetauscht(i), fehlerBehoben(i), papierGesamt(), uebersicht(), auftraegeZu(fotoId)
+ *   kassetteGetauscht(i), fehlerBehoben(i), ausSetzen(i, aus), papierGesamt(), uebersicht(), auftraegeZu(fotoId)
  *   Ereignis 'aenderung' bei jeder Änderung.
- * Status je Drucker: bereit | druckt | leer | fehler. Ein Fehler nimmt den Drucker aus der Verteilung,
+ * Status je Drucker: bereit | druckt | leer | fehler | aus. Ein abgeschalteter Drucker bekommt nichts mehr,
+ * wartende Abzüge gehen an den anderen. Ein Fehler nimmt den Drucker aus der Verteilung,
  * der Auftrag geht an einen anderen Drucker mit Papier (sonst wartet er, bis „Fehler behoben“).
  */
 'use strict';
@@ -19,7 +20,7 @@ class DruckerVerwaltung extends EventEmitter {
     this.dauerMs = dauerMs;
     this.drucker = treiber.map((t, i) => ({
       i, name: t.name, treiber: t, papier: Number.isFinite(papier && papier[i]) ? papier[i] : kassette,
-      warteschlange: [], aktiv: null, fehler: null,
+      warteschlange: [], aktiv: null, fehler: null, aus: false,
     }));
     this.auftraege = [];
     this.zaehler = 0;
@@ -28,11 +29,11 @@ class DruckerVerwaltung extends EventEmitter {
     if (this.takt.unref) this.takt.unref();
   }
 
-  status(d) { return d.fehler ? 'fehler' : d.aktiv ? 'druckt' : d.papier <= 0 ? 'leer' : 'bereit'; }
-  papierGesamt() { return this.drucker.filter((d) => !d.fehler).reduce((a, d) => a + d.papier, 0); }
+  status(d) { return d.aus ? 'aus' : d.fehler ? 'fehler' : d.aktiv ? 'druckt' : d.papier <= 0 ? 'leer' : 'bereit'; }
+  papierGesamt() { return this.drucker.filter((d) => !d.fehler && !d.aus).reduce((a, d) => a + d.papier, 0); }
 
   _waehlen() {
-    const frei = this.drucker.filter((d) => !d.fehler && d.papier > 0);
+    const frei = this.drucker.filter((d) => !d.fehler && !d.aus && d.papier > 0);
     if (!frei.length) return null;
     return frei.sort((a, b) => (a.warteschlange.length + (a.aktiv ? 1 : 0)) - (b.warteschlange.length + (b.aktiv ? 1 : 0)) || a.i - b.i)[0];
   }
@@ -52,7 +53,7 @@ class DruckerVerwaltung extends EventEmitter {
   }
 
   _weiter(d) {
-    if (d.aktiv || d.fehler || !d.warteschlange.length) return;
+    if (d.aktiv || d.fehler || d.aus || !d.warteschlange.length) return;
     const a = d.warteschlange.shift();
     d.aktiv = a; a.status = 'druckt'; a.start = Date.now(); a.drucker = d.name;
     this.emit('aenderung');
@@ -79,10 +80,23 @@ class DruckerVerwaltung extends EventEmitter {
   }
 
   kassetteGetauscht(i) { const d = this.drucker[i]; if (!d) return; d.papier = this.kassette; this.drucker.forEach((x) => this._weiter(x)); this.emit('aenderung'); }
+  ausSetzen(i, aus) {
+    const d = this.drucker[i]; if (!d) return;
+    d.aus = !!aus;
+    if (d.aus) { // wartende Abzüge umverteilen
+      d.warteschlange.splice(0).forEach((a) => {
+        d.papier++;
+        const ziel = this._waehlen();
+        if (ziel) { ziel.papier--; a.drucker = ziel.name; ziel.warteschlange.push(a); } else { d.papier--; d.warteschlange.push(a); }
+      });
+    }
+    this.drucker.forEach((x) => this._weiter(x));
+    this.emit('aenderung');
+  }
   fehlerBehoben(i) { const d = this.drucker[i]; if (!d) return; d.fehler = null; d.treiber.fehlerSetzen(null); this._weiter(d); this.emit('aenderung'); }
   auftraegeZu(fotoId) { return this.auftraege.filter((a) => a.fotoId === fotoId).map(({ id, nr, drucker, status, fortschritt }) => ({ id, nr, drucker, status, fortschritt })); }
   uebersicht() {
-    return this.drucker.map((d) => ({ i: d.i, name: d.name, papier: d.papier, kassette: this.kassette, status: this.status(d), fehler: d.fehler, warten: d.warteschlange.length }));
+    return this.drucker.map((d) => ({ i: d.i, name: d.name, papier: d.papier, kassette: this.kassette, status: this.status(d), fehler: d.fehler, aus: d.aus, warten: d.warteschlange.length }));
   }
   beenden() { clearInterval(this.takt); }
 }

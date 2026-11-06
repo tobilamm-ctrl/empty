@@ -18,15 +18,68 @@ const STANDARD = {
   akzent: '',
   schriftstil: 'romantisch',
   namenSchrift: '',
-  maxAbzuege: 4,
+  // Ablauf
+  countdownSek: 3,
+  leerlaufSek: 45,
   maxNochmal: 2,
   streifen: true,
   schwarzweiss: true,
-  diashowVerzoegerungSek: 0,
   knopfModus: 'einzel',
   knopfFilter: 'farbe',
+  knopfGelernt: [],
+  pause: false,
+  oeffnungAb: '',
+  oeffnungBis: '',
+  // Drucken
+  druckenAn: true,
+  maxAbzuege: 4,
+  maxAbzuegeGesamt: 0,
+  druckerAus: [],
   druckLayout: 'rahmen',
+  druckVersatzX: 0,
+  druckVersatzY: 0,
+  logoStattNamen: false,
+  // Diashow und Anzeige
+  diashowVerzoegerungSek: 0,
+  diashowSek: 5,
+  diashowFreigabe: false,
+  spiegeln: true,
+  // Texte
+  textStartTitel: 'Lächeln, bitte!',
+  textStart: 'Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.',
+  textBuehne: 'Zum Mitmachen aufs iPad tippen',
+  textDanke: 'Danke!',
+  textDankeKlein: 'Viel Spaß noch beim Feiern.',
+  textPause: 'Kurze Pause – gleich geht’s weiter!',
+  // Service
+  pin: '',
 };
+
+// Erlaubte Bereiche für Zahlen (Werte außerhalb werden auf den Rand gesetzt)
+const GRENZEN = {
+  countdownSek: [1, 10], leerlaufSek: [15, 600], maxNochmal: [0, 5], maxAbzuege: [1, 10], maxAbzuegeGesamt: [0, 100000],
+  druckVersatzX: [-5, 5], druckVersatzY: [-5, 5], diashowVerzoegerungSek: [0, 3600], diashowSek: [2, 60],
+};
+const NACHKOMMA = { druckVersatzX: 10, druckVersatzY: 10 };
+const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function bereinigen(k, v) {
+  const art = Array.isArray(STANDARD[k]) ? 'liste' : typeof STANDARD[k];
+  if (art === 'number') {
+    const n = Number(v); if (!Number.isFinite(n)) return undefined; // ungültige Zahlen ignorieren
+    const [min, max] = GRENZEN[k] || [0, Infinity], f = NACHKOMMA[k] || 1;
+    return Math.min(max, Math.max(min, Math.round(n * f) / f));
+  }
+  if (art === 'boolean') return !!v;
+  if (art === 'liste') {
+    if (!Array.isArray(v)) return undefined;
+    return k === 'druckerAus' ? [...new Set(v.map(Number).filter((n) => Number.isInteger(n) && n >= 0))] : [...new Set(v.map(String))].slice(0, 10);
+  }
+  const t = String(v == null ? '' : v).slice(0, 300);
+  if (k === 'oeffnungAb' || k === 'oeffnungBis') return t === '' || UHRZEIT.test(t) ? t : undefined;
+  if (k === 'pin') return t === '' || /^\d{4,8}$/.test(t) ? t : undefined;
+  return t;
+}
 
 const zweistellig = (n) => String(n).padStart(2, '0');
 const zeitstempel = (d) => `${d.getFullYear()}-${zweistellig(d.getMonth() + 1)}-${zweistellig(d.getDate())}_${zweistellig(d.getHours())}-${zweistellig(d.getMinutes())}-${zweistellig(d.getSeconds())}`;
@@ -55,10 +108,8 @@ class Speicher {
   einstellungenSetzen(teil) {
     Object.keys(teil || {}).forEach((k) => {
       if (!(k in STANDARD)) return;
-      const art = typeof STANDARD[k], v = teil[k];
-      if (art === 'number') { const n = Number(v); if (Number.isFinite(n) && n >= 0) this._einst[k] = Math.round(n); } // ungültige Zahlen ignorieren
-      else if (art === 'boolean') this._einst[k] = !!v;
-      else this._einst[k] = String(v == null ? '' : v);
+      const v = bereinigen(k, teil[k]);
+      if (v !== undefined) this._einst[k] = v;
     });
     this._schreiben('einstellungen.json', this._einst);
     return this.einstellungen();
@@ -71,6 +122,18 @@ class Speicher {
   druckerStandSetzen(papier) { this._schreiben('drucker.json', papier); }
 
   schriftenOrdner() { return path.join(this.ordner, 'schriften'); }
+  logoDatei() { return path.join(this.ordner, 'logo.png'); }
+  logo() { try { return fs.readFileSync(this.logoDatei()); } catch (e) { return null; } }
+  logoSetzen(daten) { if (daten) fs.writeFileSync(this.logoDatei(), daten); else fs.rmSync(this.logoDatei(), { force: true }); }
+
+  // Freier Platz im Datenordner und im Sicherungsordner (USB-Stick)
+  async platz() {
+    const info = async (ordner) => {
+      try { const s = await fsp.statfs(ordner); return { ok: true, freiGB: +(s.bavail * s.bsize / 1e9).toFixed(1), gesamtGB: +(s.blocks * s.bsize / 1e9).toFixed(1) }; } catch (e) { return { ok: false, fehler: e.code || e.message }; }
+    };
+    return { daten: Object.assign({ pfad: this.ordner }, await info(this.ordner)), sicherung: this.sicherung ? Object.assign({ pfad: this.sicherung }, await info(this.sicherung)) : null };
+  }
+
   schriftSpeichern(name, endung, daten) { fs.writeFileSync(path.join(this.schriftenOrdner(), `${name}.${endung}`), daten); }
 
   fotos() { return this._fotos.slice(); }
@@ -113,8 +176,8 @@ class Speicher {
 
   // Fotos für die Diashow: behalten, nicht ausgeblendet, vom Gast freigegeben, Wartezeit abgelaufen
   diashow(jetzt = Date.now()) {
-    const warten = (this._einst.diashowVerzoegerungSek || 0) * 1000;
-    const sichtbar = (f) => f.behalten && f.inDiashow && !f.ausgeblendet;
+    const warten = (this._einst.diashowVerzoegerungSek || 0) * 1000, freigabe = this._einst.diashowFreigabe;
+    const sichtbar = (f) => f.behalten && f.inDiashow && !f.ausgeblendet && (!freigabe || f.freigegeben);
     return {
       fotos: this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) >= warten).map((f) => f.id).reverse(),
       gleich: this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) < warten).length,
@@ -135,4 +198,4 @@ class Speicher {
   }
 }
 
-module.exports = { Speicher, STANDARD };
+module.exports = { Speicher, STANDARD, bereinigen };

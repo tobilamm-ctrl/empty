@@ -123,7 +123,8 @@ test('kompletter Ablauf: Streifen mit Schwarzweiß, nochmal, Diashow-Freigabe, d
 
     ablauf.aktion('drucken');
     assert.equal(ablauf.zustand().ansicht, 'drucken');
-    assert.equal(ablauf.zustand().auftraege.length, 4);
+    // Drucken läuft asynchron (Druckdatei wird ggf. erst vorbereitet)
+    await warteAuf(ablauf, (x) => x.auftraege.length === 4);
 
     await warteAuf(ablauf, (x) => x.auftraege.length === 4 && x.auftraege.every((a) => a.status === 'fertig'));
     assert.equal(speicher.foto(zweites.foto.id).abzuege, 4);

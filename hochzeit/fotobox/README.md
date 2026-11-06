@@ -36,7 +36,7 @@ Du kannst auch `http://localhost:8080/ipad` und `http://localhost:8080/buehne` i
 ### Service-Seite ausprobieren
 
 1. Öffne `http://localhost:8080/service`.
-2. Gib die PIN ein. Sie steht in `config.json` unter `pin`. Standard ist **2580**.
+2. Gib die PIN ein. Standard ist **2580** (steht in `config.json`); du kannst sie auf der Service-Seite ändern.
 3. Im Abschnitt „Simulator“ kannst du Störungen auslösen:
    - „Kamera stören“ und „Kamera wieder ok“
    - „Papierstau Selphy 1“ und „Papierstau Selphy 2“. Der Papierstau wirkt beim nächsten Druck.
@@ -216,7 +216,9 @@ Was der Knopf auf den einzelnen Seiten tut:
 | Filter (Farbe oder Schwarzweiß) | Startet den Countdown mit dem Filter aus den Einstellungen. |
 | alle anderen Ansichten | keine Wirkung |
 
-Die Einstellung „Bluetooth-Knopf macht“ findest du auf der Service-Seite unter „Einstellungen“.
+Die Einstellung „Bluetooth-Knopf macht“ findest du auf der Service-Seite unter „Ablauf“.
+
+**Knopf anlernen**: Schickt dein Knopf eine Taste, die nicht in der Liste steht, tippe auf der Service-Seite unter „Bluetooth-Knopf“ auf **Knopf anlernen** und drücke innerhalb von 20 Sekunden den Knopf. Die Fotobox merkt sich die Taste. Der Knopf muss dafür mit dem Mini-PC (großer Bildschirm) oder dem iPad gekoppelt sein.
 
 Hinweis: Wenn der Knopf mit dem **iPad** gekoppelt ist, kommen die Lautstärke-Tasten meist nicht bei Safari an. Nimm dann die Taste Enter oder Leertaste des Knopfes. Oder koppelt den Knopf mit dem Mini-PC.
 
@@ -241,7 +243,7 @@ Nicht übernommen werden der Ort und das Monogramm (das Monogramm am iPad bildet
 
 ### Ohne Import
 
-Stelle die Gestaltung auf der Service-Seite unter „Einstellungen“ von Hand ein:
+Stelle die Gestaltung auf der Service-Seite unter „Gestaltung“ von Hand ein:
 
 - **Farbwelt**: zehn Auswahlmöglichkeiten, z. B. „Champagner & Gold“ oder „Salbei & Eukalyptus“
 - **Akzentfarbe**: leer lassen, dann gilt die Farbe der Farbwelt. Oder eine eigene Farbe wählen.
@@ -250,13 +252,46 @@ Stelle die Gestaltung auf der Service-Seite unter „Einstellungen“ von Hand e
 
 Die Änderungen gelten sofort für iPad und Bühne. Neue Fotos bekommen den neuen Rahmen.
 
-### Weitere Einstellungen auf der Service-Seite
+### Alle Einstellungen auf der Service-Seite
 
-- **Namen** und **Datum**, die auf dem Druckbild stehen
-- **Abzüge pro Foto höchstens**: wie viele Abzüge der Gast wählen darf
-- **„Nochmal“ höchstens**: wie oft der Gast eine Aufnahme wiederholen darf
-- **Neue Fotos in der Diashow**: sofort oder nach 1, 2 oder 5 Minuten. So kannst du unpassende Fotos vorher ausblenden.
-- **Fotostreifen anbieten** und **Schwarzweiß anbieten**
+Jeder Abschnitt hat einen eigenen Knopf **Speichern**. Änderungen gelten sofort.
+
+**Jetzt**
+- **Pause**: Die Fotobox zeigt nur noch die Diashow und den Pausentext, z. B. während der Reden oder der Torte. Ein Foto, das gerade läuft, wird noch fertig. Mit „Pause beenden“ geht es weiter.
+- **Zurück zum Start**: bricht ab, falls am iPad etwas hängt.
+
+**Drucker**
+- **Kassette getauscht**, **Fehler behoben**
+- **Abschalten / Einschalten**: Ein abgeschalteter Drucker bekommt nichts mehr, wartende Abzüge gehen an den anderen.
+
+**Ablauf**
+- **Countdown**: 3, 5 oder 10 Sekunden
+- **Zurück zum Start ohne Eingabe nach** 30 Sekunden bis 2 Minuten
+- **„Nochmal“ höchstens**, **Fotostreifen anbieten**, **Schwarzweiß anbieten**
+- **Bluetooth-Knopf macht**: Einzelfoto oder Streifen, Farbe oder Schwarzweiß
+- **Geöffnet ab / bis**: Außerhalb dieser Zeit zeigt die Fotobox die Diashow und „Die Fotobox öffnet um …“ bzw. „hat jetzt geschlossen“. Über Mitternacht geht auch (z. B. 19:00 bis 03:00). Nur „ab“ eingetragen: offen bis 5 Uhr morgens.
+
+**Drucken**
+- **Drucken an/aus**: Aus heißt, die Fotos werden nur gespeichert und gezeigt, z. B. spät in der Nacht.
+- **Abzüge pro Foto höchstens** und **Abzüge insgesamt höchstens** (0 = ohne Grenze). Ist die Grenze erreicht, druckt die Fotobox nicht mehr.
+- **Druckbild**: mit hellem Rand oder Vollbild
+- **Logo/Monogramm statt der Namen drucken** (Bild im Abschnitt „Logo oder Monogramm“ hochladen, am besten PNG mit durchsichtigem Hintergrund)
+- **Feinkorrektur** waagerecht und senkrecht in Millimetern (−5 bis +5), falls der Drucker schief abschneidet. Sie wirkt nur auf den Druck.
+
+**Gestaltung**: Namen, Datum, Farbwelt, Akzentfarbe, Schriftstil, Schrift für die Namen, **Livebild spiegeln**
+
+**Texte**: Überschrift und Hinweis am iPad, Hinweis auf dem großen Bildschirm, Pausentext, Danke-Texte
+
+**Diashow**
+- **Neue Fotos erscheinen** sofort oder nach 1, 2 oder 5 Minuten
+- **Jedes Foto zeigen für** 3 bis 12 Sekunden
+- **Nur freigegebene Fotos zeigen**: Dann erscheint ein Foto erst, wenn ihr es unten bei „Fotos“ mit **Freigeben** bestätigt.
+
+**Bluetooth-Knopf**: Knopf anlernen (siehe Abschnitt 7)
+
+**Speicherplatz und Sicherung**: freier Platz für die Fotos und auf dem USB-Stick. Ein roter Punkt heißt: Sicherung nicht erreichbar.
+
+**PIN ändern**: 4 bis 8 Ziffern. Die neue PIN gilt sofort, die alte aus `config.json` dann nicht mehr. PIN vergessen? Fotobox beenden, in `daten/einstellungen.json` die Zeile mit `"pin"` auf `"pin": ""` setzen und neu starten – dann gilt wieder die PIN aus `config.json`.
 
 ## 9. Wo liegen die Fotos?
 

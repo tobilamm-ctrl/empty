@@ -1,11 +1,12 @@
 /*
  * Verbindung zum Fotobox-Server (WebSocket mit automatischem Neuaufbau), Gestaltung anwenden, Bluetooth-Knopf.
  *   Fotobox.verbinden(beiZustand)   Fotobox.aktion(name, daten)   Fotobox.admin(pin, aktion, daten) → Promise
- *   Fotobox.knopfAktivieren()       Tasten aus config.json („knopf.tasten“) lösen den Countdown aus
+ *   Fotobox.knopfAktivieren()       Tasten aus config.json („knopf.tasten“) und angelernte Tasten lösen den Countdown aus;
+ *                                   im Lernmodus (Service → „Knopf anlernen“) wird der nächste Tastendruck gespeichert
  */
 (function () {
   'use strict';
-  let ws = null, beiZustand = () => {}, tasten = [], warteschlange = [], antworten = [];
+  let ws = null, beiZustand = () => {}, tasten = [], lernen = false, warteschlange = [], antworten = [];
   const banner = document.createElement('div');
   banner.className = 'getrennt'; banner.hidden = true; banner.textContent = 'Verbindung zur Fotobox unterbrochen – verbinde neu …';
   document.addEventListener('DOMContentLoaded', () => document.body.appendChild(banner));
@@ -17,8 +18,10 @@
     ws.onopen = () => { banner.hidden = true; verzug = 500; warteschlange.splice(0).forEach(senden); };
     ws.onmessage = (ev) => {
       const n = JSON.parse(ev.data);
-      if (n.knopfTasten) tasten = n.knopfTasten;
-      if (n.typ === 'zustand') { gestaltung(n.zustand.gestaltung); beiZustand(n.zustand); }
+      if (n.typ === 'zustand') {
+        tasten = n.zustand.einstellungen.knopfTasten || []; lernen = !!n.zustand.knopfLernen;
+        gestaltung(n.zustand.gestaltung); beiZustand(n.zustand);
+      }
       if (n.typ === 'antwort') { const a = antworten.shift(); if (a) a(n); }
     };
     ws.onclose = () => { banner.hidden = false; setTimeout(() => aufbauen(Math.min(verzug * 2, 5000)), verzug); };
@@ -41,6 +44,7 @@
   function knopfAktivieren() {
     document.addEventListener('keydown', (e) => {
       if (e.repeat || /^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
+      if (lernen && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) { e.preventDefault(); lernen = false; senden({ typ: 'knopfGelernt', taste: e.key || e.code }); return; }
       if (tasten.includes(e.key) || tasten.includes(e.code)) { e.preventDefault(); senden({ typ: 'aktion', aktion: 'knopf' }); }
     });
   }

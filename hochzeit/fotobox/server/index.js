@@ -61,9 +61,11 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
   const z = konfig.zeiten || {};
   const ablauf = new Ablauf({
     kamera, drucker, speicher, bild, gestaltung, log,
-    zeiten: { countdownSek: z.countdownSek || 3, countdownSchritt: 1000, pause: 900, leerlaufWarnung: (z.leerlaufWarnungSek || 35) * 1000, leerlauf: (z.leerlaufSek || 45) * 1000, danke: (z.dankeSek || 4) * 1000, knopfSperre: (konfig.knopf || {}).sperreMs || 1500 },
+    knopfTasten: (konfig.knopf || {}).tasten || [],
+    zeiten: { ausEinstellungen: true, countdownSek: z.countdownSek || 3, countdownSchritt: 1000, pause: 900, leerlaufWarnung: (z.leerlaufWarnungSek || 35) * 1000, leerlauf: (z.leerlaufSek || 45) * 1000, danke: (z.dankeSek || 4) * 1000, knopfSperre: (konfig.knopf || {}).sperreMs || 1500 },
   });
   kamera.start().then(() => log('info', `Kamera: ${kamera.status().text}`));
+  (speicher.einstellungen().druckerAus || []).forEach((i) => drucker.ausSetzen(i, true));
 
   // ---------- Livebild als MJPEG-Strom; ein Bild pro Takt für alle Empfänger ----------
   const empfaenger = new Set();
@@ -89,7 +91,8 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
     res.end(d);
   });
   const json = (res, code, wert) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(wert)); };
-  const pinOk = (url) => url.searchParams.get('pin') === String(konfig.pin);
+  const aktuellePin = () => speicher.einstellungen().pin || String(konfig.pin); // im Service änderbar, sonst aus config.json
+  const pinOk = (url) => url.searchParams.get('pin') === aktuellePin();
   const sicher = (basis, teil) => { const p = path.resolve(basis, '.' + path.sep + teil); return p.startsWith(basis + path.sep) ? p : null; };
 
   const server = http.createServer((req, res) => {
@@ -123,11 +126,29 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
     }
     if (p === '/api/service') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
-      return json(res, 200, {
-        einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE,
+      return speicher.platz().then((platz) => json(res, 200, {
+        einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE, platz,
+        logo: !!speicher.logo(), knopfStandard: (konfig.knopf || {}).tasten || [],
+        abzuegeBisher: speicher.fotos().reduce((a, f) => a + (f.abzuege || 0), 0),
         fotos: speicher.fotos().filter((f) => f.behalten).reverse(), gaeste: speicher.gaeste().length,
         protokoll: protokoll.slice(-30).reverse(), simulation: { kamera: kamera.name === 'Simulator', drucker: simulation },
+      }));
+    }
+    if (p === '/api/logo' && req.method === 'GET') {
+      const l = speicher.logo(); if (!l) return json(res, 404, {});
+      res.writeHead(200, { 'Content-Type': l[0] === 0x89 ? 'image/png' : 'image/jpeg', 'Cache-Control': 'no-store' }); return res.end(l);
+    }
+    if (p === '/api/logo' && req.method === 'POST') {
+      if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
+      const teile = []; let groesse = 0;
+      req.on('data', (d) => { groesse += d.length; if (groesse <= 5e6) teile.push(d); });
+      req.on('end', () => {
+        const b = Buffer.concat(teile);
+        const png = b.slice(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])), jpg = b[0] === 0xff && b[1] === 0xd8;
+        if (groesse > 5e6 || !(png || jpg)) return json(res, 400, { fehler: 'Bitte ein PNG- oder JPG-Bild bis 5 MB hochladen.' });
+        speicher.logoSetzen(b); log('info', 'Logo hochgeladen'); broadcast(); json(res, 200, { ok: true });
       });
+      return;
     }
     if (p === '/api/export.zip') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
@@ -176,20 +197,30 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
   ablauf.on('aenderung', broadcast);
 
   wss.on('connection', (ws) => {
-    ws.send(JSON.stringify({ typ: 'zustand', zustand: ablauf.zustand(), knopfTasten: (konfig.knopf || {}).tasten || [] }));
+    ws.send(JSON.stringify({ typ: 'zustand', zustand: ablauf.zustand() }));
     ws.on('message', (roh) => {
       let n; try { n = JSON.parse(roh); } catch (e) { return; }
       if (n.typ === 'aktion') return ablauf.aktion(n.aktion, n.daten);
+      if (n.typ === 'knopfGelernt') return ablauf.knopfGelernt(n.taste);
       if (n.typ !== 'admin') return;
-      if (String(n.pin) !== String(konfig.pin)) return ws.send(JSON.stringify({ typ: 'antwort', ok: false, fehler: 'Falsche PIN' }));
+      if (String(n.pin) !== aktuellePin()) return ws.send(JSON.stringify({ typ: 'antwort', ok: false, fehler: 'Falsche PIN' }));
       const d = n.daten || {};
       switch (n.aktion) {
         case 'kassette': drucker.kassetteGetauscht(d.i); log('info', `Kassette getauscht: Drucker ${d.i + 1}`); break;
         case 'fehlerBehoben': drucker.fehlerBehoben(d.i); log('info', `Fehler behoben: Drucker ${d.i + 1}`); break;
-        case 'einstellungen': speicher.einstellungenSetzen(d); log('info', 'Einstellungen geändert'); break;
+        case 'einstellungen': speicher.einstellungenSetzen(d); ablauf.einstellungenGeaendert(); log('info', 'Einstellungen geändert'); break;
+        case 'pause': speicher.einstellungenSetzen({ pause: !!d.an }); ablauf.einstellungenGeaendert(); log('info', `Pause ${d.an ? 'an' : 'aus'}`); break;
+        case 'druckerAus': {
+          const aus = new Set(speicher.einstellungen().druckerAus); if (d.aus) aus.add(d.i); else aus.delete(d.i);
+          speicher.einstellungenSetzen({ druckerAus: [...aus] }); drucker.ausSetzen(d.i, d.aus); log('info', `Drucker ${d.i + 1} ${d.aus ? 'abgeschaltet' : 'eingeschaltet'}`); break;
+        }
+        case 'freigeben': ablauf.fotoFreigeben(d.id, d.frei); break;
+        case 'knopfLernen': ablauf.knopfLernen(); log('info', 'Knopf anlernen: warte auf Tastendruck'); break;
+        case 'knopfZuruecksetzen': speicher.einstellungenSetzen({ knopfGelernt: [] }); log('info', 'Angelernte Knopf-Tasten gelöscht'); break;
+        case 'logoLoeschen': speicher.logoSetzen(null); log('info', 'Logo gelöscht'); break;
         case 'ausblenden': ablauf.fotoAusblenden(d.id, d.aus); break;
         case 'nachdrucken': ablauf.nachdrucken(d.id); log('info', `Nachdruck ${d.id}`); break;
-        case 'zumStart': ablauf._zeige('start', ablauf._grundzustand()); break;
+        case 'zumStart': ablauf.zumStart(); break;
         case 'simKamera': if (kamera.name === 'Simulator') { kamera.fehlerSetzen(d.fehler ? 'Kamera antwortet nicht (simuliert)' : null); log('info', `Simulator: Kamera ${d.fehler ? 'gestört' : 'wieder ok'}`); } break;
         case 'simDrucker': if (simulation && treiber[d.i]) { treiber[d.i].fehlerSetzen('Papierstau (simuliert)'); log('info', `Simulator: Drucker ${d.i + 1} hat beim nächsten Druck einen Papierstau`); } break;
         default: return;

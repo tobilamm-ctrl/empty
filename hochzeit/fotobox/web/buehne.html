@@ -17,7 +17,8 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 .band b { font-family: var(--namen); font-weight: 400; font-size: 8vmin; line-height: 1; display: block; }
 .band span { font-size: 2.2vmin; color: var(--leise); letter-spacing: .14em; text-transform: uppercase; }
 .band .los { font-size: 2.8vmin; color: var(--akzent); text-align: right; }
-.live { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; background: #000; }
+.live { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+.gespiegelt .live { transform: scaleX(-1); }
 .sw .live { filter: grayscale(1) contrast(1.05); }
 .text { position: absolute; left: 50%; bottom: 6vmin; transform: translateX(-50%); background: rgba(6,8,7,.78); padding: 1.6vmin 4vmin; border-radius: 99px; font-size: 4.2vmin; white-space: nowrap; }
 .zahl { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--kopf); font-size: 46vmin; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
@@ -70,7 +71,7 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const BUEHNE = { start: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke', stoerung: 'stoerung' };
+  const BUEHNE = { start: 'dia', pause: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke', stoerung: 'stoerung' };
   let z = null, letzteZahl = null, letzterBlitz = null, diaVersion = -1;
 
   // Livebild nur laden, solange es gebraucht wird (spart Rechenleistung und WLAN)
@@ -85,16 +86,21 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
   // ---------- Diashow ----------
   let dia = [], diaIdx = 0, vorne = 'diaA', diaTimer = null, gleich = 0;
   function diaLaden() { return fetch('/api/diashow', { cache: 'no-store' }).then((r) => r.json()).then((d) => { dia = d.fotos; gleich = d.gleich; }).catch(() => {}); }
+  function diaText() {
+    const hinweis = z && z.ansicht === 'pause' ? z.pauseText : (z ? z.einstellungen.texte.buehne : '');
+    $('diaText').textContent = gleich && !(z && z.ansicht === 'pause') ? `${gleich} neue${gleich === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · ${hinweis}` : hinweis;
+  }
   function diaWeiter() {
     $('diaLeer').hidden = dia.length > 0;
-    $('diaText').textContent = gleich ? `${gleich} neue${gleich === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · Zum Mitmachen aufs iPad tippen` : 'Zum Mitmachen aufs iPad tippen';
+    diaText();
     if (!dia.length) { $(vorne).classList.remove('an'); return; }
     const hinten = vorne === 'diaA' ? 'diaB' : 'diaA';
     $(hinten).src = `/fotos/${dia[diaIdx % dia.length]}/druck.jpg`;
     $(hinten).onload = () => { $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten; };
     diaIdx++;
   }
-  function diaStart() { if (diaTimer) return; diaLaden().then(diaWeiter); diaTimer = setInterval(() => { if (diaIdx % 3 === 0) diaLaden(); diaWeiter(); }, 5000); }
+  let diaTakt = 5000;
+  function diaStart() { if (diaTimer) return; diaLaden().then(diaWeiter); diaTimer = setInterval(() => { if (diaIdx % 3 === 0) diaLaden(); diaWeiter(); }, diaTakt); }
   function diaStopp() { clearInterval(diaTimer); diaTimer = null; }
 
   function zeichnen(neu) {
@@ -102,6 +108,11 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
     const s = BUEHNE[z.ansicht] || 'dia';
     ['dia', 'live', 'aufnahme', 'ergebnis', 'danke', 'stoerung'].forEach((x) => { $('s-' + x).hidden = x !== s; });
     $('namen').textContent = z.einstellungen.namen; $('datum').textContent = z.einstellungen.datum;
+    document.body.classList.toggle('gespiegelt', z.einstellungen.spiegeln);
+    const takt = (z.einstellungen.diashowSek || 5) * 1000;
+    if (takt !== diaTakt) { diaTakt = takt; if (diaTimer) { diaStopp(); diaStart(); } }
+    if (s === 'dia') diaText();
+    document.querySelector('#s-danke h2').textContent = z.einstellungen.texte.danke;
     live(s === 'live' ? 'live' : s === 'aufnahme' ? 'live2' : null);
     if (s === 'dia') { if (diaVersion !== z.diashowVersion) { diaVersion = z.diashowVersion; diaLaden(); } diaStart(); } else diaStopp();
 
