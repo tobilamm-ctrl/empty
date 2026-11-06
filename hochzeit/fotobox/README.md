@@ -18,11 +18,12 @@ Du kannst die Fotobox am eigenen Laptop ausprobieren. Kamera und Drucker sind da
 
 ### Schritt für Schritt
 
-1. Installiere **Node.js LTS** von der Seite nodejs.org. Alle Standardeinstellungen passen.
-2. Öffne den Ordner `fotobox`. Unter Windows: Rechtsklick auf eine freie Stelle im Ordner, dann „Im Terminal öffnen“.
-3. Gib einmal ein: `npm install`. Das lädt die nötigen Teile herunter. Das dauert ein bis zwei Minuten. Dieser Schritt braucht Internet. Danach nicht mehr.
-4. Starte die Fotobox mit: `npm start`. Im Terminal stehen dann die Adressen für alle Seiten.
-5. Öffne im Browser `http://localhost:8080/simulator`. Dort stehen der große Bildschirm und das iPad nebeneinander. Du bedienst das iPad mit der Maus, der große Bildschirm reagiert gleichzeitig. Darunter ist ein roter Knopf, der den Bluetooth-Knopf spielt, und ein Link zur Service-Seite.
+Am einfachsten geht es mit dem fertigen Paket **Fotobox-Windows.zip**. Darin ist Node.js schon eingebaut. Du musst nichts installieren und brauchst kein Internet.
+
+1. Entpacke `Fotobox-Windows.zip`, z. B. nach `C:\Hochzeit\`. (Rechtsklick → „Alle extrahieren“.)
+2. Doppelklick auf **Fotobox-starten.bat**. Ein schwarzes Fenster öffnet sich, darin stehen die Adressen für alle Seiten. Lass das Fenster offen, solange die Fotobox laufen soll.
+3. Beim ersten Start fragt Windows eventuell, ob die App „node“ ins Netzwerk darf. Wähle „Zulassen“ für private Netzwerke, sonst kann das iPad den Mini-PC nicht erreichen. Warnt Windows beim Doppelklick („Der Computer wurde durch Windows geschützt“), klicke auf „Weitere Informationen“ → „Trotzdem ausführen“.
+4. Doppelklick auf **Simulator-oeffnen.bat**, oder öffne im Browser `http://localhost:8080/simulator`. Dort stehen der große Bildschirm und das iPad nebeneinander. Du bedienst das iPad mit der Maus, der große Bildschirm reagiert gleichzeitig. Darunter ist ein roter Knopf, der den Bluetooth-Knopf spielt, und ein Link zur Service-Seite.
 
 Du kannst auch `http://localhost:8080/ipad` und `http://localhost:8080/buehne` in zwei eigenen Fenstern öffnen.
 
@@ -55,7 +56,7 @@ Die Startseite `http://<IP>:8080/` leitet auf `/ipad` weiter.
 
 ## 4. Einrichtung am Mini-PC für die Hochzeit
 
-Gehe die Schritte in dieser Reihenfolge durch. Installiere auf dem Mini-PC Node.js und `npm install` genauso wie in Abschnitt 2.
+Gehe die Schritte in dieser Reihenfolge durch. Entpacke auf dem Mini-PC das Paket `Fotobox-Windows.zip` genauso wie in Abschnitt 2. Eine eigene Installation von Node.js ist nicht nötig.
 
 ### 4.1 Eigene Einstellungen in `config.local.json`
 
@@ -127,26 +128,13 @@ Beim Start schreibt das Programm alle IP-Adressen ins Terminal.
 Die Fotobox soll nach einem Neustart allein starten.
 
 1. Drücke **Windows-Taste + R**, gib `shell:startup` ein und bestätige. Der Autostart-Ordner öffnet sich.
-2. Rechtsklick in den Ordner, dann **Neu → Verknüpfung**. Als Ziel trägst du ein (Pfad anpassen):
-
-   ```
-   cmd /k "cd /d C:\Hochzeit\fotobox && npm start"
-   ```
-
-   Nenne die Verknüpfung „Fotobox-Server“. Mit `cmd /k` bleibt das Terminal-Fenster offen. Dort siehst du Fehlermeldungen.
-3. Lege eine zweite Verknüpfung an. Sie öffnet die Bühne im Vollbild (Chrome-Kiosk-Modus). Als Ziel:
-
-   ```
-   "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk http://localhost:8080/buehne
-   ```
-
-   Passt der Pfad von Chrome nicht, suche die Datei `chrome.exe` über die Windows-Suche.
+2. Ziehe **Fotobox-starten.bat** mit gedrückter **Alt-Taste** in den Autostart-Ordner. So entsteht eine Verknüpfung (die Datei selbst bleibt im Fotobox-Ordner).
+3. Mach dasselbe mit **Grosser-Bildschirm-Vollbild.bat**. Sie wartet, bis die Fotobox läuft, und öffnet dann die Bühne im Vollbild mit Microsoft Edge (ist bei Windows dabei).
 
 Hinweise:
 
-- Die Bühne wartet auf den Server. Startet Chrome vor dem Server, zeigt die Seite oben einen roten Hinweis „Verbindung zur Fotobox unterbrochen“. Sobald der Server läuft, verbindet sich die Seite von allein neu.
+- Bricht die Verbindung später ab (z. B. weil das Fotobox-Fenster geschlossen wurde), zeigt die Bühne oben einen roten Hinweis „Verbindung zur Fotobox unterbrochen“. Sobald die Fotobox wieder läuft, verbindet sich die Seite von allein neu.
 - Im Kiosk-Modus gibt es keine Adressleiste. Zum Beenden drückst du **Alt + F4**.
-- Beim ersten Start fragt Windows möglicherweise, ob Node.js ins Netzwerk darf. Wähle „Zugriff zulassen“ für das private Netzwerk. Sonst kann das iPad den Mini-PC nicht erreichen.
 
 ### 4.4 iPad einrichten
 
@@ -337,6 +325,8 @@ Die Ordner und Dateien im Überblick:
 - `tools/`: automatische Tests (`test-ablauf.js`, `test-drucker.js`, `test-import.js`, `test-server.js`, `test-zip.js`) und `alle-tests.js`.
 - `schriften/`: Schriftdateien (woff2) von Cormorant Garamond, Great Vibes, Josefin Sans und Montserrat. Jede Schrift hat eine Lizenzdatei `LICENSE-*.txt` (SIL Open Font License 1.1).
 
-Die Programme brauchen Node.js ab Version 18 und die Pakete `ws` und `@napi-rs/canvas` (siehe `package.json`).
+Zum Entwickeln: Node.js ab Version 18, `npm install`, `npm start`. Die Pakete sind `ws` und `@napi-rs/canvas` (siehe `package.json`).
+
+Das fertige Paket mit eingebautem Node.js baut `node tools/paket.js` (Windows, Ergebnis `paket/Fotobox-Windows.zip`) bzw. `node tools/paket.js --linux` (zum Testen). Das braucht beim Bauen Internet und unter Linux/macOS `unzip` und `tar`. Die Node.js-Version steht oben in `tools/paket.js`, die heruntergeladene Datei wird mit der Prüfsumme von nodejs.org kontrolliert.
 
 Die Tests startest du mit `npm test`. Er ruft `tools/alle-tests.js` auf und braucht weder Kamera noch Drucker.
