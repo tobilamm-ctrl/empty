@@ -228,3 +228,28 @@ der Fotobox-Software („Bühne“), das iPad ist nur noch Bedienung. Beide hän
   der die Diashow-Seite übers Fotobox-WLAN öffnet.
 - Diashow im Saal mit Verzögerung (z. B. 2 Minuten) oder Freigabe im Admin, damit unpassende Fotos
   vorher ausgeblendet werden können; „Nicht in der Diashow zeigen“ gilt auch hier.
+
+## Backend (Plan, Stand 06.11.2026 – noch nicht gebaut)
+
+Ein Programm auf dem Mini-PC (Node.js, läuft unter Windows und Linux), das alles steuert. iPad, großer
+Bildschirm und Service-Handy sind nur Anzeigen im Browser; der **Zustand liegt auf dem Server**
+(iPad neu laden oder abstürzen → nichts geht verloren, alle Anzeigen bleiben synchron).
+
+Bausteine:
+- Webserver + WebSocket: liefert iPad-, Bühnen-, Service- und Admin-Seite, verteilt den Zustand an alle.
+- Ablauf (Zustandsautomat): Start → Modus → Filter → Countdown → Vorschau → Drucken → Danke, Inaktivität.
+- Kamera (austauschbar): digiCamControl (Windows, lokaler Webserver/Kommandozeile, Livebild als JPEG),
+  später gPhoto2 (Linux), dazu ein Simulator zum Entwickeln ohne Kamera.
+- Druck (austauschbar): Windows-Druckwarteschlange (stilles Drucken, z. B. über SumatraPDF), Verteilung auf
+  2 Selphys, Papierzähler (der Selphy meldet den Papierstand nicht – die Software zählt), Simulator.
+- Bildbearbeitung: Rahmen, Collage/Streifen, Schwarzweiß, Druckdatei 10 × 15 in 300 dpi.
+- Speicher: Ordner `daten/` mit Originalen, Druckbildern, `fotos.json` (Zeit, Modus, Diashow ja/nein,
+  gedruckt, Tisch/Gäste), `einstellungen.json`; Sicherung jedes Fotos sofort auf USB-Stick.
+- Import: Sitzplan-Datei (`*.sitzplan.json`) → Gäste, Tische, Namen, Datum, Farbwelt, Schrift, eigene Schriften.
+- Export: ZIP aller Fotos (nach Uhrzeit/Tisch/Person), später Galerie.
+- Betrieb: Autostart mit Windows, Neustart nach Absturz, Protokolldatei für die Fehlersuche.
+
+Schnittstellen:
+- iPad → Server (WebSocket): start, modus, filter, nochmal, weiter, drucken(anzahl), fertig, inDiashow(ja/nein)
+- Server → alle (WebSocket): aktueller Zustand (Ansicht, Countdown, Bild, Druckaufträge, Papierstand, Warnungen)
+- HTTP: Livebild-Stream, Fotos, Einstellungen, Druckerstatus/„Kassette getauscht“, Import, Export (Admin mit PIN)
