@@ -271,3 +271,6 @@ was er aufnimmt (Einzelfoto/Streifen, Farbe/Schwarzweiß), steht in den Service-
   Bei 7 Zoll mit Full HD ist Windows nur mit starker Skalierung (150–200 %) lesbar.
 - Touch-Monitor am Mini-PC könnte das iPad ersetzen (eine Verbindung weniger, kein WLAN für die Bedienung).
 - Mit zwei Bildschirmen am Mini-PC: Fernseher als Hauptbildschirm einstellen, damit das Vollbild dort erscheint.
+
+iPad (06.11.2026): wahrscheinlich iPad 6. Generation (WLAN, 9,7 Zoll, Home-Taste, Lightning), iOS 17.7 → passt;
+Geführter Zugriff per Dreifachklick auf die Home-Taste. Akku ist alt: den ganzen Abend am Ladekabel lassen.
