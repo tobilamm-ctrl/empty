@@ -1,0 +1,43 @@
+/* Gemeinsame Grundlage aller Fotobox-Seiten. Farben und Schriften setzt verbindung.js aus der Gestaltung
+   (Farbwelt der Einladungen); die Werte hier gelten nur bis zur ersten Verbindung. Bewusst nur dunkel:
+   die Fotobox steht abends im Saal. */
+@font-face { font-family: "Cormorant Garamond"; font-weight: 500; src: url(/schriften/cormorant-garamond-latin-500-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; font-weight: 600; src: url(/schriften/cormorant-garamond-latin-600-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Great Vibes"; src: url(/schriften/great-vibes-latin-400-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Josefin Sans"; font-weight: 400; src: url(/schriften/josefin-sans-latin-400-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Josefin Sans"; font-weight: 600; src: url(/schriften/josefin-sans-latin-600-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Montserrat"; font-weight: 400; src: url(/schriften/montserrat-latin-400-normal.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "Montserrat"; font-weight: 600; src: url(/schriften/montserrat-latin-600-normal.woff2) format("woff2"); font-display: swap; }
+
+:root {
+  --grund: #15130f; --flaeche: #1f1c16; --flaeche-2: #2a261e; --linie: #3d372b;
+  --tinte: #f1ece3; --leise: #a9a296; --akzent: #cda45e; --akzent-tinte: #1b1710;
+  --gut: #8fc79c; --warn: #e7a25f; --stoerung: #e57d6e;
+  --kopf: "Cormorant Garamond", Georgia, serif; --namen: "Great Vibes", Georgia, serif;
+  --text: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--grund); color: var(--tinte); font-family: var(--text); -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--kopf); font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+[hidden] { display: none !important; }
+
+.btn { border: 0; border-radius: .7em; padding: .8em 1.3em; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: .5em; transition: transform .12s ease, background .2s ease; }
+a.btn { text-decoration: none; }
+a.btn-rand { color: var(--tinte); }
+.btn:active { transform: scale(.97); }
+.btn-haupt { background: var(--akzent); color: var(--akzent-tinte); }
+.btn-rand { background: transparent; border: 1.5px solid var(--linie); }
+.btn-rand:active { background: var(--flaeche-2); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+
+.getrennt { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 50; background: var(--stoerung); color: #1a0f0c; font-weight: 600; padding: .5em 1em; border-radius: 99px; font-size: 14px; }
+
+@keyframes puls { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
+@keyframes blitz { from { opacity: .95; } to { opacity: 0; } }
+.puls { animation: puls 1s ease-out; }
+@media (prefers-reduced-motion: reduce) { .puls { animation: none; } }

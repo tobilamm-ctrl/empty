@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fotobox – Bühne</title>
+<link rel="stylesheet" href="/web/app.css">
+<style>
+/* Großer Bildschirm (16:9, am Mini-PC im Vollbild): Diashow, gespiegeltes Livebild, Countdown, fertiges Foto.
+   Größen in vmin, damit es auf jedem Fernseher gleich aussieht. */
+html, body { overflow: hidden; background: #070807; cursor: none; }
+.st { position: fixed; inset: 0; }
+.st-dia img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 1.2s ease; }
+.st-dia img.an { opacity: 1; }
+.leer { position: absolute; inset: 0; display: grid; place-items: center; color: var(--leise); font-size: 3.5vmin; }
+.band { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 4vmin; padding: 10vmin 5vmin 4vmin; background: linear-gradient(to top, rgba(4,5,4,.85), rgba(4,5,4,0)); }
+.band b { font-family: var(--namen); font-weight: 400; font-size: 8vmin; line-height: 1; display: block; }
+.band span { font-size: 2.2vmin; color: var(--leise); letter-spacing: .14em; text-transform: uppercase; }
+.band .los { font-size: 2.8vmin; color: var(--akzent); text-align: right; }
+.live { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; background: #000; }
+.sw .live { filter: grayscale(1) contrast(1.05); }
+.text { position: absolute; left: 50%; bottom: 6vmin; transform: translateX(-50%); background: rgba(6,8,7,.78); padding: 1.6vmin 4vmin; border-radius: 99px; font-size: 4.2vmin; white-space: nowrap; }
+.zahl { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--kopf); font-size: 46vmin; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
+.nr { position: absolute; top: 4vmin; right: 4vmin; background: var(--akzent); color: var(--akzent-tinte); font-weight: 600; padding: 1vmin 2.6vmin; border-radius: 99px; font-size: 3vmin; }
+.blitz { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 5; }
+.blitz.los { animation: blitz .45s ease-out; }
+.st-ergebnis { display: grid; place-items: center; padding: 4vmin 4vmin 16vmin; }
+.st-ergebnis img { max-width: calc(100vw - 8vmin); max-height: calc(100vh - 20vmin); box-shadow: 0 4vmin 8vmin -4vmin rgba(0,0,0,.9); border-radius: 3px; }
+.st-danke { display: flex; align-items: center; justify-content: center; gap: 6vmin; padding: 0 8vmin; }
+.st-danke img { max-height: 70vh; max-width: 45vw; border-radius: 3px; box-shadow: 0 4vmin 8vmin -4vmin rgba(0,0,0,.9); }
+.st-danke h2 { font-size: 16vmin; color: var(--akzent); font-weight: 500; }
+.st-danke p, .st-stoerung p { font-size: 3.6vmin; color: var(--leise); margin-top: 1.5vmin; }
+.st-stoerung { display: grid; place-items: center; text-align: center; }
+.st-stoerung h2 { font-size: 10vmin; }
+.fokus { position: fixed; right: 1.5vmin; bottom: 1.5vmin; font-size: 1.6vmin; color: var(--leise); background: rgba(0,0,0,.6); padding: .6vmin 1.4vmin; border-radius: 99px; z-index: 6; cursor: default; }
+</style>
+</head>
+<body>
+<div class="st st-dia" id="s-dia">
+  <img id="diaA" alt=""><img id="diaB" alt="">
+  <div class="leer" id="diaLeer" hidden>Hier laufen gleich eure Fotos.</div>
+  <div class="band"><div><b id="namen"></b><span id="datum"></span></div><div class="los" id="diaText">Zum Mitmachen aufs iPad tippen</div></div>
+</div>
+<div class="st" id="s-live" hidden>
+  <img class="live" id="live" alt="Livebild">
+  <div class="text" id="liveText">Stellt euch auf die Markierung am Boden</div>
+</div>
+<div class="st" id="s-aufnahme" hidden>
+  <img class="live" id="live2" alt="Livebild">
+  <span class="nr" id="nr" hidden></span>
+  <div class="zahl" id="zahl"></div>
+  <div class="text" id="aufnahmeText"></div>
+</div>
+<div class="st st-ergebnis" id="s-ergebnis" hidden>
+  <img id="ergebnis" alt="Euer Foto">
+  <div class="text" id="ergebnisText"></div>
+</div>
+<div class="st st-danke" id="s-danke" hidden>
+  <img id="dankeBild" alt="Euer Foto">
+  <div><h2>Danke!</h2><p id="dankeText"></p></div>
+</div>
+<div class="st st-stoerung" id="s-stoerung" hidden>
+  <div><h2>Kurze Pause</h2><p>Gleich geht’s weiter.</p></div>
+</div>
+<div class="blitz" id="blitz"></div>
+<div class="fokus" id="fokus" hidden>Für den Bluetooth-Knopf einmal hier hineinklicken</div>
+
+<script src="/web/verbindung.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const BUEHNE = { start: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke', stoerung: 'stoerung' };
+  let z = null, letzteZahl = null, letzterBlitz = null, diaVersion = -1;
+
+  // Livebild nur laden, solange es gebraucht wird (spart Rechenleistung und WLAN)
+  function live(an) {
+    ['live', 'live2'].forEach((id) => {
+      const img = $(id), soll = an === id ? '/live.mjpg' : '';
+      if (soll && !img.getAttribute('src')) img.src = soll;
+      if (!soll && img.getAttribute('src')) img.removeAttribute('src');
+    });
+  }
+
+  // ---------- Diashow ----------
+  let dia = [], diaIdx = 0, vorne = 'diaA', diaTimer = null, gleich = 0;
+  function diaLaden() { return fetch('/api/diashow', { cache: 'no-store' }).then((r) => r.json()).then((d) => { dia = d.fotos; gleich = d.gleich; }).catch(() => {}); }
+  function diaWeiter() {
+    $('diaLeer').hidden = dia.length > 0;
+    $('diaText').textContent = gleich ? `${gleich} neue${gleich === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · Zum Mitmachen aufs iPad tippen` : 'Zum Mitmachen aufs iPad tippen';
+    if (!dia.length) { $(vorne).classList.remove('an'); return; }
+    const hinten = vorne === 'diaA' ? 'diaB' : 'diaA';
+    $(hinten).src = `/fotos/${dia[diaIdx % dia.length]}/druck.jpg`;
+    $(hinten).onload = () => { $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten; };
+    diaIdx++;
+  }
+  function diaStart() { if (diaTimer) return; diaLaden().then(diaWeiter); diaTimer = setInterval(() => { if (diaIdx % 3 === 0) diaLaden(); diaWeiter(); }, 5000); }
+  function diaStopp() { clearInterval(diaTimer); diaTimer = null; }
+
+  function zeichnen(neu) {
+    z = neu;
+    const s = BUEHNE[z.ansicht] || 'dia';
+    ['dia', 'live', 'aufnahme', 'ergebnis', 'danke', 'stoerung'].forEach((x) => { $('s-' + x).hidden = x !== s; });
+    $('namen').textContent = z.einstellungen.namen; $('datum').textContent = z.einstellungen.datum;
+    live(s === 'live' ? 'live' : s === 'aufnahme' ? 'live2' : null);
+    if (s === 'dia') { if (diaVersion !== z.diashowVersion) { diaVersion = z.diashowVersion; diaLaden(); } diaStart(); } else diaStopp();
+
+    $('liveText').textContent = z.ansicht === 'modus' ? 'Stellt euch auf die Markierung am Boden' : 'Gleich geht’s los …';
+    $('s-aufnahme').classList.toggle('sw', z.filter === 'sw');
+    $('nr').hidden = !(z.bild && z.bild.von > 1);
+    if (z.bild) $('nr').textContent = `Bild ${z.bild.nr} von ${z.bild.von}`;
+    $('aufnahmeText').textContent = z.hinweis || '';
+    $('aufnahmeText').hidden = !z.hinweis;
+    const zahl = z.countdown || '';
+    if (zahl !== letzteZahl) { $('zahl').textContent = zahl; $('zahl').classList.remove('puls'); void $('zahl').offsetWidth; if (zahl) $('zahl').classList.add('puls'); letzteZahl = zahl; }
+    if (letzterBlitz !== null && z.blitz !== letzterBlitz) { const b = $('blitz'); b.classList.remove('los'); void b.offsetWidth; b.classList.add('los'); }
+    letzterBlitz = z.blitz;
+
+    if (z.foto) ['ergebnis', 'dankeBild'].forEach((id) => { if ($(id).getAttribute('src') !== z.foto.url) $(id).src = z.foto.url; });
+    const offen = z.auftraege.filter((a) => a.status !== 'fertig').length;
+    $('ergebnisText').textContent = z.ansicht === 'vorschau' ? 'Gefällt’s euch? Entscheidet am iPad.'
+      : z.ansicht === 'druck' ? 'Wie viele Abzüge? Wählt am iPad.'
+      : offen ? `Wird gedruckt – noch ${offen} ${offen === 1 ? 'Abzug' : 'Abzüge'}. Gleich unten am Ausgabefach.` : 'Fertig gedruckt – holt eure Abzüge unten ab!';
+    $('dankeText').textContent = !z.inDiashow ? 'Euer Foto ist gespeichert, aber nicht in der Diashow.' : 'Euer Foto läuft gleich in der Diashow.';
+  }
+
+  // Hinweis, wenn die Seite keinen Tastatur-Fokus hat (dann kommt der Bluetooth-Knopf nicht an)
+  const fokus = () => { $('fokus').hidden = document.hasFocus() || window !== window.top; };
+  window.addEventListener('focus', fokus); window.addEventListener('blur', fokus); setInterval(fokus, 2000); fokus();
+
+  Fotobox.verbinden(zeichnen);
+  Fotobox.knopfAktivieren();
+})();
+</script>
+</body>
+</html>

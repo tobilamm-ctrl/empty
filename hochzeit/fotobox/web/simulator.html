@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fotobox – Simulator</title>
+<link rel="stylesheet" href="/web/app.css">
+<style>
+/* Zum Ausprobieren ohne Hardware: großer Bildschirm (1280 × 720) und iPad (1024 × 768) als echte Seiten,
+   verkleinert nebeneinander, darunter der Bluetooth-Knopf und der Link zum Service. */
+body { font-size: 15px; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+.geraete { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 24px; align-items: start; max-width: 1600px; margin: 0 auto; }
+.geraet { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.etikett { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--leise); }
+.rahmen { background: #050605; border-radius: 14px; padding: 10px; }
+.fenster { position: relative; overflow: hidden; border-radius: 4px; }
+.fenster iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #000; }
+.leiste { max-width: 1600px; margin: 22px auto 0; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.leiste .leise { color: var(--leise); font-size: 14px; line-height: 1.5; flex: 1 1 320px; }
+.knopf { width: 92px; height: 92px; border-radius: 50%; border: 0; background: radial-gradient(circle at 35% 30%, #ff8a7a, #c8322a 60%, #8d1d18); color: #fff; font-weight: 700; box-shadow: 0 8px 0 #5e120e, 0 14px 24px rgba(0,0,0,.5); }
+.knopf:active { transform: translateY(6px); box-shadow: 0 2px 0 #5e120e, 0 6px 12px rgba(0,0,0,.5); }
+a.btn { text-decoration: none; }
+@media (max-width: 900px) { .geraete { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="geraete">
+  <div class="geraet"><span class="etikett">Großer Bildschirm · /buehne</span><div class="rahmen"><div class="fenster" data-b="1280" data-h="720"><iframe src="/buehne" title="Großer Bildschirm" width="1280" height="720"></iframe></div></div></div>
+  <div class="geraet"><span class="etikett">iPad · /ipad</span><div class="rahmen" style="border-radius:22px;padding:16px"><div class="fenster" data-b="1024" data-h="768"><iframe src="/ipad" title="iPad" width="1024" height="768"></iframe></div></div></div>
+</div>
+<div class="leiste">
+  <button class="knopf" id="knopf" aria-label="Bluetooth-Knopf drücken">Knopf</button>
+  <p class="leise">Der rote Knopf spielt den Bluetooth-Knopf. Die Enter- oder Leertaste geht auch, wenn diese Seite angeklickt ist. Kamera und Drucker sind simuliert – Störungen und Papierstand gibt es im Service.</p>
+  <a class="btn btn-rand" href="/service" target="_blank" rel="noopener">Service öffnen</a>
+</div>
+<script src="/web/verbindung.js"></script>
+<script>
+(() => {
+  'use strict';
+  function anpassen() {
+    document.querySelectorAll('.fenster').forEach((f) => {
+      const b = +f.dataset.b, h = +f.dataset.h, s = f.clientWidth / b;
+      f.style.height = Math.round(h * s) + 'px';
+      f.querySelector('iframe').style.transform = `scale(${s})`;
+    });
+  }
+  window.addEventListener('resize', anpassen); anpassen();
+  document.getElementById('knopf').onclick = () => Fotobox.aktion('knopf');
+  Fotobox.verbinden(() => {});
+  Fotobox.knopfAktivieren();
+})();
+</script>
+</body>
+</html>

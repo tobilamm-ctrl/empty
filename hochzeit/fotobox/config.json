@@ -1,0 +1,31 @@
+{
+  "port": 8080,
+  "pin": "2580",
+  "datenOrdner": "daten",
+  "sicherungsOrdner": "",
+  "kamera": {
+    "art": "simulator",
+    "digicamcontrol": {
+      "url": "http://localhost:5513",
+      "ordner": "C:\\Fotobox\\kamera"
+    }
+  },
+  "drucker": {
+    "art": "simulator",
+    "namen": ["Canon SELPHY CP1500", "Canon SELPHY CP1500 (Kopie 1)"],
+    "kassette": 18,
+    "druckDauerSek": 45,
+    "simulatorDauerSek": 8,
+    "sumatra": "C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"
+  },
+  "zeiten": {
+    "countdownSek": 3,
+    "leerlaufWarnungSek": 35,
+    "leerlaufSek": 45,
+    "dankeSek": 4
+  },
+  "knopf": {
+    "tasten": ["Enter", " ", "PageDown", "PageUp", "ArrowRight", "ArrowDown", "AudioVolumeUp", "AudioVolumeDown", "F13"],
+    "sperreMs": 1500
+  }
+}
