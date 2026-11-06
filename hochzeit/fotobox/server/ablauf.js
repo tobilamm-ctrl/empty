@@ -27,7 +27,7 @@ function geschlossen(e, jetzt = new Date()) {
   const ab = e.oeffnungAb ? min(e.oeffnungAb) : null, bis = e.oeffnungBis ? min(e.oeffnungBis) : null;
   if (ab === null && bis === null) return null;
   let offen;
-  if (ab !== null && bis !== null) offen = ab <= bis ? t >= ab && t < bis : t >= ab || t < bis;
+  if (ab !== null && bis !== null) offen = ab === bis || (ab < bis ? t >= ab && t < bis : t >= ab || t < bis); // gleiche Zeit = immer offen
   else if (ab !== null) offen = t >= ab || t < 5 * 60;
   else offen = t < bis;
   if (offen) return null;
@@ -200,7 +200,8 @@ class Ablauf extends EventEmitter {
         this.z.hinweis = i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
         for (let c = dauer.countdownSek; c >= 1; c--) { this.z.countdown = c; this._melden(); await this._warte(this.zeiten.countdownSchritt); }
         this.z.countdown = null; this.z.blitz++; this._melden();
-        let b = await this.kamera.ausloesen();
+        let b;
+        try { b = await this.kamera.ausloesen(); } catch (err) { err.kamera = true; throw err; }
         if (filter === 'sw') b = await this.bild.schwarzweiss(b);
         aufnahmen.push(b);
         if (i < anzahl - 1) await this._warte(this.zeiten.pause);
@@ -217,7 +218,8 @@ class Ablauf extends EventEmitter {
       this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg` }, hinweis: '', bild: null });
     } catch (err) {
       this.log('fehler', 'Aufnahme fehlgeschlagen: ' + err.message);
-      this._zeige('stoerung', { countdown: null, bild: null, hinweis: '', stoerung: 'Die Kamera hat nicht ausgelöst. Sagt bitte dem Brautpaar oder einem Helfer Bescheid.' });
+      const text = err.kamera ? 'Die Kamera hat nicht ausgelöst.' : 'Das Foto konnte nicht gespeichert werden.';
+      this._zeige('stoerung', { countdown: null, bild: null, hinweis: '', stoerung: `${text} Sagt bitte dem Brautpaar oder einem Helfer Bescheid.` });
     }
   }
 
@@ -239,6 +241,8 @@ class Ablauf extends EventEmitter {
     }
     if (this.knopfLernenBis && Date.now() > this.knopfLernenBis) { this.knopfLernenBis = 0; this._melden(); }
     if (!LEERLAUF_ANSICHTEN.includes(this.z.ansicht)) return;
+    // Solange die eigenen Abzüge noch drucken, nicht zum Start zurückspringen
+    if (this.z.ansicht === 'drucken' && this.z.foto && this.drucker.auftraegeZu(this.z.foto.id).some((x) => x.status !== 'fertig')) { this.letzteAktivitaet = Date.now(); return; }
     const dauer = this._dauer(e), vorbei = Date.now() - this.letzteAktivitaet;
     if (vorbei >= dauer.leerlauf) {
       if (['vorschau', 'druck'].includes(this.z.ansicht)) this._behalten();

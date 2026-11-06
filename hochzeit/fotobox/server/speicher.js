@@ -66,11 +66,12 @@ const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
 function bereinigen(k, v) {
   const art = Array.isArray(STANDARD[k]) ? 'liste' : typeof STANDARD[k];
   if (art === 'number') {
+    if (v === '' || v === null || typeof v === 'boolean') return undefined;
     const n = Number(v); if (!Number.isFinite(n)) return undefined; // ungültige Zahlen ignorieren
     const [min, max] = GRENZEN[k] || [0, Infinity], f = NACHKOMMA[k] || 1;
     return Math.min(max, Math.max(min, Math.round(n * f) / f));
   }
-  if (art === 'boolean') return !!v;
+  if (art === 'boolean') return v === true || v === 'true' || v === 1 || v === '1';
   if (art === 'liste') {
     if (!Array.isArray(v)) return undefined;
     return k === 'druckerAus' ? [...new Set(v.map(Number).filter((n) => Number.isInteger(n) && n >= 0))] : [...new Set(v.map(String))].slice(0, 10);
