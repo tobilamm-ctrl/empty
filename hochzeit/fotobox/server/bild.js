@@ -1,6 +1,9 @@
 /*
- * Bildbearbeitung: Schwarzweiß und das Druckbild 10 × 15 cm (300 dpi) mit Rahmen, Namen und Datum.
+ * Bildbearbeitung: Schwarzweiß und das Druckbild 10 × 15 cm (300 dpi) mit Namen und Datum.
  *   Einzelfoto: 1800 × 1200 (quer). Fotostreifen: 1200 × 1800 (hoch) mit zwei gleichen Streifen zum Durchschneiden.
+ *   layout 'rahmen': Foto kleiner mit hellem Rand, Text darunter. layout 'vollbild': Foto randlos, Text weiß
+ *   auf einem dunklen Verlauf im Bild – mit mindestens 90 px (ca. 7,5 mm) Abstand zum Rand, weil der Selphy
+ *   beim randlosen Druck an den Kanten etwas abschneidet.
  */
 'use strict';
 const fs = require('fs');
@@ -49,9 +52,20 @@ function passend(ctx, text, schrift, groesse, maxBreite) {
   do { ctx.font = schrift.replace('{g}', g); g -= 2; } while (ctx.measureText(text).width > maxBreite && g > 12);
 }
 
-// { modus: 'einzel'|'streifen', fotos: [jpeg-Buffer], g: gestaltung(), namen, datum } → jpeg-Buffer
-async function zusammensetzen({ modus, fotos, g, namen, datum }) {
+// Dunkler Verlauf von unten, damit weiße Schrift auf jedem Foto lesbar bleibt
+function verlauf(ctx, x, y, w, h) {
+  const v = ctx.createLinearGradient(0, y, 0, y + h);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(0.55, 'rgba(0,0,0,0.38)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(x, y, w, h);
+}
+function schatten(ctx, an) {
+  ctx.shadowColor = an ? 'rgba(0,0,0,0.45)' : 'transparent'; ctx.shadowBlur = an ? 12 : 0; ctx.shadowOffsetY = an ? 2 : 0;
+}
+
+// { modus: 'einzel'|'streifen', layout: 'rahmen'|'vollbild', fotos: [jpeg-Buffer], g: gestaltung(), namen, datum } → jpeg-Buffer
+async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum }) {
   const bilder = await Promise.all(fotos.map((f) => loadImage(f)));
+  if (layout === 'vollbild') return vollbild({ modus, bilder, g, namen, datum });
   const tinte = '#262521';
   const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
   const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
@@ -81,6 +95,42 @@ async function zusammensetzen({ modus, fotos, g, namen, datum }) {
     ctx.fillText(namen, 900, 1100);
     ctx.fillStyle = g.akzent; passend(ctx, datum.toUpperCase(), datumFont, 34, 1500);
     ctx.fillText(datum.toUpperCase(), 900, 1160);
+  }
+  return c.toBuffer('image/jpeg', 92);
+}
+
+function vollbild({ modus, bilder, g, namen, datum }) {
+  const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
+  const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
+  const schreibschrift = /vibes|script|parisienne/i.test(g.namenSchrift);
+  const datumText = datum.toUpperCase();
+  let c, ctx;
+  if (modus === 'streifen') {
+    // zwei gleiche Streifen à 600 × 1800, je vier Bilder 600 × 450 ohne Abstand; Text auf dem letzten Bild
+    c = createCanvas(1200, 1800); ctx = c.getContext('2d');
+    for (let k = 0; k < 2; k++) {
+      const ox = k * 600;
+      bilder.slice(0, 4).forEach((b, j) => cover(ctx, b, ox, j * 450, 600, 450));
+      verlauf(ctx, ox, 1530, 600, 270);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
+      passend(ctx, namen, namenFont, schreibschrift ? 72 : 54, 440);
+      ctx.fillText(namen, ox + 300, 1668);
+      passend(ctx, datumText, datumFont, 24, 440);
+      ctx.fillText(datumText, ox + 300, 1712);
+      schatten(ctx, false);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke();
+  } else {
+    c = createCanvas(1800, 1200); ctx = c.getContext('2d');
+    cover(ctx, bilder[0], 0, 0, 1800, 1200);
+    verlauf(ctx, 0, 820, 1800, 380);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
+    passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500);
+    ctx.fillText(namen, 900, 1040);
+    passend(ctx, datumText, datumFont, 34, 1500);
+    ctx.fillText(datumText, 900, 1100);
+    schatten(ctx, false);
   }
   return c.toBuffer('image/jpeg', 92);
 }

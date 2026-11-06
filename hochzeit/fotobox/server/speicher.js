@@ -25,6 +25,7 @@ const STANDARD = {
   diashowVerzoegerungSek: 0,
   knopfModus: 'einzel',
   knopfFilter: 'farbe',
+  druckLayout: 'rahmen',
 };
 
 const zweistellig = (n) => String(n).padStart(2, '0');

@@ -138,7 +138,7 @@ class Ablauf extends EventEmitter {
       if (s !== this.sitzung) return;
       this.z.hinweis = 'Einen Moment …'; this._melden();
       const e = this.speicher.einstellungen();
-      const druck = await this.bild.zusammensetzen({ modus: this.z.modus, fotos: aufnahmen, g: this.gestaltungVon(e), namen: e.namen, datum: e.datum });
+      const druck = await this.bild.zusammensetzen({ modus: this.z.modus, layout: e.druckLayout, fotos: aufnahmen, g: this.gestaltungVon(e), namen: e.namen, datum: e.datum });
       const foto = await this.speicher.neuesFoto({ modus: this.z.modus, filter, aufnahmen, druck });
       this.log('info', `Foto ${foto.id} aufgenommen`);
       this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg` }, hinweis: '', bild: null });

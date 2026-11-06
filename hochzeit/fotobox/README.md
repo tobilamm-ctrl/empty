@@ -182,6 +182,7 @@ Die Fotobox hat zwei Canon SELPHY CP1500. Die beiden Drucker drucken abwechselnd
 2. Öffne die Druckerliste: Einstellungen → Drucker & Scanner (Windows 11: Bluetooth und Geräte → Drucker & Scanner). Notiere die **genauen Namen** der beiden Drucker. Sie müssen in `drucker.namen` genau so stehen, mit Groß- und Kleinschreibung und Leerzeichen.
 3. Stelle das Papierformat ein. Öffne die **Druckeinstellungen** des Druckers und wähle **10 × 15 cm** (Postkarte) mit **randlos**. Speichere das als **Standard**. Die Fotobox druckt mit den Standardeinstellungen des Druckers. Wenn dort etwas anderes steht, druckt sie falsch.
 4. Installiere **SumatraPDF** von sumatrapdfreader.org. Der Standardpfad ist `C:\Program Files\SumatraPDF\SumatraPDF.exe`. Trage ihn in `drucker.sumatra` ein, wenn er bei dir anders ist.
+4a. Wie das Druckbild aussieht, stellst du auf der Service-Seite unter **Druckbild** ein: „mit hellem Rand, Namen darunter“ oder „Vollbild, Namen auf dem Foto“. Beim Vollbild schneidet der Drucker an den Kanten ein paar Millimeter ab; Namen und Datum haben deshalb genug Abstand zum Rand.
 5. Teste zuerst von Hand. Öffne ein JPG-Foto mit der Windows-Fotoanzeige, wähle „Drucken“, dann den SELPHY, 10 × 15 cm, randlos. Das Bild sollte das Papier ganz ausfüllen.
 6. Erst dann teste mit der Fotobox: Nimm ein Foto auf und drucke es auf dem iPad.
 
