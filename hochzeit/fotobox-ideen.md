@@ -261,3 +261,13 @@ dann http://localhost:8080/simulator. Kamera und Drucker simuliert; echte Kamera
 echter Druck (SumatraPDF) sind vorbereitet, aber noch nicht mit Hardware getestet.
 Bluetooth-Knopf: koppelt wie eine Tastatur (Enter, Leertaste, Lauter …), startet den Countdown sofort;
 was er aufnimmt (Einzelfoto/Streifen, Farbe/Schwarzweiß), steht in den Service-Einstellungen.
+
+## Bildschirm für Einrichtung und Bedienung (06.11.2026)
+
+- Einrichtung über den großen Bildschirm geht: Tastatur/Maus an den Mini-PC, Vollbild mit Alt+F4 schließen,
+  dann ist der normale Windows-Desktop auf dem Fernseher. Im Betrieb reicht die Service-Seite am Handy.
+- Alternativ Fernwartung vom Laptop im Fotobox-WLAN (Remotedesktop nur bei Windows Pro, sonst z. B. RustDesk/AnyDesk).
+- Kleine Monitore: tragbare 13–16-Zoll-Monitore mit Full HD (USB-C oder HDMI), oder 7–10-Zoll-HDMI-Touchdisplays.
+  Bei 7 Zoll mit Full HD ist Windows nur mit starker Skalierung (150–200 %) lesbar.
+- Touch-Monitor am Mini-PC könnte das iPad ersetzen (eine Verbindung weniger, kein WLAN für die Bedienung).
+- Mit zwei Bildschirmen am Mini-PC: Fernseher als Hauptbildschirm einstellen, damit das Vollbild dort erscheint.
