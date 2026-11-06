@@ -22,13 +22,13 @@ Du kannst die Fotobox am eigenen Laptop ausprobieren. Kamera und Drucker sind da
 2. Öffne den Ordner `fotobox`. Unter Windows: Rechtsklick auf eine freie Stelle im Ordner, dann „Im Terminal öffnen“.
 3. Gib einmal ein: `npm install`. Das lädt die nötigen Teile herunter. Das dauert ein bis zwei Minuten. Dieser Schritt braucht Internet. Danach nicht mehr.
 4. Starte die Fotobox mit: `npm start`. Im Terminal stehen dann die Adressen für alle Seiten.
-5. Öffne im Browser die Seiten `http://localhost:8080/ipad` und `http://localhost:8080/buehne`, am besten nebeneinander in zwei Fenstern.
+5. Öffne im Browser `http://localhost:8080/simulator`. Dort stehen der große Bildschirm und das iPad nebeneinander. Du bedienst das iPad mit der Maus, der große Bildschirm reagiert gleichzeitig. Darunter ist ein roter Knopf, der den Bluetooth-Knopf spielt, und ein Link zur Service-Seite.
 
-Hinweis: Die Adresse `/simulator` ist im Programm vorgesehen. Dort sollten das iPad und die Bühne nebeneinander stehen, dazu Knöpfe für den Bluetooth-Knopf und für Störungen. Die Seite selbst fehlt aber in diesem Stand noch (die Datei `web/simulator.html` gibt es nicht). Der Aufruf zeigt dann „Nicht gefunden“. Bis dahin nimm die beiden Seiten aus Schritt 5 und die Service-Seite weiter unten.
+Du kannst auch `http://localhost:8080/ipad` und `http://localhost:8080/buehne` in zwei eigenen Fenstern öffnen.
 
 ### Bluetooth-Knopf testen
 
-- Klicke in das Fenster von `/ipad` oder `/buehne`.
+- Drücke im Simulator den roten Knopf. Oder klicke in die Seite `/simulator`, `/ipad` oder `/buehne`.
 - Drücke die **Eingabetaste** (Enter). Der Countdown startet.
 - Die **Leertaste** wirkt genauso.
 
@@ -49,7 +49,7 @@ Zum Beenden der Fotobox drückst du im Terminal **Strg + C**.
 | `/ipad` | Gäste: Modus wählen, Foto machen, drucken | iPad, im Vollbild (siehe Abschnitt 4) |
 | `/buehne` | Gäste im Saal: Countdown, Livebild, Diashow, fertiges Foto | großer Bildschirm oder Fernseher am Mini-PC, im Vollbild |
 | `/service` | Brautpaar oder Helfer: Papierstand, Störungen, Einstellungen, Import, Fotos, Protokoll | Handy im Fotobox-WLAN, oder der Mini-PC |
-| `/simulator` | Ausprobieren ohne Hardware (siehe Abschnitt 2) | Laptop. Die Seite fehlt in diesem Stand noch. |
+| `/simulator` | Ausprobieren ohne Hardware (siehe Abschnitt 2) | Laptop |
 
 Die Startseite `http://<IP>:8080/` leitet auf `/ipad` weiter.
 
@@ -248,7 +248,7 @@ Die Fotobox kann dieselben Farben und Schriften wie die Einladungen zeigen. Dazu
 - Farbwelt, Akzentfarbe und Schriftstil
 - eigene Schriften aus dem Karten-Editor
 
-Nicht übernommen werden der Ort und das Monogramm. Die Fotobox zeigt bisher nur die Anzahl der Gäste. Die Namen aus der Liste erscheinen nicht auf den Bildschirmen.
+Nicht übernommen werden der Ort und das Monogramm (das Monogramm am iPad bildet die Fotobox selbst aus den Anfangsbuchstaben der Namen). Die Gästeliste mit Tischen wird gespeichert und ist für spätere Funktionen wie Tisch-Aufgaben gedacht. Im Moment zeigt die Fotobox nur, wie viele Gäste übernommen wurden.
 
 ### Ohne Import
 
@@ -333,10 +333,10 @@ Die Ordner und Dateien im Überblick:
 - `server/speicher.js`: schreibt die Dateien in `daten/`, Sicherung und ZIP-Export.
 - `server/import.js`: liest die Sitzplan-Datei.
 - `server/gestaltung.js`, `server/bild.js`, `server/szene.js`, `server/zip.js`: Farben, Druckbild, Simulator-Szene, ZIP-Datei.
-- `web/`: die Seiten `ipad.html`, `buehne.html`, `service.html`, `app.css` und `verbindung.js` (Verbindung und Bluetooth-Knopf). Die Datei `web/simulator.html` fehlt in diesem Stand.
-- `tools/`: in diesem Stand leer.
+- `web/`: die Seiten `ipad.html`, `buehne.html`, `service.html`, `simulator.html`, `app.css` und `verbindung.js` (Verbindung und Bluetooth-Knopf).
+- `tools/`: automatische Tests (`test-ablauf.js`, `test-drucker.js`, `test-import.js`, `test-server.js`, `test-zip.js`) und `alle-tests.js`.
 - `schriften/`: Schriftdateien (woff2) von Cormorant Garamond, Great Vibes, Josefin Sans und Montserrat. Jede Schrift hat eine Lizenzdatei `LICENSE-*.txt` (SIL Open Font License 1.1).
 
 Die Programme brauchen Node.js ab Version 18 und die Pakete `ws` und `@napi-rs/canvas` (siehe `package.json`).
 
-Der Test startet mit `npm test` und ruft `tools/alle-tests.js` auf. Diese Datei fehlt in diesem Stand. Der Befehl bricht deshalb ab.
+Die Tests startest du mit `npm test`. Er ruft `tools/alle-tests.js` auf und braucht weder Kamera noch Drucker.

@@ -52,7 +52,13 @@ class Speicher {
 
   einstellungen() { return Object.assign({}, this._einst); }
   einstellungenSetzen(teil) {
-    Object.keys(teil || {}).forEach((k) => { if (k in STANDARD) this._einst[k] = teil[k]; });
+    Object.keys(teil || {}).forEach((k) => {
+      if (!(k in STANDARD)) return;
+      const art = typeof STANDARD[k], v = teil[k];
+      if (art === 'number') { const n = Number(v); if (Number.isFinite(n) && n >= 0) this._einst[k] = Math.round(n); } // ungültige Zahlen ignorieren
+      else if (art === 'boolean') this._einst[k] = !!v;
+      else this._einst[k] = String(v == null ? '' : v);
+    });
     this._schreiben('einstellungen.json', this._einst);
     return this.einstellungen();
   }

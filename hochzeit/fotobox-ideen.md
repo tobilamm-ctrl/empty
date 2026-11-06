@@ -253,3 +253,11 @@ Schnittstellen:
 - iPad → Server (WebSocket): start, modus, filter, nochmal, weiter, drucken(anzahl), fertig, inDiashow(ja/nein)
 - Server → alle (WebSocket): aktueller Zustand (Ansicht, Countdown, Bild, Druckaufträge, Papierstand, Warnungen)
 - HTTP: Livebild-Stream, Fotos, Einstellungen, Druckerstatus/„Kassette getauscht“, Import, Export (Admin mit PIN)
+
+## Stand 06.11.2026: Backend mit Simulator gebaut
+
+Ordner `hochzeit/fotobox/` (Anleitung: `hochzeit/fotobox/README.md`). `npm install`, `npm start`,
+dann http://localhost:8080/simulator. Kamera und Drucker simuliert; echte Kamera (digiCamControl) und
+echter Druck (SumatraPDF) sind vorbereitet, aber noch nicht mit Hardware getestet.
+Bluetooth-Knopf: koppelt wie eine Tastatur (Enter, Leertaste, Lauter …), startet den Countdown sofort;
+was er aufnimmt (Einzelfoto/Streifen, Farbe/Schwarzweiß), steht in den Service-Einstellungen.

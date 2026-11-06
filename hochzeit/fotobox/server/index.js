@@ -94,7 +94,8 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fotobox');
-    const p = decodeURIComponent(url.pathname);
+    let p;
+    try { p = decodeURIComponent(url.pathname); } catch (e) { return json(res, 400, { fehler: 'Ungültige Adresse' }); }
     if (p === '/') { res.writeHead(302, { Location: '/ipad' }); return res.end(); }
     if (SEITEN[p]) return datei(res, path.join(WURZEL, 'web', SEITEN[p]), { 'Cache-Control': 'no-store' });
     if (p.startsWith('/web/')) { const d = sicher(path.join(WURZEL, 'web'), p.slice(5)); return d ? datei(res, d) : json(res, 404, {}); }
