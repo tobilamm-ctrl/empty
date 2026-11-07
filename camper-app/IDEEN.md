@@ -249,7 +249,7 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 4. **Paket E – Reisearten und CO₂:** ✅ P11 (Lieferung 75, mit neuer api/index.php), dann P10 (Lieferung 77 – Tobi ist sich noch unsicher)
    **Zwischendurch ✅ Lieferung 76:** Bescheid, wenn andere Crews losfahren, und Mitteilung bei Folge-Anfragen (Hinweis 👋 und Push)
 
-**Unterwegs mit Freunden ausbauen (Tobi, 7.11.2026: „alles umsetzen“, braucht neue api/index.php):**
+**Crews on the Road (früher „Unterwegs mit Freunden“) ausbauen (Tobi, 7.11.2026: „alles umsetzen“, braucht neue api/index.php):**
 - F1. Frühere Reisen einer gefolgten Crew ansehen (nicht nur die laufende bzw. zuletzt begonnene).
 - F2. Herzen und Kommentare der Freunde zu Einträgen (in der eigenen App sichtbar, getrennt von Familie und Blog-Lesern).
 - F3. Sprachnotizen und Highlights des Tages auch in der Freunde-Ansicht.

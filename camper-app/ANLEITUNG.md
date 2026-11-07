@@ -136,6 +136,11 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 78: „Unterwegs mit Freunden“ heißt jetzt „Crews on the Road“
+
+- Der Bereich unter **Mehr**, in dem ihr die Reisen anderer Crews mitverfolgt, heißt jetzt **„Crews on the Road“**. Die Funktion bleibt gleich.
+- Neu ist auch die `api/index.php`: Nur der Text der Mitteilung bei Folge-Anfragen nennt den neuen Namen. Hochladen ist nicht zwingend.
+
 ## Neu in Version 77: Start-Hilfe für Startbildschirm und Mitteilungen
 
 Oben im Tagebuch erscheint eine kleine Start-Hilfe, aber nur, solange noch etwas fehlt:
@@ -157,7 +162,7 @@ Oben im Tagebuch erscheint eine kleine Start-Hilfe, aber nur, solange noch etwas
 - **👋 Hinweis in der App.** Oben neben der Pinnwand erscheint ein Hinweis:
   - „Familie Franz ist losgefahren“, wenn eine andere Crew in den letzten Tagen eine Reise begonnen hat, der ihr noch nicht folgt.
   - „Familie Franz möchte folgen“ für Crew-Leiter, wenn eine Anfrage wartet.
-  - Antippen öffnet „Unterwegs mit Freunden“. Dort fragt ihr mit einem Tipp an bzw. nehmt an oder lehnt ab. Danach verschwindet der Hinweis.
+  - Antippen öffnet „Crews on the Road“. Dort fragt ihr mit einem Tipp an bzw. nehmt an oder lehnt ab. Danach verschwindet der Hinweis.
 - **Mitteilung aufs Handy** (Einstellungen › Mitteilungen › „👋 Andere Crews“, für eingeschaltete Geräte schon an):
   - „👋 Familie Franz ist losgefahren“. Wer schon folgt, sieht den Namen der Reise. Alle anderen nur, dass die Crew unterwegs ist (wie bisher in der Übersicht).
   - „👋 Familie Franz möchte euch folgen“ an die Crew-Leiter.
@@ -180,7 +185,7 @@ Oben im Tagebuch erscheint eine kleine Start-Hilfe, aber nur, solange noch etwas
   - Flüge erscheinen als Bogen mit ✈️ in Flugrichtung.
   - Fähren und Schiffe sind blau gestrichelt, Bahnfahrten lila gepunktet, Rad- und Wandertouren grün.
   - Die Linie in Reisefarbe zeigt nur noch die Straßen-Abschnitte. So zieht sich bei einer Flugreise keine Autolinie von zu Hause über das Meer.
-  - Das gilt auch im Reiseblog, bei „Unterwegs mit Freunden“ und im Reisebuch.
+  - Das gilt auch im Reiseblog, bei „Crews on the Road“ und im Reisebuch.
 - **Der Straße folgen** rechnet nur die Straßen-Abschnitte, jeden für sich. Bei Rad- und Wandertouren nutzt es Rad- bzw. Fußwege.
 - **Statistik:** Die neue Karte „Reisearten“ zeigt Reisen je Art, Kilometer je Verkehrsmittel der gewählten Reise (Flug als Luftlinie) und Übernachtungen je Art.
   Geflogene Kilometer zählen nicht mehr als „gefahren“. Im Reiseblog stehen sie extra als „geflogen“.
@@ -203,7 +208,7 @@ Oben im Tagebuch erscheint eine kleine Start-Hilfe, aber nur, solange noch etwas
   Tracker-Adresse. Diese Adresse tragt ihr in einer kleinen Tracker-App ein. Für Android ist das **GPSLogger** („Log to custom URL“), fürs iPhone
   **OwnTracks** (Modus HTTP) oder **Overland**. Die Schritte stehen direkt darunter. Die Tracker-App meldet ihre Punkte auch, wenn LAMMping zu ist,
   und daraus wächst die Strecke „Aufgezeichnet (Name)“ der laufenden Reise. Ungenaue Punkte (über 100 m), Stillstand und Ausreißer fallen weg.
-  Teilt ihr euren Standort unter „Unterwegs mit Freunden“, sehen eure Freunde ihn so immer aktuell. „Neue Adresse“ macht die alte ungültig.
+  Teilt ihr euren Standort unter „Crews on the Road“, sehen die anderen Crews ihn so immer aktuell. „Neue Adresse“ macht die alte ungültig.
 - **Herzen im Reiseblog.** Leser des Reiseblogs geben ohne Konto ein Herz, eines je Gerät. Beim ersten Herz dürfen sie ihren Namen dazuschreiben, müssen aber nicht.
   Im Blog steht die Zahl. Im Tagebuch steht am Eintrag „❤️ 3 im Reiseblog“ mit gestricheltem Rand, so unterscheidet es sich von euren eigenen Herzen.
   Antippen zeigt, wer es war. Ausschalten könnt ihr das in den Einstellungen des Reiseblogs („Leser dürfen Herzen geben“).

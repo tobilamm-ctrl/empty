@@ -70,7 +70,7 @@ export default function installSpuren(app) {
       <small class="sub"> Daraus und aus den Standorten der Fotos entsteht die Linie auf der Karte. Fragt nie selbst nach der Erlaubnis.</small></span></label>
     <h3>Im Hintergrund mit einer Tracker-App</h3>
     <p class="sub">Eine Web-App darf den Standort nicht im Hintergrund verfolgen. Eine kleine Tracker-App auf dem Handy kann das und schickt
-      die Punkte an LAMMping: Die Strecke wächst von selbst, auch wenn LAMMping zu ist. Teilt ihr euren Standort mit Freunden, sehen sie ihn dann aktuell.</p>
+      die Punkte an LAMMping: Die Strecke wächst von selbst, auch wenn LAMMping zu ist. Teilt ihr euren Standort unter „Crews on the Road“, sehen die anderen Crews ihn dann aktuell.</p>
     <div id="trackBody"><p class="sub">Wird geladen …</p></div></section>`);
 
   const guide = url => `<details class="trk-help"><summary>Android: GPSLogger (kostenlos, F-Droid oder Play Store)</summary><ol>

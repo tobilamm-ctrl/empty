@@ -64,7 +64,7 @@ export default function installMore(app) {
     ['erinnern', 'Erinnerungen', ['album', 'reisefoto', 'reiseblog', 'rubbelkarte', 'statistik']],
     ['sicher', 'Sicherheit & Verwaltung', ['dokumente', 'einstellungen']],
   ];
-  // Zur Laufzeit lesen: spätere Module ergänzen TILES (z. B. „Unterwegs mit Freunden“)
+  // Zur Laufzeit lesen: spätere Module ergänzen TILES (z. B. „Crews on the Road“)
   const legacyIds = () => TILES.map(t => t.route);
   // Bisher gespeichert, aber nur in der alten Reihenfolge (z. B. nach Ändern der Größe): Themen übernehmen
   const legacy = p => !Object.keys(p.seps || {}).length && (() => {

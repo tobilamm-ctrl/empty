@@ -1,4 +1,4 @@
-// Unterwegs mit Freunden: Reisen anderer Crews mitverfolgen. Alle Crews sehen nur, wer gerade unterwegs ist.
+// Crews on the Road: Reisen anderer Crews mitverfolgen. Alle Crews sehen nur, wer gerade unterwegs ist.
 // Mehr (Karte, Einträge mit Fotos, zuletzt gemeldeter Standort) gibt es erst, wenn ein Crew-Leiter der anderen Crew
 // das freigibt: per Einladung oder indem er eine Anfrage annimmt. Ausgeblendete Einträge (Reiseblog) bleiben privat,
 // Kosten, Listen und Dokumente sowieso.
@@ -49,7 +49,7 @@ export default function installMitreisen(app) {
 
   if (app.TILES && !app.TILES.some(t => t.route === 'mitreisen')) {
     const at = app.TILES.findIndex(t => t.route === 'freunde');
-    app.TILES.splice(at < 0 ? app.TILES.length : at + 1, 0, { route: 'mitreisen', art: 'freunde', title: 'Unterwegs mit Freunden', text: 'Reisen anderer Crews mitverfolgen' });
+    app.TILES.splice(at < 0 ? app.TILES.length : at + 1, 0, { route: 'mitreisen', art: 'freunde', title: 'Crews on the Road', text: 'Reisen anderer Crews mitverfolgen' });
   }
 
   /* ---------- Seite ---------- */
@@ -59,9 +59,9 @@ export default function installMitreisen(app) {
   const since = c => (c.since ? `seit ${fmtDay(c.since)} unterwegs` : 'unterwegs');
   VIEWS.mitreisen = () => {
     if (!travel || travel.crew !== crewId()) {
-      if (!navigator.onLine) return `${pageHead('freunde', 'Unterwegs mit Freunden')}<p class="hint">Dafür braucht es eine Internetverbindung.</p>`;
+      if (!navigator.onLine) return `${pageHead('freunde', 'Crews on the Road')}<p class="hint">Dafür braucht es eine Internetverbindung.</p>`;
       load(true).then(() => { if (app.ui.route === 'mitreisen') render(); });
-      return `${pageHead('freunde', 'Unterwegs mit Freunden')}<p class="sub">Wird geladen …</p>`;
+      return `${pageHead('freunde', 'Crews on the Road')}<p class="sub">Wird geladen …</p>`;
     }
     // Beim Öffnen der Seite frisch nachladen (der Stand vom Start kann einige Minuten alt sein)
     if (!onPage && navigator.onLine) { onPage = true; load(true).then(() => { if (app.ui.route === 'mitreisen') render(); }); }
@@ -72,7 +72,7 @@ export default function installMitreisen(app) {
     const fans = all.filter(c => c.follower === 'ok');
     const row = (c, btns, sub) => `<li><span class="txt"><b>${esc(c.name)}${isNew(c) ? ' <span class="new-dot">Neu</span>' : ''}</b><small>${sub}</small></span><span class="mr-btns">${btns}</span></li>`;
     const live = (S.meta.find(m => m.id === 'follow') || {}).live;
-    return `${pageHead('freunde', 'Unterwegs mit Freunden', 'Reisen anderer Crews mitverfolgen')}
+    return `${pageHead('freunde', 'Crews on the Road', 'Reisen anderer Crews mitverfolgen')}
       ${following.length ? `<h2 class="date-head">Ihr folgt</h2><ul class="mr-list">${following.map(c => row(c,
         `<button class="primary small-btn" data-action="mr-open" data-id="${c.id}">Ansehen</button>`,
         c.travelling ? since(c) : 'gerade nicht unterwegs, letzte Reise ansehen')).join('')}</ul>` : ''}
@@ -126,7 +126,7 @@ export default function installMitreisen(app) {
     const c = list().find(x => x.id === el.dataset.id);
     openSheet(`<div class="mr-view">${sheetHead(esc(c ? c.name : 'Reise'))}<p class="sub">Wird geladen …</p></div>`);
     let d;
-    try { d = await feed(el.dataset.id, true); } catch (e) { openSheet(`<div>${sheetHead('Unterwegs mit Freunden')}<p class="hint">${esc(e.message)}</p></div>`); return; }
+    try { d = await feed(el.dataset.id, true); } catch (e) { openSheet(`<div>${sheetHead('Crews on the Road')}<p class="hint">${esc(e.message)}</p></div>`); return; }
     if (c) { markSeen(c); app.chromeHooks.forEach(h => h()); }
     if (!d.trip) { openSheet(`<div>${sheetHead(esc(d.crew))}<p class="hint">Noch keine Reise.</p></div>`); return; }
     const es = d.entries.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -214,7 +214,7 @@ export default function installMitreisen(app) {
       const one = fresh.length === 1 ? fresh[0] : null;
       const what = one ? (asking(one) ? `${one.name} möchte folgen` : started(one) ? `${one.name} ist losgefahren` : one.name) : `${fresh.length} Crews`;
       note.innerHTML = `<span aria-hidden="true">👋</span><small>${esc(what)}</small><b>${fresh.length}</b>`;
-      note.setAttribute('aria-label', `Neues bei Unterwegs mit Freunden: ${fresh.map(c => c.name).join(', ')}`);
+      note.setAttribute('aria-label', `Neues bei Crews on the Road: ${fresh.map(c => c.name).join(', ')}`);
     }
   });
   ACTIONS['mr-goto'] = () => {

@@ -985,7 +985,7 @@ case 'gps':
         $line[] = [$pt[0], $pt[1]];
         $last = $pt; $changed = true;
     }
-    // Live-Standort für „Unterwegs mit Freunden“, wenn die Crew ihn teilt
+    // Live-Standort für „Crews on the Road“, wenn die Crew ihn teilt
     $meta = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'meta' AND id = 'follow' AND deleted = 0", [$crew]);
     $end = end($pts);
     if ($meta && !empty(json_decode($meta['data'], true)['live']) && $end[2] > now() - 2 * 3600000) {
@@ -1095,7 +1095,7 @@ case 'follow':
             // Crew-Leiter der anderen Crew aufs Handy
             if (function_exists('curl_init') && function_exists('openssl_pkey_derive')) {
                 foreach (all('SELECT s.* FROM push_subs s JOIN members m ON m.user_id = s.user_id WHERE m.crew_id = ? AND m.leader = 1 AND s.friends = 1', [$target]) as $sub) {
-                    try { pushSend($sub, ['title' => '👋 ' . crewName($crew) . ' möchte euch folgen', 'body' => 'Antippen zum Annehmen oder Ablehnen (Unterwegs mit Freunden).', 'url' => './#/mitreisen', 'tag' => 'ask-' . $crew]); }
+                    try { pushSend($sub, ['title' => '👋 ' . crewName($crew) . ' möchte euch folgen', 'body' => 'Antippen zum Annehmen oder Ablehnen (Crews on the Road).', 'url' => './#/mitreisen', 'tag' => 'ask-' . $crew]); }
                     catch (Throwable $e) { /* weiter */ }
                 }
             }

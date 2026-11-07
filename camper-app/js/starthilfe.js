@@ -38,7 +38,7 @@ export default function installStarthilfe(app) {
     }
     if (pushOk() && Notification.permission === 'default' && !LS.get('helpPushNever', false) && !snoozed('helpPushUntil')) {
       return card(`<p><b>🔔 Mitteilungen einschalten?</b></p>
-        <p class="sub">Für neue Zettel an der Pinnwand, Ticket-Erinnerungen und wenn Freunde losfahren. Was genau, stellt ihr unter Einstellungen › Mitteilungen ein.</p>`,
+        <p class="sub">Für neue Zettel an der Pinnwand, Ticket-Erinnerungen und wenn andere Crews losfahren. Was genau, stellt ihr unter Einstellungen › Mitteilungen ein.</p>`,
       `<button class="primary" data-action="help-push">Einschalten</button>
         <button class="ghost small-btn" data-action="help-later" data-k="helpPushUntil">Später</button>
         <button class="link" data-action="help-push-never">Nein, danke</button>`);
