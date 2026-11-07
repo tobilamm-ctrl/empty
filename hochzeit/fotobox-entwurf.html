@@ -2,736 +2,773 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Josefin+Sans:wght@400;600&family=Montserrat:wght@400;600&display=swap">
 <style>
-/* Schriftgrößen in cqw beziehen sich auf .tv bzw. .ipad (Container), damit beide Geräte maßstabsgetreu skalieren.
-   Layout: zwei Geräte nebeneinander, synchron – links der große Bildschirm (16:9, Bühne), rechts das iPad (4:3, Bedienung).
-   Innenmaße in cqw bzw. em, damit beide Geräte maßstabsgetreu mitskalieren. Bewusst nur ein dunkles Farbschema:
-   die Fotobox steht abends im Saal, ein heller Bildschirm würde blenden. */
+/* Layout: drei Geräte, die gleichzeitig reagieren – oben großer Bildschirm (16:9) und iPad (4:3), darunter
+   Bluetooth-Knopf und das Service-Handy. Innenmaße in cqw/em, damit die Geräte maßstabsgetreu skalieren.
+   Die Geräte bekommen ihre Farben aus der gewählten Farbwelt (wie in der echten App); die Seite drumherum
+   bleibt neutral dunkel. Bewusst nur ein dunkles Schema: die Fotobox steht abends im Saal. */
 :root {
-  --bg: #13201b;        /* Flaschengrün */
-  --surface: #1b2b24;
-  --surface-2: #233830;
-  --line: #34493f;
-  --ink: #efe7d6;       /* Champagner */
-  --muted: #a8b3a7;
-  --brass: #cda45e;     /* Messing, Hauptaktion */
-  --brass-ink: #1d1609;
-  --warn: #e7a25f;
-  --ok: #8fc79c;
-  --danger: #e57d6e;
-  --bezel: #070b09;
-  --f-display: "Marcellus", "Cormorant Garamond", Georgia, serif;
-  --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --seite: #121311; --seite-2: #1b1d1a; --seite-linie: #2f322d; --seite-tinte: #ecebe6; --seite-leise: #a3a69e;
+  --bezel: #060706;
+  /* Gerätefarben – werden per Skript aus der Farbwelt gesetzt */
+  --grund: #15130f; --flaeche: #1f1c16; --flaeche-2: #2a261e; --linie: #3d372b;
+  --tinte: #f1ece3; --leise: #a9a296; --akzent: #cda45e; --akzent-tinte: #1b1710;
+  --gut: #8fc79c; --warn: #e7a25f; --stoerung: #e57d6e;
+  --kopf: "Cormorant Garamond", Georgia, serif; --namen: "Great Vibes", Georgia, serif;
+  --text: "Montserrat", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 html, body { min-height: 100%; }
-body {
-  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px;
-  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
-}
+body { background: var(--seite); color: var(--seite-tinte); font-family: var(--text); font-size: 15px; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
-h1, h2 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; margin: 0; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--kopf); font-weight: 600; text-wrap: balance; margin: 0; }
 p { margin: 0; }
 
-.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 24px; }
-.demo-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: space-between; padding-block: 10px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); }
-.demo-bar strong { color: var(--ink); font-weight: 600; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 32px; }
+.demo-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: space-between; padding-block: 10px; font-size: 13px; color: var(--seite-leise); border-bottom: 1px solid var(--seite-linie); }
+.demo-bar strong { color: var(--seite-tinte); font-weight: 600; }
+.etikett { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--seite-leise); display: flex; gap: 8px; align-items: center; }
+.etikett i { width: 7px; height: 7px; border-radius: 50%; background: var(--gut); }
 
-.devices { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 22px 0; max-width: 1500px; margin: 0 auto; }
+.devices { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 26px; align-items: center; padding-block: 20px 0; max-width: 1500px; margin: 0 auto; }
 .dev { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.dev-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
-.dev-label i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
 .tv { container-type: inline-size; background: var(--bezel); border-radius: 10px; padding: 1.1%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
-.tv-screen { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; background: #0b120f; border-radius: 3px; font-size: 2cqw; }
-.tv-foot { width: 22%; height: 10px; margin: 0 auto; background: var(--bezel); border-radius: 0 0 8px 8px; }
-.ipad { container-type: inline-size; background: var(--bezel); border: 1px solid var(--line); border-radius: 26px; padding: 4%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
-.ipad-screen { aspect-ratio: 4 / 3; max-width: 100%; position: relative; overflow: hidden; background: var(--bg); border-radius: 10px; font-size: 3.4cqw; display: flex; flex-direction: column; }
+.tv-screen { aspect-ratio: 16 / 9; max-width: 100%; position: relative; overflow: hidden; background: #070807; border-radius: 3px; font-size: 2cqw; color: var(--tinte); }
+.tv-fuss { width: 22%; height: 10px; margin: 0 auto; background: var(--bezel); border-radius: 0 0 8px 8px; }
+.ipad { container-type: inline-size; background: var(--bezel); border: 1px solid var(--seite-linie); border-radius: 26px; padding: 4%; box-shadow: 0 40px 70px -40px rgba(0,0,0,.9); }
+.ipad-screen { aspect-ratio: 4 / 3; max-width: 100%; position: relative; overflow: hidden; background: var(--grund); border-radius: 10px; font-size: 3.2cqw; display: flex; flex-direction: column; color: var(--tinte); }
 
-/* ---------- Bühne (großer Bildschirm) ---------- */
+/* ---------- großer Bildschirm ---------- */
 .st { position: absolute; inset: 0; }
-.st-slides img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 1.2s ease; }
-.st-slides img.on { opacity: 1; }
-.st-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 1.4em; }
-.st-band { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 1em; padding: 4em 2.4em 1.6em; background: linear-gradient(to top, rgba(6,10,8,.85), rgba(6,10,8,0)); }
-.st-band b { font-family: var(--f-display); font-weight: 400; font-size: 2.4em; display: block; }
-.st-band span { font-size: .95em; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
-.st-band .cta { font-size: 1.1em; color: var(--brass); text-align: right; }
-.st-live canvas, .st-shoot canvas { width: 100%; height: 100%; display: block; transform: scaleX(-1); }
-.st.bw canvas { filter: grayscale(1) contrast(1.05); }
-.st-tag { position: absolute; top: 1.2em; left: 1.2em; font-size: .85em; background: rgba(0,0,0,.55); color: #fff; padding: .35em .9em; border-radius: 99px; }
-.st-msg { position: absolute; left: 50%; bottom: 2em; transform: translateX(-50%); background: rgba(10,16,13,.78); padding: .7em 1.6em; border-radius: 99px; font-size: 1.5em; white-space: nowrap; }
-.st-count { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--f-display); font-size: 25cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
-.pulse { animation: pulse 1s ease-out; }
-@keyframes pulse { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
-.flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
-.flash.go { animation: flash .45s ease-out; }
-@keyframes flash { from { opacity: .95; } to { opacity: 0; } }
-.st-shotlbl { position: absolute; top: 1.2em; right: 1.2em; background: var(--brass); color: var(--brass-ink); font-weight: 600; padding: .4em 1em; border-radius: 99px; font-size: 1.1em; }
-.st-result { display: grid; place-items: center; padding: 3% 3% 9%; box-sizing: border-box; }
-.st-result img { max-width: 100%; max-height: 100%; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); border-radius: 2px; }
-.st-thanks { display: flex; align-items: center; justify-content: center; gap: 5%; padding: 0 6%; }
-.st-thanks img { max-height: 70%; max-width: 45%; border-radius: 2px; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); }
-.st-thanks h2 { font-size: 6em; color: var(--brass); }
-.st-thanks p { font-size: 1.4em; color: var(--muted); margin-top: .4em; }
+.st-dia img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 1.2s ease; }
+.st-dia img.an { opacity: 1; }
+.leer { position: absolute; inset: 0; display: grid; place-items: center; color: var(--leise); font-size: 1.6em; }
+.band { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 1em; padding: 4em 2.4em 1.6em; background: linear-gradient(to top, rgba(4,5,4,.88), rgba(4,5,4,0)); }
+.band b { font-family: var(--namen); font-weight: 400; font-size: 3.2em; line-height: 1; display: block; }
+.band span { font-size: .9em; color: var(--leise); letter-spacing: .14em; text-transform: uppercase; }
+.band .los { font-size: 1.15em; color: var(--akzent); text-align: right; max-width: 55%; }
+.live canvas { width: 100%; height: 100%; display: block; }
+.gespiegelt .live canvas, .gespiegelt .kachel canvas { transform: scaleX(-1); }
+.sw canvas { filter: grayscale(1) contrast(1.05); }
+.tag { position: absolute; top: 1.2em; left: 1.2em; font-size: .8em; background: rgba(0,0,0,.55); color: #fff; padding: .35em .9em; border-radius: 99px; }
+.text { position: absolute; left: 50%; bottom: 2.2em; transform: translateX(-50%); background: rgba(6,8,7,.78); padding: .6em 1.6em; border-radius: 99px; font-size: 1.55em; white-space: nowrap; }
+.zahl-gross { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--kopf); font-size: 25cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
+.nr { position: absolute; top: 1.2em; right: 1.2em; background: var(--akzent); color: var(--akzent-tinte); font-weight: 600; padding: .4em 1em; border-radius: 99px; font-size: 1.1em; }
+.blitz { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.blitz.los { animation: blitz .45s ease-out; }
+@keyframes blitz { from { opacity: .95; } to { opacity: 0; } }
+.puls { animation: puls 1s ease-out; }
+@keyframes puls { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
+.st-ergebnis { display: flex; align-items: center; justify-content: center; padding-bottom: 7%; }
+.st-ergebnis img { max-width: 94%; max-height: 84%; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); border-radius: 2px; }
+.st-danke { display: flex; align-items: center; justify-content: center; gap: 5%; padding: 0 6%; }
+.st-danke img { max-height: 70%; max-width: 45%; border-radius: 2px; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); }
+.st-danke h2 { font-size: 6em; color: var(--akzent); font-weight: 500; }
+.st-danke p { font-size: 1.4em; color: var(--leise); margin-top: .4em; }
 
 /* ---------- iPad ---------- */
-.i-head { display: flex; align-items: center; gap: .7em; padding: .9em 1.3em .4em; flex: none; }
-.mono { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--brass); background: transparent; color: var(--brass); font-family: var(--f-display); font-size: .75em; flex: none; display: grid; place-items: center; }
-.mono.pressing { background: var(--surface-2); }
-.couple { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.couple b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
-.couple span { font-size: .62em; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
-.i-head .sp { flex: 1; }
-.step { font-size: .62em; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
-.pill { font-size: .6em; padding: .4em .8em; border-radius: 99px; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); }
+.kopf { display: flex; align-items: center; gap: .7em; padding: .9em 1.3em .4em; flex: none; }
+.mono { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--akzent); color: var(--akzent); font-family: var(--kopf); font-size: .8em; flex: none; display: grid; place-items: center; }
+.paar { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.paar b { font-family: var(--namen); font-weight: 400; font-size: 1.35em; }
+.paar span { font-size: .6em; color: var(--leise); letter-spacing: .12em; text-transform: uppercase; }
+.kopf .frei { flex: 1; }
+.schritt { font-size: .6em; color: var(--leise); letter-spacing: .08em; text-transform: uppercase; }
+.pill { font-size: .58em; padding: .4em .8em; border-radius: 99px; color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn) 14%, transparent); }
 .i-screens { flex: 1; position: relative; min-height: 0; }
 .is { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: .9em; padding: 0 1.4em 1.2em; overflow: auto; }
-.is h2 { font-size: 1.75em; }
-.is .lead { color: var(--muted); font-size: .8em; line-height: 1.45; }
-.is.center { align-items: center; text-align: center; }
-.back { align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: .75em; padding: 0; }
-
-.btn { border: 0; border-radius: .7em; padding: .75em 1.2em; font-size: 1em; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: .5em; transition: transform .12s ease, background .2s ease; }
+.is.mitte { align-items: center; text-align: center; }
+.is h2 { font-size: 1.8em; }
+.leise { color: var(--leise); font-size: .78em; line-height: 1.45; }
+.zurueck { align-self: flex-start; background: none; border: 0; color: var(--leise); font-size: .72em; padding: 0; }
+.btn { border: 0; border-radius: .7em; padding: .75em 1.2em; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: .5em; transition: transform .12s ease; }
 .btn:active { transform: scale(.97); }
-.btn-primary { background: var(--brass); color: var(--brass-ink); }
-.btn-ghost { background: transparent; border: 1.5px solid var(--line); }
-.btn-ghost:active { background: var(--surface-2); }
+.btn-haupt { background: var(--akzent); color: var(--akzent-tinte); }
+.btn-rand { background: transparent; border: 1.5px solid var(--linie); }
 .btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
-.btn-xl { font-size: 1.6em; padding: .9em 1.8em; border-radius: .6em; }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
-
-.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: .8em; }
-.tile { background: var(--surface); border: 1.5px solid var(--line); border-radius: .8em; padding: .9em; text-align: left; display: flex; flex-direction: column; gap: .5em; min-width: 0; transition: background .2s, border-color .2s, transform .12s; }
-.tile:active { transform: scale(.98); background: var(--surface-2); border-color: var(--brass); }
-.tile .t { font-family: var(--f-display); font-size: 1.3em; }
-.tile .d { color: var(--muted); font-size: .7em; line-height: 1.4; }
-.tile svg { width: 100%; height: 4.6em; }
-.tile canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; max-width: 100%; border-radius: .4em; display: block; transform: scaleX(-1); }
-.tile canvas.bw { filter: grayscale(1) contrast(1.05); }
-
-.i-count { font-family: var(--f-display); font-size: 5em; line-height: 1; color: var(--brass); font-variant-numeric: tabular-nums; min-height: 1em; }
-.side-by { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1em; align-items: center; }
-.thumb { max-width: 100%; max-height: 13em; justify-self: center; border-radius: 3px; background: #f6f1e6; }
-.col { display: flex; flex-direction: column; gap: .6em; min-width: 0; }
-.col .btn { width: 100%; }
-.check { display: flex; gap: .55em; align-items: center; font-size: .75em; color: var(--ink); }
-.check input { width: 1.4em; height: 1.4em; accent-color: var(--brass); }
-.note { font-size: .65em; color: var(--muted); line-height: 1.45; }
-
-.stepper { display: flex; align-items: center; gap: .8em; }
-.stepper button { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); font-size: 1.3em; line-height: 1; }
-.stepper button[disabled] { opacity: .35; }
-.stepper output { font-family: var(--f-display); font-size: 2.6em; min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
-.alert { border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 14%, transparent); border-radius: .6em; padding: .6em .8em; font-size: .7em; line-height: 1.4; }
-
-.jobs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .45em; }
-.jobs li { background: var(--surface); border: 1px solid var(--line); border-radius: .5em; padding: .5em .7em; display: grid; grid-template-columns: 1fr auto; gap: .35em .6em; font-size: .72em; }
-.jobs .bar { grid-column: 1 / -1; height: .45em; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.jobs .bar i { display: block; height: 100%; width: 0; background: var(--brass); transition: width .2s linear; }
-.jobs .st-t { color: var(--muted); }
-.jobs li.done .st-t { color: var(--ok); }
-
-/* Überlagerungen im iPad */
+.btn-xl { font-size: 1.5em; padding: .9em 1.8em; border-radius: .6em; }
+.kacheln { display: grid; grid-template-columns: 1fr 1fr; gap: .8em; }
+.kachel { background: var(--flaeche); border: 1.5px solid var(--linie); border-radius: .8em; padding: .9em; text-align: left; display: flex; flex-direction: column; gap: .5em; min-width: 0; transition: transform .12s, border-color .2s; }
+.kachel:active { transform: scale(.98); border-color: var(--akzent); }
+.kachel .t { font-family: var(--kopf); font-weight: 600; font-size: 1.3em; }
+.kachel .d { color: var(--leise); font-size: .68em; line-height: 1.4; }
+.kachel svg { width: 100%; height: 4.6em; }
+.kachel canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; max-width: 100%; border-radius: .4em; display: block; }
+.kachel canvas.bw { filter: grayscale(1) contrast(1.05); }
+.i-zahl { font-family: var(--kopf); font-size: 4.6em; line-height: 1; color: var(--akzent); min-height: 1em; font-variant-numeric: tabular-nums; }
+.zwei { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1em; align-items: center; }
+.vorschau { max-width: 100%; max-height: 12em; justify-self: center; border-radius: 3px; background: #f6f1e6; }
+.spalte { display: flex; flex-direction: column; gap: .6em; min-width: 0; }
+.spalte .btn { width: 100%; }
+.haken { display: flex; gap: .55em; align-items: center; font-size: .75em; }
+.haken input { width: 1.4em; height: 1.4em; accent-color: var(--akzent); }
+.klein { font-size: .65em; color: var(--leise); line-height: 1.45; }
+.zaehler { display: flex; align-items: center; gap: .8em; }
+.zaehler button { width: 2.6em; height: 2.6em; border-radius: 50%; border: 1.5px solid var(--linie); background: var(--flaeche); font-size: 1.3em; line-height: 1; }
+.zaehler button[disabled] { opacity: .35; }
+.zaehler output { font-family: var(--kopf); font-size: 2.6em; min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.meldung { border: 1px solid color-mix(in srgb, var(--stoerung) 50%, transparent); background: color-mix(in srgb, var(--stoerung) 14%, transparent); border-radius: .6em; padding: .6em .8em; font-size: .68em; line-height: 1.4; }
+.auftraege { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .45em; }
+.auftraege li { background: var(--flaeche); border: 1px solid var(--linie); border-radius: .5em; padding: .5em .7em; display: grid; grid-template-columns: 1fr auto; gap: .35em .6em; font-size: .72em; }
+.auftraege .balken { grid-column: 1 / -1; height: .45em; border-radius: 99px; background: var(--flaeche-2); overflow: hidden; }
+.auftraege .balken i { display: block; height: 100%; width: 0; background: var(--akzent); transition: width .2s linear; }
+.auftraege .st-t { color: var(--leise); }
+.auftraege li.fertig .st-t { color: var(--gut); }
 .iover { position: absolute; inset: 0; z-index: 5; background: rgba(8,13,11,.86); display: grid; place-items: center; padding: 1em; }
-.icard { background: var(--surface); border: 1px solid var(--line); border-radius: .9em; padding: 1em 1.2em; width: 100%; max-width: 22em; max-height: 100%; box-sizing: border-box; overflow: auto; display: flex; flex-direction: column; gap: .7em; }
+.icard { background: var(--flaeche); border: 1px solid var(--linie); border-radius: .9em; padding: 1em 1.2em; width: 100%; max-width: 20em; display: flex; flex-direction: column; gap: .7em; text-align: center; }
 .icard h2 { font-size: 1.3em; }
-.icard.wide { max-width: 30em; font-size: .82em; }
-.idle-num { font-family: var(--f-display); font-size: 2.6em; color: var(--brass); text-align: center; font-variant-numeric: tabular-nums; }
-.pin-dots { display: flex; gap: .7em; justify-content: center; }
-.pin-dots i { width: .8em; height: .8em; border-radius: 50%; border: 1.5px solid var(--muted); }
-.pin-dots i.f { background: var(--brass); border-color: var(--brass); }
-.pin-dots.shake { animation: shake .35s; }
-@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45em; }
-.pad button { height: 2.3em; border-radius: .5em; background: var(--surface-2); border: 1px solid var(--line); font-size: 1em; }
-.adm { display: grid; grid-template-columns: 1fr 1fr; gap: .6em .8em; }
-.adm label { display: flex; flex-direction: column; gap: .3em; font-size: .8em; color: var(--muted); min-width: 0; }
-.adm label.full { grid-column: 1 / -1; }
-.adm label.chk { flex-direction: row; align-items: center; gap: .5em; color: var(--ink); }
-.adm input[type=text], .adm select { font: inherit; font-size: 1em; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: .4em; padding: .45em .55em; min-width: 0; }
-.adm input[type=checkbox] { width: 1.2em; height: 1.2em; accent-color: var(--brass); }
-.printer { display: grid; grid-template-columns: 1fr auto; gap: .4em .6em; align-items: center; padding: .55em .7em; border: 1px solid var(--line); border-radius: .5em; font-size: .85em; }
-.printer .bar { grid-column: 1 / -1; height: .35em; border-radius: 99px; background: var(--bg); overflow: hidden; }
-.printer .bar i { display: block; height: 100%; background: var(--ok); }
-.printer.low .bar i { background: var(--warn); }
-.printer.empty .bar i { background: var(--danger); }
-.printer button { font-size: .85em; padding: .35em .6em; border-radius: .4em; background: var(--surface-2); border: 1px solid var(--line); }
-.printer .n, .stats { color: var(--muted); font-variant-numeric: tabular-nums; }
-.stats { font-size: .8em; }
-.sec-t { font-size: .7em; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: -.3em; }
 
-.explain { max-width: 1500px; margin: 22px auto 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
-.explain b { color: var(--ink); font-weight: 600; display: block; margin-bottom: 2px; }
+/* ---------- unten: Knopf und Service-Handy ---------- */
+.unten { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 26px; max-width: 1500px; margin: 26px auto 0; align-items: start; }
+.links { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.knopfkarte { display: flex; gap: 18px; align-items: center; background: var(--seite-2); border: 1px solid var(--seite-linie); border-radius: 16px; padding: 18px; }
+.rot { flex: none; width: 92px; height: 92px; border-radius: 50%; border: 0; background: radial-gradient(circle at 35% 30%, #ff8a7a, #c8322a 60%, #8d1d18); color: #fff; font-weight: 700; box-shadow: 0 8px 0 #5e120e, 0 14px 24px rgba(0,0,0,.5); }
+.rot:active { transform: translateY(6px); box-shadow: 0 2px 0 #5e120e, 0 6px 12px rgba(0,0,0,.5); }
+.knopfkarte p { color: var(--seite-leise); line-height: 1.5; font-size: 14px; }
+.knopfkarte b { color: var(--seite-tinte); }
+.erkl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px; color: var(--seite-leise); font-size: 14px; line-height: 1.5; }
+.erkl b { color: var(--seite-tinte); font-weight: 600; display: block; margin-bottom: 2px; }
+.handy { background: var(--bezel); border: 1px solid var(--seite-linie); border-radius: 34px; padding: 12px; }
+.handy-screen { height: 680px; overflow-y: auto; border-radius: 24px; background: var(--grund); color: var(--tinte); padding: 16px 14px 24px; display: flex; flex-direction: column; gap: 16px; font-size: 14px; overscroll-behavior: contain; }
+.handy-screen h3 { font-size: 20px; }
+.handy-screen h4 { font-family: var(--kopf); font-size: 17px; margin: 0; font-weight: 600; }
+.sk { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+.zeile { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.zeile .frei { flex: 1; }
+.punkt { width: 9px; height: 9px; border-radius: 50%; background: var(--gut); flex: none; }
+.punkt.warn { background: var(--warn); } .punkt.stoer { background: var(--stoerung); }
+.sbalken { height: 6px; border-radius: 99px; background: var(--grund); overflow: hidden; }
+.sbalken i { display: block; height: 100%; background: var(--gut); }
+.sbalken.warn i { background: var(--warn); }
+.sk .btn { font-size: 13px; padding: 8px 11px; }
+.sk label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--leise); min-width: 0; }
+.sk label.hk { flex-direction: row; align-items: center; gap: 8px; color: var(--tinte); font-size: 14px; }
+.sk input[type=text], .sk select { font: inherit; font-size: 14px; color: var(--tinte); background: var(--grund); border: 1px solid var(--linie); border-radius: 8px; padding: 7px 8px; min-width: 0; width: 100%; box-sizing: border-box; }
+.sk input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--akzent); }
+.zwei-sp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sleise { font-size: 12px; color: var(--leise); line-height: 1.45; }
+.pause-an { border-color: color-mix(in srgb, var(--warn) 55%, transparent); background: color-mix(in srgb, var(--warn) 14%, var(--flaeche)); }
 
-@media (max-width: 860px) {
-  .devices { grid-template-columns: minmax(0, 1fr); }
-  .ipad-screen { font-size: 3.8cqw; }
-  .explain { grid-template-columns: 1fr; }
+@media (max-width: 960px) {
+  .devices, .unten { grid-template-columns: minmax(0, 1fr); }
+  .ipad-screen { font-size: 3.6cqw; }
+  .erkl { grid-template-columns: 1fr; }
+  .handy { max-width: 400px; width: 100%; box-sizing: border-box; margin: 0 auto; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .pulse, .flash.go, .pin-dots.shake { animation: none; }
-  .st-slides img { transition: none; }
-}
+@media (prefers-reduced-motion: reduce) { .puls, .blitz.los { animation: none; } .st-dia img { transition: none; } }
 </style>
 
 <div class="page">
   <div class="demo-bar">
-    <span><strong>Klickbarer Entwurf</strong> · Bedient wird rechts am iPad, links seht ihr, was der große Bildschirm gleichzeitig zeigt. Kamera und Drucker sind simuliert.</span>
-    <span>Admin: Monogramm am iPad 1 Sek. gedrückt halten · PIN 2580</span>
+    <span><strong>Klickbarer Entwurf</strong> · Gäste tippen am iPad, der große Bildschirm reagiert gleichzeitig, eingestellt wird am Service-Handy. Kamera und Drucker sind simuliert.</span>
+    <span>Bluetooth-Knopf: roter Knopf oder Enter-Taste</span>
   </div>
 
-  <div class="devices">
-    <!-- Großer Bildschirm -->
+  <div class="devices" id="geraete">
     <div class="dev">
-      <span class="dev-label"><i></i>Großer Bildschirm · HDMI am Mini-PC</span>
-      <div class="tv">
-        <div class="tv-screen" id="tv">
-          <div class="st st-slides" id="st-slides">
-            <img id="slA" alt="Foto aus der Diashow"><img id="slB" alt="Foto aus der Diashow">
-            <div class="st-empty" id="slEmpty" hidden>Hier laufen gleich eure Fotos.</div>
-            <div class="st-band"><div><b id="tvNames">Anna &amp; Max</b><span id="tvDate">14. Juni 2027</span></div><div class="cta" id="slCap">Zum Mitmachen aufs iPad tippen</div></div>
-          </div>
-          <div class="st st-live" id="st-live" hidden>
-            <canvas id="liveA" width="960" height="540"></canvas>
-            <span class="st-tag">Demo-Livebild · gespiegelt</span>
-            <div class="st-msg" id="liveMsg">Stellt euch auf die Markierung am Boden</div>
-          </div>
-          <div class="st st-shoot" id="st-shoot" hidden>
-            <canvas id="liveB" width="960" height="540"></canvas>
-            <span class="st-tag">Demo-Livebild · gespiegelt</span>
-            <span class="st-shotlbl" id="tvShot" hidden></span>
-            <div class="st-count" id="tvCount"></div>
-            <div class="st-msg" id="tvShootMsg">Schaut in die Kamera!</div>
-            <div class="flash" id="flash"></div>
-          </div>
-          <div class="st st-result" id="st-result" hidden>
-            <img id="tvRes" alt="Euer fertiges Foto">
-            <div class="st-msg" id="resMsg"></div>
-          </div>
-          <div class="st st-thanks" id="st-thanks" hidden>
-            <img id="tvThanks" alt="Euer Foto">
-            <div><h2>Danke!</h2><p id="thanksMsg">Euer Foto läuft gleich in der Diashow.</p></div>
-          </div>
+      <span class="etikett"><i></i>Großer Bildschirm · HDMI am Mini-PC</span>
+      <div class="tv"><div class="tv-screen">
+        <div class="st st-dia" id="st-dia">
+          <img id="diaA" alt="Foto aus der Diashow"><img id="diaB" alt="Foto aus der Diashow">
+          <div class="leer" id="diaLeer" hidden>Hier laufen gleich eure Fotos.</div>
+          <div class="band"><div><b id="tvNamen"></b><span id="tvDatum"></span></div><div class="los" id="diaText"></div></div>
         </div>
-      </div>
-      <div class="tv-foot"></div>
+        <div class="st live" id="st-live" hidden>
+          <canvas id="liveA" width="960" height="540"></canvas>
+          <span class="tag">Demo-Livebild</span>
+          <div class="text" id="liveText">Stellt euch auf die Markierung am Boden</div>
+        </div>
+        <div class="st live" id="st-aufnahme" hidden>
+          <canvas id="liveB" width="960" height="540"></canvas>
+          <span class="tag">Demo-Livebild</span>
+          <span class="nr" id="tvNr" hidden></span>
+          <div class="zahl-gross" id="tvZahl"></div>
+          <div class="text" id="tvHinweis"></div>
+          <div class="blitz" id="blitz"></div>
+        </div>
+        <div class="st st-ergebnis" id="st-ergebnis" hidden>
+          <img id="tvErgebnis" alt="Euer fertiges Foto">
+          <div class="text" id="ergebnisText"></div>
+        </div>
+        <div class="st st-danke" id="st-danke" hidden>
+          <img id="tvDanke" alt="Euer Foto">
+          <div><h2 id="tvDankeTitel">Danke!</h2><p id="tvDankeText"></p></div>
+        </div>
+      </div></div>
+      <div class="tv-fuss"></div>
     </div>
 
-    <!-- iPad -->
     <div class="dev">
-      <span class="dev-label"><i></i>iPad · Bedienung</span>
-      <div class="ipad">
-        <div class="ipad-screen" id="ipad">
-          <div class="i-head">
-            <button class="mono" id="mono" aria-label="Monogramm (lange drücken für Admin)">A&amp;M</button>
-            <div class="couple"><b id="hdrNames">Anna &amp; Max</b><span id="hdrDate">14. Juni 2027</span></div>
-            <div class="sp"></div>
-            <span class="pill" id="paperPill" hidden></span>
-            <span class="step" id="stepLbl"></span>
-          </div>
-          <div class="i-screens">
-            <section class="is center" id="i-start">
-              <h2>Lächeln, bitte!</h2>
-              <button class="btn btn-primary btn-xl" id="goStart">Foto machen</button>
-              <p class="lead">Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.</p>
-            </section>
-
-            <section class="is" id="i-mode" hidden>
-              <button class="back" data-go="start">← Zurück</button>
-              <h2>Was für ein Foto?</h2>
-              <div class="tiles">
-                <button class="tile" id="pickSingle">
-                  <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="20" y="4" width="130" height="100" rx="4" fill="none" stroke="#cda45e" stroke-width="2"/><rect x="29" y="13" width="112" height="64" rx="2" fill="#34493f"/><rect x="60" y="88" width="50" height="5" rx="2.5" fill="#a8b3a7"/></svg>
-                  <span class="t">Einzelfoto</span><span class="d">Ein großes Bild, 10 × 15 cm</span>
-                </button>
-                <button class="tile" id="pickStrip">
-                  <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="45" y="4" width="80" height="102" rx="3" fill="none" stroke="#cda45e" stroke-width="2"/><g fill="#34493f"><rect x="51" y="10" width="31" height="19" rx="1.5"/><rect x="51" y="33" width="31" height="19" rx="1.5"/><rect x="51" y="56" width="31" height="19" rx="1.5"/><rect x="51" y="79" width="31" height="19" rx="1.5"/><rect x="88" y="10" width="31" height="19" rx="1.5"/><rect x="88" y="33" width="31" height="19" rx="1.5"/><rect x="88" y="56" width="31" height="19" rx="1.5"/><rect x="88" y="79" width="31" height="19" rx="1.5"/></g><line x1="85" y1="7" x2="85" y2="103" stroke="#a8b3a7" stroke-dasharray="3 3"/></svg>
-                  <span class="t">Fotostreifen</span><span class="d">4 Bilder hintereinander, ihr bekommt zwei Streifen</span>
-                </button>
-              </div>
-            </section>
-
-            <section class="is" id="i-filter" hidden>
-              <button class="back" id="filterBack">← Zurück</button>
-              <h2>Farbe oder Schwarzweiß?</h2>
-              <div class="tiles">
-                <button class="tile" id="pickColor"><canvas id="thColor" width="360" height="240"></canvas><span class="t">Farbe</span></button>
-                <button class="tile" id="pickBW"><canvas id="thBW" class="bw" width="360" height="240"></canvas><span class="t">Schwarzweiß</span></button>
-              </div>
-            </section>
-
-            <section class="is center" id="i-shoot" hidden>
-              <p class="lead" id="iShot">Bild 1 von 1</p>
-              <div class="i-count" id="iCount"></div>
-              <h2 id="iShootMsg">Schaut in die Kamera!</h2>
-              <p class="lead">Den Countdown seht ihr groß auf dem Bildschirm.</p>
-            </section>
-
-            <section class="is" id="i-preview" hidden>
-              <div class="side-by">
-                <img class="thumb" id="iThumb" alt="Euer Foto (klein)">
-                <div class="col">
-                  <h2>Gefällt’s euch?</h2>
-                  <button class="btn btn-primary" id="toPrint">Weiter</button>
-                  <button class="btn btn-ghost" id="retry">Nochmal</button>
-                  <label class="check"><input type="checkbox" id="inSlides" checked>In der Diashow zeigen</label>
-                </div>
-              </div>
-            </section>
-
-            <section class="is" id="i-print" hidden>
-              <div class="side-by">
-                <img class="thumb" id="iThumb2" alt="Euer Foto (klein)">
-                <div class="col">
-                  <h2>Wie viele Abzüge?</h2>
-                  <div class="stepper">
-                    <button id="minus" aria-label="Einen weniger">−</button>
-                    <output id="copies">1</output>
-                    <button id="plus" aria-label="Einen mehr">+</button>
-                  </div>
-                  <p class="note" id="copiesNote"></p>
-                  <div class="alert" id="noPaper" hidden>Die Drucker sind gerade nicht bereit. Euer Foto ist gespeichert. Sagt bitte einem Helfer Bescheid.</div>
-                  <button class="btn btn-primary" id="doPrint">Drucken</button>
-                  <button class="btn btn-ghost" id="noPrint">Ohne Druck fertig</button>
-                </div>
-              </div>
-            </section>
-
-            <section class="is" id="i-printing" hidden>
-              <h2>Wird gedruckt …</h2>
-              <ul class="jobs" id="jobs"></ul>
-              <p class="note">Holt eure Abzüge gleich unten am Ausgabefach ab. Echt dauert ein Druck ca. 45 Sekunden, hier ist es verkürzt.</p>
-              <button class="btn btn-primary" id="printDone">Fertig</button>
-            </section>
-
-            <section class="is center" id="i-thanks" hidden>
-              <h2 style="font-size:3em;color:var(--brass)">Danke!</h2>
-              <p class="lead">Viel Spaß noch beim Feiern.</p>
-            </section>
-          </div>
-
-          <!-- Noch da? -->
-          <div class="iover" id="idle" hidden>
-            <div class="icard" style="text-align:center">
-              <h2>Seid ihr noch da?</h2>
-              <div class="idle-num" id="idleNum">10</div>
-              <p class="note">Sonst geht es gleich zurück zum Start, damit die Nächsten drankommen.</p>
-              <button class="btn btn-primary" id="idleStay">Weitermachen</button>
+      <span class="etikett"><i></i>iPad · Bedienung</span>
+      <div class="ipad"><div class="ipad-screen" id="ipad">
+        <div class="kopf">
+          <div class="mono" id="mono">A&amp;M</div>
+          <div class="paar"><b id="namen"></b><span id="datum"></span></div>
+          <div class="frei"></div>
+          <span class="pill" id="pill" hidden></span>
+          <span class="schritt" id="schritt"></span>
+        </div>
+        <div class="i-screens">
+          <section class="is mitte" id="i-start">
+            <h2 id="startTitel"></h2>
+            <button class="btn btn-haupt btn-xl" data-a="start">Foto machen</button>
+            <p class="leise" id="startText"></p>
+          </section>
+          <section class="is" id="i-modus" hidden>
+            <button class="zurueck" data-a="zurueck">← Zurück</button>
+            <h2>Was für ein Foto?</h2>
+            <div class="kacheln">
+              <button class="kachel" data-a="modus" data-w="einzel">
+                <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="20" y="4" width="130" height="100" rx="4" fill="none" stroke="var(--akzent)" stroke-width="2"/><rect x="29" y="13" width="112" height="64" rx="2" fill="var(--linie)"/><rect x="60" y="88" width="50" height="5" rx="2.5" fill="var(--leise)"/></svg>
+                <span class="t">Einzelfoto</span><span class="d">Ein großes Bild, 10 × 15 cm</span>
+              </button>
+              <button class="kachel" data-a="modus" data-w="streifen">
+                <svg viewBox="0 0 170 110" aria-hidden="true"><rect x="45" y="4" width="80" height="102" rx="3" fill="none" stroke="var(--akzent)" stroke-width="2"/><g fill="var(--linie)"><rect x="51" y="10" width="31" height="19" rx="1.5"/><rect x="51" y="33" width="31" height="19" rx="1.5"/><rect x="51" y="56" width="31" height="19" rx="1.5"/><rect x="51" y="79" width="31" height="19" rx="1.5"/><rect x="88" y="10" width="31" height="19" rx="1.5"/><rect x="88" y="33" width="31" height="19" rx="1.5"/><rect x="88" y="56" width="31" height="19" rx="1.5"/><rect x="88" y="79" width="31" height="19" rx="1.5"/></g><line x1="85" y1="7" x2="85" y2="103" stroke="var(--leise)" stroke-dasharray="3 3"/></svg>
+                <span class="t">Fotostreifen</span><span class="d">4 Bilder hintereinander, ihr bekommt zwei Streifen</span>
+              </button>
             </div>
-          </div>
-
-          <!-- PIN -->
-          <div class="iover" id="pin" hidden>
-            <div class="icard" style="max-width:13em">
-              <h2 style="text-align:center">Admin-Bereich</h2>
-              <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
-              <div class="pad" id="pad">
-                <button>1</button><button>2</button><button>3</button>
-                <button>4</button><button>5</button><button>6</button>
-                <button>7</button><button>8</button><button>9</button>
-                <button data-k="x" aria-label="Abbrechen">✕</button><button>0</button><button data-k="del" aria-label="Löschen">⌫</button>
+          </section>
+          <section class="is" id="i-filter" hidden>
+            <button class="zurueck" data-a="zurueck">← Zurück</button>
+            <h2>Farbe oder Schwarzweiß?</h2>
+            <div class="kacheln">
+              <button class="kachel" data-a="filter" data-w="farbe"><canvas id="thFarbe" width="360" height="240"></canvas><span class="t">Farbe</span></button>
+              <button class="kachel" data-a="filter" data-w="sw"><canvas id="thSw" class="bw" width="360" height="240"></canvas><span class="t">Schwarzweiß</span></button>
+            </div>
+          </section>
+          <section class="is mitte" id="i-aufnahme" hidden>
+            <p class="leise" id="iNr"></p>
+            <div class="i-zahl" id="iZahl"></div>
+            <h2 id="iHinweis"></h2>
+            <p class="leise">Den Countdown seht ihr groß auf dem Bildschirm.</p>
+          </section>
+          <section class="is" id="i-vorschau" hidden>
+            <div class="zwei">
+              <img class="vorschau" id="iVorschau1" alt="Euer Foto (klein)">
+              <div class="spalte">
+                <h2>Gefällt’s euch?</h2>
+                <button class="btn btn-haupt" data-a="weiter">Weiter</button>
+                <button class="btn btn-rand" data-a="nochmal" id="nochmal">Nochmal</button>
+                <label class="haken"><input type="checkbox" id="inDiashow" checked>In der Diashow zeigen</label>
               </div>
             </div>
-          </div>
-
-          <!-- Admin -->
-          <div class="iover" id="admin" hidden>
-            <div class="icard wide">
-              <h2>Admin-Bereich</h2>
-              <p class="sec-t">Drucker</p>
-              <div id="printerList" style="display:flex;flex-direction:column;gap:.45em"></div>
-              <p class="sec-t">Einstellungen</p>
-              <form class="adm" id="admForm">
-                <label>Namen<input type="text" id="setNames"></label>
-                <label>Datum<input type="text" id="setDate"></label>
-                <label>Abzüge pro Foto höchstens
-                  <select id="setMaxCopies"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-                <label>„Nochmal“ höchstens
-                  <select id="setMaxRetries"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
-                <label class="full">Neue Fotos in der Diashow
-                  <select id="setDelay"><option value="0">sofort</option><option value="15000">nach 2 Minuten (im Entwurf: 15 Sekunden)</option></select></label>
-                <label class="chk full"><input type="checkbox" id="setStrip">Fotostreifen anbieten</label>
-                <label class="chk full"><input type="checkbox" id="setFilter">Schwarzweiß anbieten</label>
-              </form>
-              <p class="stats" id="stats"></p>
-              <button class="btn btn-primary" id="admClose">Schließen</button>
+          </section>
+          <section class="is" id="i-druck" hidden>
+            <div class="zwei">
+              <img class="vorschau" id="iVorschau2" alt="Euer Foto (klein)">
+              <div class="spalte">
+                <h2>Wie viele Abzüge?</h2>
+                <div class="zaehler"><button id="weniger" aria-label="Einen weniger">−</button><output id="anzahl">1</output><button id="mehr" aria-label="Einen mehr">+</button></div>
+                <p class="klein" id="anzahlText"></p>
+                <div class="meldung" id="keinPapier" hidden>Die Drucker sind gerade nicht bereit. Euer Foto ist gespeichert. Sagt bitte einem Helfer Bescheid.</div>
+                <button class="btn btn-haupt" data-a="drucken" id="drucken">Drucken</button>
+                <button class="btn btn-rand" data-a="ohneDruck">Ohne Druck fertig</button>
+              </div>
             </div>
+          </section>
+          <section class="is" id="i-drucken" hidden>
+            <h2>Wird gedruckt …</h2>
+            <ul class="auftraege" id="auftraege"></ul>
+            <p class="klein">Holt eure Abzüge gleich unten am Ausgabefach ab. Echt dauert ein Druck ca. 45 Sekunden, hier ist es verkürzt.</p>
+            <button class="btn btn-haupt" data-a="fertig" style="align-self:flex-start">Fertig</button>
+          </section>
+          <section class="is mitte" id="i-danke" hidden>
+            <h2 style="font-size:3em;color:var(--akzent)" id="iDankeTitel"></h2>
+            <p class="leise" id="iDankeText"></p>
+          </section>
+          <section class="is mitte" id="i-pause" hidden>
+            <h2 id="iPauseText"></h2>
+          </section>
+        </div>
+        <div class="iover" id="leerlauf" hidden>
+          <div class="icard">
+            <h2>Seid ihr noch da?</h2>
+            <div class="i-zahl" id="leerlaufZahl" style="font-size:2.6em">10</div>
+            <p class="klein">Sonst geht es gleich zurück zum Start, damit die Nächsten drankommen.</p>
+            <button class="btn btn-haupt" data-a="aktiv">Weitermachen</button>
           </div>
         </div>
-      </div>
+      </div></div>
     </div>
   </div>
 
-  <div class="explain">
-    <p><b>Großer Bildschirm</b>Diashow im Leerlauf, gespiegeltes Livebild, großer Countdown und das fertige Foto. Die Gäste schauen so automatisch Richtung Kamera.</p>
-    <p><b>iPad</b>Nur zum Antippen: Art des Fotos, Farbe, Nochmal, Anzahl der Abzüge. Das iPad zeigt das Foto nur klein zur Kontrolle.</p>
-    <p><b>Diashow</b>Mit „In der Diashow zeigen“ entscheiden die Gäste selbst. Im Admin-Bereich lässt sich einstellen, dass neue Fotos erst nach 2 Minuten erscheinen.</p>
+  <div class="unten">
+    <div class="links">
+      <div class="knopfkarte">
+        <button class="rot" id="rot" aria-label="Bluetooth-Knopf drücken">Knopf</button>
+        <p><b>Bluetooth-Knopf.</b> Ein Druck startet den Countdown sofort – vom Startbildschirm aus mit der Einstellung „Knopf macht“ im Service. Die Enter- oder Leertaste geht auch, wenn diese Seite angeklickt ist. Ein zweiter Druck innerhalb von 1,5 Sekunden zählt nicht.</p>
+      </div>
+      <div class="erkl">
+        <p><b>Großer Bildschirm</b>Diashow im Leerlauf, Livebild, großer Countdown und das fertige Foto. Die Gäste schauen so automatisch Richtung Kamera.</p>
+        <p><b>iPad</b>Nur zum Antippen. Nach 45 Sekunden ohne Eingabe geht es zurück zum Start – aber erst, wenn die eigenen Abzüge fertig gedruckt sind.</p>
+        <p><b>Service-Handy</b>Alles, was ihr am Abend braucht: Pause, Papierstand, Drucker abschalten, Druckbild, Farben wie die Einladungen, eigene Texte. Im Entwurf wirkt jede Änderung sofort; in der App gibt es je Abschnitt einen Speichern-Knopf.</p>
+        <p><b>Was der Entwurf nicht zeigt</b>Logo-Upload, Öffnungszeiten, Feinkorrektur für den Druck, Knopf anlernen, PIN und Speicherplatz – das gibt es nur in der echten App.</p>
+      </div>
+    </div>
+
+    <div class="dev">
+      <span class="etikett"><i></i>Handy · Service</span>
+      <div class="handy"><div class="handy-screen" id="service">
+        <h3>Fotobox-Service</h3>
+
+        <div class="sk" id="jetztKarte">
+          <h4>Jetzt</h4>
+          <div class="zeile"><span class="punkt"></span><span>Kamera: bereit (Simulator)</span></div>
+          <div class="zeile"><span class="sleise">Ansicht am iPad:</span><span id="sAnsicht"></span></div>
+          <div class="zeile"><button class="btn btn-haupt" id="sPause">Pause</button><button class="btn btn-rand" id="sStart">Zurück zum Start</button></div>
+        </div>
+
+        <div class="sk"><h4>Drucker</h4><div id="sDrucker" style="display:flex;flex-direction:column;gap:12px"></div></div>
+
+        <div class="sk">
+          <h4>Ablauf</h4>
+          <div class="zwei-sp">
+            <label>Countdown<select data-e="countdownSek" data-zahl><option value="3">3 Sekunden</option><option value="5">5 Sekunden</option><option value="10">10 Sekunden</option></select></label>
+            <label>„Nochmal“ höchstens<select data-e="maxNochmal" data-zahl><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
+          </div>
+          <label>Bluetooth-Knopf macht</label>
+          <div class="zwei-sp">
+            <select data-e="knopfModus" aria-label="Knopf: Art"><option value="einzel">Einzelfoto</option><option value="streifen">Fotostreifen</option></select>
+            <select data-e="knopfFilter" aria-label="Knopf: Farbe"><option value="farbe">in Farbe</option><option value="sw">in Schwarzweiß</option></select>
+          </div>
+          <label class="hk"><input type="checkbox" data-e="streifen">Fotostreifen anbieten</label>
+          <label class="hk"><input type="checkbox" data-e="schwarzweiss">Schwarzweiß anbieten</label>
+        </div>
+
+        <div class="sk">
+          <h4>Drucken</h4>
+          <label class="hk"><input type="checkbox" data-e="druckenAn">Drucken an</label>
+          <div class="zwei-sp">
+            <label>Abzüge pro Foto<select data-e="maxAbzuege" data-zahl><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+            <label>Druckbild<select data-e="druckLayout"><option value="rahmen">mit Rand</option><option value="vollbild">Vollbild</option></select></label>
+          </div>
+        </div>
+
+        <div class="sk">
+          <h4>Gestaltung</h4>
+          <div class="zwei-sp">
+            <label>Namen<input type="text" data-e="namen"></label>
+            <label>Datum<input type="text" data-e="datum"></label>
+          </div>
+          <label>Farbwelt (wie im Sitzplantool)<select data-e="farbwelt" id="sFarbwelt"></select></label>
+          <label>Schriftstil<select data-e="schriftstil"><option value="klassisch">Klassisch (Serifen)</option><option value="romantisch">Romantisch (Schreibschrift)</option><option value="modern">Modern (schlicht)</option></select></label>
+          <label class="hk"><input type="checkbox" data-e="spiegeln">Livebild spiegeln</label>
+        </div>
+
+        <div class="sk">
+          <h4>Texte</h4>
+          <label>Überschrift am iPad<input type="text" data-e="textStartTitel" maxlength="60"></label>
+          <label>Hinweis am iPad<input type="text" data-e="textStart" maxlength="140"></label>
+          <label>Hinweis auf dem großen Bildschirm<input type="text" data-e="textBuehne" maxlength="80"></label>
+          <label>Pausentext<input type="text" data-e="textPause" maxlength="80"></label>
+          <div class="zwei-sp">
+            <label>Danke-Überschrift<input type="text" data-e="textDanke" maxlength="40"></label>
+            <label>Danke-Text<input type="text" data-e="textDankeKlein" maxlength="100"></label>
+          </div>
+        </div>
+
+        <div class="sk">
+          <h4>Diashow</h4>
+          <div class="zwei-sp">
+            <label>Neue Fotos<select data-e="diashowVerzoegerungSek" data-zahl><option value="0">sofort</option><option value="15">nach 2 Min. (hier 15 s)</option></select></label>
+            <label>Je Foto<select data-e="diashowSek" data-zahl><option value="3">3 Sekunden</option><option value="5">5 Sekunden</option><option value="8">8 Sekunden</option></select></label>
+          </div>
+          <p class="sleise" id="sFotos"></p>
+        </div>
+        <button class="btn btn-rand" id="sReset" style="align-self:flex-start;font-size:13px;padding:8px 11px">Entwurf zurücksetzen</button>
+      </div></div>
+    </div>
   </div>
 </div>
 
 <script>
 (() => {
+  'use strict';
   const $ = (id) => document.getElementById(id);
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  const CASSETTE = 18;          // Blatt pro Selphy-Papierkassette
-  const DEMO_PRINT_MS = 6000;   // echt ca. 45 s
-  const PIN = "2580";
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const KASSETTE = 18, DRUCK_MS = 6000, LEERLAUF = 45, WARNUNG = 35, KNOPF_SPERRE = 1500;
 
-  const defaults = { names: "Anna & Max", date: "14. Juni 2027", maxCopies: 4, maxRetries: 2, offerStrip: true, offerFilter: true, slideDelay: 0 };
-  let settings = { ...defaults };
-  try { const s = JSON.parse(localStorage.getItem("fotobox-settings") || "null"); if (s) settings = { ...defaults, ...s }; } catch (e) {}
-  const saveSettings = () => { try { localStorage.setItem("fotobox-settings", JSON.stringify(settings)); } catch (e) {} };
+  /* ---------- Farbwelten und Schriftstile wie im Sitzplantool (server/gestaltung.js) ---------- */
+  const FARBWELTEN = {
+    rose: { label: 'Rosé & Creme', akzent: '#a4506a', papier: '#f8f3ee' },
+    salbei: { label: 'Salbei & Eukalyptus', akzent: '#5b7a64', papier: '#f2f4ef' },
+    champagner: { label: 'Champagner & Gold', akzent: '#9a7433', papier: '#f8f4ec' },
+    navy: { label: 'Nachtblau & Gold', akzent: '#2a426b', papier: '#f3f4f7' },
+    terrakotta: { label: 'Terrakotta (Boho)', akzent: '#b0603d', papier: '#f8f1ea' },
+    festlich: { label: 'Bordeaux & Gold (festlich)', akzent: '#8c2f45', papier: '#f8f2ee' },
+    business: { label: 'Blaugrau (Business)', akzent: '#2f5d7c', papier: '#f2f4f6' },
+    pastell: { label: 'Pastell (Hellblau & Mint)', akzent: '#5f8fb0', papier: '#f4f7f8' },
+    bunt: { label: 'Bunt & fröhlich', akzent: '#d2563b', papier: '#fbf6ef' },
+    flieder: { label: 'Flieder & Silber', akzent: '#7a5d9b', papier: '#f5f3f7' },
+  };
+  const SCHRIFTSTILE = {
+    klassisch: { kopf: 'Cormorant Garamond', namen: 'Cormorant Garamond' },
+    romantisch: { kopf: 'Cormorant Garamond', namen: 'Great Vibes' },
+    modern: { kopf: 'Josefin Sans', namen: 'Josefin Sans' },
+  };
+  const hexRgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const rgbHex = (r) => '#' + r.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  const hell = (h) => { const [r, g, b] = hexRgb(h); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+  function gestaltung(e) {
+    const welt = FARBWELTEN[e.farbwelt] || FARBWELTEN.champagner, stil = SCHRIFTSTILE[e.schriftstil] || SCHRIFTSTILE.romantisch;
+    const akzent = welt.akzent, leuchtend = hell(akzent) < 0.55 ? mix(akzent, '#ffffff', 0.38) : akzent;
+    return {
+      akzent, papier: welt.papier, namenSchrift: stil.namen,
+      css: {
+        '--grund': mix(akzent, '#0a0c0b', 0.88), '--flaeche': mix(akzent, '#0a0c0b', 0.80), '--flaeche-2': mix(akzent, '#0a0c0b', 0.72),
+        '--linie': mix(akzent, '#0a0c0b', 0.60), '--leise': mix('#f1ece3', mix(akzent, '#0a0c0b', 0.88), 0.38),
+        '--akzent': leuchtend, '--akzent-tinte': hell(leuchtend) > 0.6 ? '#1b1710' : '#ffffff',
+        '--kopf': `"${stil.kopf}", Georgia, serif`, '--namen': `"${stil.namen}", Georgia, serif`,
+      },
+    };
+  }
+
+  /* ---------- Einstellungen (wie im Service der App) ---------- */
+  const STANDARD = {
+    namen: 'Anna & Max', datum: '14. Juni 2027', farbwelt: 'champagner', schriftstil: 'romantisch', spiegeln: true,
+    countdownSek: 3, maxNochmal: 2, streifen: true, schwarzweiss: true, knopfModus: 'einzel', knopfFilter: 'farbe',
+    druckenAn: true, maxAbzuege: 4, druckLayout: 'rahmen', pause: false,
+    diashowVerzoegerungSek: 0, diashowSek: 5,
+    textStartTitel: 'Lächeln, bitte!', textStart: 'Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.',
+    textBuehne: 'Zum Mitmachen aufs iPad tippen', textPause: 'Kurze Pause – gleich geht’s weiter!',
+    textDanke: 'Danke!', textDankeKlein: 'Viel Spaß noch beim Feiern.',
+  };
+  let E = { ...STANDARD };
+  try { const s = JSON.parse(localStorage.getItem('fotobox-entwurf-2') || 'null'); if (s) E = { ...STANDARD, ...s }; } catch (e) {}
+  const speichern = () => { try { localStorage.setItem('fotobox-entwurf-2', JSON.stringify(E)); } catch (e) {} };
 
   const S = {
-    screen: "start", mode: "single", filter: "color", shots: [], composed: null, retriesLeft: 0,
-    copies: 1, photos: [], prints: 0, sceneSeed: 7, sessionJobs: [], saved: false,
-    printers: [{ name: "Selphy 1", paper: CASSETTE, queue: [] }, { name: "Selphy 2", paper: CASSETTE, queue: [] }],
+    ansicht: 'start', modus: 'einzel', filter: 'farbe', shots: [], foto: null, nochmal: 0, inDiashow: true, anzahl: 1,
+    seed: 7, sitzung: 0, fotos: [], auftraege: [], leerlauf: 0, letzterKnopf: 0,
+    drucker: [{ name: 'Selphy 1', papier: KASSETTE, aus: false, warte: [] }, { name: 'Selphy 2', papier: KASSETTE, aus: false, warte: [] }],
   };
 
-  /* ---------- Demo-Livebild: gezeichnete Gäste vor Lichterketten ---------- */
+  /* ---------- Demo-Livebild ---------- */
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); }
-  const CLOTHES = ["#5d6f99", "#b45b5b", "#4f7f63", "#c9a25a", "#7d64a0", "#2f3a4a", "#9a6b4f"];
-  const SKIN = ["#f1c9a5", "#d9a47c", "#a8714f", "#f3d3b8", "#8c5a3c"];
-  const HAIR = ["#2b1d14", "#5a3a22", "#c9a46a", "#151515", "#8a4b2a"];
-
-  function drawScene(ctx, w, h, t, seed) {
+  const KLEID = ['#5d6f99', '#b45b5b', '#4f7f63', '#c9a25a', '#7d64a0', '#2f3a4a', '#9a6b4f'], HAUT = ['#f1c9a5', '#d9a47c', '#a8714f', '#f3d3b8', '#8c5a3c'], HAAR = ['#2b1d14', '#5a3a22', '#c9a46a', '#151515', '#8a4b2a'];
+  function szene(ctx, w, h, t, seed) {
     const r = rng(seed);
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, "#3d3029"); g.addColorStop(1, "#191517");
+    const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#3d3029'); g.addColorStop(1, '#191517');
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     for (let i = 0; i < 30; i++) {
       const x = r() * w + Math.sin(t * 0.3 + i) * w * 0.01, y = r() * h * 0.62, rad = (0.015 + r() * 0.045) * w, a = 0.07 + r() * 0.2;
       ctx.fillStyle = `rgba(255,205,135,${a})`; ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
     }
-    const n = 2 + Math.floor(r() * 3);
-    const people = [];
-    for (let i = 0; i < n; i++) people.push({ i, cl: CLOTHES[Math.floor(r() * CLOTHES.length)], sk: SKIN[Math.floor(r() * SKIN.length)], hr: HAIR[Math.floor(r() * HAIR.length)], s: 0.92 + r() * 0.16, dy: r() * 0.06, veil: i === 0 && r() < 0.6 });
-    const unit = Math.min(h, w / 1.5);
-    people.forEach(p => {
-      const cx = w * (0.5 + (p.i - (n - 1) / 2) * (0.62 / (n - 1))) * 1 + Math.sin(t * 0.9 + p.i) * w * 0.006;
-      const hr = unit * 0.085 * p.s;
-      const hy = h * (0.42 + p.dy) + Math.sin(t * 1.3 + p.i * 1.7) * h * 0.008;
-      if (p.veil) { ctx.fillStyle = "rgba(255,255,255,.28)"; ctx.beginPath(); ctx.moveTo(cx - hr * 0.9, hy - hr * 0.4); ctx.lineTo(cx + hr * 0.9, hy - hr * 0.4); ctx.lineTo(cx + hr * 2.1, h); ctx.lineTo(cx - hr * 2.1, h); ctx.closePath(); ctx.fill(); }
-      ctx.fillStyle = p.veil ? "#f2eee6" : p.cl;
-      rrect(ctx, cx - hr * 1.9, hy + hr * 1.15, hr * 3.8, h, hr * 0.9); ctx.fill();
-      ctx.fillStyle = p.sk; ctx.beginPath(); ctx.arc(cx, hy, hr, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = p.hr; ctx.beginPath(); ctx.arc(cx, hy - hr * 0.08, hr * 1.04, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
-      ctx.fillStyle = "#1c1410";
-      ctx.beginPath(); ctx.arc(cx - hr * 0.35, hy + hr * 0.05, hr * 0.09, 0, Math.PI * 2); ctx.arc(cx + hr * 0.35, hy + hr * 0.05, hr * 0.09, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "#5a2a22"; ctx.lineWidth = Math.max(2, hr * 0.08); ctx.lineCap = "round";
-      ctx.beginPath(); ctx.arc(cx, hy + hr * 0.25, hr * 0.38, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
+    const n = 2 + Math.floor(r() * 3), leute = [];
+    for (let i = 0; i < n; i++) leute.push({ i, kl: KLEID[Math.floor(r() * KLEID.length)], hk: HAUT[Math.floor(r() * HAUT.length)], hr: HAAR[Math.floor(r() * HAAR.length)], s: 0.92 + r() * 0.16, dy: r() * 0.06, schleier: i === 0 && r() < 0.6 });
+    const einheit = Math.min(h, w / 1.5);
+    leute.forEach((p) => {
+      const cx = w * (0.5 + (p.i - (n - 1) / 2) * (0.62 / (n - 1))) + Math.sin(t * 0.9 + p.i) * w * 0.006;
+      const kr = einheit * 0.085 * p.s, ky = h * (0.42 + p.dy) + Math.sin(t * 1.3 + p.i * 1.7) * h * 0.008;
+      if (p.schleier) { ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.moveTo(cx - kr * 0.9, ky - kr * 0.4); ctx.lineTo(cx + kr * 0.9, ky - kr * 0.4); ctx.lineTo(cx + kr * 2.1, h); ctx.lineTo(cx - kr * 2.1, h); ctx.closePath(); ctx.fill(); }
+      ctx.fillStyle = p.schleier ? '#f2eee6' : p.kl; rrect(ctx, cx - kr * 1.9, ky + kr * 1.15, kr * 3.8, h, kr * 0.9); ctx.fill();
+      ctx.fillStyle = p.hk; ctx.beginPath(); ctx.arc(cx, ky, kr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = p.hr; ctx.beginPath(); ctx.arc(cx, ky - kr * 0.08, kr * 1.04, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+      ctx.fillStyle = '#1c1410'; ctx.beginPath(); ctx.arc(cx - kr * 0.35, ky + kr * 0.05, kr * 0.09, 0, Math.PI * 2); ctx.arc(cx + kr * 0.35, ky + kr * 0.05, kr * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#5a2a22'; ctx.lineWidth = Math.max(2, kr * 0.08); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx, ky + kr * 0.25, kr * 0.38, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
     });
     const v = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)");
-    ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)'); ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
   }
-
-  function capture(seed, filter) {
-    const c = document.createElement("canvas"); c.width = 1200; c.height = 800;
-    const ctx = c.getContext("2d");
-    drawScene(ctx, c.width, c.height, performance.now() / 1000, seed);
-    if (filter === "bw") {
-      const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
+  function aufnahme(seed, filter) {
+    const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+    const ctx = c.getContext('2d'); szene(ctx, 1200, 800, performance.now() / 1000, seed);
+    if (filter === 'sw') {
+      const d = ctx.getImageData(0, 0, 1200, 800), p = d.data;
       for (let i = 0; i < p.length; i += 4) { const y = Math.min(255, (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) * 1.05); p[i] = p[i + 1] = p[i + 2] = y; }
       ctx.putImageData(d, 0, 0);
     }
     return c;
   }
 
-  /* ---------- Druckbild 10 × 15 cm mit Rahmen ---------- */
-  function cover(ctx, img, x, y, w, h) {
-    const s = Math.max(w / img.width, h / img.height), sw = w / s, sh = h / s;
-    ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
-  }
-  async function fontsReady() { try { await Promise.all([document.fonts.load('96px "Marcellus"'), document.fonts.load('600 40px "Figtree"')]); } catch (e) {} }
-
-  async function compose(mode, shots) {
-    await fontsReady();
-    const c = document.createElement("canvas"), ctx = c.getContext("2d");
-    const paper = "#f6f1e6", ink = "#262521", gold = "#9c7a3c";
-    if (mode === "single") {
-      c.width = 1800; c.height = 1200;
-      ctx.fillStyle = paper; ctx.fillRect(0, 0, c.width, c.height);
-      cover(ctx, shots[0], 70, 70, 1660, 900);
-      ctx.strokeStyle = gold; ctx.lineWidth = 3; ctx.strokeRect(46, 46, 1708, 948);
-      ctx.textAlign = "center"; ctx.fillStyle = ink; ctx.font = '92px "Marcellus", Georgia, serif';
-      ctx.fillText(settings.names, 900, 1098);
-      ctx.fillStyle = gold; ctx.font = '600 34px "Figtree", sans-serif';
-      ctx.fillText(settings.date.toUpperCase(), 900, 1158);
-    } else {
-      c.width = 1200; c.height = 1800;
-      ctx.fillStyle = paper; ctx.fillRect(0, 0, c.width, c.height);
-      for (let k = 0; k < 2; k++) {
-        const ox = k * 600;
-        shots.forEach((s, j) => cover(ctx, s, ox + 40, 40 + j * 365, 520, 345));
-        ctx.textAlign = "center"; ctx.fillStyle = ink; ctx.font = '58px "Marcellus", Georgia, serif';
-        ctx.fillText(settings.names, ox + 300, 1610, 520);
-        ctx.fillStyle = gold; ctx.font = '600 26px "Figtree", sans-serif';
-        ctx.fillText(settings.date.toUpperCase(), ox + 300, 1668, 520);
+  /* ---------- Druckbild 10 × 15 cm: mit Rand oder Vollbild (wie server/bild.js) ---------- */
+  function cover(ctx, img, x, y, w, h) { const s = Math.max(w / img.width, h / img.height), sw = w / s, sh = h / s; ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h); }
+  function passend(ctx, text, schrift, g, max) { do { ctx.font = schrift.replace('{g}', g); g -= 2; } while (ctx.measureText(text).width > max && g > 12); }
+  function verlauf(ctx, x, y, w, h) { const v = ctx.createLinearGradient(0, y, 0, y + h); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(0.55, 'rgba(0,0,0,.38)'); v.addColorStop(1, 'rgba(0,0,0,.62)'); ctx.fillStyle = v; ctx.fillRect(x, y, w, h); }
+  async function schriftenBereit() { try { await Promise.all(['500 40px "Cormorant Garamond"', '40px "Great Vibes"', '40px "Josefin Sans"', '600 40px "Montserrat"'].map((f) => document.fonts.load(f))); } catch (e) {} }
+  async function druckbild(modus, shots, layout) {
+    await schriftenBereit();
+    const g = gestaltung(E), namen = E.namen, datum = E.datum.toUpperCase();
+    const nf = `{g}px "${g.namenSchrift}", Georgia, serif`, df = '600 {g}px "Montserrat", sans-serif', schreib = g.namenSchrift === 'Great Vibes';
+    const c = document.createElement('canvas'), ctx = c.getContext('2d');
+    const text = (n, d, x, yn, yd, gn, gd, max, weiss) => {
+      ctx.textAlign = 'center'; ctx.fillStyle = weiss ? '#fff' : '#262521';
+      if (weiss) { ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 2; }
+      passend(ctx, n, nf, gn, max); ctx.fillText(n, x, yn);
+      ctx.fillStyle = weiss ? '#fff' : g.akzent; passend(ctx, d, df, gd, max); ctx.fillText(d, x, yd);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    };
+    if (layout === 'vollbild') {
+      if (modus === 'streifen') {
+        c.width = 1200; c.height = 1800;
+        for (let k = 0; k < 2; k++) { const ox = k * 600; shots.forEach((s, j) => cover(ctx, s, ox, j * 450, 600, 450)); verlauf(ctx, ox, 1530, 600, 270); text(namen, datum, ox + 300, 1668, 1712, schreib ? 72 : 54, 24, 440, true); }
+        ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke();
+      } else {
+        c.width = 1800; c.height = 1200; cover(ctx, shots[0], 0, 0, 1800, 1200); verlauf(ctx, 0, 820, 1800, 380);
+        text(namen, datum, 900, 1040, 1100, schreib ? 120 : 92, 34, 1500, true);
       }
-      ctx.strokeStyle = "#d3cab6"; ctx.lineWidth = 2; ctx.setLineDash([14, 12]);
-      ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke(); ctx.setLineDash([]);
+    } else if (modus === 'streifen') {
+      c.width = 1200; c.height = 1800; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1200, 1800);
+      for (let k = 0; k < 2; k++) { const ox = k * 600; shots.forEach((s, j) => cover(ctx, s, ox + 40, 40 + j * 365, 520, 345)); text(namen, datum, ox + 300, 1612, 1672, schreib ? 78 : 58, 26, 520, false); }
+      ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.setLineDash([14, 12]); ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke(); ctx.setLineDash([]);
+    } else {
+      c.width = 1800; c.height = 1200; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
+      cover(ctx, shots[0], 70, 70, 1660, 900); ctx.strokeStyle = g.akzent; ctx.lineWidth = 3; ctx.strokeRect(46, 46, 1708, 948);
+      text(namen, datum, 900, 1100, 1160, schreib ? 120 : 92, 34, 1500, false);
     }
-    return c.toDataURL("image/jpeg", 0.88);
+    return c.toDataURL('image/jpeg', 0.88);
   }
 
   /* ---------- Ansichten: iPad und großer Bildschirm laufen synchron ---------- */
-  const SCREENS = ["start", "mode", "filter", "shoot", "preview", "print", "printing", "thanks"];
-  const STAGE = { start: "slides", mode: "live", filter: "live", shoot: "shoot", preview: "result", print: "result", printing: "result", thanks: "thanks" };
-  const STAGES = ["slides", "live", "shoot", "result", "thanks"];
-  const RES_MSG = { preview: "Gefällt’s euch? Entscheidet am iPad.", print: "Wie viele Abzüge? Wählt am iPad.", printing: "Wird gedruckt – gleich unten am Ausgabefach." };
-  function stepsTotal() { return 1 + (settings.offerStrip ? 1 : 0) + (settings.offerFilter ? 1 : 0); }
-  function show(name) {
-    S.screen = name;
-    SCREENS.forEach(s => { $("i-" + s).hidden = s !== name; });
-    STAGES.forEach(s => { $("st-" + s).hidden = s !== STAGE[name]; });
-    idle = 0; hideIdle();
-    const lbl = $("stepLbl"), tot = stepsTotal();
-    lbl.textContent = name === "mode" ? `Schritt 1 von ${tot}`
-      : name === "filter" ? `Schritt ${settings.offerStrip ? 2 : 1} von ${tot}`
-      : name === "print" || name === "printing" ? `Schritt ${tot} von ${tot}` : "";
-    $("liveMsg").textContent = name === "mode" ? "Stellt euch auf die Markierung am Boden" : "Gleich geht’s los …";
-    if (RES_MSG[name]) $("resMsg").textContent = RES_MSG[name];
-    if (name === "start") startSlides(); else stopSlides();
-    if (name === "print") renderPrint();
-    if (name === "thanks") {
-      $("thanksMsg").textContent = !S.showInSlides ? "Euer Foto ist gespeichert, aber nicht in der Diashow."
-        : settings.slideDelay ? "Euer Foto erscheint gleich in der Diashow." : "Euer Foto läuft ab jetzt in der Diashow.";
-      setTimeout(() => { if (S.screen === "thanks") show("start"); }, 4000);
-    }
+  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'druck', 'drucken', 'danke', 'pause'];
+  const BUEHNE = { start: 'dia', pause: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke' };
+  const NAME = { start: 'Start (Diashow)', modus: 'Auswahl Foto', filter: 'Auswahl Farbe', aufnahme: 'Countdown', vorschau: 'Vorschau', druck: 'Anzahl Abzüge', drucken: 'Druckt', danke: 'Danke', pause: 'Pause' };
+
+  function zeige(a) {
+    if (a === 'start' && E.pause) a = 'pause'; // Pause greift erst zwischen zwei Gästen
+    S.ansicht = a; S.leerlauf = 0;
+    ANSICHTEN.forEach((x) => { $('i-' + x).hidden = x !== a; });
+    ['dia', 'live', 'aufnahme', 'ergebnis', 'danke'].forEach((x) => { $('st-' + x).hidden = x !== BUEHNE[a]; });
+    $('leerlauf').hidden = true;
+    if (BUEHNE[a] === 'dia') diaStart(); else diaStopp();
+    if (a === 'danke') { const s = S.sitzung; setTimeout(() => { if (S.ansicht === 'danke' && S.sitzung === s) zeige('start'); }, 4000); }
+    zeichnen();
   }
 
-  function begin() {
-    S.sceneSeed = Math.floor(Math.random() * 1e6);
-    S.retriesLeft = settings.maxRetries; S.copies = 1; S.saved = false;
-    S.showInSlides = true; $("inSlides").checked = true;
-    if (settings.offerStrip) show("mode"); else { S.mode = "single"; afterMode(); }
-  }
-  function afterMode() { if (settings.offerFilter) show("filter"); else { S.filter = "color"; shoot(); } }
+  function zeichnen() {
+    const a = S.ansicht, gesamt = 1 + (E.streifen ? 1 : 0) + (E.schwarzweiss ? 1 : 0);
+    ['namen', 'tvNamen'].forEach((id) => { $(id).textContent = E.namen; });
+    ['datum', 'tvDatum'].forEach((id) => { $(id).textContent = E.datum; });
+    const teile = E.namen.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
+    $('mono').textContent = teile.length >= 2 ? `${teile[0][0]}&${teile[1][0]}` : E.namen.slice(0, 2);
+    $('geraete').classList.toggle('gespiegelt', E.spiegeln);
+    $('schritt').textContent = a === 'modus' ? `Schritt 1 von ${gesamt}` : a === 'filter' ? `Schritt ${E.streifen ? 2 : 1} von ${gesamt}` : ['druck', 'drucken'].includes(a) ? `Schritt ${gesamt} von ${gesamt}` : '';
+    $('startTitel').textContent = E.textStartTitel; $('startText').textContent = E.textStart;
+    $('iDankeTitel').textContent = E.textDanke; $('iDankeText').textContent = E.textDankeKlein;
+    $('tvDankeTitel').textContent = E.textDanke; $('iPauseText').textContent = E.textPause;
+    $('tvDankeText').textContent = S.inDiashow ? 'Euer Foto läuft gleich in der Diashow.' : 'Euer Foto ist gespeichert, aber nicht in der Diashow.';
+    $('liveText').textContent = a === 'modus' ? 'Stellt euch auf die Markierung am Boden' : 'Gleich geht’s los …';
+    diaText();
 
-  async function shoot() {
-    show("shoot");
-    $("st-shoot").classList.toggle("bw", S.filter === "bw");
-    const n = S.mode === "strip" ? 4 : 1;
-    S.shots = [];
-    $("tvShot").hidden = n === 1;
+    const warn = S.drucker.filter((d) => d.aus || d.papier <= 3).map((d) => d.aus ? `${d.name}: aus` : d.papier === 0 ? `${d.name}: Papier leer` : `${d.name}: ${d.papier} Blatt`);
+    $('pill').hidden = !warn.length; $('pill').textContent = warn.join(' · ');
+
+    $('nochmal').disabled = S.nochmal <= 0;
+    $('nochmal').textContent = S.nochmal > 0 ? `Nochmal (noch ${S.nochmal}×)` : 'Nochmal nicht mehr möglich';
+    $('inDiashow').checked = S.inDiashow;
+    const papier = papierGesamt(), max = Math.max(1, Math.min(E.maxAbzuege, papier || 1));
+    if (S.anzahl > max) S.anzahl = max;
+    $('anzahl').textContent = S.anzahl;
+    $('weniger').disabled = !papier || S.anzahl <= 1; $('mehr').disabled = !papier || S.anzahl >= max;
+    $('anzahlText').textContent = E.maxAbzuege > 1 ? `Zum Beispiel einen für jede Person auf dem Foto. Höchstens ${max}.` : 'Pro Foto gibt es einen Abzug.';
+    $('keinPapier').hidden = papier > 0; $('drucken').disabled = !papier;
+
+    const offen = S.auftraege.filter((j) => j.fortschritt < 100).length;
+    $('auftraege').innerHTML = S.auftraege.map((j) => `<li class="${j.fortschritt >= 100 ? 'fertig' : ''}"><span>Abzug ${j.nr} · ${j.drucker}</span><span class="st-t">${j.fortschritt >= 100 ? 'Fertig ✓' : j.gestartet ? Math.round(j.fortschritt) + ' %' : 'Wartet'}</span><div class="balken"><i style="width:${j.fortschritt}%"></i></div></li>`).join('');
+    $('ergebnisText').textContent = a === 'vorschau' ? 'Gefällt’s euch? Entscheidet am iPad.' : a === 'druck' ? 'Wie viele Abzüge? Wählt am iPad.'
+      : offen ? `Wird gedruckt – noch ${offen} ${offen === 1 ? 'Abzug' : 'Abzüge'}. Gleich unten am Ausgabefach.` : 'Fertig gedruckt – holt eure Abzüge unten ab!';
+    service();
+  }
+
+  /* ---------- Ablauf ---------- */
+  function beginnen(vomKnopf) {
+    S.sitzung++; S.seed = Math.floor(Math.random() * 1e6); S.nochmal = E.maxNochmal; S.anzahl = 1; S.inDiashow = true; S.foto = null; S.auftraege = [];
+    if (vomKnopf) { S.modus = E.streifen ? E.knopfModus : 'einzel'; return aufnehmen(E.schwarzweiss ? E.knopfFilter : 'farbe'); }
+    if (E.streifen) zeige('modus'); else { S.modus = 'einzel'; nachModus(); }
+  }
+  function nachModus() { if (E.schwarzweiss) zeige('filter'); else aufnehmen('farbe'); }
+
+  async function aufnehmen(filter) {
+    if (S.ansicht === 'aufnahme') return;
+    S.filter = filter; S.shots = [];
+    zeige('aufnahme');
+    $('st-aufnahme').classList.toggle('sw', filter === 'sw');
+    const n = S.modus === 'streifen' ? 4 : 1;
+    $('tvNr').hidden = n === 1;
     for (let i = 0; i < n; i++) {
-      const lbl = `Bild ${i + 1} von ${n}`;
-      $("tvShot").textContent = lbl; $("iShot").textContent = lbl;
-      const msg = i === 0 ? "Schaut in die Kamera!" : "Neue Pose fürs nächste Bild!";
-      $("iShootMsg").textContent = msg; $("tvShootMsg").textContent = msg;
-      for (let c = 3; c >= 1; c--) {
-        [$("tvCount"), $("iCount")].forEach(el => { el.textContent = c; el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); });
+      const nr = `Bild ${i + 1} von ${n}`, hinweis = i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
+      $('tvNr').textContent = nr; $('iNr').textContent = n > 1 ? nr : '';
+      $('iHinweis').textContent = hinweis; $('tvHinweis').textContent = hinweis;
+      for (let c = E.countdownSek; c >= 1; c--) {
+        [$('tvZahl'), $('iZahl')].forEach((el) => { el.textContent = c; el.classList.remove('puls'); void el.offsetWidth; el.classList.add('puls'); });
         await sleep(1000);
       }
-      $("tvCount").textContent = ""; $("iCount").textContent = "📸";
-      const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
-      S.shots.push(capture(S.sceneSeed + i * 13, S.filter));
+      $('tvZahl').textContent = ''; $('iZahl').textContent = '';
+      const b = $('blitz'); b.classList.remove('los'); void b.offsetWidth; b.classList.add('los');
+      S.shots.push(aufnahme(S.seed + i * 13, filter));
       await sleep(i < n - 1 ? 900 : 350);
     }
-    $("iShootMsg").textContent = "Einen Moment …"; $("tvShootMsg").textContent = "Einen Moment …"; $("iCount").textContent = "";
-    S.composed = await compose(S.mode, S.shots);
-    ["tvRes", "tvThanks", "iThumb", "iThumb2"].forEach(id => { $(id).src = S.composed; });
-    renderRetry();
-    show("preview");
+    $('iHinweis').textContent = 'Einen Moment …'; $('tvHinweis').textContent = 'Einen Moment …';
+    S.foto = { src: await druckbild(S.modus, S.shots, E.druckLayout), behalten: false };
+    ['tvErgebnis', 'tvDanke', 'iVorschau1', 'iVorschau2'].forEach((id) => { $(id).src = S.foto.src; });
+    zeige('vorschau');
   }
-  function renderRetry() {
-    const b = $("retry");
-    b.disabled = S.retriesLeft <= 0;
-    b.textContent = S.retriesLeft > 0 ? `Nochmal (noch ${S.retriesLeft}×)` : "Nochmal nicht mehr möglich";
-  }
-  function savePhoto() {
-    if (S.saved || !S.composed) return;
-    S.saved = true;
-    S.photos.unshift({ src: S.composed, t: Date.now(), show: S.showInSlides !== false });
-    if (S.photos.length > 30) S.photos.pop();
+  function behalten() {
+    if (!S.foto || S.foto.behalten) return;
+    S.foto.behalten = true; S.fotos.unshift({ src: S.foto.src, t: Date.now(), zeigen: S.inDiashow });
+    if (S.fotos.length > 30) S.fotos.pop();
   }
 
-  /* ---------- Drucker-Simulation ---------- */
-  const paperLeft = () => S.printers.reduce((a, p) => a + p.paper, 0);
-  function renderPrint() {
-    const max = Math.min(settings.maxCopies, paperLeft());
-    if (S.copies > max) S.copies = Math.max(1, max);
-    const none = paperLeft() === 0;
-    $("copies").textContent = S.copies;
-    $("minus").disabled = none || S.copies <= 1;
-    $("plus").disabled = none || S.copies >= max;
-    $("copiesNote").textContent = settings.maxCopies > 1 ? `Zum Beispiel einen für jede Person auf dem Foto. Höchstens ${settings.maxCopies}.` : "Pro Foto gibt es einen Abzug.";
-    $("noPaper").hidden = !none;
-    $("doPrint").disabled = none;
+  function knopf() {
+    const jetzt = Date.now();
+    if (jetzt - S.letzterKnopf < KNOPF_SPERRE) return;
+    S.letzterKnopf = jetzt;
+    if (S.ansicht === 'start') return beginnen(true);
+    if (S.ansicht === 'modus') { S.modus = E.knopfModus; return aufnehmen(E.schwarzweiss ? E.knopfFilter : 'farbe'); }
+    if (S.ansicht === 'filter') return aufnehmen(E.knopfFilter);
   }
-  function startPrint() {
-    S.sessionJobs = [];
-    for (let k = 0; k < S.copies; k++) {
-      const avail = S.printers.filter(p => p.paper > 0);
-      if (!avail.length) break;
-      const p = avail.sort((a, b) => a.queue.length - b.queue.length)[0];
-      p.paper--;
-      const job = { n: k + 1, printer: p.name, progress: 0, started: false };
-      p.queue.push(job); S.sessionJobs.push(job); S.prints++;
+
+  function aktion(a, w) {
+    S.leerlauf = 0; $('leerlauf').hidden = true;
+    const v = S.ansicht;
+    if (v === 'pause') return;
+    if (a === 'start' && v === 'start') beginnen(false);
+    else if (a === 'zurueck') { if (v === 'modus') zeige('start'); else if (v === 'filter') E.streifen ? zeige('modus') : zeige('start'); }
+    else if (a === 'modus' && v === 'modus') { S.modus = w; nachModus(); }
+    else if (a === 'filter' && v === 'filter') aufnehmen(w);
+    else if (a === 'nochmal' && v === 'vorschau' && S.nochmal > 0) { S.nochmal--; aufnehmen(S.filter); }
+    else if (a === 'weiter' && v === 'vorschau') { behalten(); if (E.druckenAn && papierGesamt() > 0) zeige('druck'); else zeige('danke'); }
+    else if (a === 'drucken' && v === 'druck') drucken();
+    else if ((a === 'ohneDruck' || a === 'fertig') && (v === 'druck' || v === 'drucken')) zeige('danke');
+  }
+
+  /* ---------- Drucker ---------- */
+  const papierGesamt = () => S.drucker.filter((d) => !d.aus).reduce((s, d) => s + d.papier, 0);
+  function waehlen() { const frei = S.drucker.filter((d) => !d.aus && d.papier > 0); return frei.sort((a, b) => a.warte.length - b.warte.length)[0] || null; }
+  function drucken() {
+    S.auftraege = [];
+    for (let k = 0; k < S.anzahl; k++) {
+      const d = waehlen(); if (!d) break;
+      d.papier--; const j = { nr: k + 1, drucker: d.name, fortschritt: 0, gestartet: false };
+      d.warte.push(j); S.auftraege.push(j);
     }
-    renderJobs(); renderPaper();
-    show("printing");
+    zeige('drucken');
   }
-  function renderJobs() {
-    const ul = $("jobs"); ul.innerHTML = "";
-    S.sessionJobs.forEach(j => {
-      const li = document.createElement("li"), done = j.progress >= 100;
-      if (done) li.className = "done";
-      li.innerHTML = `<span>Abzug ${j.n} · ${j.printer}</span><span class="st-t">${done ? "Fertig ✓" : !j.started ? "Wartet" : Math.round(j.progress) + " %"}</span><div class="bar"><i style="width:${j.progress}%"></i></div>`;
-      ul.appendChild(li);
-    });
-    const left = S.sessionJobs.filter(j => j.progress < 100).length;
-    if (S.screen === "printing") $("resMsg").textContent = left ? `Wird gedruckt – noch ${left} ${left === 1 ? "Abzug" : "Abzüge"}. Gleich unten am Ausgabefach.` : "Fertig gedruckt – holt eure Abzüge unten ab!";
+  function druckerAus(i, aus) {
+    const d = S.drucker[i]; d.aus = aus;
+    if (aus) {
+      const wartend = d.warte.filter((j) => !j.gestartet); d.warte = d.warte.filter((j) => j.gestartet);
+      wartend.forEach((j) => { d.papier++; const z = waehlen(); if (z) { z.papier--; j.drucker = z.name; z.warte.push(j); } else { d.papier--; d.warte.push(j); } });
+    }
+    zeichnen();
   }
   setInterval(() => {
-    let changed = false;
-    S.printers.forEach(p => {
-      const j = p.queue[0]; if (!j) return;
-      j.started = true; j.progress = Math.min(100, j.progress + 100 * 200 / DEMO_PRINT_MS); changed = true;
-      if (j.progress >= 100) p.queue.shift();
+    let neu = false;
+    S.drucker.forEach((d) => {
+      const j = d.warte[0]; if (!j || (d.aus && !j.gestartet)) return;
+      j.gestartet = true; j.fortschritt = Math.min(100, j.fortschritt + 100 * 200 / DRUCK_MS); neu = true;
+      if (j.fortschritt >= 100) d.warte.shift();
     });
-    if (changed && S.screen === "printing") renderJobs();
+    if (neu) zeichnen();
   }, 200);
 
-  function renderPaper() {
-    const low = S.printers.filter(p => p.paper <= 3);
-    const pill = $("paperPill");
-    pill.hidden = low.length === 0;
-    pill.textContent = low.map(p => p.paper === 0 ? `${p.name} leer` : `${p.name}: ${p.paper} Blatt`).join(" · ");
-    const list = $("printerList"); list.innerHTML = "";
-    S.printers.forEach(p => {
-      const d = document.createElement("div");
-      d.className = "printer" + (p.paper === 0 ? " empty" : p.paper <= 3 ? " low" : "");
-      d.innerHTML = `<span>${p.name} <span class="n">· ${p.paper} / ${CASSETTE} Blatt${p.queue.length ? " · druckt" : ""}</span></span><button type="button">Kassette getauscht</button><div class="bar"><i style="width:${p.paper / CASSETTE * 100}%"></i></div>`;
-      d.querySelector("button").onclick = () => { p.paper = CASSETTE; renderPaper(); };
-      list.appendChild(d);
-    });
-    const hidden = S.photos.filter(p => !p.show).length;
-    $("stats").textContent = `Fotos bisher: ${S.photos.length} (davon ${hidden} nicht in der Diashow) · Abzüge gedruckt: ${S.prints}`;
+  /* ---------- Diashow ---------- */
+  let diaTimer = null, diaIdx = 0, vorne = 'diaA';
+  const sichtbar = () => S.fotos.filter((f) => f.zeigen && Date.now() - f.t >= E.diashowVerzoegerungSek * 1000);
+  function diaText() {
+    const warten = S.fotos.filter((f) => f.zeigen && Date.now() - f.t < E.diashowVerzoegerungSek * 1000).length;
+    $('diaText').textContent = S.ansicht === 'pause' ? E.textPause : warten ? `${warten} neue${warten === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · ${E.textBuehne}` : E.textBuehne;
   }
-
-  /* ---------- Diashow auf dem großen Bildschirm ---------- */
-  let slideTimer = null, slideIdx = 0, slideFront = "slA";
-  const visiblePhotos = () => S.photos.filter(p => p.show && Date.now() - p.t >= settings.slideDelay);
-  function showSlide() {
-    const list = visiblePhotos();
-    $("slEmpty").hidden = list.length > 0;
-    if (!list.length) { $(slideFront).classList.remove("on"); return; }
-    const back = slideFront === "slA" ? "slB" : "slA";
-    $(back).src = list[slideIdx % list.length].src;
-    $(back).classList.add("on"); $(slideFront).classList.remove("on");
-    slideFront = back; slideIdx++;
-    const waiting = S.photos.filter(p => p.show && Date.now() - p.t < settings.slideDelay).length;
-    $("slCap").textContent = waiting ? `${waiting} neue${waiting === 1 ? "s Foto" : " Fotos"} gleich in der Diashow · Zum Mitmachen aufs iPad tippen` : "Zum Mitmachen aufs iPad tippen";
+  function diaWeiter() {
+    const liste = sichtbar(); $('diaLeer').hidden = liste.length > 0; diaText();
+    if (!liste.length) { $(vorne).classList.remove('an'); return; }
+    const hinten = vorne === 'diaA' ? 'diaB' : 'diaA';
+    $(hinten).src = liste[diaIdx % liste.length].src; $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten; diaIdx++;
   }
-  function startSlides() { stopSlides(); slideIdx = 0; showSlide(); slideTimer = setInterval(showSlide, 4000); }
-  function stopSlides() { clearInterval(slideTimer); slideTimer = null; }
+  function diaStart() { if (diaTimer) return; diaIdx = 0; diaWeiter(); diaTimer = setInterval(diaWeiter, E.diashowSek * 1000); }
+  function diaStopp() { clearInterval(diaTimer); diaTimer = null; }
 
   /* ---------- Livebild-Schleife ---------- */
-  function loop(ts) {
-    const t = ts / 1000;
-    const st = STAGE[S.screen];
-    if (st === "live") { const c = $("liveA"); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed); }
-    if (st === "shoot") { const c = $("liveB"); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed + S.shots.length * 13); }
-    if (S.screen === "filter") ["thColor", "thBW"].forEach(id => { const c = $(id); drawScene(c.getContext("2d"), c.width, c.height, t, S.sceneSeed); });
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  (function schleife(ts) {
+    const t = ts / 1000 || 0, b = BUEHNE[S.ansicht];
+    if (b === 'live') { const c = $('liveA'); szene(c.getContext('2d'), c.width, c.height, t, S.seed); }
+    if (b === 'aufnahme') { const c = $('liveB'); szene(c.getContext('2d'), c.width, c.height, t, S.seed + S.shots.length * 13); }
+    if (S.ansicht === 'filter') ['thFarbe', 'thSw'].forEach((id) => { const c = $(id); szene(c.getContext('2d'), c.width, c.height, t, S.seed); });
+    requestAnimationFrame(schleife);
+  })();
 
-  /* ---------- Inaktivität: nach 45 s zurück zum Start ---------- */
-  let idle = 0;
-  const IDLE_SCREENS = ["mode", "filter", "preview", "print", "printing"];
-  function hideIdle() { $("idle").hidden = true; }
+  /* ---------- Leerlauf: nach 45 s zurück – nicht während die eigenen Abzüge drucken ---------- */
   setInterval(() => {
-    if (!IDLE_SCREENS.includes(S.screen) || !$("admin").hidden || !$("pin").hidden) { idle = 0; return; }
-    idle++;
-    if (idle >= 35 && idle < 45) { $("idle").hidden = false; $("idleNum").textContent = 45 - idle; }
-    if (idle >= 45) { if (S.screen === "preview" || S.screen === "print") savePhoto(); show("start"); }
+    if (!['modus', 'filter', 'vorschau', 'druck', 'drucken'].includes(S.ansicht)) return;
+    if (S.ansicht === 'drucken' && S.auftraege.some((j) => j.fortschritt < 100)) { S.leerlauf = 0; return; }
+    S.leerlauf++;
+    if (S.leerlauf >= WARNUNG && S.leerlauf < LEERLAUF) { $('leerlauf').hidden = false; $('leerlaufZahl').textContent = LEERLAUF - S.leerlauf; }
+    if (S.leerlauf >= LEERLAUF) { if (['vorschau', 'druck'].includes(S.ansicht)) behalten(); zeige('start'); }
   }, 1000);
-  $("ipad").addEventListener("pointerdown", (e) => { if (!$("idle").contains(e.target)) { idle = 0; hideIdle(); } }, true);
-  $("idleStay").onclick = () => { idle = 0; hideIdle(); };
 
-  /* ---------- Admin ---------- */
-  let pressT = null;
-  const mono = $("mono");
-  mono.addEventListener("pointerdown", (e) => { e.preventDefault(); mono.classList.add("pressing"); pressT = setTimeout(() => { mono.classList.remove("pressing"); openPin(); }, 1000); });
-  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => mono.addEventListener(ev, () => { mono.classList.remove("pressing"); clearTimeout(pressT); }));
-  mono.addEventListener("contextmenu", e => e.preventDefault());
-
-  let pinBuf = "";
-  function openPin() { pinBuf = ""; drawPin(); $("pin").hidden = false; }
-  function drawPin() { [...$("pinDots").children].forEach((d, i) => d.classList.toggle("f", i < pinBuf.length)); }
-  $("pad").addEventListener("click", (e) => {
-    const b = e.target.closest("button"); if (!b) return;
-    const k = b.dataset.k;
-    if (k === "x") { $("pin").hidden = true; return; }
-    if (k === "del") { pinBuf = pinBuf.slice(0, -1); drawPin(); return; }
-    if (pinBuf.length >= 4) return;
-    pinBuf += b.textContent; drawPin();
-    if (pinBuf.length === 4) {
-      if (pinBuf === PIN) setTimeout(() => { $("pin").hidden = true; openAdmin(); }, 150);
-      else { const d = $("pinDots"); d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake"); setTimeout(() => { pinBuf = ""; drawPin(); }, 400); }
-    }
-  });
-
-  function openAdmin() {
-    $("setNames").value = settings.names; $("setDate").value = settings.date;
-    $("setMaxCopies").value = String(settings.maxCopies); $("setMaxRetries").value = String(settings.maxRetries);
-    $("setDelay").value = String(settings.slideDelay);
-    $("setStrip").checked = settings.offerStrip; $("setFilter").checked = settings.offerFilter;
-    renderPaper();
-    $("admin").hidden = false;
+  /* ---------- Service-Handy ---------- */
+  $('sFarbwelt').innerHTML = Object.entries(FARBWELTEN).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+  function gestaltungAnwenden() {
+    const css = gestaltung(E).css; // Geräte und Service nutzen diese Variablen, die Seite drumherum ihre eigenen
+    Object.keys(css).forEach((k) => document.documentElement.style.setProperty(k, css[k]));
   }
-  $("admForm").addEventListener("submit", e => e.preventDefault());
-  $("admForm").addEventListener("input", () => {
-    settings.names = $("setNames").value.trim() || defaults.names;
-    settings.date = $("setDate").value.trim() || defaults.date;
-    settings.maxCopies = +$("setMaxCopies").value; settings.maxRetries = +$("setMaxRetries").value;
-    settings.slideDelay = +$("setDelay").value;
-    settings.offerStrip = $("setStrip").checked; settings.offerFilter = $("setFilter").checked;
-    saveSettings(); applyNames();
-  });
-  $("admClose").onclick = () => { $("admin").hidden = true; if (S.screen === "start") startSlides(); };
-
-  function applyNames() {
-    ["hdrNames", "tvNames"].forEach(id => { $(id).textContent = settings.names; });
-    ["hdrDate", "tvDate"].forEach(id => { $(id).textContent = settings.date; });
-    const parts = settings.names.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
-    mono.textContent = parts.length >= 2 ? `${parts[0][0]}&${parts[1][0]}` : settings.names.slice(0, 2);
+  function felder() {
+    document.querySelectorAll('[data-e]').forEach((el) => {
+      const k = el.dataset.e; if (el === document.activeElement && el.type === 'text') return;
+      if (el.type === 'checkbox') el.checked = !!E[k]; else el.value = String(E[k]);
+    });
   }
+  document.querySelectorAll('[data-e]').forEach((el) => {
+    el.addEventListener(el.type === 'text' ? 'input' : 'change', () => {
+      const k = el.dataset.e;
+      E[k] = el.type === 'checkbox' ? el.checked : el.hasAttribute('data-zahl') ? Number(el.value) : (el.value.trim() || STANDARD[k]);
+      speichern();
+      if (k === 'farbwelt' || k === 'schriftstil') gestaltungAnwenden();
+      if (k === 'diashowSek' && diaTimer) { diaStopp(); diaStart(); }
+      zeichnen();
+    });
+  });
+  function service() {
+    $('sAnsicht').textContent = NAME[S.ansicht] + (S.ansicht === 'pause' ? ` – „${E.textPause}“` : '');
+    $('sPause').textContent = E.pause ? 'Pause beenden' : 'Pause';
+    $('jetztKarte').classList.toggle('pause-an', E.pause);
+    $('sDrucker').innerHTML = S.drucker.map((d, i) => {
+      const art = d.aus || d.papier <= 3 ? 'warn' : '', status = d.aus ? 'abgeschaltet' : d.warte.length ? 'druckt' : d.papier === 0 ? 'Papier leer' : 'bereit';
+      return `<div style="display:flex;flex-direction:column;gap:7px"><div class="zeile"><span class="punkt ${art}"></span><b>${d.name}</b><span class="sleise">${status}</span><span class="frei"></span><span style="font-variant-numeric:tabular-nums">${d.papier} / ${KASSETTE}</span></div>
+        <div class="sbalken ${art}"><i style="width:${d.papier / KASSETTE * 100}%"></i></div>
+        <div class="zeile"><button class="btn btn-rand" data-kassette="${i}">Kassette getauscht</button><button class="btn btn-rand" data-aus="${i}">${d.aus ? 'Einschalten' : 'Abschalten'}</button></div></div>`;
+    }).join('');
+    const eigene = S.fotos.filter((f) => !f.beispiel), n = eigene.length;
+    $('sFotos').textContent = n ? `${n} ${n === 1 ? 'Foto' : 'Fotos'} bisher, davon ${eigene.filter((f) => !f.zeigen).length} nicht in der Diashow.` : 'Noch keine eigenen Fotos – die Diashow zeigt Beispiele.';
+  }
+  $('sDrucker').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.kassette) { S.drucker[+b.dataset.kassette].papier = KASSETTE; zeichnen(); }
+    if (b.dataset.aus) druckerAus(+b.dataset.aus, !S.drucker[+b.dataset.aus].aus);
+  });
+  $('sPause').onclick = () => {
+    E.pause = !E.pause; speichern();
+    if (E.pause && S.ansicht === 'start') zeige('pause'); else if (!E.pause && S.ansicht === 'pause') zeige('start'); else zeichnen();
+  };
+  $('sStart').onclick = () => zeige('start');
+  $('sReset').onclick = () => { E = { ...STANDARD }; speichern(); felder(); gestaltungAnwenden(); zeige('start'); };
 
   /* ---------- Knöpfe ---------- */
-  $("goStart").onclick = begin;
-  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => show(b.dataset.go));
-  $("pickSingle").onclick = () => { S.mode = "single"; afterMode(); };
-  $("pickStrip").onclick = () => { S.mode = "strip"; afterMode(); };
-  $("filterBack").onclick = () => settings.offerStrip ? show("mode") : show("start");
-  $("pickColor").onclick = () => { S.filter = "color"; shoot(); };
-  $("pickBW").onclick = () => { S.filter = "bw"; shoot(); };
-  $("retry").onclick = () => { if (S.retriesLeft > 0) { S.retriesLeft--; shoot(); } };
-  $("inSlides").onchange = (e) => { S.showInSlides = e.target.checked; };
-  $("toPrint").onclick = () => { savePhoto(); show("print"); };
-  $("minus").onclick = () => { S.copies = Math.max(1, S.copies - 1); renderPrint(); };
-  $("plus").onclick = () => { S.copies++; renderPrint(); };
-  $("doPrint").onclick = startPrint;
-  $("noPrint").onclick = () => show("thanks");
-  $("printDone").onclick = () => show("thanks");
+  $('ipad').addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (b) { b.blur(); aktion(b.dataset.a, b.dataset.w); } });
+  $('inDiashow').onchange = (e) => { S.inDiashow = e.target.checked; };
+  $('weniger').onclick = () => { S.anzahl = Math.max(1, S.anzahl - 1); zeichnen(); };
+  $('mehr').onclick = () => { S.anzahl++; zeichnen(); };
+  $('rot').onclick = () => { $('rot').blur(); knopf(); };
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === 'Enter' || e.key === ' ') { if (e.target.tagName === 'BUTTON' && e.target.id !== 'rot') return; e.preventDefault(); knopf(); }
+  });
 
   /* ---------- Start: Beispielfotos für die Diashow ---------- */
-  applyNames();
-  renderPaper();
-  show("start");
+  felder(); gestaltungAnwenden(); zeige('start');
   (async () => {
-    const samples = [[311, "single", "color"], [4242, "strip", "bw"], [97, "single", "bw"], [1508, "single", "color"]];
-    for (const [seed, mode, filter] of samples) {
-      const shots = mode === "strip" ? [0, 1, 2, 3].map(i => capture(seed + i * 13, filter)) : [capture(seed, filter)];
-      S.photos.push({ src: await compose(mode, shots), t: 0, show: true });
+    const beispiele = [[311, 'einzel', 'farbe', 'rahmen'], [4242, 'streifen', 'sw', 'rahmen'], [97, 'einzel', 'farbe', 'vollbild'], [1508, 'streifen', 'farbe', 'vollbild']];
+    for (const [seed, modus, filter, layout] of beispiele) {
+      const shots = modus === 'streifen' ? [0, 1, 2, 3].map((i) => aufnahme(seed + i * 13, filter)) : [aufnahme(seed, filter)];
+      S.fotos.push({ src: await druckbild(modus, shots, layout), t: 0, zeigen: true, beispiel: true });
     }
-    if (S.screen === "start") startSlides();
+    if (BUEHNE[S.ansicht] === 'dia') { diaStopp(); diaStart(); }
+    service();
   })();
 })();
 </script>
