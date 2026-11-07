@@ -100,15 +100,15 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
   // Download-Seite fürs Handy der Gäste (Link aus dem QR-Code). Nur mit dem richtigen Schlüssel.
   function downloadSeite(res, foto, k) {
     const e = speicher.einstellungen(), g = gestaltung(e).css;
-    const ok = foto && foto.behalten !== undefined && (!foto.schluessel || foto.schluessel === k);
+    const ok = foto && (!foto.schluessel || foto.schluessel === k);
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     res.writeHead(ok ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Euer Foto – ${esc(e.namen)}</title><link rel="stylesheet" href="/web/app.css">
 <style>:root{${Object.entries(g).map(([a, b]) => `${a}:${b}`).join(';')}} body{padding:24px 16px 40px;text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center}
 h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;border-radius:4px;box-shadow:0 20px 40px -20px #000} p{color:var(--leise);line-height:1.5;max-width:34ch}</style></head>
-<body><h1>${esc(e.namen)}</h1>${ok ? `<img src="/fotos/${foto.id}/druck.jpg" alt="Euer Foto aus der Fotobox">
-<a class="btn btn-haupt" href="/fotos/${foto.id}/druck.jpg?laden=1">Foto speichern</a>
+<body><h1>${esc(e.namen)}</h1>${ok ? `<img src="/fotos/${foto.id}/druck.jpg?k=${esc(k || '')}" alt="Euer Foto aus der Fotobox">
+<a class="btn btn-haupt" href="/fotos/${foto.id}/druck.jpg?laden=1&amp;k=${esc(k || '')}">Foto speichern</a>
 <p>Klappt der Knopf nicht: lange auf das Foto drücken und „In Fotos sichern“ wählen.</p>` : '<p>Dieses Foto gibt es nicht (mehr). Fragt bitte das Brautpaar.</p>'}
 <p>${esc(e.datum)}</p></body></html>`);
   }
@@ -136,12 +136,15 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
       return kamera.livebild().then((b) => { res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' }); res.end(b); }, () => json(res, 503, { fehler: 'Kein Livebild' }));
     }
     let m = /^\/fotos\/([\w-]+)\/druck\.jpg$/.exec(p);
+    // Fotos nur mit Schlüssel – außer sie laufen ohnehin öffentlich in der Diashow
+    const darf = (f) => f && ((f.schluessel && url.searchParams.get('k') === f.schluessel) || (f.behalten && f.inDiashow && !f.ausgeblendet && speicher.diashow().fotos.includes(f.id)));
     if (m && speicher.foto(m[1])) {
+      if (!darf(speicher.foto(m[1]))) return json(res, 404, { fehler: 'Nicht gefunden' });
       const laden = url.searchParams.get('laden') === '1';
       return datei(res, speicher.druckDatei(m[1]), laden ? { 'Content-Disposition': `attachment; filename="fotobox-${m[1]}.jpg"` } : { 'Cache-Control': 'max-age=3600' });
     }
     m = /^\/fotos\/([\w-]+)\/unterschrift\.png$/.exec(p);
-    if (m && speicher.foto(m[1])) return datei(res, speicher.unterschriftDatei(m[1]));
+    if (m && speicher.foto(m[1])) return (speicher.foto(m[1]).schluessel === url.searchParams.get('k') ? datei(res, speicher.unterschriftDatei(m[1])) : json(res, 404, {}));
     m = /^\/eigene\/([\w.-]+)$/.exec(p);
     if (m && speicher.eigene().includes(m[1])) return datei(res, path.join(speicher.eigeneOrdner(), m[1]), { 'Cache-Control': 'max-age=3600' });
     m = /^\/f\/([\w-]+)$/.exec(p);

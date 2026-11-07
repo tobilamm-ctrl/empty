@@ -237,7 +237,7 @@ class Ablauf extends EventEmitter {
       });
       const foto = await this.speicher.neuesFoto({ modus: this.z.modus, filter, aufnahmen, druck });
       this.log('info', `Foto ${foto.id} aufgenommen`);
-      this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg`, schluessel: foto.schluessel }, hinweis: '', bild: null, imGaestebuch: false });
+      this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg?k=${foto.schluessel}`, schluessel: foto.schluessel }, hinweis: '', bild: null, imGaestebuch: false });
     } catch (err) {
       this.log('fehler', 'Aufnahme fehlgeschlagen: ' + err.message);
       const text = err.kamera ? 'Die Kamera hat nicht ausgelöst.' : 'Das Foto konnte nicht gespeichert werden.';
@@ -287,7 +287,8 @@ class Ablauf extends EventEmitter {
     if (!LEERLAUF_ANSICHTEN.includes(this.z.ansicht)) return;
     if (this.z.ansicht === 'danke' && !(e.qrAn && this.z.foto)) return; // ohne QR-Code endet „Danke“ von selbst
     // Solange die eigenen Abzüge noch drucken, nicht zum Start zurückspringen
-    if (this.z.ansicht === 'drucken' && this.z.foto && this.drucker.auftraegeZu(this.z.foto.id).some((x) => x.status !== 'fertig')) { this.letzteAktivitaet = Date.now(); return; }
+    // (nur solange ein Drucker bereit ist – sind beide gestört, greift der Leerlauf wieder)
+    if (this.z.ansicht === 'drucken' && this.z.foto && this.drucker.papierGesamt() > 0 && this.drucker.auftraegeZu(this.z.foto.id).some((x) => x.status !== 'fertig')) { this.letzteAktivitaet = Date.now(); return; }
     const dauer = this._dauer(e), vorbei = Date.now() - this.letzteAktivitaet;
     if (vorbei >= dauer.leerlauf) {
       if (['vorschau', 'gaestebuch', 'druck'].includes(this.z.ansicht)) this._behalten();

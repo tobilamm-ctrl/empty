@@ -406,7 +406,7 @@ input[type=range] { accent-color: var(--akzent); }
     const freigabe = daten.einstellungen.diashowFreigabe;
     const wartend = daten.fotos.filter((f) => f.inDiashow && !f.ausgeblendet && !f.freigegeben).length;
     $('fotoZahl').textContent = (daten.fotos.length === 1 ? '1 Foto' : `${daten.fotos.length} Fotos`) + (freigabe && wartend ? ` · ${wartend} warten auf Freigabe` : '');
-    $('fotos').innerHTML = daten.fotos.map((f) => `<div class="foto${f.ausgeblendet ? ' aus' : ''}"><img loading="lazy" src="/fotos/${f.id}/druck.jpg" alt="">
+    $('fotos').innerHTML = daten.fotos.map((f) => `<div class="foto${f.ausgeblendet ? ' aus' : ''}"><img loading="lazy" src="/fotos/${f.id}/druck.jpg?k=${f.schluessel || ''}" alt="">
       <div><span>${new Date(f.zeit).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · ${f.modus === 'streifen' ? 'Streifen' : 'Einzel'} · ${f.abzuege || 0} Abzüge${f.inDiashow ? '' : ' · Gast: nicht in Diashow'}</span>
       ${freigabe && f.inDiashow && !f.ausgeblendet ? `<button class="btn ${f.freigegeben ? 'btn-rand' : 'btn-haupt'}" data-frei="${f.id}" data-wert="${f.freigegeben ? '0' : '1'}">${f.freigegeben ? 'Freigabe zurücknehmen' : 'Freigeben'}</button>` : ''}
       <button class="btn btn-rand" data-aus="${f.id}" data-wert="${f.ausgeblendet ? '0' : '1'}">${f.ausgeblendet ? 'Wieder zeigen' : 'Ausblenden'}</button>
@@ -416,7 +416,7 @@ input[type=range] { accent-color: var(--akzent); }
   function gbEintrag(f) {
     const gb = f.gaestebuch; if (!gb) return '';
     const namen = gb.gaeste.map(gastName).concat(gb.namenFrei ? [gb.namenFrei] : []).join(', ');
-    return `<div class="gb-eintrag">${namen ? `<b>${esc(namen)}</b>` : ''}${gb.gruss ? `<br>„${esc(gb.gruss)}“` : ''}${gb.unterschrift ? `<img loading="lazy" src="/fotos/${f.id}/unterschrift.png" alt="Unterschrift">` : ''}</div>`;
+    return `<div class="gb-eintrag">${namen ? `<b>${esc(namen)}</b>` : ''}${gb.gruss ? `<br>„${esc(gb.gruss)}“` : ''}${gb.unterschrift ? `<img loading="lazy" src="/fotos/${f.id}/unterschrift.png?k=${f.schluessel || ''}" alt="Unterschrift">` : ''}</div>`;
   }
 
   // ---------- Eigene Fotos ----------
@@ -450,7 +450,7 @@ input[type=range] { accent-color: var(--akzent); }
   function dankeskarten() {
     const l = daten.dankeskarten;
     $('dkZahl').textContent = l.length ? `${l.filter((d) => d.foto).length} von ${l.length} Gästen mit Foto` : 'Noch keine Gästeliste – bitte aus dem Sitzplantool übernehmen.';
-    $('dankeskarten').innerHTML = l.map((d) => `<div class="dk">${d.foto ? `<img loading="lazy" src="/fotos/${d.foto}/druck.jpg" alt="">` : '<span class="leer"></span>'}
+    $('dankeskarten').innerHTML = l.map((d) => `<div class="dk">${d.foto ? `<img loading="lazy" src="/fotos/${d.foto}/druck.jpg?k=${d.schluessel || ''}" alt="">` : '<span class="leer"></span>'}
       <div><b>${esc(d.name)}</b>${d.tisch ? ` · <span class="leise">${esc(d.tisch)}</span>` : ''}<br><span class="leise">${esc([d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'keine Anschrift')}${d.foto ? '' : ' · noch kein Foto'}</span></div></div>`).join('');
   }
   $('fotos').onclick = (e) => {

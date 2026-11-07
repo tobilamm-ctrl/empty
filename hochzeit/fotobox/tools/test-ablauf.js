@@ -90,8 +90,8 @@ test('kompletter Ablauf: Streifen mit Schwarzweiß, nochmal, Diashow-Freigabe, d
     assert.equal(ablauf.zustand().ansicht, 'aufnahme');
     const vorschau = await warteAnsicht(ablauf, 'vorschau');
     const id = vorschau.foto.id;
-    assert.match(vorschau.foto.url, /^\/fotos\/.+\/druck\.jpg$/);
-    assert.equal(vorschau.foto.url, `/fotos/${id}/druck.jpg`);
+    assert.match(vorschau.foto.url, /^\/fotos\/.+\/druck\.jpg\?k=[0-9a-f]{12}$/);
+    assert.equal(vorschau.foto.url, `/fotos/${id}/druck.jpg?k=${vorschau.foto.schluessel}`);
 
     const druckDatei = speicher.druckDatei(id);
     assert.ok(fs.existsSync(druckDatei), 'druck.jpg fehlt');
@@ -200,6 +200,244 @@ test('Kamera-Störung: Knopf meldet Störung, „stoerungOk“ führt zurück zu
     assert.equal(ablauf.zustand().ansicht, 'start');
   } finally {
     t.aufraeumen();
+  }
+});
+
+test('Filterangebot: Farbe, Schwarzweiß und Vintage; „Hell & weich“ ist aus und wird nicht angeboten', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    // Standard: schwarzweiss an, filterVintage an, filterWeich aus
+    const e = speicher.einstellungen();
+    assert.deepEqual(filterAngebot(e), ['farbe', 'sw', 'vintage']);
+    assert.deepEqual(ablauf.zustand().einstellungen.filter, ['farbe', 'sw', 'vintage']);
+
+    ablauf.aktion('start');
+    ablauf.aktion('modus', 'einzel');
+    assert.equal(ablauf.zustand().ansicht, 'filter');
+    ablauf.aktion('filter', 'weich'); // nicht im Angebot: bleibt im Filter-Bildschirm
+    assert.equal(ablauf.zustand().ansicht, 'filter');
+
+    ablauf.aktion('filter', 'vintage');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.equal(speicher.foto(v.foto.id).filter, 'vintage');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Filterangebot nur Farbe: der Filter-Bildschirm entfällt, „Einzel“ geht direkt zur Aufnahme', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ schwarzweiss: false, filterVintage: false, filterWeich: false });
+    assert.deepEqual(ablauf.zustand().einstellungen.filter, ['farbe']);
+
+    ablauf.aktion('start');
+    assert.equal(ablauf.zustand().ansicht, 'modus');
+    ablauf.aktion('modus', 'einzel');
+    assert.equal(ablauf.zustand().ansicht, 'aufnahme');
+    assert.equal(ablauf.zustand().filter, 'farbe');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.equal(speicher.foto(v.foto.id).filter, 'farbe');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Bluetooth-Knopf mit Filter „Hell & weich“ aus den Einstellungen: ohne Angebot wird Farbe genommen', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ knopfFilter: 'weich', filterWeich: false });
+    ablauf.aktion('knopf');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.equal(ablauf.zustand().filter, 'farbe');
+    assert.equal(speicher.foto(v.foto.id).filter, 'farbe', 'ein nicht angebotener Filter darf nicht benutzt werden');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Bluetooth-Knopf mit Filter „Hell & weich“ wird benutzt, wenn er angeboten wird', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ knopfFilter: 'weich', filterWeich: true });
+    ablauf.aktion('knopf');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.equal(speicher.foto(v.foto.id).filter, 'weich');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Posen: Einzelbild zeigt „Pose: …“ aus der Liste, ohne Posen „Schaut in die Kamera!“', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ posenAn: true, posenListe: 'A\nB' });
+    ablauf.aktion('knopf');
+    const z = await warteAuf(ablauf, (x) => x.ansicht === 'aufnahme' && x.hinweis.startsWith('Pose: '));
+    assert.ok(['Pose: A', 'Pose: B'].includes(z.hinweis), `unerwarteter Hinweis: ${z.hinweis}`);
+    await warteAnsicht(ablauf, 'vorschau');
+  } finally {
+    t.aufraeumen();
+  }
+
+  const ohne = aufbauen();
+  try {
+    const { ablauf, speicher } = ohne;
+    speicher.einstellungenSetzen({ posenAn: false, posenListe: 'A\nB' });
+    ablauf.aktion('knopf');
+    const z = await warteAuf(ablauf, (x) => x.ansicht === 'aufnahme' && x.hinweis !== '');
+    assert.equal(z.hinweis, 'Schaut in die Kamera!');
+    await warteAnsicht(ablauf, 'vorschau');
+  } finally {
+    ohne.aufraeumen();
+  }
+});
+
+test('Posen im Fotostreifen: die ersten beiden Aufnahmen zeigen nicht dieselbe Pose', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ posenAn: true, posenListe: 'A\nB', knopfModus: 'streifen' });
+    // Hinweis jeweils am Anfang einer Aufnahme festhalten (Nummer des Bilds ändert sich)
+    const hinweise = [];
+    let letzteNr = null;
+    const merke = () => {
+      const z = ablauf.zustand();
+      if (z.bild && z.bild.nr !== letzteNr) { letzteNr = z.bild.nr; hinweise.push(z.hinweis); }
+    };
+    ablauf.on('aenderung', merke);
+    try {
+      ablauf.aktion('knopf');
+      await warteAnsicht(ablauf, 'vorschau');
+    } finally {
+      ablauf.removeListener('aenderung', merke);
+    }
+    assert.equal(hinweise.length, 4, 'vier Aufnahmen erwartet');
+    assert.ok(hinweise.every((h) => ['Pose: A', 'Pose: B'].includes(h)), `unerwartete Hinweise: ${hinweise}`);
+    assert.notEqual(hinweise[0], hinweise[1], 'Aufnahme 1 und 2 zeigen dieselbe Pose');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Gästebuch: Gäste und Unterschrift speichern, unbekannte Gäste fallen weg; ausgeschaltet öffnet sich nichts', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Berg', tisch: 'Tisch 1' }, { id: 'g2', name: 'Ben Kurz', tisch: 'Tisch 2' }]);
+    ablauf.aktion('knopf');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+
+    ablauf.aktion('gaestebuch');
+    assert.equal(ablauf.zustand().ansicht, 'gaestebuch');
+    const unterschrift = createCanvas(50, 20).toDataURL('image/png');
+    ablauf.aktion('gaestebuchSpeichern', { gaeste: ['g1', 'x'], namenFrei: 'Oma', gruss: 'Hallo', unterschrift });
+    const z = ablauf.zustand();
+    assert.equal(z.ansicht, 'vorschau');
+    assert.equal(z.imGaestebuch, true);
+
+    const f = speicher.foto(v.foto.id);
+    assert.deepEqual(f.gaestebuch.gaeste, ['g1'], 'die unbekannte Gast-ID „x“ muss wegfallen');
+    assert.equal(f.gaestebuch.namenFrei, 'Oma');
+    assert.equal(f.gaestebuch.unterschrift, true);
+    const png = fs.readFileSync(speicher.unterschriftDatei(v.foto.id));
+    assert.equal(png[0], 0x89, 'unterschrift.png ist kein PNG');
+
+    // Gästebuch ausgeschaltet: der Schritt öffnet sich nicht
+    speicher.einstellungenSetzen({ gaestebuchAn: false });
+    ablauf.aktion('gaestebuch');
+    assert.equal(ablauf.zustand().ansicht, 'vorschau');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('QR-Codes: Foto-Link und WLAN-Zugang in „Druck“ (Semikolon im WLAN-Passwort maskiert), in der Vorschau keiner', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ qrAn: true, wlanName: 'Fotobox', wlanPasswort: 'a;b' });
+    ablauf.aktion('knopf');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.equal(ablauf.zustand().qr, null, 'in der Vorschau kein QR-Code');
+
+    ablauf.aktion('weiter');
+    const z = ablauf.zustand();
+    assert.equal(z.ansicht, 'druck');
+    assert.match(z.qr.foto, /\/f\/.+\?k=[0-9a-f]{12}$/);
+    assert.ok(z.qr.foto.endsWith(`?k=${speicher.foto(v.foto.id).schluessel}`), 'der Schlüssel im Link muss zum Foto gehören');
+    assert.equal(z.qr.wlan, 'WIFI:T:WPA;S:Fotobox;P:a\\;b;;');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('QR-Codes: ohne eingetragenes WLAN nur der Foto-Link, ausgeschaltet gar kein QR-Code', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ qrAn: true, wlanName: '' });
+    ablauf.aktion('knopf');
+    await warteAnsicht(ablauf, 'vorschau');
+    ablauf.aktion('weiter');
+    const z = ablauf.zustand();
+    assert.equal(z.ansicht, 'druck');
+    assert.ok(z.qr && z.qr.foto, 'der Foto-Link muss trotzdem da sein');
+    assert.equal(z.qr.wlan, null);
+  } finally {
+    t.aufraeumen();
+  }
+
+  const aus = aufbauen();
+  try {
+    const { ablauf, speicher } = aus;
+    speicher.einstellungenSetzen({ qrAn: false, wlanName: 'Fotobox' });
+    ablauf.aktion('knopf');
+    await warteAnsicht(aus.ablauf, 'vorschau');
+    ablauf.aktion('weiter');
+    assert.equal(ablauf.zustand().ansicht, 'druck');
+    assert.equal(ablauf.zustand().qr, null);
+  } finally {
+    aus.aufraeumen();
+  }
+});
+
+test('Danke mit QR-Code bleibt stehen bis „Fertig“; ohne QR-Code endet es nach zeiten.danke', async () => {
+  const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.einstellungenSetzen({ druckenAn: false, qrAn: true });
+    ablauf.aktion('knopf');
+    await warteAnsicht(ablauf, 'vorschau');
+    ablauf.aktion('weiter');
+    assert.equal(ablauf.zustand().ansicht, 'danke');
+    assert.equal(ablauf.zustand().ohneDruck, true);
+
+    await warte(300); // dreimal zeiten.danke (100 ms), aber noch unter dem Leerlauf (600 ms)
+    assert.equal(ablauf.zustand().ansicht, 'danke', 'mit QR-Code darf „Danke“ nicht von selbst enden');
+    ablauf.aktion('fertig');
+    assert.equal(ablauf.zustand().ansicht, 'start');
+  } finally {
+    t.aufraeumen();
+  }
+
+  const ohne = aufbauen();
+  try {
+    const { ablauf, speicher } = ohne;
+    speicher.einstellungenSetzen({ druckenAn: false, qrAn: false });
+    ablauf.aktion('knopf');
+    await warteAnsicht(ablauf, 'vorschau');
+    ablauf.aktion('weiter');
+    assert.equal(ablauf.zustand().ansicht, 'danke');
+    await warteAnsicht(ablauf, 'start', 1000);
+  } finally {
+    ohne.aufraeumen();
   }
 });
 

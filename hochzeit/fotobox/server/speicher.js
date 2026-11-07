@@ -271,7 +271,7 @@ class Speicher {
     return this._gaeste.map((x) => {
       const mit = fotos.filter((f) => f.gaestebuch.gaeste.includes(x.id));
       const foto = mit.find((f) => f.modus !== 'streifen') || mit[0] || null;
-      return { id: x.id, name: x.name, tisch: x.tisch || '', strasse: x.strasse || '', plz: x.plz || '', ort: x.ort || '', foto: foto ? foto.id : null, fotos: mit.length };
+      return { id: x.id, name: x.name, tisch: x.tisch || '', strasse: x.strasse || '', plz: x.plz || '', ort: x.ort || '', foto: foto ? foto.id : null, schluessel: foto ? foto.schluessel : null, fotos: mit.length };
     });
   }
   dankeskartenCsv() {
@@ -293,7 +293,7 @@ class Speicher {
       let druck; try { druck = await fsp.readFile(this.druckDatei(f.id)); } catch (e) { continue; }
       const gb = f.gaestebuch, leute = gb ? gb.gaeste.map((id) => g.get(id)).filter(Boolean) : [];
       if (sortierung === 'tisch' || sortierung === 'gast') {
-        const gruppen = sortierung === 'tisch' ? [...new Set(leute.map((x) => x.tisch || 'ohne Tisch'))] : leute.map((x) => x.name);
+        const gruppen = sortierung === 'tisch' ? [...new Set(leute.map((x) => x.tisch || 'ohne Tisch'))] : [...new Set(leute.map((x) => x.name))];
         (gruppen.length ? gruppen : ['ohne Zuordnung']).forEach((o) => eintraege.push({ name: `${sortierung === 'tisch' ? 'nach-tisch' : 'nach-gast'}/${ordnerName(o)}/${f.id}.jpg`, daten: druck, zeit }));
       } else {
         eintraege.push({ name: `druckbilder/${f.id}.jpg`, daten: druck, zeit });
