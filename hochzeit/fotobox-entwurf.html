@@ -51,8 +51,12 @@ p { margin: 0; }
 .band .los { font-size: 1.15em; color: var(--akzent); text-align: right; max-width: 55%; }
 .live canvas { width: 100%; height: 100%; display: block; }
 .gespiegelt .live canvas, .gespiegelt .kachel canvas { transform: scaleX(-1); }
-.sw canvas { filter: grayscale(1) contrast(1.05); }
+.f-sw canvas { filter: grayscale(1) contrast(1.05); }
+.f-vintage canvas { filter: sepia(.55) contrast(.88) brightness(1.06) saturate(.9); }
+.f-weich canvas { filter: brightness(1.12) contrast(.86) saturate(1.05) sepia(.1); }
+.f-vintage::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(40,20,0,0) 52%, rgba(40,20,0,.5) 100%); pointer-events: none; }
 .tag { position: absolute; top: 1.2em; left: 1.2em; font-size: .8em; background: rgba(0,0,0,.55); color: #fff; padding: .35em .9em; border-radius: 99px; }
+.text.umbruch { white-space: normal; text-align: center; width: max-content; max-width: 84%; border-radius: 1.1em; line-height: 1.25; }
 .text { position: absolute; left: 50%; bottom: 2.2em; transform: translateX(-50%); background: rgba(6,8,7,.78); padding: .6em 1.6em; border-radius: 99px; font-size: 1.55em; white-space: nowrap; }
 .zahl-gross { position: absolute; inset: 0 0 14%; display: grid; place-items: center; font-family: var(--kopf); font-size: 25cqw; line-height: 1; color: #fff; text-shadow: 0 .05em .3em rgba(0,0,0,.5); }
 .nr { position: absolute; top: 1.2em; right: 1.2em; background: var(--akzent); color: var(--akzent-tinte); font-weight: 600; padding: .4em 1em; border-radius: 99px; font-size: 1.1em; }
@@ -62,6 +66,10 @@ p { margin: 0; }
 .puls { animation: puls 1s ease-out; }
 @keyframes puls { from { transform: scale(1.35); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: .92; } }
 .st-ergebnis { display: flex; align-items: center; justify-content: center; padding-bottom: 7%; }
+.st-ergebnis.mit-qr { padding-right: 19%; }
+.tv-qr { position: absolute; right: 1.6em; top: 50%; transform: translateY(-58%); width: 14.5cqw; background: #fff; color: #1b1b1b; border-radius: .7em; padding: .6em .6em .5em; text-align: center; font-size: .72em; line-height: 1.25; box-shadow: 0 1em 2em -1em rgba(0,0,0,.8); }
+.tv-qr svg { width: 100%; height: auto; display: block; }
+.tv-qr span { display: block; margin-top: .35em; font-weight: 600; }
 .st-ergebnis img { max-width: 94%; max-height: 84%; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); border-radius: 2px; }
 .st-danke { display: flex; align-items: center; justify-content: center; gap: 5%; padding: 0 6%; }
 .st-danke img { max-height: 70%; max-width: 45%; border-radius: 2px; box-shadow: 0 2em 4em -2em rgba(0,0,0,.9); }
@@ -95,8 +103,11 @@ p { margin: 0; }
 .kachel .t { font-family: var(--kopf); font-weight: 600; font-size: 1.3em; }
 .kachel .d { color: var(--leise); font-size: .68em; line-height: 1.4; }
 .kachel svg { width: 100%; height: 4.6em; }
-.kachel canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; max-width: 100%; border-radius: .4em; display: block; }
-.kachel canvas.bw { filter: grayscale(1) contrast(1.05); }
+.th { position: relative; display: block; border-radius: .4em; overflow: hidden; }
+.th canvas { width: 100%; height: auto; max-width: 100%; display: block; }
+.th-t { position: absolute; left: .5em; bottom: .5em; background: rgba(0,0,0,.62); color: #fff; padding: .15em .8em; border-radius: 99px; font-family: var(--kopf); font-weight: 600; font-size: 1.1em; }
+.kacheln.vier { gap: .5em; }
+.kachel.k-th { padding: .35em; gap: 0; }
 .i-zahl { font-family: var(--kopf); font-size: 4.6em; line-height: 1; color: var(--akzent); min-height: 1em; font-variant-numeric: tabular-nums; }
 .zwei { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1em; align-items: center; }
 .vorschau { max-width: 100%; max-height: 12em; justify-self: center; border-radius: 3px; background: #f6f1e6; }
@@ -119,6 +130,33 @@ p { margin: 0; }
 .iover { position: absolute; inset: 0; z-index: 5; background: rgba(8,13,11,.86); display: grid; place-items: center; padding: 1em; }
 .icard { background: var(--flaeche); border: 1px solid var(--linie); border-radius: .9em; padding: 1em 1.2em; width: 100%; max-width: 20em; display: flex; flex-direction: column; gap: .7em; text-align: center; }
 .icard h2 { font-size: 1.3em; }
+
+/* Gästebuch am iPad */
+.is.gb { justify-content: flex-start; gap: .45em; padding-top: .1em; }
+.gb-kopf { display: flex; align-items: baseline; gap: .8em; }
+.gb-kopf h2 { font-size: 1.4em; }
+.gb-raster { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .9em; flex: 1; min-height: 0; }
+.gb-sp { display: flex; flex-direction: column; gap: .4em; min-height: 0; min-width: 0; }
+.gb-sp input, .gb-sp textarea { font: inherit; font-size: .72em; color: var(--tinte); background: var(--flaeche); border: 1.5px solid var(--linie); border-radius: .6em; padding: .45em .65em; width: 100%; box-sizing: border-box; }
+.gb-sp textarea { resize: none; height: 4.4em; }
+.chips { display: flex; flex-wrap: wrap; gap: .3em; }
+.chip { font-size: .66em; border: 1.5px solid var(--linie); background: var(--flaeche); border-radius: 99px; padding: .4em .85em; }
+.chip[aria-pressed="true"] { background: var(--akzent); color: var(--akzent-tinte); border-color: var(--akzent); font-weight: 600; }
+.gaeste { flex: 1; min-height: 0; overflow: auto; align-content: flex-start; }
+.sig { position: relative; }
+.sig canvas { width: 100%; aspect-ratio: 3 / 1; background: #f8f4ec; border-radius: .5em; touch-action: none; display: block; cursor: crosshair; }
+.sig-hinweis { position: absolute; inset: 0; display: grid; place-items: center; color: #8a8478; font-size: .66em; pointer-events: none; }
+.sig-weg { position: absolute; right: .4em; bottom: .4em; font-size: .62em; padding: .25em .8em; border-radius: 99px; border: 1px solid #b9b2a3; background: rgba(255,255,255,.7); color: #3b362c; }
+.gb-aktion { display: flex; gap: .5em; margin-top: auto; }
+.gb-aktion .btn { flex: 1; padding: .5em .8em; font-size: .85em; }
+
+/* QR-Karten (iPad) */
+.qrkarte { display: flex; gap: .5em; align-items: flex-start; }
+.qr1 { flex: 1 1 0; min-width: 0; max-width: 8.2em; background: #fff; color: #1b1b1b; border-radius: .5em; padding: .35em; text-align: center; font-size: .6em; line-height: 1.25; }
+.qr1 svg { width: 100%; height: auto; display: block; }
+.qr1 span { display: block; font-weight: 600; margin-top: .2em; }
+.qr-text { font-size: .6em; color: var(--leise); line-height: 1.4; word-break: break-word; }
+.vorschau.klein-v { max-height: 7em; }
 
 /* ---------- unten: Knopf und Service-Handy ---------- */
 .unten { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 26px; max-width: 1500px; margin: 26px auto 0; align-items: start; }
@@ -146,9 +184,31 @@ p { margin: 0; }
 .sk label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--leise); min-width: 0; }
 .sk label.hk { flex-direction: row; align-items: center; gap: 8px; color: var(--tinte); font-size: 14px; }
 .sk input[type=text], .sk select { font: inherit; font-size: 14px; color: var(--tinte); background: var(--grund); border: 1px solid var(--linie); border-radius: 8px; padding: 7px 8px; min-width: 0; width: 100%; box-sizing: border-box; }
+.sk textarea { font: inherit; font-size: 13px; color: var(--tinte); background: var(--grund); border: 1px solid var(--linie); border-radius: 8px; padding: 7px 8px; width: 100%; box-sizing: border-box; resize: vertical; min-height: 90px; line-height: 1.4; }
+.sk input[type=range] { width: 100%; accent-color: var(--akzent); }
+.sk input[type=file] { font-size: 12px; color: var(--leise); width: 100%; }
 .sk input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--akzent); }
 .zwei-sp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sleise { font-size: 12px; color: var(--leise); line-height: 1.45; }
+.stz { display: grid; grid-template-columns: 104px minmax(0, 1fr) 24px; gap: 8px; align-items: center; font-size: 12px; }
+.stz b { text-align: right; font-variant-numeric: tabular-nums; }
+.stz span { color: var(--leise); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.kpi { background: var(--grund); border-radius: 8px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.kpi b { font-family: var(--kopf); font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 11px; color: var(--leise); line-height: 1.25; }
+.stk { display: flex; flex-direction: column; gap: 6px; }
+.stk h5 { margin: 4px 0 0; font-size: 12px; font-weight: 600; color: var(--leise); letter-spacing: .04em; text-transform: uppercase; }
+.mini { display: flex; flex-wrap: wrap; gap: 4px; }
+.mini img { width: 52px; height: 35px; object-fit: cover; border-radius: 3px; background: #f6f1e6; display: block; }
+.eig { position: relative; width: 66px; height: 66px; }
+.eig img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; display: block; }
+.eig button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid var(--linie); background: var(--flaeche-2); color: var(--tinte); line-height: 1; font-size: 15px; }
+.listebox { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+.dk { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 12px; background: var(--grund); border-radius: 8px; padding: 6px; }
+.dk img, .dk i { width: 52px; height: 35px; border-radius: 3px; object-fit: cover; background: #f6f1e6; display: block; }
+.dk i { background: var(--flaeche-2); }
+.dk small { display: block; color: var(--leise); font-size: 11px; line-height: 1.3; }
 .pause-an { border-color: color-mix(in srgb, var(--warn) 55%, transparent); background: color-mix(in srgb, var(--warn) 14%, var(--flaeche)); }
 
 @media (max-width: 960px) {
@@ -178,18 +238,19 @@ p { margin: 0; }
         <div class="st live" id="st-live" hidden>
           <canvas id="liveA" width="960" height="540"></canvas>
           <span class="tag">Demo-Livebild</span>
-          <div class="text" id="liveText">Stellt euch auf die Markierung am Boden</div>
+          <div class="text umbruch" id="liveText">Stellt euch auf die Markierung am Boden</div>
         </div>
         <div class="st live" id="st-aufnahme" hidden>
           <canvas id="liveB" width="960" height="540"></canvas>
           <span class="tag">Demo-Livebild</span>
           <span class="nr" id="tvNr" hidden></span>
           <div class="zahl-gross" id="tvZahl"></div>
-          <div class="text" id="tvHinweis"></div>
+          <div class="text umbruch" id="tvHinweis"></div>
           <div class="blitz" id="blitz"></div>
         </div>
         <div class="st st-ergebnis" id="st-ergebnis" hidden>
           <img id="tvErgebnis" alt="Euer fertiges Foto">
+          <div class="tv-qr" id="tvQr" hidden></div>
           <div class="text" id="ergebnisText"></div>
         </div>
         <div class="st st-danke" id="st-danke" hidden>
@@ -232,11 +293,8 @@ p { margin: 0; }
           </section>
           <section class="is" id="i-filter" hidden>
             <button class="zurueck" data-a="zurueck">← Zurück</button>
-            <h2>Farbe oder Schwarzweiß?</h2>
-            <div class="kacheln">
-              <button class="kachel" data-a="filter" data-w="farbe"><canvas id="thFarbe" width="360" height="240"></canvas><span class="t">Farbe</span></button>
-              <button class="kachel" data-a="filter" data-w="sw"><canvas id="thSw" class="bw" width="360" height="240"></canvas><span class="t">Schwarzweiß</span></button>
-            </div>
+            <h2>Welchen Look wollt ihr?</h2>
+            <div class="kacheln" id="kFilter"></div>
           </section>
           <section class="is mitte" id="i-aufnahme" hidden>
             <p class="leise" id="iNr"></p>
@@ -251,13 +309,17 @@ p { margin: 0; }
                 <h2>Gefällt’s euch?</h2>
                 <button class="btn btn-haupt" data-a="weiter">Weiter</button>
                 <button class="btn btn-rand" data-a="nochmal" id="nochmal">Nochmal</button>
+                <button class="btn btn-rand" data-a="gaestebuch" id="gbKnopf">Ins Gästebuch</button>
                 <label class="haken"><input type="checkbox" id="inDiashow" checked>In der Diashow zeigen</label>
               </div>
             </div>
           </section>
           <section class="is" id="i-druck" hidden>
             <div class="zwei">
-              <img class="vorschau" id="iVorschau2" alt="Euer Foto (klein)">
+              <div class="spalte">
+                <img class="vorschau klein-v" id="iVorschau2" alt="Euer Foto (klein)">
+                <div id="qrDruck"></div>
+              </div>
               <div class="spalte">
                 <h2>Wie viele Abzüge?</h2>
                 <div class="zaehler"><button id="weniger" aria-label="Einen weniger">−</button><output id="anzahl">1</output><button id="mehr" aria-label="Einen mehr">+</button></div>
@@ -269,10 +331,33 @@ p { margin: 0; }
             </div>
           </section>
           <section class="is" id="i-drucken" hidden>
-            <h2>Wird gedruckt …</h2>
-            <ul class="auftraege" id="auftraege"></ul>
-            <p class="klein">Holt eure Abzüge gleich unten am Ausgabefach ab. Echt dauert ein Druck ca. 45 Sekunden, hier ist es verkürzt.</p>
-            <button class="btn btn-haupt" data-a="fertig" style="align-self:flex-start">Fertig</button>
+            <div class="zwei" style="grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start">
+              <div class="spalte">
+                <h2>Wird gedruckt …</h2>
+                <ul class="auftraege" id="auftraege"></ul>
+                <p class="klein">Holt eure Abzüge gleich unten am Ausgabefach ab. Echt dauert ein Druck ca. 45 Sekunden, hier ist es verkürzt.</p>
+                <button class="btn btn-haupt" data-a="fertig" style="align-self:flex-start;width:auto">Fertig</button>
+              </div>
+              <div class="spalte" id="qrDrucken"></div>
+            </div>
+          </section>
+          <section class="is gb" id="i-gaestebuch" hidden>
+            <div class="gb-kopf"><button class="zurueck" data-a="gbAbbrechen">← Zurück</button><h2>Ins Gästebuch</h2></div>
+            <div class="gb-raster">
+              <div class="gb-sp">
+                <input type="search" id="gbSuche" placeholder="Name suchen …" autocomplete="off" aria-label="Gast suchen">
+                <div class="chips" id="gbTische"></div>
+                <div class="chips gaeste" id="gbGaeste"></div>
+                <p class="klein" id="gbWahl"></p>
+              </div>
+              <div class="gb-sp">
+                <label class="klein" for="gbGruss">Euer Gruß</label>
+                <textarea id="gbGruss" maxlength="300" placeholder="Alles Gute für euch zwei …"></textarea>
+                <p class="klein" id="gbZahl" style="margin-top:-.3em;text-align:right">0 / 300</p>
+                <div class="sig"><canvas id="gbSig" width="600" height="200"></canvas><span class="sig-hinweis" id="gbSigHinweis">Hier mit dem Finger unterschreiben</span><button class="sig-weg" id="gbSigWeg" type="button">Löschen</button></div>
+                <div class="gb-aktion"><button class="btn btn-rand" data-a="gbAbbrechen">Abbrechen</button><button class="btn btn-haupt" data-a="gbSpeichern" id="gbSpeichern">Speichern</button></div>
+              </div>
+            </div>
           </section>
           <section class="is mitte" id="i-danke" hidden>
             <h2 style="font-size:3em;color:var(--akzent)" id="iDankeTitel"></h2>
@@ -302,9 +387,9 @@ p { margin: 0; }
       </div>
       <div class="erkl">
         <p><b>Großer Bildschirm</b>Diashow im Leerlauf, Livebild, großer Countdown und das fertige Foto. Die Gäste schauen so automatisch Richtung Kamera.</p>
-        <p><b>iPad</b>Nur zum Antippen. Nach 45 Sekunden ohne Eingabe geht es zurück zum Start – aber erst, wenn die eigenen Abzüge fertig gedruckt sind.</p>
-        <p><b>Service-Handy</b>Alles, was ihr am Abend braucht: Pause, Papierstand, Drucker abschalten, Druckbild, Farben wie die Einladungen, eigene Texte. Im Entwurf wirkt jede Änderung sofort; in der App gibt es je Abschnitt einen Speichern-Knopf.</p>
-        <p><b>Was der Entwurf nicht zeigt</b>Logo-Upload, Öffnungszeiten, Feinkorrektur für den Druck, Knopf anlernen, PIN und Speicherplatz – das gibt es nur in der echten App.</p>
+        <p><b>iPad</b>Nur zum Antippen, dazu Gästebuch (Namen, Gruß, Unterschrift) und QR-Codes zum Mitnehmen. Nach 45 Sekunden ohne Eingabe geht es zurück zum Start – aber erst, wenn die eigenen Abzüge fertig gedruckt sind.</p>
+        <p><b>Service-Handy</b>Alles, was ihr am Abend braucht: Pause, Papierstand, Drucker abschalten, Druckbild, Farben wie die Einladungen, eigene Texte. Im Entwurf wirkt jede Änderung sofort; in der App gibt es je Abschnitt einen Speichern-Knopf. Dazu: Töne, Posen-Vorschläge, eigene Fotos für die Diashow, Filter, QR-Code und Gästebuch sowie unten Statistik, Fotos nach Gast oder Tisch und die Hilfe für die Dankeskarten.</p>
+        <p><b>Was der Entwurf nicht zeigt</b>Logo-Upload, Öffnungszeiten, Feinkorrektur für den Druck, Knopf anlernen, PIN und Speicherplatz – das gibt es nur in der echten App. Außerdem gilt hier: Fotos und eigene Diashow-Bilder liegen nur im Speicher der Seite und sind nach dem Neuladen weg. Die Gästeliste ist eine Beispielliste (in der App kommt sie aus dem Sitzplan), die QR-Codes zeigen auf eine Demo-Adresse, und der Export der Dankeskarten-Hilfe ist abgeschaltet. Töne spielt hier der Browser ab; in der App wählt ihr, ob sie am großen Bildschirm oder am iPad laufen.</p>
       </div>
     </div>
 
@@ -331,10 +416,24 @@ p { margin: 0; }
           <label>Bluetooth-Knopf macht</label>
           <div class="zwei-sp">
             <select data-e="knopfModus" aria-label="Knopf: Art"><option value="einzel">Einzelfoto</option><option value="streifen">Fotostreifen</option></select>
-            <select data-e="knopfFilter" aria-label="Knopf: Farbe"><option value="farbe">in Farbe</option><option value="sw">in Schwarzweiß</option></select>
+            <select data-e="knopfFilter" aria-label="Knopf: Farbe"><option value="farbe">in Farbe</option><option value="sw">in Schwarzweiß</option><option value="vintage">als Vintage</option><option value="weich">als Weich</option></select>
           </div>
           <label class="hk"><input type="checkbox" data-e="streifen">Fotostreifen anbieten</label>
           <label class="hk"><input type="checkbox" data-e="schwarzweiss">Schwarzweiß anbieten</label>
+          <label class="hk"><input type="checkbox" data-e="filterVintage">Vintage anbieten</label>
+          <label class="hk"><input type="checkbox" data-e="filterWeich">Weich anbieten</label>
+          <p class="sleise">Ist nur „Farbe“ übrig, entfällt die Auswahl am iPad.</p>
+        </div>
+
+        <div class="sk">
+          <h4>Töne und Posen</h4>
+          <div class="zwei-sp">
+            <label>Töne<select data-e="toene"><option value="aus">aus</option><option value="buehne">großer Bildschirm</option><option value="ipad">iPad</option><option value="beide">beide</option></select></label>
+            <label>Lautstärke <span id="sLaut"></span><input type="range" min="0" max="100" step="5" data-e="lautstaerke" data-zahl aria-label="Lautstärke"></label>
+          </div>
+          <p class="sleise">Im Entwurf spielt immer dieser Browser; es zählt nur „aus“ oder an. Der erste Klick auf der Seite schaltet den Ton frei.</p>
+          <label class="hk"><input type="checkbox" data-e="posenAn">Posen vorschlagen</label>
+          <label>Posen, eine pro Zeile<textarea data-e="posenListe" data-leer rows="5"></textarea></label>
         </div>
 
         <div class="sk">
@@ -342,7 +441,7 @@ p { margin: 0; }
           <label class="hk"><input type="checkbox" data-e="druckenAn">Drucken an</label>
           <div class="zwei-sp">
             <label>Abzüge pro Foto<select data-e="maxAbzuege" data-zahl><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-            <label>Druckbild<select data-e="druckLayout"><option value="rahmen">mit Rand</option><option value="vollbild">Vollbild</option></select></label>
+            <label>Druckbild<select data-e="druckLayout"><option value="rahmen">mit Rand</option><option value="vollbild">Vollbild</option><option value="polaroid">Polaroid</option><option value="elegant">Elegant</option></select></label>
           </div>
         </div>
 
@@ -375,7 +474,44 @@ p { margin: 0; }
             <label>Neue Fotos<select data-e="diashowVerzoegerungSek" data-zahl><option value="0">sofort</option><option value="15">nach 2 Min. (hier 15 s)</option></select></label>
             <label>Je Foto<select data-e="diashowSek" data-zahl><option value="3">3 Sekunden</option><option value="5">5 Sekunden</option><option value="8">8 Sekunden</option></select></label>
           </div>
+          <label>Eigenes Foto nach jedem … Fotobox-Foto<select data-e="eigeneNach" data-zahl><option value="2">2.</option><option value="3">3.</option><option value="5">5.</option></select></label>
           <p class="sleise" id="sFotos"></p>
+        </div>
+
+        <div class="sk">
+          <h4>Eigene Fotos für die Diashow</h4>
+          <input type="file" id="sEigenDatei" accept="image/*" multiple aria-label="Eigene Fotos auswählen">
+          <div class="mini" id="sEigene" style="gap:10px"></div>
+          <p class="sleise">Zum Beispiel Kinderfotos des Paares. Im Entwurf nur im Speicher und nach dem Neuladen weg; die App speichert sie.</p>
+        </div>
+
+        <div class="sk">
+          <h4>QR-Code und Gästebuch</h4>
+          <label class="hk"><input type="checkbox" data-e="qrAn">QR-Code zum Herunterladen zeigen</label>
+          <div class="zwei-sp">
+            <label>WLAN-Name<input type="text" data-e="wlanName" data-leer maxlength="40" placeholder="leer = kein WLAN-Code"></label>
+            <label>WLAN-Passwort<input type="text" data-e="wlanPasswort" data-leer maxlength="60"></label>
+          </div>
+          <p class="sleise">Mit WLAN-Name zeigt das iPad erst einen WLAN-Code und dann den Foto-Code.</p>
+          <label class="hk"><input type="checkbox" data-e="gaestebuchAn">Gästebuch anbieten</label>
+        </div>
+
+        <div class="sk">
+          <h4>Statistik</h4>
+          <div class="stk" id="sStat"></div>
+        </div>
+
+        <div class="sk">
+          <h4>Fotos sortiert</h4>
+          <label>Ansicht<select id="sSort"><option value="zeit">sortiert nach Zeit</option><option value="tisch">sortiert nach Tisch</option><option value="gast">sortiert nach Gast</option></select></label>
+          <div class="stk" id="sSortListe"></div>
+        </div>
+
+        <div class="sk">
+          <h4>Hilfe für die Dankeskarten</h4>
+          <p class="sleise">Je Gast ein Fotovorschlag (jüngstes Foto, auf dem er markiert ist, Einzelfoto zuerst) und die Anschrift. Die Adressen hier sind erfunden.</p>
+          <div class="listebox" id="sDank"></div>
+          <button class="btn btn-rand" disabled style="align-self:flex-start">Export (nur in der App)</button>
         </div>
         <button class="btn btn-rand" id="sReset" style="align-self:flex-start;font-size:13px;padding:8px 11px">Entwurf zurücksetzen</button>
       </div></div>
@@ -383,11 +519,14 @@ p { margin: 0; }
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const setHtml = (el, html) => { if (el._h !== html) { el._h = html; el.innerHTML = html; } }; // nur schreiben, wenn sich etwas ändert (Auswahlfelder bleiben bedienbar)
   const KASSETTE = 18, DRUCK_MS = 6000, LEERLAUF = 45, WARNUNG = 35, KNOPF_SPERRE = 1500;
 
   /* ---------- Farbwelten und Schriftstile wie im Sitzplantool (server/gestaltung.js) ---------- */
@@ -435,6 +574,12 @@ p { margin: 0; }
     textStartTitel: 'Lächeln, bitte!', textStart: 'Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.',
     textBuehne: 'Zum Mitmachen aufs iPad tippen', textPause: 'Kurze Pause – gleich geht’s weiter!',
     textDanke: 'Danke!', textDankeKlein: 'Viel Spaß noch beim Feiern.',
+    toene: 'beide', lautstaerke: 70,
+    posenAn: true, posenListe: ['Alle machen ein Herz', 'Tut so, als hättet ihr den Brautstrauß gefangen', 'Großes Staunen!', 'Alle schauen nach links', 'Gruppen-Umarmung',
+      'Zeigt euren besten Tanzschritt', 'Alle strecken die Zunge raus', 'Haltet euch die Hände vors Gesicht und schaut dann vor', 'Superhelden-Pose!', 'Tut so, als würdet ihr anstoßen',
+      'Alle springen gleichzeitig', 'Der Reihe nach: erst ernst, dann lachen', 'Stellt euch als Model-Gruppe auf', 'Luftkuss für das Brautpaar', 'Alle zeigen auf die Person in der Mitte'].join('\n'),
+    eigeneNach: 3, filterVintage: true, filterWeich: false,
+    qrAn: true, wlanName: '', wlanPasswort: '', gaestebuchAn: true,
   };
   let E = { ...STANDARD };
   try { const s = JSON.parse(localStorage.getItem('fotobox-entwurf-2') || 'null'); if (s) E = { ...STANDARD, ...s }; } catch (e) {}
@@ -442,7 +587,7 @@ p { margin: 0; }
 
   const S = {
     ansicht: 'start', modus: 'einzel', filter: 'farbe', shots: [], foto: null, nochmal: 0, inDiashow: true, anzahl: 1,
-    seed: 7, sitzung: 0, fotos: [], auftraege: [], leerlauf: 0, letzterKnopf: 0,
+    seed: 7, sitzung: 0, fotos: [], eigene: [], posen: new Set(), letztePose: '', auftraege: [], leerlauf: 0, letzterKnopf: 0,
     drucker: [{ name: 'Selphy 1', papier: KASSETTE, aus: false, warte: [] }, { name: 'Selphy 2', papier: KASSETTE, aus: false, warte: [] }],
   };
 
@@ -478,12 +623,30 @@ p { margin: 0; }
   function aufnahme(seed, filter) {
     const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
     const ctx = c.getContext('2d'); szene(ctx, 1200, 800, performance.now() / 1000, seed);
-    if (filter === 'sw') {
-      const d = ctx.getImageData(0, 0, 1200, 800), p = d.data;
-      for (let i = 0; i < p.length; i += 4) { const y = Math.min(255, (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) * 1.05); p[i] = p[i + 1] = p[i + 2] = y; }
-      ctx.putImageData(d, 0, 0);
-    }
+    filterAnwenden(ctx, 1200, 800, filter);
     return c;
+  }
+  /* Filter auf das aufgenommene Bild (Pixelrechnung); die Vorschau am iPad nähert sie mit CSS-Filtern an */
+  const FILTER = { farbe: 'Farbe', sw: 'Schwarzweiß', vintage: 'Vintage', weich: 'Weich' };
+  function filterAnwenden(ctx, w, h, filter) {
+    if (!FILTER[filter] || filter === 'farbe') return;
+    const d = ctx.getImageData(0, 0, w, h), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      const r = p[i], g = p[i + 1], b = p[i + 2];
+      if (filter === 'sw') { p[i] = p[i + 1] = p[i + 2] = Math.min(255, (0.299 * r + 0.587 * g + 0.114 * b) * 1.05); }
+      else if (filter === 'vintage') { // warmes Sepia, ausgeblichene Schwarztöne
+        const sr = 0.393 * r + 0.769 * g + 0.189 * b, sg = 0.349 * r + 0.686 * g + 0.168 * b, sb = 0.272 * r + 0.534 * g + 0.131 * b;
+        const m = (o, sep) => 26 + ((o + (sep - o) * 0.7) - 128) * 0.9 * 0.84 + 128 * 0.84;
+        p[i] = m(r, sr); p[i + 1] = m(g, sg); p[i + 2] = m(b, sb) - 4;
+      } else { // weich: heller, flacher, leicht warm
+        p[i] = (r - 128) * 0.86 + 128 + 18; p[i + 1] = (g - 128) * 0.86 + 128 + 15; p[i + 2] = (b - 128) * 0.86 + 128 + 8;
+      }
+    }
+    ctx.putImageData(d, 0, 0);
+    if (filter === 'vintage') { // Vignette
+      const v = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
+      v.addColorStop(0, 'rgba(40,20,0,0)'); v.addColorStop(1, 'rgba(40,20,0,.5)'); ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
+    }
   }
 
   /* ---------- Druckbild 10 × 15 cm: mit Rand oder Vollbild (wie server/bild.js) ---------- */
@@ -496,13 +659,29 @@ p { margin: 0; }
     const g = gestaltung(E), namen = E.namen, datum = E.datum.toUpperCase();
     const nf = `{g}px "${g.namenSchrift}", Georgia, serif`, df = '600 {g}px "Montserrat", sans-serif', schreib = g.namenSchrift === 'Great Vibes';
     const c = document.createElement('canvas'), ctx = c.getContext('2d');
-    const text = (n, d, x, yn, yd, gn, gd, max, weiss) => {
+    const text = (n, d, x, yn, yd, gn, gd, max, weiss, linien) => {
       ctx.textAlign = 'center'; ctx.fillStyle = weiss ? '#fff' : '#262521';
       if (weiss) { ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 2; }
       passend(ctx, n, nf, gn, max); ctx.fillText(n, x, yn);
       ctx.fillStyle = weiss ? '#fff' : g.akzent; passend(ctx, d, df, gd, max); ctx.fillText(d, x, yd);
       ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      if (linien) { // Datum zwischen zwei kurzen Linien
+        const br = ctx.measureText(d).width / 2, hoehe = yd - gd * 0.34, ab = gd * 0.9, len = gd * 3;
+        ctx.strokeStyle = g.akzent; ctx.lineWidth = 2; ctx.beginPath();
+        ctx.moveTo(x - br - ab - len, hoehe); ctx.lineTo(x - br - ab, hoehe); ctx.moveTo(x + br + ab, hoehe); ctx.lineTo(x + br + ab + len, hoehe); ctx.stroke();
+      }
     };
+    const schatten = (x, y, w, h) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 5; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); ctx.restore(); };
+    // Doppelte feine Akzentlinie im Abstand von 10 px um (x, y, w, h), kleine Rauten an den äußeren Ecken
+    const doppellinie = (x, y, w, h) => {
+      ctx.strokeStyle = g.akzent; ctx.lineWidth = 2.5;
+      ctx.strokeRect(x - 14, y - 14, w + 28, h + 28); ctx.strokeRect(x - 24, y - 24, w + 48, h + 48);
+      [[x - 24, y - 24], [x + w + 24, y - 24], [x - 24, y + h + 24], [x + w + 24, y + h + 24]].forEach(([cx, cy]) => {
+        ctx.fillStyle = g.papier; ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = g.akzent; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 10, cy); ctx.lineTo(cx, cy + 10); ctx.lineTo(cx - 10, cy); ctx.closePath(); ctx.fill();
+      });
+    };
+    const schnitt = () => { ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.setLineDash([14, 12]); ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke(); ctx.setLineDash([]); };
     if (layout === 'vollbild') {
       if (modus === 'streifen') {
         c.width = 1200; c.height = 1800;
@@ -512,10 +691,38 @@ p { margin: 0; }
         c.width = 1800; c.height = 1200; cover(ctx, shots[0], 0, 0, 1800, 1200); verlauf(ctx, 0, 820, 1800, 380);
         text(namen, datum, 900, 1040, 1100, schreib ? 120 : 92, 34, 1500, true);
       }
+    } else if (layout === 'polaroid') { // Papier, gleichmäßiger Rand links/oben/rechts, tiefes unteres Band mit Namen und Datum
+      if (modus === 'streifen') {
+        c.width = 1200; c.height = 1800; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1200, 1800);
+        for (let k = 0; k < 2; k++) {
+          const ox = k * 600; schatten(ox + 40, 40, 520, 1365);
+          shots.forEach((s, j) => cover(ctx, s, ox + 40, 40 + j * 345, 520, 330));
+          text(namen, datum, ox + 300, 1578, 1658, schreib ? 84 : 62, 26, 500, false);
+        }
+        schnitt();
+      } else {
+        c.width = 1800; c.height = 1200; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
+        schatten(60, 60, 1680, 840); cover(ctx, shots[0], 60, 60, 1680, 840);
+        text(namen, datum, 900, 1040, 1112, schreib ? 130 : 96, 36, 1500, false);
+      }
+    } else if (layout === 'elegant') { // Papier, doppelte Akzentlinie ums Foto, Datum zwischen zwei Linien
+      if (modus === 'streifen') {
+        c.width = 1200; c.height = 1800; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1200, 1800);
+        for (let k = 0; k < 2; k++) {
+          const ox = k * 600; shots.forEach((s, j) => cover(ctx, s, ox + 50, 50 + j * 345, 500, 330));
+          doppellinie(ox + 50, 50, 500, 1365);
+          text(namen, datum, ox + 300, 1578, 1660, schreib ? 84 : 62, 24, 440, false, true);
+        }
+        schnitt();
+      } else {
+        c.width = 1800; c.height = 1200; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
+        cover(ctx, shots[0], 100, 100, 1600, 810); doppellinie(100, 100, 1600, 810);
+        text(namen, datum, 900, 1062, 1136, schreib ? 112 : 84, 32, 1400, false, true);
+      }
     } else if (modus === 'streifen') {
       c.width = 1200; c.height = 1800; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1200, 1800);
       for (let k = 0; k < 2; k++) { const ox = k * 600; shots.forEach((s, j) => cover(ctx, s, ox + 40, 40 + j * 365, 520, 345)); text(namen, datum, ox + 300, 1612, 1672, schreib ? 78 : 58, 26, 520, false); }
-      ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.setLineDash([14, 12]); ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke(); ctx.setLineDash([]);
+      schnitt();
     } else {
       c.width = 1800; c.height = 1200; ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
       cover(ctx, shots[0], 70, 70, 1660, 900); ctx.strokeStyle = g.akzent; ctx.lineWidth = 3; ctx.strokeRect(46, 46, 1708, 948);
@@ -525,9 +732,74 @@ p { margin: 0; }
   }
 
   /* ---------- Ansichten: iPad und großer Bildschirm laufen synchron ---------- */
-  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'druck', 'drucken', 'danke', 'pause'];
-  const BUEHNE = { start: 'dia', pause: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke' };
-  const NAME = { start: 'Start (Diashow)', modus: 'Auswahl Foto', filter: 'Auswahl Farbe', aufnahme: 'Countdown', vorschau: 'Vorschau', druck: 'Anzahl Abzüge', drucken: 'Druckt', danke: 'Danke', pause: 'Pause' };
+  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'gaestebuch', 'druck', 'drucken', 'danke', 'pause'];
+  const BUEHNE = { start: 'dia', pause: 'dia', modus: 'live', filter: 'live', aufnahme: 'aufnahme', vorschau: 'ergebnis', gaestebuch: 'ergebnis', druck: 'ergebnis', drucken: 'ergebnis', danke: 'danke' };
+  const NAME = { start: 'Start (Diashow)', modus: 'Auswahl Foto', filter: 'Auswahl Farbe', aufnahme: 'Countdown', vorschau: 'Vorschau', gaestebuch: 'Gästebuch', druck: 'Anzahl Abzüge', drucken: 'Druckt', danke: 'Danke', pause: 'Pause' };
+
+  /* ---------- Töne (WebAudio, keine Dateien) ---------- */
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let tonKontext = null;
+  function tonBereit() { // Browser erlauben Ton erst nach einer Eingabe: beim ersten Klick anlegen bzw. fortsetzen
+    if (!AC) return;
+    try { if (!tonKontext) tonKontext = new AC(); if (tonKontext.state === 'suspended') tonKontext.resume(); } catch (e) { tonKontext = null; }
+  }
+  const tonLaut = () => (E.toene !== 'aus' && E.lautstaerke > 0 && tonKontext && tonKontext.state === 'running') ? E.lautstaerke / 100 : 0;
+  function piep(hz) {
+    const v = tonLaut() * 0.4; if (!v) return;
+    const t = tonKontext.currentTime, o = tonKontext.createOscillator(), g = tonKontext.createGain();
+    o.type = 'sine'; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.setValueAtTime(v, t + 0.09); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g); g.connect(tonKontext.destination); o.start(t); o.stop(t + 0.14);
+  }
+  function ausloeser() { // Rauschstoß durch Bandpass, dazu ein kurzes tiefes Klacken
+    const v = tonLaut(); if (!v) return;
+    const c = tonKontext, t = c.currentTime, n = Math.floor(c.sampleRate * 0.18), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
+    const q = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), o = c.createOscillator(), og = c.createGain();
+    q.buffer = buf; f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.7; g.gain.value = v * 1.2;
+    q.connect(f); f.connect(g); g.connect(c.destination); q.start(t);
+    o.type = 'square'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.05);
+    og.gain.setValueAtTime(v * 0.18, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.06); o.connect(og); og.connect(c.destination); o.start(t); o.stop(t + 0.07);
+  }
+
+  /* ---------- Posen-Vorschläge: zufällig, erst wieder dieselbe, wenn alle dran waren ---------- */
+  const posenListe = () => String(E.posenListe).split('\n').map((x) => x.trim()).filter(Boolean);
+  function naechstePose() {
+    const alle = posenListe(); if (!E.posenAn || !alle.length) return null;
+    let frei = alle.filter((x) => !S.posen.has(x));
+    if (!frei.length) { S.posen.clear(); frei = alle.filter((x) => x !== S.letztePose); if (!frei.length) frei = alle; }
+    const x = frei[Math.floor(Math.random() * frei.length)]; S.posen.add(x); S.letztePose = x; return x;
+  }
+
+  /* ---------- Filterauswahl ---------- */
+  const filterListe = () => ['farbe', E.schwarzweiss && 'sw', E.filterVintage && 'vintage', E.filterWeich && 'weich'].filter(Boolean);
+  const knopfFilterWert = () => filterListe().includes(E.knopfFilter) ? E.knopfFilter : 'farbe';
+  let kachelnKey = '';
+  function filterKacheln() {
+    const liste = filterListe(), key = liste.join(); if (key === kachelnKey) return; kachelnKey = key;
+    const gross = liste.length <= 2;
+    $('kFilter').className = 'kacheln' + (gross ? '' : ' vier');
+    $('kFilter').innerHTML = liste.map((f) => `<button class="kachel k-th" data-a="filter" data-w="${f}"><span class="th f-${f}"><canvas width="360" height="${gross ? 240 : 180}" data-f="${f}"></canvas><span class="th-t">${FILTER[f]}</span></span></button>`).join('');
+  }
+
+  /* ---------- QR-Codes (qrcode-generator von cdnjs; fehlt sie, erscheint die Adresse als Text) ---------- */
+  const wlanEsc = (t) => String(t).replace(/([\\;,:"])/g, '\\$1');
+  const wlanText = () => `WIFI:T:${E.wlanPasswort ? 'WPA' : 'nopass'};S:${wlanEsc(E.wlanName)};${E.wlanPasswort ? 'P:' + wlanEsc(E.wlanPasswort) + ';' : ''};`;
+  const fotoUrl = (f) => `http://192.168.8.10:8080/f/${f.id}?k=${f.key}`; // Demo-Adresse; in der App liefert sie der Mini-PC im WLAN
+  function qrSvg(text) {
+    if (typeof qrcode !== 'function') return '';
+    try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); } catch (e) { return ''; }
+  }
+  let qrKey = '', qrIpad = '', qrTv = '';
+  function qrErzeugen() {
+    const f = S.foto, key = [E.qrAn, E.wlanName, E.wlanPasswort, f && f.id, typeof qrcode].join('|');
+    if (key === qrKey) return; qrKey = key; qrIpad = qrTv = '';
+    if (!E.qrAn || !f) return;
+    const foto = qrSvg(fotoUrl(f)), wlan = E.wlanName ? qrSvg(wlanText()) : '';
+    if (!foto) { qrIpad = `<p class="qr-text">QR-Code nicht verfügbar (Bibliothek nicht geladen). Foto-Adresse:<br>${esc(fotoUrl(f))}</p>`; qrTv = `<span style="font-weight:400">${esc(fotoUrl(f))}</span>`; return; }
+    qrIpad = '<div class="qrkarte">' + (wlan ? `<div class="qr1">${wlan}<span>1. WLAN verbinden</span></div>` : '') + `<div class="qr1">${foto}<span>${wlan ? '2. ' : ''}Foto aufs Handy</span></div></div>`;
+    qrTv = `${foto}<span>Foto aufs Handy</span>`;
+  }
 
   function zeige(a) {
     if (a === 'start' && E.pause) a = 'pause'; // Pause greift erst zwischen zwei Gästen
@@ -541,7 +813,7 @@ p { margin: 0; }
   }
 
   function zeichnen() {
-    const a = S.ansicht, gesamt = 1 + (E.streifen ? 1 : 0) + (E.schwarzweiss ? 1 : 0);
+    const a = S.ansicht, gesamt = 1 + (E.streifen ? 1 : 0) + (filterListe().length > 1 ? 1 : 0);
     ['namen', 'tvNamen'].forEach((id) => { $(id).textContent = E.namen; });
     ['datum', 'tvDatum'].forEach((id) => { $(id).textContent = E.datum; });
     const teile = E.namen.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
@@ -557,6 +829,15 @@ p { margin: 0; }
 
     const warn = S.drucker.filter((d) => d.aus || d.papier <= 3).map((d) => d.aus ? `${d.name}: aus` : d.papier === 0 ? `${d.name}: Papier leer` : `${d.name}: ${d.papier} Blatt`);
     $('pill').hidden = !warn.length; $('pill').textContent = warn.join(' · ');
+
+    if (a === 'filter') filterKacheln();
+    $('gbKnopf').hidden = !E.gaestebuchAn;
+    $('gbKnopf').textContent = S.foto && S.foto.imGaestebuch ? '✓ Im Gästebuch' : 'Ins Gästebuch';
+    qrErzeugen();
+    setHtml($('qrDruck'), qrIpad); setHtml($('qrDrucken'), qrIpad);
+    const tvQr = ['druck', 'drucken'].includes(a) ? qrTv : '';
+    setHtml($('tvQr'), tvQr); $('tvQr').hidden = !tvQr; $('st-ergebnis').classList.toggle('mit-qr', !!tvQr);
+    $('sLaut').textContent = E.lautstaerke + ' %';
 
     $('nochmal').disabled = S.nochmal <= 0;
     $('nochmal').textContent = S.nochmal > 0 ? `Nochmal (noch ${S.nochmal}×)` : 'Nochmal nicht mehr möglich';
@@ -575,43 +856,114 @@ p { margin: 0; }
     service();
   }
 
+  /* ---------- Gästebuch ---------- */
+  // Beispielliste. In der echten App kommt die Gästeliste (Name, Tisch, Anschrift) aus dem Sitzplan-Import.
+  const TISCHE = ['Tisch 1', 'Tisch 2', 'Tisch 3', 'Brautpaar'];
+  const GAESTE = [
+    ['Anna Berger', 'Brautpaar', 'Lindenallee 4, 80331 München'], ['Max Hofmann', 'Brautpaar', 'Lindenallee 4, 80331 München'],
+    ['Lena Berger', 'Brautpaar', 'Gartenstraße 12, 86150 Augsburg'], ['Jonas Hofmann', 'Brautpaar', 'Am Mühlbach 7, 85049 Ingolstadt'],
+    ['Renate Berger', 'Tisch 1', 'Hauptstraße 21, 93047 Regensburg'], ['Klaus Berger', 'Tisch 1', 'Hauptstraße 21, 93047 Regensburg'],
+    ['Ingrid Hofmann', 'Tisch 1', 'Birkenweg 3, 90402 Nürnberg'], ['Werner Hofmann', 'Tisch 1', 'Birkenweg 3, 90402 Nürnberg'],
+    ['Tante Gabi Schmid', 'Tisch 1', 'Schulstraße 9, 94032 Passau'], ['Onkel Franz Schmid', 'Tisch 1', 'Schulstraße 9, 94032 Passau'],
+    ['Sophie Wagner', 'Tisch 2', 'Bahnhofstraße 15, 80335 München'], ['Tobias Wagner', 'Tisch 2', 'Bahnhofstraße 15, 80335 München'],
+    ['Julia Fischer', 'Tisch 2', 'Rosenstraße 2, 97070 Würzburg'], ['Felix Meyer', 'Tisch 2', 'Rosenstraße 2, 97070 Würzburg'],
+    ['Katharina Weiß', 'Tisch 2', 'Kirchplatz 5, 82467 Garmisch-Partenkirchen'], ['Stefan Schneider', 'Tisch 2', 'Obere Gasse 11, 96047 Bamberg'],
+    ['Miriam Becker', 'Tisch 2', 'Obere Gasse 11, 96047 Bamberg'],
+    ['Lukas Bauer', 'Tisch 3', 'Wiesenweg 8, 85356 Freising'], ['Hannah Koch', 'Tisch 3', 'Wiesenweg 8, 85356 Freising'],
+    ['Paul Richter', 'Tisch 3', 'Seestraße 30, 82319 Starnberg'], ['Emma Klein', 'Tisch 3', 'Seestraße 30, 82319 Starnberg'],
+    ['Leon Wolf', 'Tisch 3', 'Marktplatz 1, 83022 Rosenheim'], ['Mia Neumann', 'Tisch 3', 'Marktplatz 1, 83022 Rosenheim'],
+  ].map(([n, t, a]) => ({ n, t, a }));
+  const gb = { sel: new Set(), suche: '', tisch: '' };
+  const sig = $('gbSig'), sctx = sig.getContext('2d');
+  let sigDa = false, malt = false, sigLetzte = null;
+  function sigLeeren(bild) {
+    sctx.clearRect(0, 0, sig.width, sig.height); sigDa = false;
+    sctx.lineWidth = 4; sctx.lineCap = sctx.lineJoin = 'round'; sctx.strokeStyle = '#2a2118';
+    if (bild) { const im = new Image(); im.onload = () => { sctx.drawImage(im, 0, 0); sigDa = true; gbZeichnen(); }; im.src = bild; }
+    $('gbSigHinweis').hidden = !!bild;
+  }
+  const sigPos = (e) => { const r = sig.getBoundingClientRect(); return [(e.clientX - r.left) * sig.width / r.width, (e.clientY - r.top) * sig.height / r.height]; };
+  sig.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); sig.setPointerCapture(e.pointerId); malt = true; sigLetzte = sigPos(e); S.leerlauf = 0;
+    sctx.beginPath(); sctx.moveTo(sigLetzte[0], sigLetzte[1]); sctx.lineTo(sigLetzte[0] + 0.1, sigLetzte[1]); sctx.stroke();
+    sigDa = true; $('gbSigHinweis').hidden = true; gbZeichnen();
+  });
+  sig.addEventListener('pointermove', (e) => {
+    if (!malt) return; S.leerlauf = 0; const p = sigPos(e);
+    sctx.beginPath(); sctx.moveTo(sigLetzte[0], sigLetzte[1]); sctx.lineTo(p[0], p[1]); sctx.stroke(); sigLetzte = p;
+  });
+  ['pointerup', 'pointercancel'].forEach((ev) => sig.addEventListener(ev, () => { malt = false; }));
+  $('gbSigWeg').onclick = () => { sigLeeren(); gbZeichnen(); };
+  function gbZeichnen() {
+    const q = gb.suche.trim().toLowerCase(), liste = GAESTE.map((g, i) => ({ ...g, i })).filter((g) => (!gb.tisch || g.t === gb.tisch) && (!q || g.n.toLowerCase().includes(q)));
+    const alt = $('gbGaeste').scrollTop;
+    $('gbTische').innerHTML = ['', ...TISCHE].map((t) => `<button class="chip" type="button" data-t="${t}" aria-pressed="${gb.tisch === t}">${t || 'Alle'}</button>`).join('');
+    $('gbGaeste').innerHTML = liste.length ? liste.map((g) => `<button class="chip" type="button" data-g="${g.i}" aria-pressed="${gb.sel.has(g.n)}">${esc(g.n)}</button>`).join('') : '<p class="klein">Niemand gefunden.</p>';
+    $('gbGaeste').scrollTop = alt;
+    $('gbWahl').textContent = gb.sel.size ? `Auf dem Foto: ${GAESTE.filter((g) => gb.sel.has(g.n)).map((g) => g.n).join(', ')}` : 'Tippt eure Namen an, damit ihr euer Foto später wiederfindet.';
+    $('gbZahl').textContent = `${$('gbGruss').value.length} / 300`;
+    $('gbSpeichern').disabled = !(gb.sel.size || $('gbGruss').value.trim() || sigDa);
+  }
+  function gbOeffnen() {
+    const f = S.foto; if (!f) return;
+    gb.sel = new Set(f.gaeste); gb.suche = ''; gb.tisch = ''; $('gbSuche').value = ''; $('gbGruss').value = f.gruss; sigLeeren(f.signatur);
+    zeige('gaestebuch'); gbZeichnen();
+  }
+  function gbSpeichern() {
+    const f = S.foto; if (!f) return;
+    const gewaehlt = GAESTE.filter((g) => gb.sel.has(g.n));
+    f.gaeste = gewaehlt.map((g) => g.n); f.tisch = [...new Set(gewaehlt.map((g) => g.t))].join(', ');
+    f.gruss = $('gbGruss').value.trim().slice(0, 300); f.signatur = sigDa ? sig.toDataURL('image/png') : null; f.imGaestebuch = true;
+    zeige('vorschau');
+  }
+  $('gbTische').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { gb.tisch = b.dataset.t; gbZeichnen(); } });
+  $('gbGaeste').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-g]'); if (!b) return; const n = GAESTE[+b.dataset.g].n;
+    if (gb.sel.has(n)) gb.sel.delete(n); else gb.sel.add(n); gbZeichnen();
+  });
+  $('gbSuche').addEventListener('input', (e) => { gb.suche = e.target.value; S.leerlauf = 0; gbZeichnen(); });
+  $('gbGruss').addEventListener('input', () => { S.leerlauf = 0; gbZeichnen(); });
+  sigLeeren();
+
   /* ---------- Ablauf ---------- */
   function beginnen(vomKnopf) {
     S.sitzung++; S.seed = Math.floor(Math.random() * 1e6); S.nochmal = E.maxNochmal; S.anzahl = 1; S.inDiashow = true; S.foto = null; S.auftraege = [];
-    if (vomKnopf) { S.modus = E.streifen ? E.knopfModus : 'einzel'; return aufnehmen(E.schwarzweiss ? E.knopfFilter : 'farbe'); }
+    if (vomKnopf) { S.modus = E.streifen ? E.knopfModus : 'einzel'; return aufnehmen(knopfFilterWert()); }
     if (E.streifen) zeige('modus'); else { S.modus = 'einzel'; nachModus(); }
   }
-  function nachModus() { if (E.schwarzweiss) zeige('filter'); else aufnehmen('farbe'); }
+  function nachModus() { if (filterListe().length > 1) zeige('filter'); else aufnehmen('farbe'); }
 
   async function aufnehmen(filter) {
     if (S.ansicht === 'aufnahme') return;
     S.filter = filter; S.shots = [];
     zeige('aufnahme');
-    $('st-aufnahme').classList.toggle('sw', filter === 'sw');
+    $('st-aufnahme').className = 'st live f-' + filter;
     const n = S.modus === 'streifen' ? 4 : 1;
     $('tvNr').hidden = n === 1;
     for (let i = 0; i < n; i++) {
-      const nr = `Bild ${i + 1} von ${n}`, hinweis = i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
+      const nr = `Bild ${i + 1} von ${n}`, pose = naechstePose(), hinweis = pose ? `Pose: ${pose}` : i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
       $('tvNr').textContent = nr; $('iNr').textContent = n > 1 ? nr : '';
       $('iHinweis').textContent = hinweis; $('tvHinweis').textContent = hinweis;
       for (let c = E.countdownSek; c >= 1; c--) {
         [$('tvZahl'), $('iZahl')].forEach((el) => { el.textContent = c; el.classList.remove('puls'); void el.offsetWidth; el.classList.add('puls'); });
+        piep(c === 1 ? 1320 : 880);
         await sleep(1000);
       }
       $('tvZahl').textContent = ''; $('iZahl').textContent = '';
-      const b = $('blitz'); b.classList.remove('los'); void b.offsetWidth; b.classList.add('los');
+      const b = $('blitz'); b.classList.remove('los'); void b.offsetWidth; b.classList.add('los'); ausloeser();
       S.shots.push(aufnahme(S.seed + i * 13, filter));
       await sleep(i < n - 1 ? 900 : 350);
     }
     $('iHinweis').textContent = 'Einen Moment …'; $('tvHinweis').textContent = 'Einen Moment …';
-    S.foto = { src: await druckbild(S.modus, S.shots, E.druckLayout), behalten: false };
+    const rnd = () => Math.random().toString(36).slice(2, 8);
+    S.foto = { src: await druckbild(S.modus, S.shots, E.druckLayout), behalten: false, modus: S.modus, filter, layout: E.druckLayout, id: rnd(), key: rnd() + rnd(), drucke: 0, gaeste: [], tisch: '', gruss: '', signatur: null, imGaestebuch: false };
     ['tvErgebnis', 'tvDanke', 'iVorschau1', 'iVorschau2'].forEach((id) => { $(id).src = S.foto.src; });
     zeige('vorschau');
   }
   function behalten() {
     if (!S.foto || S.foto.behalten) return;
-    S.foto.behalten = true; S.fotos.unshift({ src: S.foto.src, t: Date.now(), zeigen: S.inDiashow });
-    if (S.fotos.length > 30) S.fotos.pop();
+    S.foto.behalten = true; S.foto.t = Date.now(); S.foto.zeigen = S.inDiashow; S.fotos.unshift(S.foto); // dasselbe Objekt: Gästebuch und Druckzähler landen hier
+    if (S.fotos.length > 60) S.fotos.pop();
   }
 
   function knopf() {
@@ -619,8 +971,8 @@ p { margin: 0; }
     if (jetzt - S.letzterKnopf < KNOPF_SPERRE) return;
     S.letzterKnopf = jetzt;
     if (S.ansicht === 'start') return beginnen(true);
-    if (S.ansicht === 'modus') { S.modus = E.knopfModus; return aufnehmen(E.schwarzweiss ? E.knopfFilter : 'farbe'); }
-    if (S.ansicht === 'filter') return aufnehmen(E.knopfFilter);
+    if (S.ansicht === 'modus') { S.modus = E.knopfModus; return aufnehmen(knopfFilterWert()); }
+    if (S.ansicht === 'filter') return aufnehmen(knopfFilterWert());
   }
 
   function aktion(a, w) {
@@ -632,6 +984,9 @@ p { margin: 0; }
     else if (a === 'modus' && v === 'modus') { S.modus = w; nachModus(); }
     else if (a === 'filter' && v === 'filter') aufnehmen(w);
     else if (a === 'nochmal' && v === 'vorschau' && S.nochmal > 0) { S.nochmal--; aufnehmen(S.filter); }
+    else if (a === 'gaestebuch' && v === 'vorschau' && E.gaestebuchAn) gbOeffnen();
+    else if (a === 'gbSpeichern' && v === 'gaestebuch') gbSpeichern();
+    else if (a === 'gbAbbrechen' && v === 'gaestebuch') zeige('vorschau');
     else if (a === 'weiter' && v === 'vorschau') { behalten(); if (E.druckenAn && papierGesamt() > 0) zeige('druck'); else zeige('danke'); }
     else if (a === 'drucken' && v === 'druck') drucken();
     else if ((a === 'ohneDruck' || a === 'fertig') && (v === 'druck' || v === 'drucken')) zeige('danke');
@@ -647,6 +1002,7 @@ p { margin: 0; }
       d.papier--; const j = { nr: k + 1, drucker: d.name, fortschritt: 0, gestartet: false };
       d.warte.push(j); S.auftraege.push(j);
     }
+    if (S.foto) S.foto.drucke = (S.foto.drucke || 0) + S.auftraege.length;
     zeige('drucken');
   }
   function druckerAus(i, aus) {
@@ -668,19 +1024,28 @@ p { margin: 0; }
   }, 200);
 
   /* ---------- Diashow ---------- */
-  let diaTimer = null, diaIdx = 0, vorne = 'diaA';
+  let diaTimer = null, vorne = 'diaA';
   const sichtbar = () => S.fotos.filter((f) => f.zeigen && Date.now() - f.t >= E.diashowVerzoegerungSek * 1000);
+  /* Mischung: nach je „eigeneNach“ Fotobox-Fotos kommt ein eigenes Foto; ohne Fotobox-Fotos laufen nur die eigenen.
+     Die Beispielfotos zählen nur, solange es keine eigenen Fotos gibt. */
+  let diaSeit = 0, diaF = 0, diaO = 0;
+  function diaNaechstes() {
+    const eig = S.eigene, alle = sichtbar(), box = eig.length ? alle.filter((f) => !f.beispiel) : alle;
+    if (!box.length && !eig.length) return null;
+    if (eig.length && (!box.length || diaSeit >= E.eigeneNach)) { diaSeit = 0; return eig[diaO++ % eig.length]; }
+    diaSeit++; return box[diaF++ % box.length];
+  }
   function diaText() {
     const warten = S.fotos.filter((f) => f.zeigen && Date.now() - f.t < E.diashowVerzoegerungSek * 1000).length;
     $('diaText').textContent = S.ansicht === 'pause' ? E.textPause : warten ? `${warten} neue${warten === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · ${E.textBuehne}` : E.textBuehne;
   }
   function diaWeiter() {
-    const liste = sichtbar(); $('diaLeer').hidden = liste.length > 0; diaText();
-    if (!liste.length) { $(vorne).classList.remove('an'); return; }
+    const f = diaNaechstes(); $('diaLeer').hidden = !!f; diaText();
+    if (!f) { $(vorne).classList.remove('an'); return; }
     const hinten = vorne === 'diaA' ? 'diaB' : 'diaA';
-    $(hinten).src = liste[diaIdx % liste.length].src; $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten; diaIdx++;
+    $(hinten).src = f.url || f.src; $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten;
   }
-  function diaStart() { if (diaTimer) return; diaIdx = 0; diaWeiter(); diaTimer = setInterval(diaWeiter, E.diashowSek * 1000); }
+  function diaStart() { if (diaTimer) return; diaSeit = diaF = diaO = 0; diaWeiter(); diaTimer = setInterval(diaWeiter, E.diashowSek * 1000); }
   function diaStopp() { clearInterval(diaTimer); diaTimer = null; }
 
   /* ---------- Livebild-Schleife ---------- */
@@ -688,17 +1053,17 @@ p { margin: 0; }
     const t = ts / 1000 || 0, b = BUEHNE[S.ansicht];
     if (b === 'live') { const c = $('liveA'); szene(c.getContext('2d'), c.width, c.height, t, S.seed); }
     if (b === 'aufnahme') { const c = $('liveB'); szene(c.getContext('2d'), c.width, c.height, t, S.seed + S.shots.length * 13); }
-    if (S.ansicht === 'filter') ['thFarbe', 'thSw'].forEach((id) => { const c = $(id); szene(c.getContext('2d'), c.width, c.height, t, S.seed); });
+    if (S.ansicht === 'filter') document.querySelectorAll('#kFilter canvas').forEach((c) => szene(c.getContext('2d'), c.width, c.height, t, S.seed));
     requestAnimationFrame(schleife);
   })();
 
   /* ---------- Leerlauf: nach 45 s zurück – nicht während die eigenen Abzüge drucken ---------- */
   setInterval(() => {
-    if (!['modus', 'filter', 'vorschau', 'druck', 'drucken'].includes(S.ansicht)) return;
+    if (!['modus', 'filter', 'vorschau', 'gaestebuch', 'druck', 'drucken'].includes(S.ansicht)) return;
     if (S.ansicht === 'drucken' && S.auftraege.some((j) => j.fortschritt < 100)) { S.leerlauf = 0; return; }
     S.leerlauf++;
     if (S.leerlauf >= WARNUNG && S.leerlauf < LEERLAUF) { $('leerlauf').hidden = false; $('leerlaufZahl').textContent = LEERLAUF - S.leerlauf; }
-    if (S.leerlauf >= LEERLAUF) { if (['vorschau', 'druck'].includes(S.ansicht)) behalten(); zeige('start'); }
+    if (S.leerlauf >= LEERLAUF) { if (['vorschau', 'gaestebuch', 'druck'].includes(S.ansicht)) behalten(); zeige('start'); }
   }, 1000);
 
   /* ---------- Service-Handy ---------- */
@@ -709,14 +1074,15 @@ p { margin: 0; }
   }
   function felder() {
     document.querySelectorAll('[data-e]').forEach((el) => {
-      const k = el.dataset.e; if (el === document.activeElement && el.type === 'text') return;
+      const k = el.dataset.e; if (el === document.activeElement && (el.type === 'text' || el.type === 'textarea')) return;
       if (el.type === 'checkbox') el.checked = !!E[k]; else el.value = String(E[k]);
     });
   }
   document.querySelectorAll('[data-e]').forEach((el) => {
-    el.addEventListener(el.type === 'text' ? 'input' : 'change', () => {
+    el.addEventListener(['text', 'textarea', 'range'].includes(el.type) ? 'input' : 'change', () => {
       const k = el.dataset.e;
-      E[k] = el.type === 'checkbox' ? el.checked : el.hasAttribute('data-zahl') ? Number(el.value) : (el.value.trim() || STANDARD[k]);
+      E[k] = el.type === 'checkbox' ? el.checked : el.hasAttribute('data-zahl') ? Number(el.value) : el.hasAttribute('data-leer') ? el.value : (el.value.trim() || STANDARD[k]);
+      if (k === 'wlanName' || k === 'wlanPasswort') E[k] = E[k].trim();
       speichern();
       if (k === 'farbwelt' || k === 'schriftstil') gestaltungAnwenden();
       if (k === 'diashowSek' && diaTimer) { diaStopp(); diaStart(); }
@@ -734,8 +1100,61 @@ p { margin: 0; }
         <div class="zeile"><button class="btn btn-rand" data-kassette="${i}">Kassette getauscht</button><button class="btn btn-rand" data-aus="${i}">${d.aus ? 'Einschalten' : 'Abschalten'}</button></div></div>`;
     }).join('');
     const eigene = S.fotos.filter((f) => !f.beispiel), n = eigene.length;
-    $('sFotos').textContent = n ? `${n} ${n === 1 ? 'Foto' : 'Fotos'} bisher, davon ${eigene.filter((f) => !f.zeigen).length} nicht in der Diashow.` : 'Noch keine eigenen Fotos – die Diashow zeigt Beispiele.';
+    $('sFotos').textContent = (n ? `${n} ${n === 1 ? 'Foto' : 'Fotos'} bisher, davon ${eigene.filter((f) => !f.zeigen).length} nicht in der Diashow.` : 'Noch keine Fotos der Gäste – die Diashow zeigt Beispiele.')
+      + (S.eigene.length ? ` ${S.eigene.length} eigene${S.eigene.length === 1 ? 's' : ''} Foto${S.eigene.length === 1 ? '' : 's'} dazwischen.` : '');
+    // Auswertungen nur neu schreiben, wenn sich Fotos, Zähler oder die Auswahl geändert haben
+    const sortModus = $('sSort').value;
+    const key = [S.fotos.length, S.eigene.length, sortModus, eigene.reduce((s, f) => s + f.drucke + f.gaeste.length + (f.imGaestebuch ? 1000 : 0) + (f.zeigen ? 1 : 0), 0)].join('|');
+    if (key !== auswKey) { auswKey = key; setHtml($('sStat'), statHtml(eigene)); setHtml($('sSortListe'), sortHtml(eigene, sortModus)); setHtml($('sDank'), dankHtml(eigene)); }
+    setHtml($('sEigene'), S.eigene.map((f) => `<div class="eig"><img src="${f.url}" alt="${esc(f.name)}"><button type="button" data-eig="${f.id}" aria-label="${esc(f.name)} entfernen">×</button></div>`).join(''));
   }
+
+  /* ---------- Auswertungen am Service-Handy (nur Ansicht; die Beispielfotos der Diashow zählen nicht) ---------- */
+  let auswKey = '';
+  const leerHinweis = '<p class="sleise">Noch keine Fotos – sie erscheinen hier, sobald Gäste „Weiter“ tippen.</p>';
+  const balken = (name, wert, max, warn) => `<div class="stz"><span title="${esc(name)}">${esc(name)}</span><div class="sbalken ${warn || ''}"><i style="width:${max ? Math.max(wert ? 4 : 0, wert / max * 100) : 0}%"></i></div><b>${wert}</b></div>`;
+  const zaehle = (liste) => liste.reduce((m, k) => { m[k] = (m[k] || 0) + 1; return m; }, {});
+  function statHtml(f) {
+    if (!f.length) return leerHinweis;
+    const einzel = f.filter((x) => x.modus !== 'streifen').length, abzuege = f.reduce((s, x) => s + x.drucke, 0), buch = f.filter((x) => x.imGaestebuch).length;
+    const filt = zaehle(f.map((x) => x.filter)), stunden = zaehle(f.map((x) => new Date(x.t).getHours())), hMax = Math.max(...Object.values(stunden));
+    const spitze = Object.keys(stunden).filter((h) => stunden[h] === hMax).sort()[0];
+    const von = Math.min(...Object.keys(stunden)), bis = Math.max(...Object.keys(stunden)), reihe = [];
+    for (let h = von; h <= bis; h++) reihe.push(balken(`${h}–${h + 1} Uhr`, stunden[h] || 0, hMax));
+    const markiert = zaehle(f.flatMap((x) => x.gaeste)), top = Object.entries(markiert).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de')).slice(0, 5);
+    const ohne = GAESTE.filter((g) => !markiert[g.n]).length;
+    return `<div class="kpis"><div class="kpi"><b>${f.length}</b><span>Fotos behalten</span></div><div class="kpi"><b>${einzel} / ${f.length - einzel}</b><span>Einzel / Streifen</span></div><div class="kpi"><b>${abzuege}</b><span>Abzüge gedruckt</span></div></div>
+      <h5>Filter</h5>${Object.keys(FILTER).map((k) => balken(FILTER[k], filt[k] || 0, Math.max(...Object.values(filt)))).join('')}
+      <h5>Fotos pro Stunde</h5>${reihe.join('')}<p class="sleise">Meiste Fotos: ${spitze}–${+spitze + 1} Uhr (${hMax}).</p>
+      <h5>Gästebuch und Gäste</h5><p class="sleise">${buch} ${buch === 1 ? 'Eintrag' : 'Einträge'} im Gästebuch. ${ohne} von ${GAESTE.length} Beispielgästen ohne Foto.</p>
+      ${top.length ? top.map(([n, c]) => balken(n, c, top[0][1])).join('') : '<p class="sleise">Noch niemand markiert.</p>'}`;
+  }
+  function miniatur(x) { return `<img src="${x.src}" alt="Foto von ${esc(new Date(x.t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }))} Uhr">`; }
+  function sortHtml(f, modus) {
+    if (!f.length) return leerHinweis;
+    const gruppen = new Map(), add = (k, x) => { if (!gruppen.has(k)) gruppen.set(k, []); gruppen.get(k).push(x); };
+    if (modus === 'zeit') f.forEach((x) => add(`${new Date(x.t).getHours()} Uhr`, x));
+    else if (modus === 'tisch') f.forEach((x) => { const t = [...new Set(GAESTE.filter((g) => x.gaeste.includes(g.n)).map((g) => g.t))]; (t.length ? t : ['Ohne Zuordnung']).forEach((k) => add(k, x)); });
+    else f.forEach((x) => { (x.gaeste.length ? x.gaeste : ['Ohne Zuordnung']).forEach((k) => add(k, x)); });
+    const namen = [...gruppen.keys()].sort((a, b) => (a === 'Ohne Zuordnung') - (b === 'Ohne Zuordnung') || a.localeCompare(b, 'de', { numeric: true }));
+    return namen.map((k) => `<h5>${esc(k)} · ${gruppen.get(k).length}</h5><div class="mini">${gruppen.get(k).map(miniatur).join('')}</div>`).join('') + (modus !== 'zeit' ? '<p class="sleise">Zugeordnet wird über „Ins Gästebuch“ am iPad.</p>' : '');
+  }
+  function dankHtml(f) {
+    return GAESTE.map((g) => {
+      const mine = f.filter((x) => x.gaeste.includes(g.n)), wahl = mine.find((x) => x.modus !== 'streifen') || mine[0]; // f ist nach Zeit absteigend: das erste ist das jüngste
+      return `<div class="dk">${wahl ? `<img src="${wahl.src}" alt="Fotovorschlag für ${esc(g.n)}">` : '<i></i>'}<div><b>${esc(g.n)}</b> · ${esc(g.t)}<small>${esc(g.a)}</small><small>${wahl ? `Vorschlag: ${wahl.modus === 'streifen' ? 'Streifen' : 'Einzelfoto'} (${mine.length} ${mine.length === 1 ? 'Foto' : 'Fotos'})` : 'Noch kein Foto'}</small></div></div>`;
+    }).join('');
+  }
+  $('sSort').onchange = () => { auswKey = ''; zeichnen(); };
+  $('sEigenDatei').addEventListener('change', (e) => {
+    [...e.target.files].filter((d) => d.type.startsWith('image/')).forEach((d) => S.eigene.push({ id: Math.random().toString(36).slice(2), url: URL.createObjectURL(d), name: d.name }));
+    e.target.value = ''; if (BUEHNE[S.ansicht] === 'dia') { diaStopp(); diaStart(); } zeichnen();
+  });
+  $('sEigene').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-eig]'); if (!b) return;
+    const i = S.eigene.findIndex((f) => f.id === b.dataset.eig); if (i < 0) return;
+    URL.revokeObjectURL(S.eigene[i].url); S.eigene.splice(i, 1); zeichnen();
+  });
   $('sDrucker').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.kassette) { S.drucker[+b.dataset.kassette].papier = KASSETTE; zeichnen(); }
@@ -749,6 +1168,7 @@ p { margin: 0; }
   $('sReset').onclick = () => { E = { ...STANDARD }; speichern(); felder(); gestaltungAnwenden(); zeige('start'); };
 
   /* ---------- Knöpfe ---------- */
+  ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, tonBereit, true)); // erste Eingabe schaltet den Ton frei
   $('ipad').addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (b) { b.blur(); aktion(b.dataset.a, b.dataset.w); } });
   $('inDiashow').onchange = (e) => { S.inDiashow = e.target.checked; };
   $('weniger').onclick = () => { S.anzahl = Math.max(1, S.anzahl - 1); zeichnen(); };
@@ -762,10 +1182,10 @@ p { margin: 0; }
   /* ---------- Start: Beispielfotos für die Diashow ---------- */
   felder(); gestaltungAnwenden(); zeige('start');
   (async () => {
-    const beispiele = [[311, 'einzel', 'farbe', 'rahmen'], [4242, 'streifen', 'sw', 'rahmen'], [97, 'einzel', 'farbe', 'vollbild'], [1508, 'streifen', 'farbe', 'vollbild']];
+    const beispiele = [[311, 'einzel', 'farbe', 'rahmen'], [4242, 'streifen', 'sw', 'rahmen'], [97, 'einzel', 'farbe', 'vollbild'], [1508, 'streifen', 'farbe', 'vollbild'], [733, 'einzel', 'vintage', 'polaroid'], [2024, 'streifen', 'weich', 'elegant'], [615, 'einzel', 'weich', 'elegant']];
     for (const [seed, modus, filter, layout] of beispiele) {
       const shots = modus === 'streifen' ? [0, 1, 2, 3].map((i) => aufnahme(seed + i * 13, filter)) : [aufnahme(seed, filter)];
-      S.fotos.push({ src: await druckbild(modus, shots, layout), t: 0, zeigen: true, beispiel: true });
+      S.fotos.push({ src: await druckbild(modus, shots, layout), t: 0, zeigen: true, beispiel: true, modus, filter, layout, drucke: 0, gaeste: [] });
     }
     if (BUEHNE[S.ansicht] === 'dia') { diaStopp(); diaStart(); }
     service();
