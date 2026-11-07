@@ -150,7 +150,7 @@ export default function installMitreisen(app) {
     openSheet(`<div class="mr-view">${sheetHead(esc(c ? c.name : 'Reise'))}<p class="sub">Wird geladen …</p></div>`);
     let d;
     try { d = await feed(id, true, trip); } catch (e) { openSheet(`<div>${sheetHead('Crews on the Road')}<p class="hint">${esc(e.message)}</p></div>`); return; }
-    if (c && !trip) { markSeen(c); app.chromeHooks.forEach(h => h()); }
+    if (c && (!trip || (d.trip && d.running && d.trip.id === trip))) { markSeen(c); app.chromeHooks.forEach(h => h()); refreshRows(); }
     if (!d.trip) { openSheet(`<div>${sheetHead(esc(d.crew))}<p class="hint">Noch keine Reise.</p></div>`); return; }
     const es = d.entries.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const label = e => e.title || (TYPES[e.type] || TYPES.notiz).label;
