@@ -249,6 +249,12 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 4. **Paket E – Reisearten und CO₂:** ✅ P11 (Lieferung 75, mit neuer api/index.php), dann P10 (Lieferung 77 – Tobi ist sich noch unsicher)
    **Zwischendurch ✅ Lieferung 76:** Bescheid, wenn andere Crews losfahren, und Mitteilung bei Folge-Anfragen (Hinweis 👋 und Push)
 
+**Unterwegs mit Freunden ausbauen (Tobi, 7.11.2026: „alles umsetzen“, braucht neue api/index.php):**
+- F1. Frühere Reisen einer gefolgten Crew ansehen (nicht nur die laufende bzw. zuletzt begonnene).
+- F2. Herzen und Kommentare der Freunde zu Einträgen (in der eigenen App sichtbar, getrennt von Familie und Blog-Lesern).
+- F3. Sprachnotizen und Highlights des Tages auch in der Freunde-Ansicht.
+- F4. „Unterwegs mit Freunden“ besser erreichbar machen (ist zu versteckt), Vorschläge siehe Gespräch vom 7.11.
+
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
 - **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,
   🏍️ Motorrad, 🚗 Auto + Unterkunft, ✈️ Flugreise, 🚢 Kreuzfahrt, 🚆 Bahnreise, 🚲 Radtour, 🥾 Wandertour,
