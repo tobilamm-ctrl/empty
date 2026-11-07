@@ -264,6 +264,8 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
   **Je Reise einzeln entscheiden, ob sie für andere Crews sichtbar ist** (Schalter „Für andere Crews sichtbar“ im Reise-Formular).
   Vorbelegung: **alle Reisen sichtbar, auch die bereits vergangenen**; einzelne lassen sich ausschalten.
 - F8. ✅ (Lieferung 79) Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
+- F9. ✅ (Lieferung 80) Statt der Zeilen: Reiter oben im Tagebuch („🚐 Unsere Reise“ und je gefolgte, unterwegs befindliche Crew
+  „👋 Name“ mit Punkt bei Neuem); darunter deren Reise im Reiseblog-Aussehen. Mitteilung bei neuen Beiträgen.
 - Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt. Keine Kommentare der anderen Crews, nur Herzen.
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**

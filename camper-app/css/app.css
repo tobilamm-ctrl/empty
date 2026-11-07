@@ -2619,3 +2619,13 @@ div.crew-row { cursor: default; }
 .mr-hl { list-style: none; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, #E0A21B 14%, var(--surface)); }
 .stop-badge.crew-likes { border-style: dotted; }
 .mr-more summary { cursor: pointer; color: var(--petrol); padding: 6px 0; }
+
+/* ---------- Version 80: Reiter für Reisen anderer Crews im Tagebuch ---------- */
+.crew-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 12px; padding-bottom: 2px; scrollbar-width: none; }
+.crew-tabs::-webkit-scrollbar { display: none; }
+.crew-tab { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 14px;
+  border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: 600 15px var(--body); cursor: pointer; white-space: nowrap; }
+.crew-tab.on { background: var(--c, var(--petrol)); border-color: var(--c, var(--petrol)); color: #fff; }
+.crew-tab .cr-new { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #D9455F; border: 2px solid var(--surface); }
+.crew-blog .blog-map { margin: 12px 0; }
+.mr-view .crew-blog .blog-head h1 { font-size: 26px; }

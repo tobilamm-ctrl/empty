@@ -56,7 +56,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 79;
+const APP_VERSION = 80;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -899,8 +899,11 @@ function tripHead(t, st, artKey = 'tagebuch') {
 }
 
 VIEWS.tagebuch = () => {
+  // Reiter oben: Reise einer anderen Crew gewählt (mitreisen.js)? Dann statt der eigenen Reise deren Reiseblog-Ansicht
+  const other = APP.diaryOther ? APP.diaryOther() : '';
+  if (other) return other;
   const t = currentTrip();
-  if (!t) return emptyTrip();
+  if (!t) return `${APP.diaryTop ? APP.diaryTop() : ''}${emptyTrip()}`;
   const st = tripStats(t);
   // Kommende Reisen und Reisen ohne Einträge öffnen in der Planung
   // Kinderkonten ohne Freigabe „Reiseplanung“ sehen nur das Tagebuch

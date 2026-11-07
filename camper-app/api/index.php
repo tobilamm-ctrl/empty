@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 31;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 32;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -315,6 +315,30 @@ function maybeReminders(): void {
     try { ticketReminders(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
     try { friendStarts(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
 }
+// Neuer Eintrag in der laufenden, sichtbaren Reise: Crews, die folgen, bekommen eine Mitteilung.
+// Höchstens eine je Gerät und 20 Minuten (mehrere Fotos hintereinander sollen nicht dauernd klingeln).
+function friendPosts(string $crew, array $entries): void {
+    if (!function_exists('curl_init') || !function_exists('openssl_pkey_derive')) return;
+    $t = friendRunning($crew);
+    if (!$t) return;
+    $mine = array_values(array_filter($entries, fn($e) => ($e['tripId'] ?? '') === $t['id']));
+    if (!$mine) return;
+    $e = end($mine);
+    $types = ['stellplatz' => 'Stellplatz', 'sight' => 'Sehenswert', 'notiz' => 'Notiz', 'restaurant' => 'Café / Restaurant', 'wanderung' => 'Tour', 'baden' => 'Baden', 'unterkunft' => 'Unterkunft'];
+    $what = trim((string) ($e['title'] ?? '')) ?: ($types[$e['type'] ?? ''] ?? 'Neuer Eintrag');
+    $name = crewName($crew);
+    $subs = all("SELECT s.* FROM push_subs s JOIN members m ON m.user_id = s.user_id JOIN follows f ON f.follower_crew = m.crew_id
+        WHERE f.crew_id = ? AND f.status = 'ok' AND s.friends = 1 AND m.crew_id <> ?", [$crew, $crew]);
+    foreach ($subs as $sub) {
+        $k = substr("fp:$crew:{$sub['id']}", 0, 160);
+        $last = one('SELECT at FROM push_log WHERE k = ?', [$k]);
+        if ($last && (int) $last['at'] > now() - 20 * 60000) continue;
+        q('DELETE FROM push_log WHERE k = ?', [$k]);
+        q('INSERT INTO push_log (k, at) VALUES (?, ?)', [$k, now()]);
+        try { pushSend($sub, ['title' => '👋 ' . $name . (count($mine) > 1 ? ': ' . count($mine) . ' neue Einträge' : ': neuer Eintrag'), 'body' => mb_substr($what, 0, 80) . (!empty($e['place']) ? ' · ' . $e['place'] : ''),
+            'url' => './#/tagebuch', 'tag' => 'post-' . $crew]); } catch (Throwable $e2) { /* weiter */ }
+    }
+}
 // Andere Crew ist losgefahren (ihre Reise läuft seit eben): allen anderen Crews Bescheid geben.
 // Wer schon folgt, bekommt „ansehen“, die anderen „folgen anfragen“. Den Namen der Reise erfährt nur, wer folgt.
 function friendStarts(?string $only = null): int {
@@ -590,7 +614,7 @@ case 'push':
     $crew = requireCrew($u, $body['crew'] ?? '');
     $changes = $body['changes'] ?? [];
     $lead = isLeader($u, $crew); $cash = canCash($u, $crew);
-    $newPins = [];
+    $newPins = []; $newEntries = [];
     if (!is_array($changes) || count($changes) > 500) fail('Ungültige Änderungen');
     $pdo = db();
     $mysql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql';
@@ -607,6 +631,9 @@ case 'push':
             q("UPDATE counter SET value = value + 1 WHERE name = 'rev'");
             $rev = (int) one("SELECT value FROM counter WHERE name = 'rev'")['value'];
             // Neuer Pinnwand-Zettel? (vor dem Ersetzen prüfen, ob es ihn schon gab)
+            // Neuer Eintrag (nicht nur geändert)? Für die Mitteilung an Crews, die folgen
+            if ($c['coll'] === 'entries' && $data !== null && empty($data['blogHide'])
+                && !one("SELECT id FROM docs WHERE crew_id = ? AND coll = 'entries' AND id = ?", [$crew, $c['id']])) $newEntries[] = $data;
             if ($c['coll'] === 'games' && $data !== null && ($data['kind'] ?? '') === 'pin'
                 && !one("SELECT id FROM docs WHERE crew_id = ? AND coll = 'games' AND id = ?", [$crew, $c['id']])) $newPins[] = $data;
             q('DELETE FROM docs WHERE crew_id = ? AND coll = ? AND id = ?', [$crew, $c['coll'], $c['id']]);
@@ -634,6 +661,7 @@ case 'push':
         $mysql ? $pdo->rollBack() : $pdo->exec('ROLLBACK');
         throw $e;
     }
+    if ($newEntries) { try { friendPosts($crew, $newEntries); } catch (Throwable $e) { /* weiter */ } }
     // Reise gestartet (oder beendet)? Dann gleich den anderen Crews Bescheid geben
     if (array_filter($changes, fn($c) => ($c['coll'] ?? '') === 'trips')) { try { friendStarts($crew); } catch (Throwable $e) { /* weiter */ } }
     foreach (array_slice($newPins, 0, 5) as $pin) {

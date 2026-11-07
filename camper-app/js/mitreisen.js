@@ -1,3 +1,5 @@
+import { renderBlog } from './blogansicht.js';
+
 // Crews on the Road: Reisen anderer Crews mitverfolgen. Alle Crews sehen nur, wer gerade unterwegs ist.
 // Mehr (Karte, Einträge mit Fotos, zuletzt gemeldeter Standort) gibt es erst, wenn ein Crew-Leiter der anderen Crew
 // das freigibt: per Einladung oder indem er eine Anfrage annimmt. Ausgeblendete Einträge (Reiseblog) bleiben privat,
@@ -49,6 +51,23 @@ export default function installMitreisen(app) {
   const q = (of, trip) => `&crew=${encodeURIComponent(crewId())}&of=${encodeURIComponent(of)}&trip=${encodeURIComponent(trip)}`;
   const photoUrl = (of, trip, id) => `api/?a=follow-photo${q(of, trip)}&id=${encodeURIComponent(id)}`;
   const audioUrl = (of, trip, id) => `api/?a=follow-audio${q(of, trip)}&id=${encodeURIComponent(id)}`;
+
+  // Wie im Reiseblog anzeigen (blogansicht.js): Fotos, Ton und Herzen über die Adressen für andere Crews
+  function blogOpts(d) {
+    const likes = {}, liked = new Set();
+    d.entries.forEach(e => { likes[e.id] = e.likes || 0; if (e.liked) liked.add(e.id); });
+    return {
+      likesOn: true, likes, liked, notify: toast,
+      photoUrl: id => photoUrl(d.of, d.trip.id, id), audioUrl: id => audioUrl(d.of, d.trip.id, id),
+      live: d.running ? d.live : null, liveLabel: d.live ? `${esc(d.crew)}: Standort ${ago(d.live.at)}` : '',
+      foot: `${esc(d.crew)} · Stand ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · `,
+      like: async (id, off) => {
+        const r = await api('follow-like', { crew: crewId(), of: d.of, trip: d.trip.id, id, off });
+        Object.keys(feeds).filter(k => k.startsWith(`${d.of}|`)).forEach(k => { feeds[k].at = 0; });
+        return r.n;
+      },
+    };
+  }
 
   /* ---------- Kachel unter „Mehr“ ---------- */
 
@@ -143,7 +162,6 @@ export default function installMitreisen(app) {
 
   /* ---------- Reise einer anderen Crew ansehen ---------- */
 
-  let viewMap = null;
   ACTIONS['mr-open'] = async el => {
     const id = el.dataset.id, trip = el.dataset.trip || '';
     const c = list().find(x => x.id === id);
@@ -152,67 +170,15 @@ export default function installMitreisen(app) {
     try { d = await feed(id, true, trip); } catch (e) { openSheet(`<div>${sheetHead('Crews on the Road')}<p class="hint">${esc(e.message)}</p></div>`); return; }
     if (c && (!trip || (d.trip && d.running && d.trip.id === trip))) { markSeen(c); app.chromeHooks.forEach(h => h()); refreshRows(); }
     if (!d.trip) { openSheet(`<div>${sheetHead(esc(d.crew))}<p class="hint">Noch keine Reise.</p></div>`); return; }
-    const es = d.entries.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const label = e => e.title || (TYPES[e.type] || TYPES.notiz).label;
-    const secs = n => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
-    const hl = day => (d.highlights || []).filter(h => h.day === day);
-    let lastDay = '';
     const others = (d.trips || []).filter(t => t.id !== d.trip.id);
-    openSheet(`<div class="mr-view">${sheetHead(`${esc(d.crew)}: ${app.tripKind(d.trip) !== 'camping' ? `${app.kindInfo(app.tripKind(d.trip))[2]} ` : ''}${esc(d.trip.name)}`)}
-      <p class="sub">${d.running ? `${since({ since: d.trip.start })}` : `${d.trip.start ? fmtDay(d.trip.start) : ''}${d.trip.end ? ` bis ${fmtDay(d.trip.end)}` : ''} (vorbei)`}
-        ${d.live ? ` · 📍 Standort ${ago(d.live.at)}` : es.find(e => typeof e.lat === 'number') ? ` · zuletzt bei ${esc(es.find(e => typeof e.lat === 'number').place || label(es.find(e => typeof e.lat === 'number')))}` : ''}</p>
-      <div class="mr-map" id="mrMap"></div>
-      ${es.length ? `<ul class="mr-entries">${es.map(e => {
-        const day = (e.date || '').slice(0, 10), head = day !== lastDay && hl(day).length;
-        lastDay = day;
-        return `${head ? `<li class="mr-hl">Highlights des Tages: ${hl(day).map(h => `${esc(h.emoji)} ${esc(h.text)}`).join(' · ')}</li>` : ''}<li><small>${e.date ? `${fmtDay(day)}${e.date.length > 10 ? `, ${e.date.slice(11, 16)}` : ''}` : ''}${e.place ? ` · ${esc(e.place)}` : ''}</small>
-        <b>${esc(label(e))}</b>${e.text ? `<p>${esc(e.text).replace(/\n/g, '<br>')}</p>` : ''}
-        ${e.photos.length ? `<div class="mr-photos">${e.photos.map(p => `<img src="${p.thumb}" data-full="${photoUrl(d.of, d.trip.id, p.id)}" alt="" loading="lazy">`).join('')}</div>` : ''}
-        <div class="mr-react">${(e.sounds || []).map(x => `<button type="button" class="blog-snd" data-action="mr-snd" data-src="${audioUrl(d.of, d.trip.id, x.id)}">🎙️ <span>Anhören</span>${x.sec ? ` <small>${secs(x.sec)}</small>` : ''}</button>`).join('')}
-          <button type="button" class="blog-like${e.liked ? ' on' : ''}" data-action="mr-like" data-of="${d.of}" data-trip="${d.trip.id}" data-id="${e.id}" aria-pressed="${!!e.liked}" aria-label="Herz geben">${e.liked ? '❤️' : '🤍'} <span>${e.likes || ''}</span></button></div></li>`;
-      }).join('')}</ul>`
-        : '<p class="hint">Noch keine Einträge.</p>'}
+    let cleanup = null;
+    openSheet(`<div class="mr-view">${sheetHead(esc(d.crew))}<div class="crew-blog"></div>
       ${others.length ? `<h3 class="date-head">Weitere Reisen von ${esc(d.crew)}</h3>${tripList(d.of, others, t => (t.start ? fmtDay(t.start) : 'ohne Datum'))}` : ''}</div>`, root => {
-      root.querySelectorAll('[data-full]').forEach(img => img.addEventListener('click', () => { img.src = img.dataset.full; img.classList.toggle('big'); }));
-      setTimeout(() => drawView(d), 50);
+      setTimeout(() => { const box = root.querySelector('.crew-blog'); if (box) cleanup = renderBlog(box, { ...d, at: Date.now() }, blogOpts(d)); }, 30);
     });
+    const close = app.onSheetClose;
+    app.onSheetClose = () => { if (cleanup) cleanup(); app.onSheetClose = close; if (close) close(); };
   };
-  // Herz für einen Eintrag einer anderen Crew (eines je Person)
-  ACTIONS['mr-like'] = async el => {
-    const off = el.classList.contains('on');
-    el.disabled = true;
-    try {
-      const r = await api('follow-like', { crew: crewId(), of: el.dataset.of, trip: el.dataset.trip, id: el.dataset.id, off });
-      el.classList.toggle('on', !off); el.setAttribute('aria-pressed', String(!off));
-      el.innerHTML = `${off ? '🤍' : '❤️'} <span>${r.n || ''}</span>`;
-      Object.keys(feeds).filter(k => k.startsWith(`${el.dataset.of}|`)).forEach(k => { feeds[k].at = 0; });
-      if (!off && navigator.vibrate) navigator.vibrate(10);
-    } catch (e) { toast(e.message); }
-    el.disabled = false;
-  };
-  // Sprachnotiz abspielen; zweiter Tipp hält an
-  let player = null, playBtn = null;
-  const stopSnd = () => { if (player) player.pause(); player = null; if (playBtn) playBtn.classList.remove('on'); playBtn = null; };
-  ACTIONS['mr-snd'] = el => {
-    if (playBtn === el) return stopSnd();
-    stopSnd();
-    playBtn = el; el.classList.add('on');
-    player = new Audio(el.dataset.src);
-    player.onended = stopSnd;
-    player.onerror = () => { stopSnd(); toast('Die Sprachnotiz lässt sich gerade nicht abspielen.'); };
-    player.play().catch(() => {});
-  };
-  function drawView(d) {
-    const box = document.getElementById('mrMap');
-    if (!box || typeof L === 'undefined') return;
-    if (viewMap) { try { viewMap.remove(); } catch { /* schon weg */ } }
-    viewMap = L.map(box, { zoomControl: true, attributionControl: true });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(viewMap);
-    const pts = drawTrip(viewMap, d, true);
-    if (pts.length > 1) viewMap.fitBounds(pts, { padding: [24, 24], maxZoom: 13 });
-    else if (pts.length) viewMap.setView(pts[0], 11);
-    else viewMap.setView([50, 10], 4);
-  }
   // Route, Stopps und Standort einer fremden Reise auf eine Karte zeichnen; liefert die Punkte
   function drawTrip(layer, d, big) {
     const color = d.trip.color || '#0F6670';
@@ -275,15 +241,54 @@ export default function installMitreisen(app) {
   // Statt des früheren 👋-Hinweises neben der Pinnwand (bis Version 78). Gefolgte Crews: Tipp öffnet ihre Reise.
   // Nicht gefolgte, frisch losgefahrene Crews: „folgen anfragen“ (mit ✕ wegzutippen). Crew-Leiter: wartende Anfragen.
   const dayOf = since => (since ? Math.max(1, Math.round((new Date(app.today() + 'T12:00') - new Date(since + 'T12:00')) / 864e5) + 1) : 0);
+  // Reiter: eigene Reise und je gefolgte Crew, die gerade unterwegs ist. Gewählt bleibt, bis man zurückwechselt.
+  let tab = '';
+  const onTour = () => list().filter(c => c.follow === 'ok' && c.travelling);
+  const tabs = () => {
+    const cs = onTour();
+    if (!cs.length) { tab = ''; return ''; }
+    if (tab && !cs.some(c => c.id === tab)) tab = '';
+    const own = app.currentTrip && app.currentTrip();
+    return `<nav class="crew-tabs" role="tablist">
+      <button type="button" role="tab" class="crew-tab${tab ? '' : ' on'}" aria-selected="${!tab}" data-action="crew-tab" data-id="">🚐 ${esc(own ? 'Unsere Reise' : 'Unser Tagebuch')}</button>
+      ${cs.map(c => `<button type="button" role="tab" class="crew-tab${tab === c.id ? ' on' : ''}" aria-selected="${tab === c.id}" data-action="crew-tab" data-id="${c.id}" style="--c:${esc((c.trip || {}).color || '#0F6670')}">
+        <span aria-hidden="true">👋</span> ${esc(c.name)}${isNew(c) && tab !== c.id ? '<i class="cr-new" aria-label="Neue Beiträge"></i>' : ''}</button>`).join('')}</nav>`;
+  };
+  ACTIONS['crew-tab'] = el => { tab = el.dataset.id || ''; app.render(); window.scrollTo({ top: 0 }); };
+  // Gewählte Crew: statt der eigenen Reise ihre Reiseblog-Ansicht (wird nach dem Zeichnen gefüllt)
+  app.diaryOther = () => {
+    if (!ready() || !tab) return '';
+    const t = tabs();
+    if (!tab) return '';
+    return `${t}<div class="crew-blog" id="crewBlog" data-of="${tab}"><p class="sub">Wird geladen …</p></div>`;
+  };
+  // Die Ansicht bleibt beim Neuzeichnen erhalten (Karte, Position), solange dieselbe Reise gezeigt wird
+  let shown = null;   // { key, node, cleanup }
+  app.afterDraw.push(() => {
+    const box = document.getElementById('crewBlog');
+    if (!box) { if (shown && !document.body.contains(shown.node)) { shown.cleanup(); shown = null; } return; }
+    const of = box.dataset.of, f = feeds[`${of}|`];
+    const fill = d => {
+      const key = `${of}|${d.trip ? d.trip.id : ''}|${feeds[`${of}|`] ? feeds[`${of}|`].at : 0}`;
+      const c = list().find(x => x.id === of);
+      if (c) { markSeen(c); }
+      if (shown && shown.key === key) { box.replaceWith(shown.node); return; }
+      if (shown) shown.cleanup();
+      const node = document.createElement('div');
+      node.className = 'crew-blog'; node.id = 'crewBlog'; node.dataset.of = of;
+      box.replaceWith(node);
+      if (!d.trip) { node.innerHTML = '<p class="hint">Gerade keine Reise zu sehen.</p>'; shown = { key, node, cleanup: () => {} }; return; }
+      shown = { key, node, cleanup: renderBlog(node, { ...d, at: Date.now() }, blogOpts(d)) };
+    };
+    if (f && Date.now() - f.at < 5 * 60000) fill(f.data);
+    else feed(of).then(d => { if (document.getElementById('crewBlog')) fill(d); }).catch(e => { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
+  });
   app.diaryTop = () => {
     if (!ready()) return '';
     const rows = [];
     list().forEach(c => {
-      if (c.follow === 'ok' && c.travelling) {
-        const t = c.trip || {};
-        rows.push(`<button type="button" class="crew-row" data-action="mr-open" data-id="${c.id}" style="--c:${esc(t.color || '#0F6670')}">
-          <span aria-hidden="true">👋</span><b>${esc(c.name)}</b><span class="cr-sub">${t.name ? `· ${esc(t.name)}, ` : '· '}Tag ${dayOf(c.since)}</span>${isNew(c) ? '<i class="cr-new" aria-label="Neu"></i>' : ''}<span class="cr-go" aria-hidden="true">›</span></button>`);
-      } else if (asking(c)) {
+      if (c.follow === 'ok' && c.travelling) return;     // steht als Reiter oben
+      if (asking(c)) {
         rows.push(`<button type="button" class="crew-row" data-action="cr-goto"><span aria-hidden="true">👋</span><b>${esc(c.name)}</b><span class="cr-sub">möchte euch folgen</span><span class="cr-go" aria-hidden="true">›</span></button>`);
       } else if (started(c)) {
         rows.push(`<div class="crew-row"><span aria-hidden="true">👋</span><b>${esc(c.name)}</b><span class="cr-sub">${c.follow === 'requested' ? 'ist unterwegs · angefragt' : 'ist losgefahren'}</span>
@@ -291,7 +296,7 @@ export default function installMitreisen(app) {
           <button type="button" class="icon-btn small" data-action="cr-hide" data-id="${c.id}" aria-label="Ausblenden">${icon('close')}</button></div>`);
       }
     });
-    return rows.length ? `<div class="crew-rows">${rows.join('')}</div>` : '';
+    return `${tabs()}${rows.length ? `<div class="crew-rows">${rows.join('')}</div>` : ''}`;
   };
   ACTIONS['cr-goto'] = () => go('mitreisen');
   ACTIONS['cr-hide'] = el => {

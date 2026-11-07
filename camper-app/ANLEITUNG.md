@@ -136,6 +136,23 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 80: Reiter für die Reisen anderer Crews im Tagebuch, Karte im Reiseblog repariert
+
+**Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
+
+- **Reiter oben im Tagebuch.** Ist eine Crew unterwegs, der ihr folgt, stehen oben im Tagebuch Reiter:
+  „🚐 Unsere Reise“ und je Crew „👋 Familie Franz“. Ein roter Punkt am Reiter zeigt neue Beiträge.
+  Ein Tipp auf den Reiter lädt deren Reise direkt darunter, so wie sie im Reiseblog aussieht:
+  Zahlen, Karte, Tage mit Highlights, Fotos, Sprachnotizen und Herzen. Mit „🚐 Unsere Reise“ geht es zurück zur eigenen Reise.
+  Die schmalen Zeilen gibt es nur noch für Crews, denen ihr nicht folgt („folgen anfragen“), und für wartende Anfragen.
+- **Gleiche Ansicht überall.** Auch über „Crews on the Road“ und über die Karte öffnen sich Reisen anderer Crews jetzt im Reiseblog-Aussehen.
+- **Mitteilung bei neuen Beiträgen.** Schreibt eine Crew, der ihr folgt, einen neuen Eintrag in ihre laufende Reise, kommt „👋 Familie Franz: neuer Eintrag“.
+  Höchstens eine Mitteilung je 20 Minuten und Crew. Geänderte und für den Reiseblog ausgeblendete Einträge melden nichts.
+  Ein- und ausschalten unter Einstellungen › Mitteilungen › „👋 Andere Crews“.
+- **Behoben: Karte im Reiseblog.** Statt der Karte erschien „Access blocked“ von OpenStreetMap.
+  Die Blogseite hat dem Kartendienst keinerlei Herkunft mitgeschickt, und das verlangt OpenStreetMap inzwischen. Jetzt schickt sie die Adresse der Webseite mit, ohne Pfad.
+  Der geheime Blog-Schlüssel hinter dem # wird dabei nie mitgeschickt.
+
 ## Neu in Version 79: Crews on the Road wie im Reiseblog
 
 **Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
