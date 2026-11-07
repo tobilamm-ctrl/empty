@@ -2629,3 +2629,6 @@ div.crew-row { cursor: default; }
 .crew-tab .cr-new { position: absolute; top: 4px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #D9455F; border: 2px solid var(--surface); }
 .crew-blog .blog-map { margin: 12px 0; }
 .mr-view .crew-blog .blog-head h1 { font-size: 26px; }
+/* Version 82: Länder im Reiseblog nur als Flaggen, etwas größer */
+.blog-head .facts-flags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.blog-head .facts-flags img.fl { height: 26px; width: 35px; border-radius: 4px; vertical-align: middle; }

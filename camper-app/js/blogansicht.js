@@ -76,7 +76,7 @@ export function renderBlog(root, data, opts = {}) {
         <div><b>${nights}</b><span>${nights === 1 ? 'Nacht' : 'Nächte'}</span></div>
         ${dist >= 1 ? `<div><b>${Math.round(dist).toLocaleString('de-DE')} km</b><span>${drive.length ? 'gefahren' : 'Luftlinie'}</span></div>` : ''}
         ${flown >= 1 ? `<div><b>${Math.round(flown).toLocaleString('de-DE')} km</b><span>geflogen</span></div>` : ''}
-        ${countries.length ? `<div><b>${countries.map(flagImg).join(' ')}</b><span>${countries.length === 1 ? 'Land' : 'Länder'}</span></div>` : ''}
+        ${countries.length ? `<div class="facts-flags" aria-label="${countries.length === 1 ? 'Land' : 'Länder'}">${countries.map(cc => flagImg(cc)).join('')}</div>` : ''}
       </div></header>
     ${greeting ? `<p class="blog-greeting">${esc(greeting).replace(/\n/g, '<br>')}</p>` : ''}
     ${delayed && !trip.ended ? '<p class="sub">Neue Einträge erscheinen hier jeweils am nächsten Tag.</p>' : ''}

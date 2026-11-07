@@ -136,6 +136,10 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 82: Länder im Reiseblog als Flaggen
+
+- Im Kopf des Reiseblogs und der Reisen anderer Crews stehen die Länder jetzt nur noch als Flaggen nebeneinander, etwas größer und ohne das Wort „Länder“.
+
 ## Neu in Version 81: Eigener Reiter mit Crew-Namen, Fotos anderer Crews im Vollbild
 
 - Der erste Reiter oben im Tagebuch heißt jetzt wie eure Crew (z. B. „🚐 Familie Lamm“) statt „Unsere Reise“.
