@@ -261,7 +261,8 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
   **Der 👋-Hinweis neben der Pinnwand entfällt** dafür.
 - F7. Auf „Unterwegs mit Freunden“ alle freigegebenen Reisen der anderen Crews gesammelt anzeigen (laufende und frühere,
   je Crew), jede lässt sich wie beim Live-Verfolgen aufrufen (Karte, Einträge, Fotos …). Ersetzt bzw. erweitert F1.
-  **Je Reise einzeln entscheiden, ob sie für andere Crews sichtbar ist** (Schalter in der Reise).
+  **Je Reise einzeln entscheiden, ob sie für andere Crews sichtbar ist** (Schalter „Für andere Crews sichtbar“ im Reise-Formular).
+  Vorbelegung: **alle Reisen sichtbar, auch die bereits vergangenen**; einzelne lassen sich ausschalten.
 - F8. Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
 - Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt. Keine Kommentare der anderen Crews, nur Herzen.
 
