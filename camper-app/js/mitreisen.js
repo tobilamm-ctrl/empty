@@ -250,7 +250,7 @@ export default function installMitreisen(app) {
     if (tab && !cs.some(c => c.id === tab)) tab = '';
     const own = app.currentTrip && app.currentTrip();
     return `<nav class="crew-tabs" role="tablist">
-      <button type="button" role="tab" class="crew-tab${tab ? '' : ' on'}" aria-selected="${!tab}" data-action="crew-tab" data-id="">🚐 ${esc(own ? 'Unsere Reise' : 'Unser Tagebuch')}</button>
+      <button type="button" role="tab" class="crew-tab${tab ? '' : ' on'}" aria-selected="${!tab}" data-action="crew-tab" data-id="">🚐 ${esc(app.crewName ? app.crewName() : (own ? 'Unsere Reise' : 'Unser Tagebuch'))}</button>
       ${cs.map(c => `<button type="button" role="tab" class="crew-tab${tab === c.id ? ' on' : ''}" aria-selected="${tab === c.id}" data-action="crew-tab" data-id="${c.id}" style="--c:${esc((c.trip || {}).color || '#0F6670')}">
         <span aria-hidden="true">👋</span> ${esc(c.name)}${isNew(c) && tab !== c.id ? '<i class="cr-new" aria-label="Neue Beiträge"></i>' : ''}</button>`).join('')}</nav>`;
   };

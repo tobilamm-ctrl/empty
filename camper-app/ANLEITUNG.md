@@ -136,6 +136,10 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 81: Eigener Reiter mit Crew-Namen
+
+- Der erste Reiter oben im Tagebuch heißt jetzt wie eure Crew (z. B. „🚐 Familie Lamm“) statt „Unsere Reise“.
+
 ## Neu in Version 80: Reiter für die Reisen anderer Crews im Tagebuch, Karte im Reiseblog repariert
 
 **Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
