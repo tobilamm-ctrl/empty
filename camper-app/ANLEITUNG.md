@@ -136,6 +136,14 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 86: Mitglieder anderer Crews mit Namen
+
+**Dafür die neue `api/index.php` hochladen.**
+
+- **Verwaltung › Andere Crews** zeigt jetzt die Namen der Mitglieder statt nur der Anzahl. Crew-Leiter sind mit 👑 gekennzeichnet.
+- **Im Reiter einer anderen Crew** (Tagebuch) und in deren Reiseansicht steht unter dem Reisenamen, wer zur Crew gehört, z. B. „👥 Anna 👑, Tobi 👑, Lena“.
+  Im öffentlichen Reiseblog erscheinen keine Namen.
+
 ## Neu in Version 85: Karte zeigt die Reise der gewählten Crew
 
 - Auf großen Bildschirmen steht die Karte neben dem Tagebuch. Ist oben im Tagebuch der Reiter einer anderen Crew gewählt,

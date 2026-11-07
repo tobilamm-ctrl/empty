@@ -58,6 +58,7 @@ export default function installMitreisen(app) {
     d.entries.forEach(e => { likes[e.id] = e.likes || 0; if (e.liked) liked.add(e.id); });
     return {
       likesOn: true, likes, liked, notify: toast,
+      people: d.people || [],
       viewPhotos: app.openPhotos ? (list, i) => app.openPhotos(list, i) : null,
       commentsOn: true, comments: Object.fromEntries(d.entries.map(e => [e.id, e.comments || []])),
       comment: async (id, text) => (await api('follow-comment', { crew: crewId(), of: d.of, trip: d.trip.id, id, text })).comments,

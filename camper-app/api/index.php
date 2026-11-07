@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 34;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 35;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -420,6 +420,11 @@ function runningTrip(string $crew): ?array {
     return null;
 }
 // Für andere Crews sichtbare Reisen (Schalter „Für andere Crews sichtbar“), die neueste zuerst
+// Mitglieder einer Crew nur mit Namen und Leiter-Kennzeichen (für andere Crews sichtbar)
+function crewPeople(string $crew): array {
+    return array_map(fn($r) => ['name' => $r['name'], 'leader' => (bool) (int) $r['leader']],
+        all('SELECT u.name, m.leader FROM members m JOIN users u ON u.id = m.user_id WHERE m.crew_id = ? ORDER BY m.leader DESC, u.name', [$crew]));
+}
 function friendTrips(string $crew): array {
     $list = array_values(array_filter(crewTrips($crew), fn($t) => validId($t['id'] ?? null) && empty($t['friendsHide'])));
     usort($list, fn($a, $b) => strcmp((string) ($b['start'] ?? ''), (string) ($a['start'] ?? '')));
@@ -1332,7 +1337,7 @@ case 'follow-comment':
     // Standort: nur während der laufenden Reise und höchstens 2 Tage alt
     $live = $isRun ? one('SELECT lat, lng, at FROM livepos WHERE crew_id = ? AND at > ?', [$of, now() - 2 * 86400000]) : null;
     out([
-        'crew' => crewName($of), 'running' => (bool) $isRun, 'trips' => $tripList,
+        'crew' => crewName($of), 'people' => crewPeople($of), 'running' => (bool) $isRun, 'trips' => $tripList,
         'trip' => ['id' => $trip['id'], 'name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'kind' => (string) ($trip['kind'] ?? '')],
         'entries' => $entries, 'tracks' => $tracks, 'highlights' => $highlights,
         'live' => $live ? ['lat' => (float) $live['lat'], 'lng' => (float) $live['lng'], 'at' => (int) $live['at']] : null,
@@ -1371,7 +1376,7 @@ case 'admin':
             $crews[] = $c;
         } elseif ($super) {
             // Fremde Crews: nur Name und Mitgliederzahl
-            $crews[] = ['id' => $c['id'], 'name' => $c['name'], 'count' => (int) $c['n'], 'foreign' => true];
+            $crews[] = ['id' => $c['id'], 'name' => $c['name'], 'count' => (int) $c['n'], 'foreign' => true, 'people' => crewPeople($c['id'])];
         }
     }
     out(['users' => array_map($view, $users), 'crews' => array_map(fn($c) => ['count' => (int) ($c['n'] ?? $c['count'] ?? 0)] + array_diff_key($c, ['n' => 1]), $crews),

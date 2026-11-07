@@ -56,7 +56,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 85;
+const APP_VERSION = 86;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2004,8 +2004,8 @@ VIEWS.verwaltung = () => {
     <ul class="people">${own.map(c => `<li class="crew-row"><button data-action="crew-form" data-id="${c.id}">
       <span class="txt"><b>${esc(c.name)}</b><small>${c.members.map(m => `${esc(name(m.id))}${m.leader ? ' 👑' : ''}`).join(', ') || 'Noch ohne Mitglieder'}${c.invites.length ? ` · ${c.invites.length} ${c.invites.length === 1 ? 'Einladung' : 'Einladungen'} offen` : ''}</small></span>
       ${icon('edit')}</button><button class="ghost small-btn" data-action="invite-new" data-crew="${c.id}">Einladen</button></li>`).join('') || '<li class="none">Du leitest noch keine Crew.</li>'}</ul>
-    ${foreign.length ? `<h2 class="date-head">Andere Crews</h2><p class="sub">Von fremden Crews siehst du nur Name und Mitgliederzahl.</p>
-      <ul class="people foreign">${foreign.map(c => `<li><span class="txt"><b>${esc(c.name)}</b><small>${c.count} ${c.count === 1 ? 'Mitglied' : 'Mitglieder'}</small></span></li>`).join('')}</ul>` : ''}
+    ${foreign.length ? `<h2 class="date-head">Andere Crews</h2><p class="sub">Von fremden Crews siehst du Name und Mitglieder, sonst nichts.</p>
+      <ul class="people foreign">${foreign.map(c => `<li><span class="txt"><b>${esc(c.name)}</b><small>${c.people ? c.people.map(m => `${esc(m.name)}${m.leader ? ' 👑' : ''}`).join(', ') || 'Noch ohne Mitglieder' : `${c.count} ${c.count === 1 ? 'Mitglied' : 'Mitglieder'}`}</small></span></li>`).join('')}</ul>` : ''}
     <p class="sub">👑 = Crew-Leiter. Crew-Leiter legen Personen für ihre Crew an, vergeben Rechte und laden per Link oder QR-Code ein.</p>`;
 };
 

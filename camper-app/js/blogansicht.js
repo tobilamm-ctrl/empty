@@ -77,6 +77,7 @@ export function renderBlog(root, data, opts = {}) {
   const until = trip.end && trip.end < today() ? new Date(trip.end + 'T12:00') : new Date();
   root.innerHTML = `<header class="trip-head blog-head">
       <h1>${tripKind(trip) !== 'camping' ? `${kindInfo(tripKind(trip))[2]} ` : ''}${esc(trip.name)}</h1><p class="sub">${esc(range)}</p>
+      ${opts.people && opts.people.length ? `<p class="blog-people">👥 ${opts.people.map(m => `${esc(m.name)}${m.leader ? ' 👑' : ''}`).join(', ')}</p>` : ''}
       <div class="facts">
         ${first ? (n => `<div><b>${n}</b><span>${n === 1 ? 'Tag' : 'Tage'}</span></div>`)(Math.max(1, Math.round((until - new Date(first + 'T12:00')) / 864e5) + 1)) : ''}
         <div><b>${nights}</b><span>${nights === 1 ? 'Nacht' : 'Nächte'}</span></div>

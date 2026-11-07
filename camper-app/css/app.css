@@ -2652,3 +2652,4 @@ div.crew-row { cursor: default; }
 .pub-comments { margin-top: 16px; }
 .pub-comments h3 small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .stop-badge.pub-cmts { border-style: dotted; }
+.blog-people { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
