@@ -65,8 +65,9 @@ export default function installHeute(app) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
       badges.push(`<button class="stop-badge snd" data-action="snd-play" data-id="${e.id}" aria-label="Sprachnotiz abspielen">🎙️ ${snd.length > 1 ? `${snd.length} · ` : ''}${secs(total)}</button>`);
     }
-    // Foto direkt in diesen Eintrag (Kamera oder Galerie)
-    badges.push(`<label class="stop-badge add-photo" title="Foto zu diesem Eintrag" aria-label="Foto zu diesem Eintrag">📷+<input type="file" accept="image/*" multiple hidden data-action="stop-photo" data-id="${e.id}"></label>`);
+    // Foto direkt in diesen Eintrag: Kamera (landet auch in der Galerie des Handys) oder aus der Galerie
+    badges.push(`<label class="stop-badge add-photo" title="Foto aufnehmen" aria-label="Foto für diesen Eintrag aufnehmen">📷+<input type="file" accept="image/*" capture="environment" hidden data-action="stop-photo" data-camera="1" data-id="${e.id}"></label>`);
+    badges.push(`<label class="stop-badge add-photo" title="Fotos aus der Galerie" aria-label="Fotos aus der Galerie zu diesem Eintrag">🖼️+<input type="file" accept="image/*" multiple hidden data-action="stop-photo" data-id="${e.id}"></label>`);
     const i = html.lastIndexOf('</div>');
     return i < 0 ? html + badges.join('') : `${html.slice(0, i)}${badges.join('')}${html.slice(i)}`;
   };
@@ -89,6 +90,8 @@ export default function installHeute(app) {
   ACTIONS['blog-likes-who'] = el => toast(`❤️ ${el.dataset.from || 'im Reiseblog'}: ${el.dataset.who}`);
   app.CHANGES['stop-photo'] = el => {
     const files = [...el.files]; el.value = '';
+    // Mit der Kamera aufgenommen: wie beim Foto-Knopf auch in der Galerie ablegen (Einstellung „galleryCopy“)
+    if (el.dataset.camera && files[0] && app.saveToGallery) app.saveToGallery(files[0]);
     if (files.length && app.attachTo) app.attachTo(el.dataset.id, files);
   };
   ACTIONS['blog-unhide'] = el => {

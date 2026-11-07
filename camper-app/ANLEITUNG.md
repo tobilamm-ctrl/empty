@@ -145,6 +145,8 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
   Ein Tipp auf den Reiter lädt deren Reise direkt darunter, so wie sie im Reiseblog aussieht:
   Zahlen, Karte, Tage mit Highlights, Fotos, Sprachnotizen und Herzen. Mit „🚐 Unsere Reise“ geht es zurück zur eigenen Reise.
   Die schmalen Zeilen gibt es nur noch für Crews, denen ihr nicht folgt („folgen anfragen“), und für wartende Anfragen.
+- **Foto zu einem Eintrag direkt im Tagebuch.** Unter jedem Eintrag öffnet **📷+** gleich die Kamera. Das Foto kommt in diesen Eintrag
+  und landet wie beim Foto-Knopf auch in der Galerie des Handys. Daneben holt **🖼️+** ein oder mehrere Fotos aus der Galerie.
 - **Gleiche Ansicht überall.** Auch über „Crews on the Road“ und über die Karte öffnen sich Reisen anderer Crews jetzt im Reiseblog-Aussehen.
 - **Mitteilung bei neuen Beiträgen.** Schreibt eine Crew, der ihr folgt, einen neuen Eintrag in ihre laufende Reise, kommt „👋 Familie Franz: neuer Eintrag“.
   Höchstens eine Mitteilung je 20 Minuten und Crew. Geänderte und für den Reiseblog ausgeblendete Einträge melden nichts.
