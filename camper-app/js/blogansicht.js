@@ -89,6 +89,12 @@ export function renderBlog(root, data, opts = {}) {
   if (box && typeof L !== 'undefined') map = drawMap(box, trip, stops, tracks, opts.live, opts.liveLabel);
   const photo = id => (opts.photoUrl ? opts.photoUrl(id) : '');
   root.querySelectorAll('.blog-photos img').forEach(img => img.addEventListener('click', () => {
+    // In der App: Vollbild mit Wischen durch alle Fotos der Reise
+    if (opts.viewPhotos) {
+      const all = [...root.querySelectorAll('.blog-photos img')];
+      const list = all.map(i => ({ id: i.dataset.id, thumb: i.src, src: photo(i.dataset.id), cap: i.closest('.body')?.querySelector('strong')?.textContent || '' }));
+      return opts.viewPhotos(list, all.indexOf(img));
+    }
     if (opts.viewPhoto) opts.viewPhoto(photo(img.dataset.id), img.src);
     else { img.src = photo(img.dataset.id); img.classList.toggle('big'); }
   }));

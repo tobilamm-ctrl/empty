@@ -58,6 +58,7 @@ export default function installMitreisen(app) {
     d.entries.forEach(e => { likes[e.id] = e.likes || 0; if (e.liked) liked.add(e.id); });
     return {
       likesOn: true, likes, liked, notify: toast,
+      viewPhotos: app.openPhotos ? (list, i) => app.openPhotos(list, i) : null,
       photoUrl: id => photoUrl(d.of, d.trip.id, id), audioUrl: id => audioUrl(d.of, d.trip.id, id),
       live: d.running ? d.live : null, liveLabel: d.live ? `${esc(d.crew)}: Standort ${ago(d.live.at)}` : '',
       foot: `${esc(d.crew)} · Stand ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · `,

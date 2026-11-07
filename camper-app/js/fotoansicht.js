@@ -65,13 +65,15 @@ export default function installFotoansicht(app) {
     const img = box.querySelector('.pv-img');
     st.scale = 1; st.x = 0; st.y = 0; apply();
     img.src = p.thumb;
-    app.store().get('photos', p.id).then(d => { if (d && d.data && st && st.list[st.index].id === p.id) img.src = d.data; }).catch(() => {});
+    // Fotos anderer Crews (Reiseblog-Ansicht) kommen über ihre eigene Adresse (p.src), eigene aus dem Speicher
+    const full = q => (q.src ? Promise.resolve(q.src) : app.store().get('photos', q.id).then(d => d && d.data).catch(() => ''));
+    full(p).then(src => { if (src && st && st.list[st.index] === p) img.src = src; });
     // Nachbarn vorladen
-    [st.index - 1, st.index + 1].forEach(i => { const q = st.list[i]; if (q) app.store().get('photos', q.id).then(d => { if (d && d.data) new Image().src = d.data; }).catch(() => {}); });
-    const e = p.entryId && S.entries.find(x => x.id === p.entryId);
-    box.querySelector('.pv-cap').innerHTML = `${e ? `<b>${esc(e.title || TYPES[e.type].label)}</b><small>${fmtDay(e.date.slice(0, 10))}, ${fmtTime(e.date)}${e.place ? ` · ${esc(e.place)}` : ''}</small>` : ''}
+    [st.index - 1, st.index + 1].forEach(i => { const q = st.list[i]; if (q) full(q).then(src => { if (src) new Image().src = src; }); });
+    const e = !p.src && p.entryId && S.entries.find(x => x.id === p.entryId);
+    box.querySelector('.pv-cap').innerHTML = `${p.cap ? `<b>${esc(p.cap)}</b>` : ''}${e ? `<b>${esc(e.title || TYPES[e.type].label)}</b><small>${fmtDay(e.date.slice(0, 10))}, ${fmtTime(e.date)}${e.place ? ` · ${esc(e.place)}` : ''}</small>` : ''}
       <span class="pv-n">${st.index + 1} / ${st.list.length}</span>${e && ui.route !== 'buch' ? `<button class="link" data-pv="entry">Zum Eintrag</button>` : ''}
-      ${app.coloring ? `<button class="link" data-action="col-from-viewer" data-id="${p.id}">🖍️ Ausmalbild</button>` : ''}`;
+      ${app.coloring && !p.src ? `<button class="link" data-action="col-from-viewer" data-id="${p.id}">🖍️ Ausmalbild</button>` : ''}`;
     box.querySelector('.pv-prev').hidden = st.index === 0;
     box.querySelector('.pv-next').hidden = st.index === st.list.length - 1;
   }

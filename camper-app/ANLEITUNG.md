@@ -136,9 +136,11 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
-## Neu in Version 81: Eigener Reiter mit Crew-Namen
+## Neu in Version 81: Eigener Reiter mit Crew-Namen, Fotos anderer Crews im Vollbild
 
 - Der erste Reiter oben im Tagebuch heißt jetzt wie eure Crew (z. B. „🚐 Familie Lamm“) statt „Unsere Reise“.
+- **Fotos anderer Crews groß ansehen.** In der Reise einer anderen Crew (Reiter im Tagebuch, Crews on the Road, Karte) öffnet ein Tipp auf ein Foto
+  das Vollbild in voller Auflösung, mit Wischen zum nächsten Foto und Zoomen wie bei euren eigenen Fotos.
 
 ## Neu in Version 80: Reiter für die Reisen anderer Crews im Tagebuch, Karte im Reiseblog repariert
 
