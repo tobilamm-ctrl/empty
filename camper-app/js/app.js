@@ -56,7 +56,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 84;
+const APP_VERSION = 85;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -830,14 +830,18 @@ function drawMap() {
 
   const t = currentTrip();
   let pts = [];
-  if (ui.mapScope === 'all') {
+  // Im Tagebuch ist der Reiter einer anderen Crew gewählt (mitreisen.js): „Diese Reise“ zeigt dann deren Reise
+  const other = ui.mapScope !== 'all' && APP.mapOther ? APP.mapOther() : null;
+  if (other) {
+    pts = other.draw(routeLayer) || [];
+  } else if (ui.mapScope === 'all') {
     S.trips.forEach(tr => { pts = pts.concat(drawRoute(tr, false)); });
   } else if (t) {
     pts = drawRoute(t, true);
   }
 
-  // Erweiterungen aus mehr.js: Orte und GPX-Strecken
-  mapHooks.forEach(h => { pts = pts.concat(h(routeLayer, ui.mapScope, t) || []); });
+  // Erweiterungen aus mehr.js: Orte und GPX-Strecken (nicht bei der Reise einer anderen Crew)
+  if (!other) mapHooks.forEach(h => { pts = pts.concat(h(routeLayer, ui.mapScope, t) || []); });
   $('#placesBtn').setAttribute('aria-pressed', ui.mapPins !== 'alle' || !ui.showPlaces);
 
   const car = S.meta.find(m => m.id === 'car');
@@ -859,7 +863,7 @@ function drawMap() {
     lastFit = 'focus';
     return;
   }
-  const fitKey = ui.mapScope + (t ? t.id : '') + pts.length;
+  const fitKey = ui.mapScope + (other ? other.key : t ? t.id : '') + pts.length;
   if (fitKey !== lastFit && pts.length) {
     lastFit = fitKey;
     if (pts.length === 1) map.setView(pts[0], 12);

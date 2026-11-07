@@ -136,6 +136,11 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 85: Karte zeigt die Reise der gewählten Crew
+
+- Auf großen Bildschirmen steht die Karte neben dem Tagebuch. Ist oben im Tagebuch der Reiter einer anderen Crew gewählt,
+  zeigt die Karte bei „Diese Reise“ jetzt deren Reise: Strecke, Stopps und Standort. Mit dem eigenen Reiter kommt eure Reise zurück.
+
 ## Neu in Version 84: Kommentare im Reiseblog und von anderen Crews
 
 **Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).

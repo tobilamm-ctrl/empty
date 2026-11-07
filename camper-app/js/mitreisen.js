@@ -280,6 +280,13 @@ export default function installMitreisen(app) {
     if (!tab) return '';
     return `${t}<div class="crew-blog" id="crewBlog" data-of="${tab}"><p class="sub">Wird geladen …</p></div>`;
   };
+  // Karte daneben (zwei Spalten): bei gewähltem Crew-Reiter zeigt „Diese Reise“ deren Reise
+  app.mapOther = () => {
+    if (!tab || app.ui.route !== 'tagebuch') return null;
+    const f = feeds[`${tab}|`];
+    if (!f || !f.data.trip) return null;
+    return { key: `crew:${tab}:${f.data.trip.id}`, draw: layer => drawTrip(layer, f.data, true) };
+  };
   // Die Ansicht bleibt beim Neuzeichnen erhalten (Karte, Position), solange dieselbe Reise gezeigt wird
   let shown = null;   // { key, node, cleanup }
   app.afterDraw.push(() => {
@@ -299,7 +306,7 @@ export default function installMitreisen(app) {
       shown = { key, node, cleanup: renderBlog(node, { ...d, at: Date.now() }, blogOpts(d)) };
     };
     if (f && Date.now() - f.at < 5 * 60000) fill(f.data);
-    else feed(of).then(d => { if (document.getElementById('crewBlog')) fill(d); }).catch(e => { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
+    else feed(of).then(d => { if (document.getElementById('crewBlog')) { fill(d); if (document.body.classList.contains('split')) render(); } }).catch(e => { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
   });
   app.diaryTop = () => {
     if (!ready()) return '';
