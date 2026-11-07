@@ -250,20 +250,20 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
    **Zwischendurch ✅ Lieferung 76:** Bescheid, wenn andere Crews losfahren, und Mitteilung bei Folge-Anfragen (Hinweis 👋 und Push)
 
 **Crews on the Road (früher „Unterwegs mit Freunden“) ausbauen (Tobi, 7.11.2026: „alles umsetzen“, braucht neue api/index.php):**
-- F1. Frühere Reisen einer gefolgten Crew ansehen (nicht nur die laufende bzw. zuletzt begonnene).
-- F2. Herzen und Kommentare der Freunde zu Einträgen (in der eigenen App sichtbar, getrennt von Familie und Blog-Lesern).
-- F3. Sprachnotizen und Highlights des Tages auch in der Freunde-Ansicht.
-- F4. „Unterwegs mit Freunden“ besser erreichbar machen (ist zu versteckt), Vorschläge siehe Gespräch vom 7.11.
-- F5. Gleiche Funktionen wie im Reiseblog: Herzen geben (für die andere Crew im Tagebuch sichtbar), Sprachnotizen, Highlights des Tages.
-- F6. Kein 👋-Symbol in der Heute-Karte (stünde mitten in der eigenen Reise). Stattdessen zwischen Kopfzeile und eigener Reise
+- F1. ✅ (Lieferung 79, siehe F5/F7) Frühere Reisen einer gefolgten Crew ansehen (nicht nur die laufende bzw. zuletzt begonnene).
+- F2. ✅ (Lieferung 79, siehe F5/F7) Herzen und Kommentare der Freunde zu Einträgen (in der eigenen App sichtbar, getrennt von Familie und Blog-Lesern).
+- F3. ✅ (Lieferung 79, siehe F5/F7) Sprachnotizen und Highlights des Tages auch in der Freunde-Ansicht.
+- F4. ✅ (Lieferung 79, siehe F6/F8) „Unterwegs mit Freunden“ besser erreichbar machen (ist zu versteckt), Vorschläge siehe Gespräch vom 7.11.
+- F5. ✅ (Lieferung 79) Gleiche Funktionen wie im Reiseblog: Herzen geben (für die andere Crew im Tagebuch sichtbar), Sprachnotizen, Highlights des Tages.
+- F6. ✅ (Lieferung 79) Kein 👋-Symbol in der Heute-Karte (stünde mitten in der eigenen Reise). Stattdessen zwischen Kopfzeile und eigener Reise
   **je unterwegs befindlicher Crew eine schmale, einzeilige Zeile**, z. B. „👋 Familie Franz · Norwegen, Tag 3 ›“; Tipp öffnet
   direkt deren Reise. Nicht gefolgte Crews mit „folgen anfragen ›“. Selten mehr als zwei gleichzeitig.
   **Der 👋-Hinweis neben der Pinnwand entfällt** dafür.
-- F7. Auf „Unterwegs mit Freunden“ alle freigegebenen Reisen der anderen Crews gesammelt anzeigen (laufende und frühere,
+- F7. ✅ (Lieferung 79) Auf „Unterwegs mit Freunden“ alle freigegebenen Reisen der anderen Crews gesammelt anzeigen (laufende und frühere,
   je Crew), jede lässt sich wie beim Live-Verfolgen aufrufen (Karte, Einträge, Fotos …). Ersetzt bzw. erweitert F1.
   **Je Reise einzeln entscheiden, ob sie für andere Crews sichtbar ist** (Schalter „Für andere Crews sichtbar“ im Reise-Formular).
   Vorbelegung: **alle Reisen sichtbar, auch die bereits vergangenen**; einzelne lassen sich ausschalten.
-- F8. Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
+- F8. ✅ (Lieferung 79) Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
 - Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt. Keine Kommentare der anderen Crews, nur Herzen.
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**

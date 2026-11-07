@@ -54,6 +54,12 @@ export default function installHeute(app) {
       const who = bl.names.length ? `${bl.names.join(', ')}${bl.n > bl.names.length ? ` und ${bl.n - bl.names.length} ${bl.n - bl.names.length === 1 ? 'weitere Person' : 'weitere'}` : ''}` : `${bl.n} ${bl.n === 1 ? 'Person' : 'Personen'} ohne Namen`;
       badges.push(`<button class="stop-badge blog-likes" data-action="blog-likes-who" data-who="${esc(who)}" title="${esc(who)}">❤️ ${bl.n} im Reiseblog</button>`);
     }
+    // Herzen anderer Crews (Crews on the Road)
+    const cl = crewLikes()[e.id];
+    if (cl && cl.n) {
+      const who = cl.names.join(', ');
+      badges.push(`<button class="stop-badge crew-likes" data-action="blog-likes-who" data-who="${esc(who)}" data-from="von anderen Crews" title="${esc(who)}">❤️ ${cl.names.length === 1 ? esc(cl.names[0]) : `${cl.n} von Crews`}</button>`);
+    }
     const snd = e.sounds || [];
     if (snd.length) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
@@ -66,21 +72,21 @@ export default function installHeute(app) {
   };
   // Herzen aus dem Reiseblog: beim Start und alle 10 Minuten vom Server holen (nur wenn es einen Reiseblog gibt)
   const blogLikes = () => app.LS.get('blogLikes', {}) || {};
+  const crewLikes = () => app.LS.get('crewLikes', {}) || {};
   let likesAt = 0;
   async function loadLikes() {
     if (!app.session || !app.session() || !navigator.onLine || document.hidden || Date.now() - likesAt < 10 * 60000) return;
-    if (!S.trips.some(t => app.blogOn && app.blogOn(t.id))) return;
     likesAt = Date.now();
     try {
       const r = await app.api('blog-likes', undefined, `&crew=${encodeURIComponent(app.crewId())}`);
-      const now = JSON.stringify(r.likes || {});
-      if (now !== JSON.stringify(blogLikes())) { app.LS.set('blogLikes', r.likes || {}); if (app.ui.route === 'tagebuch') app.render(); }
+      const now = JSON.stringify([r.likes || {}, r.crews || {}]);
+      if (now !== JSON.stringify([blogLikes(), crewLikes()])) { app.LS.set('blogLikes', r.likes || {}); app.LS.set('crewLikes', r.crews || {}); if (app.ui.route === 'tagebuch') app.render(); }
     } catch { /* alter Server oder offline */ }
   }
   setTimeout(loadLikes, 5000);
   setInterval(loadLikes, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLikes(); });
-  ACTIONS['blog-likes-who'] = el => toast(`❤️ im Reiseblog: ${el.dataset.who}`);
+  ACTIONS['blog-likes-who'] = el => toast(`❤️ ${el.dataset.from || 'im Reiseblog'}: ${el.dataset.who}`);
   app.CHANGES['stop-photo'] = el => {
     const files = [...el.files]; el.value = '';
     if (files.length && app.attachTo) app.attachTo(el.dataset.id, files);

@@ -56,7 +56,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 78;
+const APP_VERSION = 79;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -910,7 +910,7 @@ VIEWS.tagebuch = () => {
     <button class="${mode === 'planung' ? 'on' : ''}" data-action="diary-mode" data-mode="planung">Planung</button>
     <button class="${mode === 'tagebuch' ? 'on' : ''}" data-action="diary-mode" data-mode="tagebuch">Tagebuch</button>
   </div>`;
-  if (mode === 'planung') return `${installHint()}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
+  if (mode === 'planung') return `${installHint()}${APP.diaryTop ? APP.diaryTop() : ''}${tripHead(t, st, 'planung')}${modeSeg}${VIEWS.planung(t)}`;
   const filter = ui.diaryFilter;
   // Reihenfolge je Person: neueste oben oder ab Tag 1 (lesen.js schaltet um)
   const newest = LS.get('diaryOrder', 'neu') !== 'alt';
@@ -933,7 +933,7 @@ VIEWS.tagebuch = () => {
     </li>`;
   }).join('');
 
-  return `${installHint()}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
+  return `${installHint()}${APP.diaryTop ? APP.diaryTop() : ''}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
     ${APP.diaryTools ? (st.es.length ? APP.diaryTools(t, st, Object.keys(days), { chips, filter, label }) : '') : `<div class="chips diary-chips">${chips}</div>`}
     <button class="fab" data-action="entry-form" aria-label="Neuer Eintrag">${icon('plus')}<span>Eintrag</span></button>
     ${list.length

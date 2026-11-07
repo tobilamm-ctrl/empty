@@ -2597,3 +2597,25 @@ body.kid-mode .rider { pointer-events: auto; cursor: pointer; }
 .start-help .sh-body p { margin: 0; }
 .start-help .sh-how { font-size: 15px; }
 .start-help .sh-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+
+/* ---------- Version 79: Crews on the Road wie im Reiseblog ---------- */
+.crew-rows { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; }
+.crew-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 4px 10px; border: 1px solid var(--line);
+  border-left: 4px solid var(--c, var(--petrol)); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.crew-row b { white-space: nowrap; }
+.crew-row .cr-sub { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); }
+.crew-row .cr-go { color: var(--muted); font-size: 18px; }
+.crew-row .cr-ask { white-space: nowrap; }
+.crew-row .cr-new { width: 8px; height: 8px; border-radius: 50%; background: #D9455F; flex: none; }
+div.crew-row { cursor: default; }
+.mr-crew { margin: 0 0 14px; }
+.mr-crew h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 6px 0; }
+.mr-crew h3 small { color: var(--muted); font-weight: 400; font-size: 14px; }
+.mr-trip { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+.mr-trip .txt { flex: 1; }
+.mr-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+.mr-react { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.mr-react .blog-like { margin-top: 0; }
+.mr-hl { list-style: none; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, #E0A21B 14%, var(--surface)); }
+.stop-badge.crew-likes { border-style: dotted; }
+.mr-more summary { cursor: pointer; color: var(--petrol); padding: 6px 0; }

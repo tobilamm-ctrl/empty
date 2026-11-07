@@ -136,6 +136,29 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 79: Crews on the Road wie im Reiseblog
+
+**Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
+
+- **Alle Reisen einer Crew.** Unter **Mehr › Crews on the Road** stehen bei jeder Crew, der ihr folgt, ihre Reisen: die laufende und die 3 neuesten,
+  der Rest unter „… ältere Reisen zeigen“. Jede Reise öffnet sich wie beim Live-Verfolgen, mit Karte, Einträgen und Fotos.
+  Unter der Reise steht „Weitere Reisen von …“.
+- **Herzen, Sprachnotizen und Highlights.**
+  - Wie im Reiseblog gebt ihr Einträgen anderer Crews ein Herz, eines je Person.
+  - Sprachnotizen lassen sich anhören, die Highlights des Tages stehen über dem Tag.
+  - Die andere Crew sieht die Herzen im Tagebuch am Eintrag, z. B. „❤️ Familie Franz“ mit gepunktetem Rand. Das unterscheidet sie von euren eigenen Herzen und denen aus dem Reiseblog.
+  - Kommentare gibt es hier bewusst nicht.
+- **Für andere Crews sichtbar?** Im Reise-Formular steht der Schalter „Für andere Crews sichtbar“.
+  - Er ist für alle Reisen vorbelegt, auch für vergangene. Ausgeschaltete Reisen sehen andere Crews nicht.
+  - Ist eine laufende Reise ausgeschaltet, gilt die Crew für die anderen auch nicht als „unterwegs“.
+- **Schmale Zeilen im Tagebuch.**
+  - Zwischen Kopfzeile und eigener Reise steht je Crew, der ihr folgt und die gerade unterwegs ist, eine Zeile, z. B. „👋 Familie Franz · Norwegen, Tag 3 ›“.
+  - Ein Tipp öffnet direkt deren Reise. Ein roter Punkt zeigt Neues.
+  - Frisch losgefahrene Crews, denen ihr noch nicht folgt, erscheinen mit „folgen anfragen ›“ (✕ blendet sie aus).
+  - Crew-Leiter sehen dort auch wartende Anfragen.
+  - Der 👋-Hinweis neben der Pinnwand entfällt dafür.
+- **Karte:** Ein Tipp auf die gestrichelte Linie oder den Standort einer anderen Crew öffnet deren Reise.
+
 ## Neu in Version 78: „Unterwegs mit Freunden“ heißt jetzt „Crews on the Road“
 
 - Der Bereich unter **Mehr**, in dem ihr die Reisen anderer Crews mitverfolgt, heißt jetzt **„Crews on the Road“**. Die Funktion bleibt gleich.

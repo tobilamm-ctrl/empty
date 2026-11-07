@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 30;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 31;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -69,6 +69,8 @@ function db(): PDO {
         // Herzen im Reiseblog (Leser ohne Konto): eines je Gerät und Eintrag, Name freiwillig
         'blog_likes' => 'token CHAR(32) NOT NULL, entry_id VARCHAR(64) NOT NULL, device CHAR(40) NOT NULL, name VARCHAR(60), at BIGINT NOT NULL, PRIMARY KEY (token, entry_id, device)',
         // Tracker-App (GPSLogger, OwnTracks, Overland): geheimer Schlüssel je Person und Crew
+        // Herzen von anderen Crews (Crews on the Road): eines je Person und Eintrag
+        'crew_likes' => 'of_crew VARCHAR(32) NOT NULL, entry_id VARCHAR(64) NOT NULL, by_crew VARCHAR(32) NOT NULL, by_user VARCHAR(32) NOT NULL, at BIGINT NOT NULL, PRIMARY KEY (of_crew, entry_id, by_user)',
         'gps_keys' => 'k CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, user_id VARCHAR(32) NOT NULL, created BIGINT NOT NULL, last BIGINT NOT NULL DEFAULT 0',
     ];
     foreach ($tables as $name => $cols) {
@@ -321,7 +323,7 @@ function friendStarts(?string $only = null): int {
     $d = date('Y-m-d');
     foreach ($crews as $c) {
         // Die zuletzt begonnene laufende Reise (eine alte, nie beendete Reise soll eine neue nicht verdecken)
-        $run = array_filter(crewTrips($c['id']), fn($x) => empty($x['ended']) && empty($x['archived']) && ($x['start'] ?? '') !== '' && $x['start'] <= $d && (($x['end'] ?? '') === '' || $x['end'] >= $d));
+        $run = array_filter(crewTrips($c['id']), fn($x) => empty($x['friendsHide']) && empty($x['ended']) && empty($x['archived']) && ($x['start'] ?? '') !== '' && $x['start'] <= $d && (($x['end'] ?? '') === '' || $x['end'] >= $d));
         usort($run, fn($a, $b) => strcmp((string) $b['start'], (string) $a['start']));
         $t = $run[0] ?? null;
         $k = 'run_' . $c['id'];
@@ -354,6 +356,21 @@ function crewTrips(string $crew): array {
 function runningTrip(string $crew): ?array {
     $d = date('Y-m-d');
     foreach (crewTrips($crew) as $t) {
+        $s = (string) ($t['start'] ?? ''); $e = (string) ($t['end'] ?? '');
+        if (empty($t['ended']) && empty($t['archived']) && $s !== '' && $s <= $d && ($e === '' || $e >= $d)) return $t;
+    }
+    return null;
+}
+// Für andere Crews sichtbare Reisen (Schalter „Für andere Crews sichtbar“), die neueste zuerst
+function friendTrips(string $crew): array {
+    $list = array_values(array_filter(crewTrips($crew), fn($t) => validId($t['id'] ?? null) && empty($t['friendsHide'])));
+    usort($list, fn($a, $b) => strcmp((string) ($b['start'] ?? ''), (string) ($a['start'] ?? '')));
+    return $list;
+}
+// Die zuletzt begonnene laufende, für andere Crews sichtbare Reise
+function friendRunning(string $crew): ?array {
+    $d = date('Y-m-d');
+    foreach (friendTrips($crew) as $t) {
         $s = (string) ($t['start'] ?? ''); $e = (string) ($t['end'] ?? '');
         if (empty($t['ended']) && empty($t['archived']) && $s !== '' && $s <= $d && ($e === '' || $e >= $d)) return $t;
     }
@@ -851,7 +868,16 @@ case 'blog-likes':
         $x['at'] = max($x['at'], (int) $r['at']);
         unset($x);
     }
-    out(['likes' => (object) $res]);
+    // Herzen anderer Crews (Crews on the Road), getrennt gezählt, mit Crew-Namen
+    $cr = [];
+    foreach (all('SELECT l.entry_id, c.name FROM crew_likes l JOIN crews c ON c.id = l.by_crew WHERE l.of_crew = ? ORDER BY l.at', [$crew]) as $r) {
+        $x = &$cr[$r['entry_id']];
+        $x ??= ['n' => 0, 'names' => []];
+        $x['n']++;
+        if (!in_array($r['name'], $x['names'], true)) $x['names'][] = $r['name'];
+        unset($x);
+    }
+    out(['likes' => (object) $res, 'crews' => (object) $cr]);
 
 /* ----- Wie viel Platz belegt was auf dem Server? ----- */
 
@@ -1069,9 +1095,11 @@ case 'travel':
     }
     $list = [];
     foreach (all('SELECT c.id, c.name, (SELECT COUNT(*) FROM members m WHERE m.crew_id = c.id) AS n FROM crews c WHERE c.id <> ? ORDER BY c.name', [$crew]) as $c) {
-        $t = runningTrip($c['id']);
+        $t = friendRunning($c['id']);
         $me = $rel[$c['id']]['me'] ?? null;
         $row = ['id' => $c['id'], 'name' => $c['name'], 'travelling' => (bool) $t, 'since' => $t['start'] ?? '', 'follow' => $me, 'follower' => $rel[$c['id']]['them'] ?? null];
+        // Wer folgt, sieht Name und Art der laufenden Reise (für die Zeile im Tagebuch)
+        if ($me === 'ok' && $t) $row['trip'] = ['id' => $t['id'], 'name' => $t['name'] ?? '', 'kind' => (string) ($t['kind'] ?? ''), 'color' => $t['color'] ?? '#0F6670'];
         // Wer freigegeben hat: Stand der Einträge (für „Neues“)
         if ($me === 'ok') $row['rev'] = (int) (one("SELECT MAX(rev) AS r FROM docs WHERE crew_id = ? AND coll IN ('entries', 'trips', 'tracks')", [$c['id']])['r'] ?? 0);
         $list[] = $row;
@@ -1117,13 +1145,23 @@ case 'follow':
 
 case 'follow-feed':
 case 'follow-photo':
+case 'follow-audio':
+case 'follow-like':
     $u = requireUser();
-    $crew = requireCrew($u, $_GET['crew'] ?? '');
-    $of = (string) ($_GET['of'] ?? '');
+    $arg = fn($k) => (string) ($method === 'POST' ? ($body[$k] ?? '') : ($_GET[$k] ?? ''));
+    $crew = requireCrew($u, $arg('crew'));
+    $of = $arg('of');
     $f = validId($of) ? one("SELECT status FROM follows WHERE crew_id = ? AND follower_crew = ? AND status = 'ok'", [$of, $crew]) : null;
     if (!$f) fail('Diese Crew hat ihre Reisen nicht für euch freigegeben.', 403);
-    $trip = runningTrip($of) ?: lastTrip($of);
-    if (!$trip) out(['crew' => crewName($of), 'trip' => null]);
+    // Alle für andere Crews sichtbaren Reisen; ohne Angabe die laufende, sonst die zuletzt begonnene
+    $trips = friendTrips($of);
+    $run = friendRunning($of);
+    $want = $arg('trip');
+    $begun = array_values(array_filter($trips, fn($t) => ($t['start'] ?? '') !== '' && $t['start'] <= date('Y-m-d')));
+    $trip = $want !== '' ? (array_values(array_filter($trips, fn($t) => $t['id'] === $want))[0] ?? null) : ($run ?: ($begun[0] ?? ($trips[0] ?? null)));
+    $tripList = array_map(fn($t) => ['id' => $t['id'], 'name' => $t['name'] ?? '', 'start' => $t['start'] ?? '', 'end' => $t['end'] ?? '', 'color' => $t['color'] ?? '#0F6670',
+        'kind' => (string) ($t['kind'] ?? ''), 'running' => $run && $run['id'] === $t['id']], $trips);
+    if (!$trip) { if ($action !== 'follow-feed') fail('Diese Reise ist nicht sichtbar.', 404); out(['crew' => crewName($of), 'trip' => null, 'trips' => $tripList]); }
     // Wie im Reiseblog: nur Einträge der Reise, ohne ausgeblendete, ohne Kosten
     $entries = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'entries' AND deleted = 0", [$of]) as $r) {
@@ -1135,31 +1173,57 @@ case 'follow-photo':
             'extra' => array_intersect_key(is_array($e['extra'] ?? null) ? $e['extra'] : [], array_flip(['kind', 'from', 'fromLat', 'fromLng'])),
             'photos' => array_values(array_filter(array_map(fn($p) => ['id' => $p['id'] ?? '', 'thumb' => $p['thumb'] ?? ''], $e['photos'] ?? []),
                 fn($p) => validId($p['id']) && !str_starts_with($p['id'], 'doc-'))),
+            'sounds' => array_values(array_filter(array_map(fn($x) => ['id' => $x['id'] ?? '', 'sec' => (int) ($x['sec'] ?? 0)], $e['sounds'] ?? []), fn($x) => validId($x['id']))),
         ];
     }
-    if ($action === 'follow-photo') {
-        $id = (string) ($_GET['id'] ?? '');
+    if ($action === 'follow-photo' || $action === 'follow-audio') {
+        $id = $arg('id');
         $ok = false;
-        foreach ($entries as $e) foreach ($e['photos'] as $p) if ($p['id'] === $id) $ok = true;
+        foreach ($entries as $e) foreach ($e[$action === 'follow-photo' ? 'photos' : 'sounds'] as $p) if ($p['id'] === $id) $ok = true;
         $path = $ok ? photoPath($of, $id) : '';
-        if (!$path || !is_file($path)) fail('Foto nicht gefunden', 404);
-        header('Content-Type: image/jpeg');
+        if (!$path || !is_file($path)) fail('Nicht gefunden', 404);
+        $type = mediaType((string) file_get_contents($path, false, null, 0, 16));
+        if ($action === 'follow-audio' && !str_starts_with($type, 'audio/')) fail('Nicht gefunden', 404);
+        header('Content-Type: ' . ($action === 'follow-photo' ? 'image/jpeg' : $type));
         header('Cache-Control: private, max-age=86400');
         header('Content-Length: ' . filesize($path));
         readfile($path);
         exit;
     }
+    if ($action === 'follow-like') {
+        if ($method !== 'POST') fail('Nur POST');
+        $id = $arg('id');
+        if (!in_array($id, array_column($entries, 'id'), true)) fail('Diesen Eintrag gibt es nicht (mehr).', 404);
+        q('DELETE FROM crew_likes WHERE of_crew = ? AND entry_id = ? AND by_user = ?', [$of, $id, $u['id']]);
+        if (empty($body['off'])) q('INSERT INTO crew_likes (of_crew, entry_id, by_crew, by_user, at) VALUES (?, ?, ?, ?, ?)', [$of, $id, $crew, $u['id'], now()]);
+        out(['ok' => true, 'n' => (int) one('SELECT COUNT(*) AS n FROM crew_likes WHERE of_crew = ? AND entry_id = ?', [$of, $id])['n']]);
+    }
+    // Herzen: Anzahl je Eintrag und ob ich schon eines gegeben habe
+    $likes = []; $mine = [];
+    foreach (all('SELECT entry_id, by_user FROM crew_likes WHERE of_crew = ?', [$of]) as $r) {
+        $likes[$r['entry_id']] = ($likes[$r['entry_id']] ?? 0) + 1;
+        if ($r['by_user'] === $u['id']) $mine[] = $r['entry_id'];
+    }
+    foreach ($entries as &$e) { $e['likes'] = $likes[$e['id']] ?? 0; $e['liked'] = in_array($e['id'], $mine, true); }
+    unset($e);
     $tracks = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND deleted = 0", [$of]) as $r) {
         $k = json_decode($r['data'], true);
         if (($k['tripId'] ?? '') === $trip['id']) $tracks[] = ['kind' => $k['kind'] ?? '', 'pts' => $k['pts'] ?? ''];
     }
+    $highlights = [];
+    foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'games' AND deleted = 0 AND data LIKE '%highlight%'", [$of]) as $r) {
+        $g = json_decode($r['data'], true);
+        if (($g['kind'] ?? '') === 'highlight' && ($g['tripId'] ?? '') === $trip['id'] && (($g['text'] ?? '') !== '' || ($g['emoji'] ?? '') !== ''))
+            $highlights[] = ['day' => $g['day'] ?? '', 'text' => $g['text'] ?? '', 'emoji' => $g['emoji'] ?? ''];
+    }
+    $isRun = $run && $run['id'] === $trip['id'];
     // Standort: nur während der laufenden Reise und höchstens 2 Tage alt
-    $live = runningTrip($of) ? one('SELECT lat, lng, at FROM livepos WHERE crew_id = ? AND at > ?', [$of, now() - 2 * 86400000]) : null;
+    $live = $isRun ? one('SELECT lat, lng, at FROM livepos WHERE crew_id = ? AND at > ?', [$of, now() - 2 * 86400000]) : null;
     out([
-        'crew' => crewName($of), 'running' => (bool) runningTrip($of),
+        'crew' => crewName($of), 'running' => (bool) $isRun, 'trips' => $tripList,
         'trip' => ['id' => $trip['id'], 'name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'kind' => (string) ($trip['kind'] ?? '')],
-        'entries' => $entries, 'tracks' => $tracks,
+        'entries' => $entries, 'tracks' => $tracks, 'highlights' => $highlights,
         'live' => $live ? ['lat' => (float) $live['lat'], 'lng' => (float) $live['lng'], 'at' => (int) $live['at']] : null,
     ]);
 
@@ -1294,6 +1358,7 @@ case 'crew-delete':
     q('DELETE FROM shares WHERE crew_id = ?', [$id]);
     q('DELETE FROM follows WHERE crew_id = ? OR follower_crew = ?', [$id, $id]);
     q('DELETE FROM livepos WHERE crew_id = ?', [$id]);
+    q('DELETE FROM crew_likes WHERE of_crew = ? OR by_crew = ?', [$id, $id]);
     q('DELETE FROM crews WHERE id = ?', [$id]);
     $dir = photoDir($id);
     if (is_dir($dir)) { array_map('unlink', array_merge(glob("$dir/*.jpg") ?: [], glob("$dir/*.pdf") ?: [])); @rmdir($dir); }
