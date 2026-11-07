@@ -2635,3 +2635,20 @@ div.crew-row { cursor: default; }
 /* Version 83: Sprung zu einem Eintrag (aus einer Mitteilung) kurz hervorheben */
 .stop.flash .blog-stop { animation: stopFlash 2.4s ease-out; border-radius: 12px; }
 @keyframes stopFlash { 0%, 40% { background: color-mix(in srgb, #E0A21B 30%, transparent); } 100% { background: transparent; } }
+
+/* ---------- Version 84: Öffentliche Kommentare (Reiseblog, Crews, Antworten) ---------- */
+.blog-cmts { margin-top: 8px; }
+.cmt-list { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cmt { padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--trip, var(--petrol)) 7%, var(--surface)); border: 1px solid var(--line); font-size: 15px; }
+.cmt b { display: block; font-size: 14px; }
+.cmt b small { font-weight: 400; color: var(--muted); }
+.cmt span { display: block; white-space: normal; }
+.cmt .cmt-at { color: var(--muted); font-size: 12px; margin-right: 8px; }
+.cmt.cmt-own { background: color-mix(in srgb, #E0A21B 10%, var(--surface)); }
+.cmt-del { font-size: 12px; }
+.cmt-form { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.cmt-form input, .cmt-form textarea { font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cmt-form button { align-self: flex-start; }
+.pub-comments { margin-top: 16px; }
+.pub-comments h3 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.stop-badge.pub-cmts { border-style: dotted; }

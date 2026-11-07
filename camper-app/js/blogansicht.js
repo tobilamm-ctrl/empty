@@ -27,6 +27,10 @@ const km = (a, b) => {
 const pts = s => (s ? s.split(';').map(p => p.split(',').map(Number)) : []);
 const secs = n => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
 const today = () => new Date().toISOString().slice(0, 10);
+const when = at => new Date(at).toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+// Öffentliche Kommentare eines Eintrags (aus dem Reiseblog, von Crews, Antworten der Crew)
+const cmtList = list => (list.length ? `<ul class="cmt-list">${list.map(c => `<li class="cmt cmt-${esc(c.src)}"><b>${esc(c.name)}${c.src === 'blog' ? ' <small>(Reiseblog)</small>' : ''}</b>
+  <span>${esc(c.text).replace(/\n/g, '<br>')}</span><small class="cmt-at">${when(c.at)}</small>${c.mine ? `<button type="button" class="link cmt-del" data-del="${esc(c.id)}" aria-label="Eigenen Kommentar löschen">löschen</button>` : ''}</li>`).join('')}</ul>` : '');
 
 // root: Element, in das die Reise gezeichnet wird. data wie vom Server ('blog' bzw. 'follow-feed').
 // opts: photoUrl(id), audioUrl(id), likesOn, likes {id: n}, liked Set, like(id, off) → Promise<n>, viewPhoto(src, thumb),
@@ -64,6 +68,8 @@ export function renderBlog(root, data, opts = {}) {
           ${e.text ? `<span class="text">${esc(e.text)}</span>` : ''}
           ${(e.sounds || []).length ? `<span class="blog-sounds">${e.sounds.map(x => `<button type="button" class="blog-snd" data-snd="${esc(x.id)}" aria-label="Sprachnotiz anhören">🎙️ <span>Anhören</span>${x.sec ? ` <small>${secs(x.sec)}</small>` : ''}</button>`).join('')}</span>` : ''}
           ${(e.photos || []).length ? `<span class="blog-photos">${e.photos.map((p, i) => `<img class="${i === 0 ? 'hero-photo' : ''}" src="${p.thumb}" data-id="${esc(p.id)}" alt="">`).join('')}</span>` : ''}
+          ${opts.commentsOn ? `<div class="blog-cmts" data-cmt="${esc(e.id)}">${cmtList((opts.comments || {})[e.id] || [])}
+            <button type="button" class="link blog-cmt-open">💬 Kommentieren</button></div>` : ''}
           ${opts.likesOn ? `<button type="button" class="blog-like${liked.has(e.id) ? ' on' : ''}" data-like="${esc(e.id)}" aria-pressed="${liked.has(e.id)}" aria-label="Herz geben">${liked.has(e.id) ? '❤️' : '🤍'} <span>${likes[e.id] || ''}</span></button>` : ''}
         </span></div></li>`).join('')}</ol></li>`;
   }).join('');
@@ -124,6 +130,31 @@ export function renderBlog(root, data, opts = {}) {
     } catch (e) { (opts.notify || alert)(e.message || 'Hat gerade nicht geklappt. Bitte später noch einmal.'); }
     b.disabled = false;
   }));
+  // Kommentare: Feld aufklappen, senden, eigenen löschen
+  root.querySelectorAll('.blog-cmts').forEach(box => {
+    const id = box.dataset.cmt;
+    const redraw = list => { box.querySelector('.cmt-list')?.remove(); box.insertAdjacentHTML('afterbegin', cmtList(list)); bindDel(); };
+    const bindDel = () => box.querySelectorAll('.cmt-del').forEach(b => { b.onclick = async () => {
+      if (!confirm('Deinen Kommentar löschen?')) return;
+      try { redraw(await opts.uncomment(id, b.dataset.del)); } catch (e) { (opts.notify || alert)(e.message); }
+    }; });
+    bindDel();
+    box.querySelector('.blog-cmt-open').addEventListener('click', ev => {
+      ev.target.hidden = true;
+      box.insertAdjacentHTML('beforeend', `<form class="cmt-form">${opts.askName ? `<input name="name" maxlength="40" required placeholder="Dein Name" value="${esc(opts.askName())}">` : ''}
+        <textarea name="text" rows="2" maxlength="600" required placeholder="Schreib etwas dazu …"></textarea><button class="primary small-btn">Senden</button></form>`);
+      const f = box.querySelector('.cmt-form');
+      (f.name && !f.name.value ? f.name : f.text).focus();
+      f.addEventListener('submit', async sev => {
+        sev.preventDefault();
+        const btn = f.querySelector('button'); btn.disabled = true;
+        try {
+          const list = await opts.comment(id, f.text.value.trim(), f.name ? f.name.value.trim() : '');
+          redraw(list); f.remove(); box.querySelector('.blog-cmt-open').hidden = false;
+        } catch (e) { (opts.notify || alert)(e.message || 'Hat gerade nicht geklappt.'); btn.disabled = false; }
+      });
+    });
+  });
   // Große Fotos in voller Auflösung nachladen
   root.querySelectorAll('.blog-photos img.hero-photo').forEach(img => {
     const src = photo(img.dataset.id);

@@ -14,7 +14,7 @@ export default function installTeilen(app) {
 
 
   const blogUrl = token => new URL(`blog.html#${token}`, location.href).href;
-  const DEFAULTS = { photos: true, texts: true, highlights: true, map: true, delay: false, greeting: '', sounds: true, likes: true };
+  const DEFAULTS = { photos: true, texts: true, highlights: true, map: true, delay: false, greeting: '', sounds: true, likes: true, comments: true };
   const optsOf = sh => ({ ...DEFAULTS, ...((sh && sh.opts) || {}) });
   // Serverfehler verständlich machen: „Unbekannte Aktion“ heißt, die api/index.php auf dem Webspace ist alt
   const why = e => (e.message === 'Keine Verbindung zum Server.' ? 'Keine Verbindung. Der Reiseblog braucht Internet.'
@@ -45,7 +45,7 @@ export default function installTeilen(app) {
     const row = t => {
       const sh = (shares || []).find(x => x.trip === t.id);
       const o = optsOf(sh);
-      const on = [o.photos ? 'Fotos' : '', o.texts ? 'Texte' : '', o.highlights ? 'Highlights' : '', o.sounds ? 'Sprachnotizen' : '', o.map ? 'Karte' : '', o.likes ? 'Herzen' : '', o.delay ? 'einen Tag verzögert' : 'sofort'].filter(Boolean).join(', ');
+      const on = [o.photos ? 'Fotos' : '', o.texts ? 'Texte' : '', o.highlights ? 'Highlights' : '', o.sounds ? 'Sprachnotizen' : '', o.map ? 'Karte' : '', o.likes ? 'Herzen' : '', o.comments ? 'Kommentare' : '', o.delay ? 'einen Tag verzögert' : 'sofort'].filter(Boolean).join(', ');
       return `<li class="blog-row${sh ? ' on' : ''}" style="--c:${tripColor(t)}">
         <div class="blog-row-head"><span class="dot"></span><span class="txt"><b>${esc(t.name)}</b><small>${esc(app.fmtRange(t))}</small></span>
           <span class="tag">${sh ? 'öffentlich mit Link' : 'aus'}</span></div>
@@ -81,6 +81,7 @@ export default function installTeilen(app) {
       ${chk('highlights', 'Highlights des Tages zeigen')}
       ${chk('sounds', 'Sprachnotizen zum Anhören')}
       ${chk('likes', 'Leser dürfen Herzen geben', 'Ihr seht sie im Tagebuch, getrennt von euren eigenen.')}
+      ${chk('comments', 'Leser dürfen kommentieren', 'Mit Namen; ihr seht die Kommentare im Tagebuch, antwortet dort und könnt jeden löschen.')}
       ${chk('map', 'Karte mit der Strecke zeigen')}
       ${chk('delay', 'Erst am nächsten Tag zeigen', 'So sieht niemand, wo ihr gerade seid.')}
       <div class="sheet-foot">${sh ? '<button type="button" class="ghost" data-action="blog-renew" data-id="' + t.id + '">Neuen Link erzeugen</button>' : ''}
@@ -99,7 +100,7 @@ export default function installTeilen(app) {
   FORMS['blog-opts'] = form => {
     const t = tripById(form.dataset.id);
     const opts = { greeting: form.greeting.value.trim() };
-    ['photos', 'texts', 'highlights', 'sounds', 'map', 'likes', 'delay'].forEach(k => { opts[k] = form[k].checked; });
+    ['photos', 'texts', 'highlights', 'sounds', 'map', 'likes', 'comments', 'delay'].forEach(k => { opts[k] = form[k].checked; });
     send(t, { on: true, opts }).then(r => r && toast('Reiseblog gespeichert'));
   };
   ACTIONS['blog-renew'] = el => {

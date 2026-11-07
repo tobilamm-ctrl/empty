@@ -60,6 +60,9 @@ export default function installHeute(app) {
       const who = cl.names.join(', ');
       badges.push(`<button class="stop-badge crew-likes" data-action="blog-likes-who" data-who="${esc(who)}" data-from="von anderen Crews" title="${esc(who)}">❤️ ${cl.names.length === 1 ? esc(cl.names[0]) : `${cl.n} von Crews`}</button>`);
     }
+    // Öffentliche Kommentare (Reiseblog, andere Crews) – getrennt von den Kommentaren der Familie
+    const pc = pubComments()[e.id] || [];
+    if (pc.length) badges.push(`<button class="stop-badge pub-cmts" data-action="open-entry" data-id="${e.id}" title="Öffentliche Kommentare">💬 ${pc.length} öffentlich</button>`);
     const snd = e.sounds || [];
     if (snd.length) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
@@ -74,19 +77,49 @@ export default function installHeute(app) {
   // Herzen aus dem Reiseblog: beim Start und alle 10 Minuten vom Server holen (nur wenn es einen Reiseblog gibt)
   const blogLikes = () => app.LS.get('blogLikes', {}) || {};
   const crewLikes = () => app.LS.get('crewLikes', {}) || {};
+  const pubComments = () => app.LS.get('pubComments', {}) || {};
   let likesAt = 0;
   async function loadLikes() {
     if (!app.session || !app.session() || !navigator.onLine || document.hidden || Date.now() - likesAt < 10 * 60000) return;
     likesAt = Date.now();
     try {
       const r = await app.api('blog-likes', undefined, `&crew=${encodeURIComponent(app.crewId())}`);
-      const now = JSON.stringify([r.likes || {}, r.crews || {}]);
-      if (now !== JSON.stringify([blogLikes(), crewLikes()])) { app.LS.set('blogLikes', r.likes || {}); app.LS.set('crewLikes', r.crews || {}); if (app.ui.route === 'tagebuch') app.render(); }
+      const now = JSON.stringify([r.likes || {}, r.crews || {}, r.comments || {}]);
+      if (now !== JSON.stringify([blogLikes(), crewLikes(), pubComments()])) {
+        app.LS.set('blogLikes', r.likes || {}); app.LS.set('crewLikes', r.crews || {}); app.LS.set('pubComments', r.comments || {});
+        if (app.ui.route === 'tagebuch') app.render();
+      }
     } catch { /* alter Server oder offline */ }
   }
   setTimeout(loadLikes, 5000);
   setInterval(loadLikes, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLikes(); });
+  // In der Eintragsansicht: öffentliche Kommentare lesen, antworten (für alle Leser sichtbar), löschen
+  const entryExtra = app.entryExtra;
+  app.entryExtra = e => {
+    const list = pubComments()[e.id] || [];
+    const shared = (app.blogOn && app.blogOn(e.tripId)) || list.length;
+    const when = at => new Date(at).toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `${entryExtra ? entryExtra(e) : ''}${!shared || e.blogHide ? '' : `<section class="pub-comments" data-id="${e.id}"><h3>Öffentliche Kommentare <small>(Reiseblog und andere Crews)</small></h3>
+      ${list.length ? `<ul class="cmt-list">${list.map(c => `<li class="cmt cmt-${esc(c.src)}"><b>${esc(c.name)}${c.src === 'blog' ? ' <small>(Reiseblog)</small>' : ''}</b>
+        <span>${esc(c.text).replace(/\n/g, '<br>')}</span><small class="cmt-at">${when(c.at)}</small>
+        <button type="button" class="link cmt-del" data-action="pub-cmt-del" data-id="${e.id}" data-c="${esc(c.id)}">löschen</button></li>`).join('')}</ul>` : '<p class="sub">Noch keine.</p>'}
+      <form class="cmt-form" data-form="pub-cmt" data-id="${e.id}"><textarea name="text" rows="2" maxlength="600" required placeholder="Öffentlich antworten (sehen alle Leser) …"></textarea>
+        <button class="primary small-btn">Antworten</button></form></section>`}`;
+  };
+  const setList = (id, list) => { const all = pubComments(); all[id] = list; if (!list.length) delete all[id]; app.LS.set('pubComments', all); };
+  app.FORMS['pub-cmt'] = async form => {
+    const id = form.dataset.id;
+    try {
+      const r = await app.api('comment', { crew: app.crewId(), id, text: form.text.value.trim() });
+      setList(id, r.comments); app.openEntry(id); toast('Antwort steht jetzt im Reiseblog und bei den Crews');
+    } catch (e) { toast(e.message); }
+  };
+  ACTIONS['pub-cmt-del'] = async el => {
+    if (!confirm('Diesen Kommentar für alle löschen?')) return;
+    try { const r = await app.api('comment', { crew: app.crewId(), id: el.dataset.id, del: el.dataset.c }); setList(el.dataset.id, r.comments); app.openEntry(el.dataset.id); }
+    catch (e) { toast(e.message); }
+  };
   ACTIONS['blog-likes-who'] = el => toast(`❤️ ${el.dataset.from || 'im Reiseblog'}: ${el.dataset.who}`);
   app.CHANGES['stop-photo'] = el => {
     const files = [...el.files]; el.value = '';

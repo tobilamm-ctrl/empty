@@ -136,6 +136,23 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 84: Kommentare im Reiseblog und von anderen Crews
+
+**Dafür die neue `api/index.php` hochladen** (vorher am besten eine Sicherung machen).
+
+- **Ein gemeinsamer Verlauf je Eintrag.** Unter jedem Eintrag im Reiseblog und in der Reise einer Crew, der ihr folgt, steht „💬 Kommentieren“.
+  Alle sehen denselben Verlauf: Blog-Leser, Crews, die folgen, und ihr selbst.
+  - **Im Reiseblog** schreiben Leser ohne Konto. Ein Name ist Pflicht, z. B. „Oma Gerda (Reiseblog)“; das Gerät merkt ihn sich. Gegen Unfug gilt: höchstens 6 Kommentare je Gerät und Stunde.
+  - **Andere Crews** kommentieren in der App, z. B. „Familie Franz (Anouk)“.
+  - Wer kommentiert hat, kann den eigenen Kommentar wieder löschen.
+- **Bei euch im Tagebuch.** Am Eintrag steht „💬 2 öffentlich“ mit gepunktetem Rand. Antippen öffnet den Eintrag.
+  Dort stehen unter „Öffentliche Kommentare“ alle Kommentare aus Blog und von Crews.
+  Ihr antwortet dort öffentlich (das sehen alle Leser) und könnt jeden Kommentar löschen.
+  **Die Kommentare eurer Familie (💬 neben dem Herz) bleiben wie bisher privat.**
+- **Mitteilung** bei neuen Kommentaren zu euren Einträgen („💬 Oma Gerda (Reiseblog) zu „Wasserfall““), höchstens eine je Eintrag und 10 Minuten.
+  Sie läuft über Einstellungen › Mitteilungen › „👋 Andere Crews und Reiseblog“.
+- **Abschalten** könnt ihr das je Reiseblog über dessen Einstellungen: „Leser dürfen kommentieren“.
+
 ## Neu in Version 83: Mitteilung führt direkt zum Eintrag
 
 **Dafür die neue `api/index.php` hochladen.**

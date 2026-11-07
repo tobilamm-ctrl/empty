@@ -13,7 +13,7 @@ async function load() {
   if (!/^[a-f0-9]{32}$/.test(token)) return fail('Dieser Link ist unvollständig. Bitte den ganzen Link öffnen.');
   let data;
   try {
-    const r = await fetch(`api/?a=blog&t=${token}`, { credentials: 'omit', cache: 'no-store' });
+    const r = await fetch(`api/?a=blog&t=${token}&d=${device()}`, { credentials: 'omit', cache: 'no-store' });
     data = await r.json();
     if (!r.ok) return fail(data.error || 'Dieser Reiseblog ist nicht verfügbar.');
   } catch { return fail('Keine Verbindung. Bitte später noch einmal versuchen.'); }
@@ -33,12 +33,29 @@ const device = () => {
 };
 const likedKey = `blogLiked-${token}`;
 
+// Kommentar schreiben oder löschen (eigenes Gerät)
+async function post(body) {
+  const r = await fetch('api/?a=blog-comment', { method: 'POST', credentials: 'omit', headers: { 'X-Lammping': '1', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ t: token, d: device(), ...body }) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Hat gerade nicht geklappt.');
+  return j.comments || [];
+}
 function show(data) {
   const liked = new Set(store.get(likedKey, []));
   document.title = `${data.trip.name} · Reiseblog`;
   document.documentElement.style.setProperty('--trip', data.trip.color);
   renderBlog($('#blog'), data, {
     likesOn: !!data.likesOn, likes: data.likes || {}, liked,
+    // Kommentare: Name ist Pflicht und wird auf dem Gerät gemerkt
+    commentsOn: !!data.commentsOn, comments: data.comments || {},
+    askName: () => store.get('blogName', '') || '',
+    comment: async (id, text, name) => {
+      if (!name) throw new Error('Bitte deinen Namen angeben.');
+      store.set('blogName', name);
+      return post({ id, text, name });
+    },
+    uncomment: (id, del) => post({ id, del }),
     photoUrl: id => `api/?a=blogphoto&t=${token}&id=${encodeURIComponent(id)}`,
     audioUrl: id => `api/?a=blogaudio&t=${token}&id=${encodeURIComponent(id)}`,
     viewPhoto: (src, thumb) => { const v = $('#viewer'); v.querySelector('img').src = thumb; v.querySelector('img').src = src; v.showModal(); },

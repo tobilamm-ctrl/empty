@@ -266,7 +266,9 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 - F8. ✅ (Lieferung 79) Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
 - F9. ✅ (Lieferung 80) Statt der Zeilen: Reiter oben im Tagebuch („🚐 Unsere Reise“ und je gefolgte, unterwegs befindliche Crew
   „👋 Name“ mit Punkt bei Neuem); darunter deren Reise im Reiseblog-Aussehen. Mitteilung bei neuen Beiträgen.
-- Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt. Keine Kommentare der anderen Crews, nur Herzen.
+- Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt.
+- F10. ✅ (Lieferung 84) Kommentare doch: ein gemeinsamer öffentlicher Verlauf je Eintrag (Reiseblog mit Pflicht-Namen, andere Crews,
+  Antworten der eigenen Crew aus dem Tagebuch), für alle Leser sichtbar, ohne Freigabe; Familienkommentare bleiben privat.
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
 - **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,

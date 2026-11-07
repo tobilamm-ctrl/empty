@@ -42,7 +42,7 @@ export default function installMitteilungen(app) {
       <p class="sub">${on ? '✅ Auf diesem Gerät eingeschaltet.' : 'Auf diesem Gerät aus. Mitteilungen kommen auch, wenn LAMMping geschlossen ist.'}</p>
       <label class="check"><input type="checkbox" data-action="push-pref" name="pins"${pins ? ' checked' : ''}><span>📌 Neue Zettel an der Pinnwand (von den anderen)</span></label>
       <label class="check"><input type="checkbox" data-action="push-pref" name="tickets"${tickets ? ' checked' : ''}><span>🎟️ Tickets: am Morgen des Tages und 3 Stunden vor Abfahrt, bei Flügen auch 24 Stunden vorher (Online-Check-in)</span></label>
-      <label class="check"><input type="checkbox" data-action="push-pref" name="friends"${friends ? ' checked' : ''}><span>👋 Andere Crews: wenn eine losfährt, neue Einträge bei Crews, denen ihr folgt, und Anfragen zum Folgen (an Crew-Leiter)</span></label>
+      <label class="check"><input type="checkbox" data-action="push-pref" name="friends"${friends ? ' checked' : ''}><span>👋 Andere Crews und Reiseblog: wenn eine Crew losfährt, neue Einträge bei Crews, denen ihr folgt, Kommentare zu euren Einträgen und Anfragen zum Folgen (an Crew-Leiter)</span></label>
       <div class="btnrow">${on ? `<button class="ghost" data-action="push-test">Test-Mitteilung</button><button class="ghost danger" data-action="push-off">Ausschalten</button>`
         : `<button class="primary" data-action="push-on"${s.perm === 'denied' ? ' disabled' : ''}>Mitteilungen auf diesem Gerät einschalten</button>`}</div>
       ${s.srv.cron ? `<details class="push-cron"><summary>Für pünktliche Ticket-Erinnerungen: Cronjob (nur Super-Admin)</summary>

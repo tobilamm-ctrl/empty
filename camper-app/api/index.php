@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 33;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 34;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -71,12 +71,16 @@ function db(): PDO {
         // Tracker-App (GPSLogger, OwnTracks, Overland): geheimer Schlüssel je Person und Crew
         // Herzen von anderen Crews (Crews on the Road): eines je Person und Eintrag
         'crew_likes' => 'of_crew VARCHAR(32) NOT NULL, entry_id VARCHAR(64) NOT NULL, by_crew VARCHAR(32) NOT NULL, by_user VARCHAR(32) NOT NULL, at BIGINT NOT NULL, PRIMARY KEY (of_crew, entry_id, by_user)',
+        // Öffentliche Kommentare zu Einträgen: aus dem Reiseblog (src blog, Name Pflicht), von anderen Crews (crew)
+        // und Antworten der eigenen Crew aus dem Tagebuch (own). Alle sehen denselben Verlauf.
+        'comments' => 'id CHAR(16) PRIMARY KEY, of_crew VARCHAR(32) NOT NULL, entry_id VARCHAR(64) NOT NULL, src VARCHAR(8) NOT NULL, by_crew VARCHAR(32), by_user VARCHAR(32), device CHAR(40), name VARCHAR(80) NOT NULL, text TEXT NOT NULL, at BIGINT NOT NULL',
         'gps_keys' => 'k CHAR(32) PRIMARY KEY, crew_id VARCHAR(32) NOT NULL, user_id VARCHAR(32) NOT NULL, created BIGINT NOT NULL, last BIGINT NOT NULL DEFAULT 0',
     ];
     foreach ($tables as $name => $cols) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS $name ($cols)" . ($mysql ? ' DEFAULT CHARSET=utf8mb4' : ''));
     }
     if (!$mysql) $pdo->exec('CREATE INDEX IF NOT EXISTS docs_rev ON docs (crew_id, rev)');
+    if (!$mysql) $pdo->exec('CREATE INDEX IF NOT EXISTS comments_entry ON comments (of_crew, entry_id)');
     // Spätere Ergänzung: Wer darf die Kasse sehen? (bestehende Konten: ja)
     $cols = $mysql ? array_column($pdo->query('SHOW COLUMNS FROM users')->fetchAll(), 'Field')
                    : array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name');
@@ -314,6 +318,36 @@ function maybeReminders(): void {
     kvSet('cron_last', (string) now());
     try { ticketReminders(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
     try { friendStarts(); } catch (Throwable $e) { /* nie den Abgleich stören */ }
+}
+// Öffentliche Kommentare je Eintrag (ältester zuerst); $me = ['user' => …] oder ['device' => …] für „eigener Kommentar“
+function commentsOf(string $crew, array $entryIds, array $me = []): array {
+    $res = [];
+    if (!$entryIds) return $res;
+    foreach (all('SELECT * FROM comments WHERE of_crew = ? ORDER BY at', [$crew]) as $r) {
+        if (!in_array($r['entry_id'], $entryIds, true)) continue;
+        $mine = (!empty($me['user']) && $r['by_user'] === $me['user']) || (!empty($me['device']) && $r['device'] === $me['device']);
+        $res[$r['entry_id']][] = ['id' => $r['id'], 'src' => $r['src'], 'name' => $r['name'], 'text' => $r['text'], 'at' => (int) $r['at'], 'mine' => $mine];
+    }
+    return $res;
+}
+function commentText($t): string {
+    $t = trim(preg_replace('/[\x00-\x08\x0b-\x1f]/u', '', mb_substr((string) $t, 0, 600)));
+    if ($t === '') fail('Bitte etwas schreiben.');
+    return $t;
+}
+// Neuer Kommentar: die Crew des Eintrags bekommt eine Mitteilung (außer wer selbst geschrieben hat)
+function commentPush(string $crew, string $entryId, string $who, string $text, string $skipUser = ''): void {
+    if (!function_exists('curl_init') || !function_exists('openssl_pkey_derive')) return;
+    // Höchstens eine Mitteilung je Eintrag und 10 Minuten
+    $k = substr("cm:$crew:$entryId", 0, 160);
+    $last = one('SELECT at FROM push_log WHERE k = ?', [$k]);
+    if ($last && (int) $last['at'] > now() - 10 * 60000) return;
+    q('DELETE FROM push_log WHERE k = ?', [$k]);
+    q('INSERT INTO push_log (k, at) VALUES (?, ?)', [$k, now()]);
+    $e = one("SELECT data FROM docs WHERE crew_id = ? AND coll = 'entries' AND id = ? AND deleted = 0", [$crew, $entryId]);
+    $title = $e ? (string) (json_decode($e['data'], true)['title'] ?? '') : '';
+    pushCrew($crew, 'friends', ['title' => '💬 ' . $who . ($title !== '' ? ' zu „' . mb_substr($title, 0, 40) . '“' : ''), 'body' => mb_substr($text, 0, 140),
+        'url' => './#/tagebuch', 'tag' => 'cmt-' . $entryId], $skipUser);
 }
 // Neuer Eintrag in der laufenden, sichtbaren Reise: Crews, die folgen, bekommen eine Mitteilung.
 // Höchstens eine je Gerät und 20 Minuten (mehrere Fotos hintereinander sollen nicht dauernd klingeln).
@@ -740,7 +774,7 @@ case 'share':
         if (!validId($trip)) fail('Ungültige Reise');
         $old = one('SELECT * FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]);
         if (empty($body['on'])) { q('DELETE FROM shares WHERE crew_id = ? AND trip_id = ?', [$crew, $trip]); out(['token' => null]); }
-        $opts = is_array($body['opts'] ?? null) ? json_encode(array_intersect_key($body['opts'], array_flip(['photos', 'texts', 'highlights', 'map', 'delay', 'greeting', 'sounds', 'likes'])), JSON_UNESCAPED_UNICODE) : ($old['opts'] ?? null);
+        $opts = is_array($body['opts'] ?? null) ? json_encode(array_intersect_key($body['opts'], array_flip(['photos', 'texts', 'highlights', 'map', 'delay', 'greeting', 'sounds', 'likes', 'comments'])), JSON_UNESCAPED_UNICODE) : ($old['opts'] ?? null);
         if ($old && empty($body['renew'])) {
             q('UPDATE shares SET opts = ? WHERE token = ?', [$opts, $old['token']]);
             out(['token' => $old['token'], 'opts' => json_decode((string) $opts, true)]);
@@ -792,6 +826,7 @@ case 'blog':
 case 'blogphoto':
 case 'blogaudio':
 case 'blog-like':
+case 'blog-comment':
     header('X-Robots-Tag: noindex, nofollow');
     $token = (string) ($_GET['t'] ?? ($body['t'] ?? ''));
     $share = preg_match('/^[a-f0-9]{32}$/', $token) ? one('SELECT * FROM shares WHERE token = ?', [$token]) : null;
@@ -820,6 +855,25 @@ case 'blog-like':
             'sounds' => !$opt('sounds') ? [] : array_values(array_filter(array_map(fn($x) => ['id' => $x['id'] ?? '', 'sec' => (int) ($x['sec'] ?? 0)], $e['sounds'] ?? []),
                 fn($x) => validId($x['id']))),
         ];
+    }
+    if ($action === 'blog-comment') {
+        if ($method !== 'POST') fail('Nur POST');
+        if (!$opt('comments')) fail('Kommentare sind für diesen Reiseblog ausgeschaltet.', 403);
+        $id = (string) ($body['id'] ?? ''); $dev = strtolower((string) ($body['d'] ?? ''));
+        if (!preg_match('/^[a-f0-9]{16,40}$/', $dev) || !in_array($id, array_column($entries, 'id'), true)) fail('Ungültiger Kommentar');
+        if (!empty($body['del'])) {
+            q('DELETE FROM comments WHERE id = ? AND of_crew = ? AND src = ? AND device = ?', [(string) $body['del'], $crew, 'blog', $dev]);
+            out(['ok' => true, 'comments' => commentsOf($crew, [$id], ['device' => $dev])[$id] ?? []]);
+        }
+        $name = trim(preg_replace('/[\x00-\x1f<>]/u', '', mb_substr((string) ($body['name'] ?? ''), 0, 40)));
+        if ($name === '') fail('Bitte deinen Namen angeben.');
+        $text = commentText($body['text'] ?? '');
+        // Gegen Unfug: höchstens 6 Kommentare je Gerät und Stunde, 300 je Reiseblog und Tag
+        if ((int) one('SELECT COUNT(*) AS n FROM comments WHERE device = ? AND at > ?', [$dev, now() - 3600000])['n'] >= 6) fail('Bitte etwas später noch einmal.', 429);
+        if ((int) one("SELECT COUNT(*) AS n FROM comments WHERE of_crew = ? AND src = 'blog' AND at > ?", [$crew, now() - 86400000])['n'] >= 300) fail('Bitte etwas später noch einmal.', 429);
+        q('INSERT INTO comments (id, of_crew, entry_id, src, device, name, text, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [newId(), $crew, $id, 'blog', $dev, $name, $text, now()]);
+        commentPush($crew, $id, $name . ' (Reiseblog)', $text);
+        out(['ok' => true, 'comments' => commentsOf($crew, [$id], ['device' => $dev])[$id] ?? []]);
     }
     if ($action === 'blog-like') {
         if ($method !== 'POST') fail('Nur POST');
@@ -878,6 +932,8 @@ case 'blog-like':
         'trip' => ['name' => $trip['name'] ?? '', 'start' => $trip['start'] ?? '', 'end' => $trip['end'] ?? '', 'color' => $trip['color'] ?? '#0F6670', 'ended' => !empty($trip['ended']), 'kind' => (string) ($trip['kind'] ?? '')],
         'entries' => $entries, 'tracks' => $tracks, 'at' => now(),
         // Herzen der Leser je Eintrag
+        'commentsOn' => (bool) $opt('comments'),
+        'comments' => (object) ($opt('comments') ? commentsOf($crew, array_column($entries, 'id'), ['device' => strtolower((string) ($_GET['d'] ?? ''))]) : []),
         'likes' => (object) array_column(array_map(fn($r) => [$r['entry_id'], (int) $r['n']],
             all('SELECT entry_id, COUNT(*) AS n FROM blog_likes WHERE token = ? GROUP BY entry_id', [$token])), 1, 0),
     ]);
@@ -905,7 +961,19 @@ case 'blog-likes':
         if (!in_array($r['name'], $x['names'], true)) $x['names'][] = $r['name'];
         unset($x);
     }
-    out(['likes' => (object) $res, 'crews' => (object) $cr]);
+    $ids = array_column(all("SELECT id FROM docs WHERE crew_id = ? AND coll = 'entries' AND deleted = 0", [$crew]), 'id');
+    out(['likes' => (object) $res, 'crews' => (object) $cr, 'comments' => (object) commentsOf($crew, $ids, ['user' => $u['id']])]);
+
+case 'comment':
+    // Eigene Crew: öffentlich antworten oder einen Kommentar zu einem eigenen Eintrag löschen
+    $u = requireUser();
+    $crew = requireCrew($u, $body['crew'] ?? '');
+    $id = (string) ($body['id'] ?? '');
+    if (!validId($id) || !one("SELECT id FROM docs WHERE crew_id = ? AND coll = 'entries' AND id = ? AND deleted = 0", [$crew, $id])) fail('Diesen Eintrag gibt es nicht.', 404);
+    if (!empty($body['del'])) q('DELETE FROM comments WHERE id = ? AND of_crew = ?', [(string) $body['del'], $crew]);
+    else q('INSERT INTO comments (id, of_crew, entry_id, src, by_crew, by_user, name, text, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [newId(), $crew, $id, 'own', $crew, $u['id'], crewName($crew) . ' (' . $u['name'] . ')', commentText($body['text'] ?? ''), now()]);
+    out(['ok' => true, 'comments' => commentsOf($crew, [$id], ['user' => $u['id']])[$id] ?? []]);
 
 /* ----- Wie viel Platz belegt was auf dem Server? ----- */
 
@@ -1175,6 +1243,7 @@ case 'follow-feed':
 case 'follow-photo':
 case 'follow-audio':
 case 'follow-like':
+case 'follow-comment':
     $u = requireUser();
     $arg = fn($k) => (string) ($method === 'POST' ? ($body[$k] ?? '') : ($_GET[$k] ?? ''));
     $crew = requireCrew($u, $arg('crew'));
@@ -1218,6 +1287,19 @@ case 'follow-like':
         readfile($path);
         exit;
     }
+    if ($action === 'follow-comment') {
+        if ($method !== 'POST') fail('Nur POST');
+        $id = $arg('id');
+        if (!in_array($id, array_column($entries, 'id'), true)) fail('Diesen Eintrag gibt es nicht (mehr).', 404);
+        if (!empty($body['del'])) q('DELETE FROM comments WHERE id = ? AND of_crew = ? AND by_user = ?', [(string) $body['del'], $of, $u['id']]);
+        else {
+            $text = commentText($body['text'] ?? '');
+            $who = crewName($crew) . ' (' . $u['name'] . ')';
+            q('INSERT INTO comments (id, of_crew, entry_id, src, by_crew, by_user, name, text, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [newId(), $of, $id, 'crew', $crew, $u['id'], $who, $text, now()]);
+            commentPush($of, $id, $who, $text);
+        }
+        out(['ok' => true, 'comments' => commentsOf($of, [$id], ['user' => $u['id']])[$id] ?? []]);
+    }
     if ($action === 'follow-like') {
         if ($method !== 'POST') fail('Nur POST');
         $id = $arg('id');
@@ -1232,7 +1314,8 @@ case 'follow-like':
         $likes[$r['entry_id']] = ($likes[$r['entry_id']] ?? 0) + 1;
         if ($r['by_user'] === $u['id']) $mine[] = $r['entry_id'];
     }
-    foreach ($entries as &$e) { $e['likes'] = $likes[$e['id']] ?? 0; $e['liked'] = in_array($e['id'], $mine, true); }
+    $cm = commentsOf($of, array_column($entries, 'id'), ['user' => $u['id']]);
+    foreach ($entries as &$e) { $e['likes'] = $likes[$e['id']] ?? 0; $e['liked'] = in_array($e['id'], $mine, true); $e['comments'] = $cm[$e['id']] ?? []; }
     unset($e);
     $tracks = [];
     foreach (all("SELECT data FROM docs WHERE crew_id = ? AND coll = 'tracks' AND deleted = 0", [$of]) as $r) {
@@ -1387,6 +1470,7 @@ case 'crew-delete':
     q('DELETE FROM follows WHERE crew_id = ? OR follower_crew = ?', [$id, $id]);
     q('DELETE FROM livepos WHERE crew_id = ?', [$id]);
     q('DELETE FROM crew_likes WHERE of_crew = ? OR by_crew = ?', [$id, $id]);
+    q('DELETE FROM comments WHERE of_crew = ?', [$id]);
     q('DELETE FROM crews WHERE id = ?', [$id]);
     $dir = photoDir($id);
     if (is_dir($dir)) { array_map('unlink', array_merge(glob("$dir/*.jpg") ?: [], glob("$dir/*.pdf") ?: [])); @rmdir($dir); }
