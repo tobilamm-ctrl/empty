@@ -37,7 +37,28 @@ main { flex: 1; position: relative; min-height: 0; }
 .kachel svg { width: 100%; height: 6.5rem; }
 .kachel img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: .5rem; background: #000; display: block; }
 .gespiegelt .kachel img { transform: scaleX(-1); }
-.kachel img.sw { filter: grayscale(1) contrast(1.05); }
+.kachel img.f-sw { filter: grayscale(1) contrast(1.05); }
+.kachel img.f-vintage { filter: sepia(.65) saturate(.8) contrast(.9) brightness(1.04); }
+.kachel img.f-weich { filter: brightness(1.18) contrast(.82) saturate(1.05); }
+.kacheln.filter { grid-template-columns: repeat(var(--spalten, 2), minmax(0, 1fr)); }
+/* QR-Codes zum Herunterladen */
+.qr { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.qr figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .35rem; background: var(--flaeche); border: 1px solid var(--linie); border-radius: .8rem; padding: .7rem .8rem .6rem; }
+.qr img { width: 7.5rem; height: 7.5rem; background: #fff; border-radius: .4rem; padding: .3rem; }
+.qr figcaption { font-size: .72rem; color: var(--leise); text-align: center; max-width: 9rem; line-height: 1.35; }
+.qr figcaption b { color: var(--tinte); display: block; font-size: .8rem; }
+/* Gästebuch */
+.gb { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2rem; min-height: 0; }
+.gb-spalte { display: flex; flex-direction: column; gap: .6rem; min-width: 0; min-height: 0; }
+.gb input[type=text], .gb textarea { font: inherit; font-size: .95rem; color: var(--tinte); background: var(--flaeche); border: 1.5px solid var(--linie); border-radius: .6rem; padding: .6rem .7rem; width: 100%; box-sizing: border-box; }
+.gb textarea { resize: none; height: 4.6rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; overflow-y: auto; max-height: 13rem; align-content: flex-start; }
+.chip { border: 1.5px solid var(--linie); background: var(--flaeche); border-radius: 99px; padding: .4rem .8rem; font-size: .85rem; }
+.chip.an { background: var(--akzent); color: var(--akzent-tinte); border-color: var(--akzent); }
+.chip.tisch { font-size: .75rem; padding: .3rem .7rem; color: var(--leise); }
+.chip.tisch.an { color: var(--akzent-tinte); }
+.unterschrift { background: #fbf8f1; border-radius: .6rem; width: 100%; aspect-ratio: 5 / 2; touch-action: none; display: block; }
+.zeile { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 
 .zahl { font-family: var(--kopf); font-size: 7rem; line-height: 1; color: var(--akzent); min-height: 1em; font-variant-numeric: tabular-nums; }
 .zwei { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4rem; align-items: center; }
@@ -98,10 +119,9 @@ main { flex: 1; position: relative; min-height: 0; }
 
   <section class="ansicht" id="a-filter" hidden>
     <button class="zurueck" data-aktion="zurueck">← Zurück</button>
-    <h2>Farbe oder Schwarzweiß?</h2>
-    <div class="kacheln">
-      <button class="kachel" data-aktion="filter" data-wert="farbe"><img id="vorFarbe" alt="Livebild in Farbe"><span class="t">Farbe</span></button>
-      <button class="kachel" data-aktion="filter" data-wert="sw"><img id="vorSw" class="sw" alt="Livebild in Schwarzweiß"><span class="t">Schwarzweiß</span></button>
+    <h2 id="filterTitel">Farbe oder Schwarzweiß?</h2>
+    <div class="kacheln filter" id="filterKacheln">
+      <!-- Kacheln je angebotenem Filter, siehe zeichnen() -->
     </div>
   </section>
 
@@ -119,14 +139,35 @@ main { flex: 1; position: relative; min-height: 0; }
         <h2>Gefällt’s euch?</h2>
         <button class="btn btn-haupt" data-aktion="weiter">Weiter</button>
         <button class="btn btn-rand" data-aktion="nochmal" id="nochmal">Nochmal</button>
+        <button class="btn btn-rand" data-aktion="gaestebuch" id="gbKnopf">Ins Gästebuch</button>
         <label class="haken"><input type="checkbox" id="inDiashow">In der Diashow zeigen</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="ansicht" id="a-gaestebuch" hidden>
+    <h2>Ins Gästebuch</h2>
+    <div class="gb">
+      <div class="gb-spalte">
+        <div id="gbMitListe">
+          <input type="text" id="gbSuche" placeholder="Wer ist auf dem Foto? Namen suchen …" autocomplete="off" aria-label="Namen suchen">
+          <div class="chips" id="gbTische" style="margin-top:.5rem;max-height:none"></div>
+          <div class="chips" id="gbNamen" style="margin-top:.5rem"></div>
+        </div>
+        <input type="text" id="gbFrei" placeholder="Eure Namen" maxlength="200" autocomplete="off" aria-label="Eure Namen">
+      </div>
+      <div class="gb-spalte">
+        <textarea id="gbGruss" maxlength="300" placeholder="Euer Gruß ans Brautpaar" aria-label="Euer Gruß"></textarea>
+        <canvas class="unterschrift" id="gbUnterschrift" width="800" height="320" aria-label="Unterschrift mit dem Finger"></canvas>
+        <div class="zeile"><span class="klein" style="flex:1">Mit dem Finger unterschreiben</span><button class="btn btn-rand" id="gbLoeschen" style="font-size:.8rem;padding:.4rem .8rem">Löschen</button></div>
+        <div class="zeile"><button class="btn btn-haupt" id="gbSpeichern" style="flex:1">Speichern</button><button class="btn btn-rand" data-aktion="gaestebuchAbbrechen">Abbrechen</button></div>
       </div>
     </div>
   </section>
 
   <section class="ansicht" id="a-druck" hidden>
     <div class="zwei">
-      <img class="vorschau" id="vorschau2" alt="Euer Foto">
+      <div class="spalte" style="align-items:center"><img class="vorschau" id="vorschau2" alt="Euer Foto"><div class="qr qr-platz"></div></div>
       <div class="spalte">
         <h2>Wie viele Abzüge?</h2>
         <div class="zaehler">
@@ -146,12 +187,15 @@ main { flex: 1; position: relative; min-height: 0; }
     <h2>Wird gedruckt …</h2>
     <ul class="auftraege" id="auftraege"></ul>
     <p class="klein">Holt eure Abzüge gleich unten am Ausgabefach ab.</p>
+    <div class="qr qr-platz" style="justify-content:flex-start"></div>
     <button class="btn btn-haupt" data-aktion="fertig" style="align-self:flex-start">Fertig</button>
   </section>
 
   <section class="ansicht mitte" id="a-danke" hidden>
     <h2 style="font-size:4.5rem;color:var(--akzent)" id="dankeTitel">Danke!</h2>
     <p class="leise" id="dankeText">Viel Spaß noch beim Feiern.</p>
+    <div class="qr qr-platz"></div>
+    <button class="btn btn-haupt" data-aktion="fertig" id="dankeFertig" hidden>Fertig</button>
   </section>
 
   <section class="ansicht mitte" id="a-pause" hidden>
@@ -179,7 +223,8 @@ main { flex: 1; position: relative; min-height: 0; }
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'druck', 'drucken', 'danke', 'stoerung', 'pause'];
+  const ANSICHTEN = ['start', 'modus', 'filter', 'aufnahme', 'vorschau', 'gaestebuch', 'druck', 'drucken', 'danke', 'stoerung', 'pause'];
+  const FILTERNAME = { farbe: 'Farbe', sw: 'Schwarzweiß', vintage: 'Vintage', weich: 'Hell & weich' };
   let z = null, vorschauTimer = null, letzteZahl = null;
 
   document.addEventListener('click', (e) => {
@@ -198,20 +243,87 @@ main { flex: 1; position: relative; min-height: 0; }
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => $('mono').addEventListener(ev, () => clearTimeout(druck)));
   $('mono').addEventListener('contextmenu', (e) => e.preventDefault());
 
-  // Livebild-Vorschau in den Filter-Kacheln: ein Standbild alle 0,4 s für beide Kacheln
+  // Livebild-Vorschau in den Filter-Kacheln: ein Standbild alle 0,4 s für alle Kacheln (Filter per CSS angenähert)
+  let letzteFilter = '';
+  function filterKacheln(liste) {
+    const k = liste.join(); if (k === letzteFilter) return; letzteFilter = k;
+    $('filterKacheln').style.setProperty('--spalten', liste.length > 2 ? Math.min(liste.length, 4) : 2);
+    $('filterKacheln').innerHTML = liste.map((f) => `<button class="kachel" data-aktion="filter" data-wert="${f}"><img class="f-${f}" alt="Livebild: ${FILTERNAME[f]}"><span class="t">${FILTERNAME[f]}</span></button>`).join('');
+  }
+  let blobAlt = '';
   function vorschauStarten() {
     if (vorschauTimer) return;
     const holen = () => fetch('/live.jpg', { cache: 'no-store' }).then((r) => r.ok ? r.blob() : null).then((b) => {
-      if (!b) return; const u = URL.createObjectURL(b); const alt = $('vorFarbe').src;
-      $('vorFarbe').src = u; $('vorSw').src = u; if (alt.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(alt), 1000);
+      if (!b) return; const u = URL.createObjectURL(b);
+      document.querySelectorAll('#filterKacheln img').forEach((img) => { img.src = u; });
+      if (blobAlt) { const alt = blobAlt; setTimeout(() => URL.revokeObjectURL(alt), 1000); } blobAlt = u;
     }).catch(() => {});
     holen(); vorschauTimer = setInterval(holen, 400);
   }
   function vorschauStoppen() { clearInterval(vorschauTimer); vorschauTimer = null; }
 
+  // ---------- Gästebuch ----------
+  let gaeste = [], auswahl = new Set(), tischFilter = '', zeichnet = false, unterschrieben = false;
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function gaestebuchOeffnen() {
+    auswahl = new Set(); tischFilter = ''; $('gbSuche').value = ''; $('gbFrei').value = ''; $('gbGruss').value = '';
+    unterschriftLeeren();
+    fetch('/api/gaeste', { cache: 'no-store' }).then((r) => r.json()).then((l) => { gaeste = l; gaesteZeigen(); }).catch(() => { gaeste = []; gaesteZeigen(); });
+  }
+  function gaesteZeigen() {
+    $('gbMitListe').hidden = !gaeste.length;
+    $('gbFrei').placeholder = gaeste.length ? 'Weitere Namen (nicht in der Liste)' : 'Eure Namen';
+    const tische = [...new Set(gaeste.map((g) => g.tisch).filter(Boolean))];
+    $('gbTische').innerHTML = tische.length > 1 ? [''].concat(tische).map((t) => `<button class="chip tisch${t === tischFilter ? ' an' : ''}" data-tisch="${esc(t)}">${t ? esc(t) : 'Alle'}</button>`).join('') : '';
+    const such = $('gbSuche').value.trim().toLowerCase();
+    const liste = gaeste.filter((g) => (!tischFilter || g.tisch === tischFilter) && (!such || g.name.toLowerCase().includes(such)));
+    // Ausgewählte immer oben, damit man sie sieht
+    liste.sort((a, b) => (auswahl.has(b.id) - auswahl.has(a.id)) || a.name.localeCompare(b.name, 'de'));
+    $('gbNamen').innerHTML = liste.map((g) => `<button class="chip${auswahl.has(g.id) ? ' an' : ''}" data-gast="${esc(g.id)}">${esc(g.name)}</button>`).join('') || '<span class="klein">Kein Name gefunden.</span>';
+  }
+  $('gbSuche').addEventListener('input', () => { gaesteZeigen(); Fotobox.aktion('aktiv'); });
+  ['gbFrei', 'gbGruss'].forEach((id) => $(id).addEventListener('input', () => Fotobox.aktion('aktiv')));
+  $('gbTische').addEventListener('click', (e) => { const b = e.target.closest('[data-tisch]'); if (b) { tischFilter = b.dataset.tisch; gaesteZeigen(); } });
+  $('gbNamen').addEventListener('click', (e) => { const b = e.target.closest('[data-gast]'); if (!b) return; const id = b.dataset.gast; if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id); gaesteZeigen(); });
+  const leinwand = $('gbUnterschrift'), lctx = leinwand.getContext('2d');
+  function unterschriftLeeren() { lctx.clearRect(0, 0, leinwand.width, leinwand.height); unterschrieben = false; }
+  const punkt = (e) => { const r = leinwand.getBoundingClientRect(); return [(e.clientX - r.left) * leinwand.width / r.width, (e.clientY - r.top) * leinwand.height / r.height]; };
+  leinwand.addEventListener('pointerdown', (e) => { zeichnet = true; leinwand.setPointerCapture(e.pointerId); const [x, y] = punkt(e); lctx.beginPath(); lctx.moveTo(x, y); });
+  leinwand.addEventListener('pointermove', (e) => {
+    if (!zeichnet) return; const [x, y] = punkt(e);
+    lctx.lineTo(x, y); lctx.strokeStyle = '#1d1a16'; lctx.lineWidth = 5; lctx.lineCap = 'round'; lctx.lineJoin = 'round'; lctx.stroke(); unterschrieben = true;
+  });
+  ['pointerup', 'pointercancel'].forEach((ev) => leinwand.addEventListener(ev, () => { zeichnet = false; }));
+  $('gbLoeschen').onclick = unterschriftLeeren;
+  $('gbSpeichern').onclick = () => Fotobox.aktion('gaestebuchSpeichern', {
+    gaeste: [...auswahl], namenFrei: $('gbFrei').value.trim(), gruss: $('gbGruss').value.trim(),
+    unterschrift: unterschrieben ? leinwand.toDataURL('image/png') : null,
+  });
+
+  // ---------- QR-Codes ----------
+  let letzteQr = '';
+  function qrZeigen(qr) {
+    const k = JSON.stringify(qr); if (k === letzteQr) return; letzteQr = k;
+    const bild = (t) => `/api/qr?t=${encodeURIComponent(t)}`;
+    const html = !qr ? '' : (qr.wlan ? `<figure><img src="${bild(qr.wlan)}" alt="QR-Code für das WLAN"><figcaption><b>1. WLAN verbinden</b>${esc(qr.wlanName)}</figcaption></figure>` : '')
+      + `<figure><img src="${bild(qr.foto)}" alt="QR-Code für euer Foto"><figcaption><b>${qr.wlan ? '2. ' : ''}Foto aufs Handy</b>Mit der Handy-Kamera scannen</figcaption></figure>`;
+    document.querySelectorAll('.qr-platz').forEach((d) => { d.innerHTML = html; });
+  }
+
+  let vorherAnsicht = '';
   function zeichnen(neu) {
     z = neu;
     const e = z.einstellungen;
+    Fotobox.toeneAusZustand(z, 'ipad');
+    if (z.ansicht === 'gaestebuch' && vorherAnsicht !== 'gaestebuch') gaestebuchOeffnen();
+    vorherAnsicht = z.ansicht;
+    filterKacheln(e.filter);
+    $('filterTitel').textContent = e.filter.length === 2 ? `${FILTERNAME[e.filter[0]]} oder ${FILTERNAME[e.filter[1]]}?` : 'Welcher Look?';
+    qrZeigen(z.qr);
+    $('dankeFertig').hidden = !z.qr;
+    $('gbKnopf').hidden = !e.gaestebuchAn;
+    $('gbKnopf').disabled = z.imGaestebuch;
+    $('gbKnopf').textContent = z.imGaestebuch ? '✓ Im Gästebuch' : 'Ins Gästebuch';
     ANSICHTEN.forEach((a) => { $('a-' + a).hidden = a !== z.ansicht; });
     $('namen').textContent = e.namen; $('datum').textContent = e.datum;
     document.body.classList.toggle('gespiegelt', e.spiegeln);
@@ -221,7 +333,7 @@ main { flex: 1; position: relative; min-height: 0; }
     const teile = e.namen.split(/\s*(?:&|und|\+)\s*/i).filter(Boolean);
     $('mono').textContent = teile.length >= 2 ? `${teile[0][0]}&${teile[1][0]}` : e.namen.slice(0, 2);
 
-    const gesamt = 1 + (e.streifen ? 1 : 0) + (e.schwarzweiss ? 1 : 0);
+    const gesamt = 1 + (e.streifen ? 1 : 0) + (e.filter.length > 1 ? 1 : 0);
     $('schritt').textContent = z.ansicht === 'modus' ? `Schritt 1 von ${gesamt}`
       : z.ansicht === 'filter' ? `Schritt ${e.streifen ? 2 : 1} von ${gesamt}`
       : ['druck', 'drucken'].includes(z.ansicht) ? `Schritt ${gesamt} von ${gesamt}` : '';

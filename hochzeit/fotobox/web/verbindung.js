@@ -1,6 +1,7 @@
 /*
  * Verbindung zum Fotobox-Server (WebSocket mit automatischem Neuaufbau), Gestaltung anwenden, Bluetooth-Knopf.
  *   Fotobox.verbinden(beiZustand)   Fotobox.aktion(name, daten)   Fotobox.admin(pin, aktion, daten) → Promise
+ *   Fotobox.toeneAusZustand(z, 'buehne'|'ipad')  Countdown-Piep und Auslösegeräusch je nach Einstellung „Töne“
  *   Fotobox.knopfAktivieren()       Tasten aus config.json („knopf.tasten“) und angelernte Tasten lösen den Countdown aus;
  *                                   im Lernmodus (Service → „Knopf anlernen“) wird der nächste Tastendruck gespeichert
  */
@@ -49,7 +50,44 @@
     });
   }
 
+  // Töne ohne Dateien (WebAudio): Piep je Countdown-Zahl, Auslösegeräusch beim Blitz.
+  // Der Browser erlaubt Ton erst nach einer Berührung; am großen Bildschirm startet Edge mit passender Einstellung.
+  let audio = null;
+  const audioBereit = () => {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { audio = null; }
+    return audio;
+  };
+  ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, audioBereit, { capture: true, passive: true }));
+  function ton(art, lautstaerke) {
+    const a = audioBereit(); if (!a || !lautstaerke) return;
+    const v = Math.max(0, Math.min(1, lautstaerke / 100)) * 0.5, t = a.currentTime, g = a.createGain();
+    g.connect(a.destination);
+    if (art === 'ausloeser') { // kurzes gefiltertes Rauschen wie ein Verschluss
+      const len = Math.floor(a.sampleRate * 0.18), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+      const q = a.createBufferSource(), f = a.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.8;
+      q.buffer = buf; q.connect(f); f.connect(g); g.gain.value = v * 1.6; q.start(t);
+      return;
+    }
+    const o = a.createOscillator();
+    o.type = 'sine'; o.frequency.value = art === 'letzter' ? 1320 : 880;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g); o.start(t); o.stop(t + 0.13);
+  }
+  // Aus zwei aufeinanderfolgenden Zuständen die passenden Töne ableiten; ort: 'buehne' oder 'ipad'
+  let vorher = null;
+  function toeneAusZustand(z, ort) {
+    const e = z.einstellungen, an = e.toene === 'beide' || e.toene === ort;
+    if (an && vorher) {
+      if (z.countdown && z.countdown !== vorher.countdown) ton(z.countdown === 1 ? 'letzter' : 'piep', e.lautstaerke);
+      if (z.blitz !== vorher.blitz) ton('ausloeser', e.lautstaerke);
+    }
+    vorher = { countdown: z.countdown, blitz: z.blitz };
+  }
+
   window.Fotobox = {
+    toeneAusZustand,
     verbinden(f) { beiZustand = f; aufbauen(500); },
     aktion(name, daten) { senden({ typ: 'aktion', aktion: name, daten }); },
     admin(pin, aktion, daten) { return new Promise((ok) => { antworten.push(ok); senden({ typ: 'admin', pin, aktion, daten }); }); },

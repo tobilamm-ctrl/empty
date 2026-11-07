@@ -1,6 +1,6 @@
 /*
  * Import aus dem Sitzplantool: Datei „…sitzplan.json“ (Datei → Speichern) → Gäste mit Tisch und Gestaltung.
- * sitzplanLesen(text) → { namen, datum, ort, farbwelt, akzent, schriftstil, gaeste: [{ id, vorname, nachname, name, tisch }],
+ * sitzplanLesen(text) → { namen, datum, ort, farbwelt, akzent, schriftstil, gaeste: [{ id, vorname, nachname, name, tisch, strasse, plz, ort }],
  *                         tische: [name], schriften: [{ name, endung, daten: Buffer }] }
  */
 'use strict';
@@ -21,7 +21,10 @@ function sitzplanLesen(text) {
   (Array.isArray(p.items) ? p.items : []).forEach((it) => { if (it && it.id) tische.set(it.id, it.name || ''); });
   const gaeste = p.guests.filter((g) => g && (g.first || g.last)).map((g) => {
     const vorname = String(g.first || '').trim(), nachname = String(g.last || '').trim();
-    return { id: g.id, vorname, nachname, name: [vorname, nachname].filter(Boolean).join(' '), tisch: (g.seat && tische.get(g.seat.item)) || '' };
+    return {
+      id: g.id, vorname, nachname, name: [vorname, nachname].filter(Boolean).join(' '), tisch: (g.seat && tische.get(g.seat.item)) || '',
+      strasse: String(g.street || ''), plz: String(g.zip || ''), ort: String(g.city || ''), // für die Dankeskarten
+    };
   });
   const schriften = [];
   const assets = p.assets || {};

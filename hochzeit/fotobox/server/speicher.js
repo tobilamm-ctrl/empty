@@ -1,7 +1,7 @@
 /*
  * Speicher im Datenordner:
  *   einstellungen.json, fotos.json, gaeste.json, drucker.json (Papierstand), schriften/ (aus dem Import),
- *   fotos/<id>/aufnahme-1.jpg … und druck.jpg
+ *   fotos/<id>/aufnahme-1.jpg …, druck.jpg und ggf. unterschrift.png (Gästebuch), eigene/ (eigene Fotos für die Diashow)
  * Jedes Foto wird sofort gespeichert (auch verworfene – „behalten: false“) und, wenn eingestellt,
  * zusätzlich in den Sicherungsordner (z. B. USB-Stick) kopiert.
  */
@@ -9,6 +9,7 @@
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
+const crypto = require('crypto');
 const { zip } = require('./zip');
 
 const STANDARD = {
@@ -43,7 +44,27 @@ const STANDARD = {
   diashowVerzoegerungSek: 0,
   diashowSek: 5,
   diashowFreigabe: false,
+  eigeneAlle: 3,
   spiegeln: true,
+  // Filter (Farbe gibt es immer)
+  filterVintage: true,
+  filterWeich: false,
+  // Töne, Posen, QR-Code, Gästebuch
+  toene: 'buehne',
+  lautstaerke: 70,
+  posenAn: true,
+  posenListe: [
+    'Alle machen ein Herz mit den Händen', 'Tut so, als hättet ihr den Brautstrauß gefangen', 'Großes Staunen!',
+    'Alle schauen nach links', 'Gruppen-Umarmung', 'Euer bestes Tanz-Foto', 'Zeigt eure schönsten Zähne',
+    'Alle zeigen auf die Person mit der besten Frisur', 'Jubel wie beim Torschuss', 'Ganz vornehm, kleiner Finger hoch',
+    'Flüstert euch ein Geheimnis zu', 'Alle machen die Augen zu', 'Superhelden-Pose', 'Tut so, als wäre es eiskalt',
+    'Prost auf das Brautpaar!',
+  ].join('\n'),
+  qrAn: true,
+  wlanName: '',
+  wlanPasswort: '',
+  adresse: '',
+  gaestebuchAn: true,
   // Texte
   textStartTitel: 'Lächeln, bitte!',
   textStart: 'Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.',
@@ -58,7 +79,7 @@ const STANDARD = {
 // Erlaubte Bereiche für Zahlen (Werte außerhalb werden auf den Rand gesetzt)
 const GRENZEN = {
   countdownSek: [1, 10], leerlaufSek: [15, 600], maxNochmal: [0, 5], maxAbzuege: [1, 10], maxAbzuegeGesamt: [0, 100000],
-  druckVersatzX: [-5, 5], druckVersatzY: [-5, 5], diashowVerzoegerungSek: [0, 3600], diashowSek: [2, 60],
+  druckVersatzX: [-5, 5], druckVersatzY: [-5, 5], diashowVerzoegerungSek: [0, 3600], diashowSek: [2, 60], eigeneAlle: [1, 20], lautstaerke: [0, 100],
 };
 const NACHKOMMA = { druckVersatzX: 10, druckVersatzY: 10 };
 const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -76,9 +97,11 @@ function bereinigen(k, v) {
     if (!Array.isArray(v)) return undefined;
     return k === 'druckerAus' ? [...new Set(v.map(Number).filter((n) => Number.isInteger(n) && n >= 0))] : [...new Set(v.map(String))].slice(0, 10);
   }
-  const t = String(v == null ? '' : v).slice(0, 300);
+  const t = String(v == null ? '' : v).slice(0, k === 'posenListe' ? 3000 : 300);
   if (k === 'oeffnungAb' || k === 'oeffnungBis') return t === '' || UHRZEIT.test(t) ? t : undefined;
   if (k === 'pin') return t === '' || /^\d{4,8}$/.test(t) ? t : undefined;
+  if (k === 'toene') return ['aus', 'buehne', 'ipad', 'beide'].includes(t) ? t : undefined;
+  if (k === 'adresse') return t === '' || /^https?:\/\/[^\s/]+$/.test(t.replace(/\/$/, '')) ? t.replace(/\/$/, '') : undefined;
   return t;
 }
 
@@ -92,6 +115,7 @@ class Speicher {
     this.log = log;
     fs.mkdirSync(path.join(ordner, 'fotos'), { recursive: true });
     fs.mkdirSync(path.join(ordner, 'schriften'), { recursive: true });
+    fs.mkdirSync(path.join(ordner, 'eigene'), { recursive: true });
     this._einst = Object.assign({}, STANDARD, this._lesen('einstellungen.json', {}));
     this._fotos = this._lesen('fotos.json', []);
     this._gaeste = this._lesen('gaeste.json', []);
@@ -150,7 +174,8 @@ class Speicher {
     await fsp.mkdir(ordner, { recursive: true });
     await Promise.all(aufnahmen.map((b, i) => fsp.writeFile(path.join(ordner, `aufnahme-${i + 1}.jpg`), b)));
     await fsp.writeFile(path.join(ordner, 'druck.jpg'), druck);
-    const foto = { id, zeit: jetzt.toISOString(), modus, filter, behalten: false, inDiashow: true, ausgeblendet: false, abzuege: 0 };
+    const foto = { id, zeit: jetzt.toISOString(), modus, filter, behalten: false, inDiashow: true, ausgeblendet: false, abzuege: 0,
+      schluessel: crypto.randomBytes(6).toString('hex') }; // für den Download-Link per QR-Code
     this._fotos.push(foto);
     this._schreiben('fotos.json', this._fotos);
     this._sichern(id);
@@ -175,26 +200,114 @@ class Speicher {
     }
   }
 
-  // Fotos für die Diashow: behalten, nicht ausgeblendet, vom Gast freigegeben, Wartezeit abgelaufen
+  // Fotos für die Diashow: behalten, nicht ausgeblendet, vom Gast freigegeben, Wartezeit abgelaufen.
+  // bilder: Adressen in Abspielreihenfolge, nach jedem n-ten Fotobox-Foto ein eigenes Foto
   diashow(jetzt = Date.now()) {
     const warten = (this._einst.diashowVerzoegerungSek || 0) * 1000, freigabe = this._einst.diashowFreigabe;
     const sichtbar = (f) => f.behalten && f.inDiashow && !f.ausgeblendet && (!freigabe || f.freigegeben);
+    const fotos = this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) >= warten).map((f) => f.id).reverse();
+    const eigene = this.eigene().map((d) => `/eigene/${encodeURIComponent(d)}`), alle = this._einst.eigeneAlle || 3;
+    const bilder = [];
+    if (!fotos.length) bilder.push(...eigene);
+    fotos.forEach((id, i) => {
+      bilder.push(`/fotos/${id}/druck.jpg`);
+      if (eigene.length && (i + 1) % alle === 0) bilder.push(eigene[((i + 1) / alle - 1) % eigene.length]);
+    });
+    return { fotos, bilder, gleich: this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) < warten).length };
+  }
+
+  // ---------- Eigene Fotos für die Diashow ----------
+  eigeneOrdner() { return path.join(this.ordner, 'eigene'); }
+  eigene() { try { return fs.readdirSync(this.eigeneOrdner()).filter((d) => /\.(jpe?g|png)$/i.test(d)).sort(); } catch (e) { return []; } }
+  eigenesSpeichern(daten, endung) {
+    const datei = `eigen-${zeitstempel(new Date())}-${crypto.randomBytes(3).toString('hex')}.${endung}`;
+    fs.writeFileSync(path.join(this.eigeneOrdner(), datei), daten);
+    return datei;
+  }
+  eigenesLoeschen(datei) { if (this.eigene().includes(datei)) fs.rmSync(path.join(this.eigeneOrdner(), datei)); }
+
+  // ---------- Gästebuch ----------
+  unterschriftDatei(id) { return path.join(this.fotoOrdner(id), 'unterschrift.png'); }
+  gaestebuchSpeichern(id, { gaeste, namenFrei, gruss, unterschrift }) {
+    const f = this.foto(id); if (!f) return null;
+    const bekannt = new Set(this._gaeste.map((g) => g.id));
+    if (unterschrift) fs.writeFileSync(this.unterschriftDatei(id), unterschrift);
+    return this.fotoAendern(id, {
+      gaestebuch: {
+        gaeste: [...new Set((Array.isArray(gaeste) ? gaeste : []).map(String))].filter((g) => bekannt.has(g)).slice(0, 40),
+        namenFrei: String(namenFrei || '').slice(0, 200), gruss: String(gruss || '').slice(0, 300),
+        unterschrift: !!unterschrift, zeit: new Date().toISOString(),
+      },
+    });
+  }
+  // Wer ist auf welchem Foto? (aus dem Gästebuch; nur behaltene Fotos)
+  gaesteNamen() { return new Map(this._gaeste.map((g) => [g.id, g])); }
+
+  // ---------- Statistik ----------
+  statistik() {
+    const fotos = this._fotos.filter((f) => f.behalten), g = this.gaesteNamen();
+    const proStunde = {}, filter = {}, genannt = {};
+    fotos.forEach((f) => {
+      const h = new Date(f.zeit).getHours(); proStunde[h] = (proStunde[h] || 0) + 1;
+      filter[f.filter || 'farbe'] = (filter[f.filter || 'farbe'] || 0) + 1;
+      ((f.gaestebuch && f.gaestebuch.gaeste) || []).forEach((id) => { genannt[id] = (genannt[id] || 0) + 1; });
+    });
+    const stunden = Object.keys(proStunde).map(Number).sort((a, b) => ((a + 12) % 24) - ((b + 12) % 24)); // Abend vor Nacht
+    const beliebt = stunden.reduce((m, h) => (m === null || proStunde[h] > proStunde[m] ? h : m), null);
     return {
-      fotos: this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) >= warten).map((f) => f.id).reverse(),
-      gleich: this._fotos.filter((f) => sichtbar(f) && jetzt - Date.parse(f.zeit) < warten).length,
+      fotos: fotos.length, verworfen: this._fotos.length - fotos.length,
+      einzel: fotos.filter((f) => f.modus !== 'streifen').length, streifen: fotos.filter((f) => f.modus === 'streifen').length,
+      abzuege: this._fotos.reduce((s, f) => s + (f.abzuege || 0), 0), filter,
+      proStunde: stunden.map((h) => ({ stunde: h, anzahl: proStunde[h] })), beliebtesteStunde: beliebt,
+      gaestebuch: fotos.filter((f) => f.gaestebuch).length,
+      top: Object.entries(genannt).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, n]) => ({ name: (g.get(id) || {}).name || '?', anzahl: n })),
+      gaesteGesamt: this._gaeste.length, gaesteOhneFoto: this._gaeste.filter((x) => !genannt[x.id]).length,
     };
   }
 
-  // ZIP mit allen behaltenen Fotos (Druckbild) und den einzelnen Aufnahmen
-  async exportZip() {
-    const eintraege = [];
+  // ---------- Dankeskarten: je Gast ein Foto-Vorschlag (neuestes Foto mit dem Gast, Einzelfoto bevorzugt) ----------
+  dankeskarten() {
+    const fotos = this._fotos.filter((f) => f.behalten && f.gaestebuch).slice().reverse();
+    return this._gaeste.map((x) => {
+      const mit = fotos.filter((f) => f.gaestebuch.gaeste.includes(x.id));
+      const foto = mit.find((f) => f.modus !== 'streifen') || mit[0] || null;
+      return { id: x.id, name: x.name, tisch: x.tisch || '', strasse: x.strasse || '', plz: x.plz || '', ort: x.ort || '', foto: foto ? foto.id : null, fotos: mit.length };
+    });
+  }
+  dankeskartenCsv() {
+    const z = (t) => `"${String(t).replace(/"/g, '""')}"`;
+    return '\ufeff' + [['Name', 'Tisch', 'Straße', 'PLZ', 'Ort', 'Foto', 'Fotos mit diesem Gast'].map(z).join(';')]
+      .concat(this.dankeskarten().map((d) => [d.name, d.tisch, d.strasse, d.plz, d.ort, d.foto ? `${d.foto}.jpg` : '', d.fotos].map(z).join(';'))).join('\r\n');
+  }
+
+  // ZIP mit allen behaltenen Fotos. sortierung: 'zeit' (Druckbilder + einzelne Aufnahmen),
+  // 'tisch' oder 'gast' (Ordner je Tisch bzw. Gast laut Gästebuch, Rest in „ohne Zuordnung“).
+  // Dazu immer gaestebuch.csv, die Unterschriften und dankeskarten.csv.
+  async exportZip(sortierung = 'zeit') {
+    const eintraege = [], g = this.gaesteNamen();
+    const ordnerName = (t) => String(t || '').replace(/[\\/:*?"<>|]/g, '').trim() || 'ohne Zuordnung';
+    const z = (t) => `"${String(t).replace(/"/g, '""')}"`;
+    const buch = [['Foto', 'Zeit', 'Gäste', 'Weitere Namen', 'Gruß', 'Unterschrift'].map(z).join(';')];
     for (const f of this._fotos.filter((x) => x.behalten)) {
       const zeit = new Date(f.zeit);
-      try { eintraege.push({ name: `druckbilder/${f.id}.jpg`, daten: await fsp.readFile(this.druckDatei(f.id)), zeit }); } catch (e) { /* fehlt */ }
-      for (const a of (await fsp.readdir(this.fotoOrdner(f.id)).catch(() => [])).filter((x) => x.startsWith('aufnahme'))) {
-        eintraege.push({ name: `aufnahmen/${f.id}_${a}`, daten: await fsp.readFile(path.join(this.fotoOrdner(f.id), a)), zeit });
+      let druck; try { druck = await fsp.readFile(this.druckDatei(f.id)); } catch (e) { continue; }
+      const gb = f.gaestebuch, leute = gb ? gb.gaeste.map((id) => g.get(id)).filter(Boolean) : [];
+      if (sortierung === 'tisch' || sortierung === 'gast') {
+        const gruppen = sortierung === 'tisch' ? [...new Set(leute.map((x) => x.tisch || 'ohne Tisch'))] : leute.map((x) => x.name);
+        (gruppen.length ? gruppen : ['ohne Zuordnung']).forEach((o) => eintraege.push({ name: `${sortierung === 'tisch' ? 'nach-tisch' : 'nach-gast'}/${ordnerName(o)}/${f.id}.jpg`, daten: druck, zeit }));
+      } else {
+        eintraege.push({ name: `druckbilder/${f.id}.jpg`, daten: druck, zeit });
+        for (const a of (await fsp.readdir(this.fotoOrdner(f.id)).catch(() => [])).filter((x) => x.startsWith('aufnahme'))) {
+          eintraege.push({ name: `aufnahmen/${f.id}_${a}`, daten: await fsp.readFile(path.join(this.fotoOrdner(f.id), a)), zeit });
+        }
+      }
+      if (gb) {
+        buch.push([`${f.id}.jpg`, zeit.toLocaleString('de-DE'), leute.map((x) => x.name).join(', '), gb.namenFrei, gb.gruss, gb.unterschrift ? `unterschriften/${f.id}.png` : ''].map(z).join(';'));
+        if (gb.unterschrift) { try { eintraege.push({ name: `gaestebuch/unterschriften/${f.id}.png`, daten: await fsp.readFile(this.unterschriftDatei(f.id)), zeit }); } catch (e) { /* fehlt */ } }
       }
     }
+    eintraege.push({ name: 'gaestebuch/gaestebuch.csv', daten: Buffer.from('\ufeff' + buch.join('\r\n'), 'utf8') });
+    if (this._gaeste.length) eintraege.push({ name: 'dankeskarten.csv', daten: Buffer.from(this.dankeskartenCsv(), 'utf8') });
     return zip(eintraege);
   }
 }

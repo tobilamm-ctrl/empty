@@ -4,6 +4,7 @@
  *   /buehne      großer Bildschirm (am Mini-PC im Vollbild)
  *   /service     Service und Admin (Handy), Aktionen mit PIN
  *   /simulator   iPad und großer Bildschirm nebeneinander, Knopf und Störungen zum Ausprobieren
+ *   /f/<id>?k=…  Download-Seite für den QR-Code (Handy der Gäste im Fotobox-WLAN)
  * Start: npm start   (Einstellungen in config.json, optional config.local.json für den eigenen PC)
  */
 'use strict';
@@ -21,6 +22,7 @@ const { kameraSimulator } = require('./kamera/simulator');
 const { kameraDigicamcontrol } = require('./kamera/digicamcontrol');
 const bild = require('./bild');
 const { gestaltung, FARBWELTEN, SCHRIFTSTILE } = require('./gestaltung');
+const qrcode = require('qrcode-generator');
 const { sitzplanLesen } = require('./import');
 
 const WURZEL = path.join(__dirname, '..');
@@ -95,6 +97,22 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
   const pinOk = (url) => url.searchParams.get('pin') === aktuellePin();
   const sicher = (basis, teil) => { const p = path.resolve(basis, '.' + path.sep + teil); return p.startsWith(basis + path.sep) ? p : null; };
 
+  // Download-Seite fürs Handy der Gäste (Link aus dem QR-Code). Nur mit dem richtigen Schlüssel.
+  function downloadSeite(res, foto, k) {
+    const e = speicher.einstellungen(), g = gestaltung(e).css;
+    const ok = foto && foto.behalten !== undefined && (!foto.schluessel || foto.schluessel === k);
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    res.writeHead(ok ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Euer Foto – ${esc(e.namen)}</title><link rel="stylesheet" href="/web/app.css">
+<style>:root{${Object.entries(g).map(([a, b]) => `${a}:${b}`).join(';')}} body{padding:24px 16px 40px;text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center}
+h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;border-radius:4px;box-shadow:0 20px 40px -20px #000} p{color:var(--leise);line-height:1.5;max-width:34ch}</style></head>
+<body><h1>${esc(e.namen)}</h1>${ok ? `<img src="/fotos/${foto.id}/druck.jpg" alt="Euer Foto aus der Fotobox">
+<a class="btn btn-haupt" href="/fotos/${foto.id}/druck.jpg?laden=1">Foto speichern</a>
+<p>Klappt der Knopf nicht: lange auf das Foto drücken und „In Fotos sichern“ wählen.</p>` : '<p>Dieses Foto gibt es nicht (mehr). Fragt bitte das Brautpaar.</p>'}
+<p>${esc(e.datum)}</p></body></html>`);
+  }
+
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fotobox');
     let p;
@@ -118,7 +136,21 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
       return kamera.livebild().then((b) => { res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' }); res.end(b); }, () => json(res, 503, { fehler: 'Kein Livebild' }));
     }
     let m = /^\/fotos\/([\w-]+)\/druck\.jpg$/.exec(p);
-    if (m && speicher.foto(m[1])) return datei(res, speicher.druckDatei(m[1]), { 'Cache-Control': 'max-age=3600' });
+    if (m && speicher.foto(m[1])) {
+      const laden = url.searchParams.get('laden') === '1';
+      return datei(res, speicher.druckDatei(m[1]), laden ? { 'Content-Disposition': `attachment; filename="fotobox-${m[1]}.jpg"` } : { 'Cache-Control': 'max-age=3600' });
+    }
+    m = /^\/fotos\/([\w-]+)\/unterschrift\.png$/.exec(p);
+    if (m && speicher.foto(m[1])) return datei(res, speicher.unterschriftDatei(m[1]));
+    m = /^\/eigene\/([\w.-]+)$/.exec(p);
+    if (m && speicher.eigene().includes(m[1])) return datei(res, path.join(speicher.eigeneOrdner(), m[1]), { 'Cache-Control': 'max-age=3600' });
+    m = /^\/f\/([\w-]+)$/.exec(p);
+    if (m) return downloadSeite(res, speicher.foto(m[1]), url.searchParams.get('k'));
+    if (p === '/api/qr') { // QR-Code als SVG für einen Text (Foto-Link oder WLAN-Zugang)
+      const t = (url.searchParams.get('t') || '').slice(0, 500);
+      try { const q = qrcode(0, 'M'); q.addData(t); q.make(); res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=3600' }); return res.end(q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })); } catch (e) { return json(res, 400, { fehler: 'Text zu lang für einen QR-Code' }); }
+    }
+    if (p === '/api/gaeste') return json(res, 200, speicher.gaeste().map((g) => ({ id: g.id, name: g.name, tisch: g.tisch }))); // fürs Gästebuch am iPad
     if (p === '/api/diashow') return json(res, 200, speicher.diashow());
     if (p === '/api/schriften') {
       const eigene = fs.readdirSync(speicher.schriftenOrdner()).filter((f) => /\.(woff2?|ttf|otf)$/i.test(f)).map((f) => ({ name: f.replace(/\.[^.]+$/, ''), datei: f }));
@@ -128,7 +160,9 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
       return speicher.platz().then((platz) => json(res, 200, {
         einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE, platz,
-        logo: !!speicher.logo(), knopfStandard: (konfig.knopf || {}).tasten || [],
+        logo: !!speicher.logo(), knopfStandard: (konfig.knopf || {}).tasten || [], layouts: bild.LAYOUTS || {}, filter: bild.FILTER || {},
+        eigene: speicher.eigene(), statistik: speicher.statistik(), dankeskarten: speicher.dankeskarten(),
+        gaesteListe: speicher.gaeste().map((g) => ({ id: g.id, name: g.name, tisch: g.tisch })), basisUrl: ablauf.basisUrl,
         abzuegeBisher: speicher.fotos().reduce((a, f) => a + (f.abzuege || 0), 0),
         fotos: speicher.fotos().filter((f) => f.behalten).reverse(), gaeste: speicher.gaeste().length,
         protokoll: protokoll.slice(-30).reverse(), simulation: { kamera: kamera.name === 'Simulator', drucker: simulation },
@@ -150,10 +184,29 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
       });
       return;
     }
+    if (p === '/api/eigene' && req.method === 'POST') {
+      if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
+      const teile = []; let groesse = 0;
+      req.on('data', (d) => { groesse += d.length; if (groesse <= 15e6) teile.push(d); });
+      req.on('end', () => {
+        const b = Buffer.concat(teile);
+        const png = b.slice(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])), jpg = b[0] === 0xff && b[1] === 0xd8;
+        if (groesse > 15e6 || !(png || jpg)) return json(res, 400, { fehler: 'Bitte JPG- oder PNG-Bilder bis 15 MB hochladen.' });
+        const d = speicher.eigenesSpeichern(b, png ? 'png' : 'jpg'); log('info', `Eigenes Foto für die Diashow: ${d}`);
+        ablauf.einstellungenGeaendert(); json(res, 200, { datei: d });
+      });
+      return;
+    }
+    if (p === '/api/dankeskarten.csv') {
+      if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="dankeskarten.csv"' });
+      return res.end(speicher.dankeskartenCsv());
+    }
     if (p === '/api/export.zip') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
-      return speicher.exportZip().then((b) => {
-        res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="fotobox-fotos.zip"' }); res.end(b);
+      const sortierung = ['zeit', 'tisch', 'gast'].includes(url.searchParams.get('sort')) ? url.searchParams.get('sort') : 'zeit';
+      return speicher.exportZip(sortierung).then((b) => {
+        res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="fotobox-fotos-${sortierung}.zip"` }); res.end(b);
       }, (e) => json(res, 500, { fehler: e.message }));
     }
     if (p === '/api/import' && req.method === 'POST') {
@@ -218,6 +271,7 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
         case 'knopfLernen': ablauf.knopfLernen(); log('info', 'Knopf anlernen: warte auf Tastendruck'); break;
         case 'knopfZuruecksetzen': speicher.einstellungenSetzen({ knopfGelernt: [] }); log('info', 'Angelernte Knopf-Tasten gelöscht'); break;
         case 'logoLoeschen': speicher.logoSetzen(null); log('info', 'Logo gelöscht'); break;
+        case 'eigeneLoeschen': speicher.eigenesLoeschen(String(d.datei || '')); ablauf.einstellungenGeaendert(); log('info', 'Eigenes Foto gelöscht'); break;
         case 'ausblenden': ablauf.fotoAusblenden(d.id, d.aus); break;
         case 'nachdrucken': ablauf.nachdrucken(d.id); log('info', `Nachdruck ${d.id}`); break;
         case 'zumStart': ablauf.zumStart(); break;
@@ -233,6 +287,7 @@ function starten(konfig = konfigLaden(), { leise = false } = {}) {
   return new Promise((ok) => server.listen(konfig.port, () => {
     const adressen = Object.values(os.networkInterfaces()).flat().filter((a) => a && a.family === 'IPv4' && !a.internal).map((a) => a.address);
     const port = server.address().port;
+    ablauf.basisUrl = `http://${adressen[0] || 'localhost'}:${port}`; // für den QR-Code; im Service überschreibbar
     log('info', `Fotobox läuft auf Port ${port} (Kamera: ${kamera.name}, Drucker: ${simulation ? 'Simulator' : 'Windows'})`);
     if (!leise) {
       console.log(`\n  Großer Bildschirm:  http://localhost:${port}/buehne`);

@@ -1,7 +1,7 @@
 /*
  * Ablauf der Fotobox (Zustandsautomat). Der Zustand liegt nur hier – iPad, großer Bildschirm und Service-Handy
  * zeigen ihn an und schicken Aktionen. Ansichten:
- *   start → modus → filter → aufnahme → vorschau → druck → drucken → danke → start
+ *   start → modus → filter → aufnahme → vorschau (↔ gaestebuch) → druck → drucken → danke → start
  *   stoerung (Kamera ausgefallen) → start
  *   pause (Pause-Modus oder außerhalb der Öffnungszeit; nur aus „start“ heraus, laufende Fotos werden fertig)
  *
@@ -15,7 +15,12 @@ const EventEmitter = require('events');
 const fs = require('fs');
 const path = require('path');
 
-const LEERLAUF_ANSICHTEN = ['modus', 'filter', 'vorschau', 'druck', 'drucken', 'stoerung'];
+const LEERLAUF_ANSICHTEN = ['modus', 'filter', 'vorschau', 'gaestebuch', 'druck', 'drucken', 'danke', 'stoerung'];
+const FILTER_ALLE = ['farbe', 'sw', 'vintage', 'weich'];
+
+// Welche Filter die Gäste wählen können (Farbe immer)
+const filterAngebot = (e) => FILTER_ALLE.filter((f) => f === 'farbe' || (f === 'sw' && e.schwarzweiss) || (f === 'vintage' && e.filterVintage) || (f === 'weich' && e.filterWeich));
+const knopfFilter = (e) => (filterAngebot(e).includes(e.knopfFilter) ? e.knopfFilter : 'farbe');
 const KNOPF_LERNEN_MS = 20000;
 
 // Pause-Modus und Öffnungszeit → Text für die Pause, oder null wenn geöffnet.
@@ -53,15 +58,16 @@ class Ablauf extends EventEmitter {
 
   _grundzustand() {
     return { ansicht: 'start', modus: 'einzel', filter: 'farbe', bild: null, countdown: null, hinweis: '', blitz: 0,
-      foto: null, nochmal: 0, inDiashow: true, anzahl: 1, leerlaufWarnung: null, stoerung: null, pauseText: '', ohneDruck: false };
+      foto: null, nochmal: 0, inDiashow: true, anzahl: 1, leerlaufWarnung: null, stoerung: null, pauseText: '', ohneDruck: false, imGaestebuch: false };
   }
   _melden() { this.emit('aenderung'); }
   _zeige(ansicht, mehr) {
     Object.assign(this.z, mehr || {}, { ansicht, leerlaufWarnung: null });
     this.letzteAktivitaet = Date.now();
     if (ansicht === 'danke') {
-      const s = this.sitzung;
-      setTimeout(() => { if (this.z.ansicht === 'danke' && this.sitzung === s) this._zeige('start', this._grundzustand()); }, this.zeiten.danke);
+      // Mit QR-Code bleibt „Danke“ stehen, bis jemand „Fertig“ tippt oder der Leerlauf greift
+      const s = this.sitzung, e = this.speicher.einstellungen();
+      if (!(e.qrAn && this.z.foto)) setTimeout(() => { if (this.z.ansicht === 'danke' && this.sitzung === s) this._zeige('start', this._grundzustand()); }, this.zeiten.danke);
     }
     this._melden();
   }
@@ -86,9 +92,9 @@ class Ablauf extends EventEmitter {
       case 'modus':
         if (a !== 'modus' || !['einzel', 'streifen'].includes(daten)) return;
         this.z.modus = daten;
-        return e.schwarzweiss ? this._zeige('filter') : this._aufnehmen('farbe');
+        return filterAngebot(e).length > 1 ? this._zeige('filter') : this._aufnehmen('farbe');
       case 'filter':
-        if (a === 'filter' && ['farbe', 'sw'].includes(daten)) this._aufnehmen(daten);
+        if (a === 'filter' && filterAngebot(e).includes(daten)) this._aufnehmen(daten);
         return;
       case 'zurueck':
         if (a === 'modus') this._zeige('start', this._grundzustand());
@@ -100,6 +106,20 @@ class Ablauf extends EventEmitter {
       case 'inDiashow':
         if (a === 'vorschau') { this.z.inDiashow = !!daten; this._melden(); }
         return;
+      case 'gaestebuch':
+        if (a === 'vorschau' && e.gaestebuchAn) this._zeige('gaestebuch');
+        return;
+      case 'gaestebuchAbbrechen':
+        if (a === 'gaestebuch') this._zeige('vorschau');
+        return;
+      case 'gaestebuchSpeichern': {
+        if (a !== 'gaestebuch' || !daten || !this.z.foto) return;
+        const m = typeof daten.unterschrift === 'string' && /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(daten.unterschrift);
+        const unterschrift = m && m[1].length < 2e6 ? Buffer.from(m[1], 'base64') : null;
+        this.speicher.gaestebuchSpeichern(this.z.foto.id, { gaeste: daten.gaeste, namenFrei: daten.namenFrei, gruss: daten.gruss, unterschrift });
+        this.log('info', `Gästebuch-Eintrag zu ${this.z.foto.id}`);
+        return this._zeige('vorschau', { imGaestebuch: true });
+      }
       case 'weiter':
         if (a !== 'vorschau') return;
         this._behalten();
@@ -116,6 +136,7 @@ class Ablauf extends EventEmitter {
         return;
       case 'ohneDruck': case 'fertig':
         if (a === 'druck' || a === 'drucken') this._zeige('danke');
+        else if (a === 'danke') this._zeige('start', this._grundzustand());
         return;
       case 'stoerungOk':
         if (a === 'stoerung') this._zeige('start', this._grundzustand());
@@ -155,7 +176,7 @@ class Ablauf extends EventEmitter {
     this.sitzung++;
     this.kamera.neueSzene();
     Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal });
-    if (e.streifen) this._zeige('modus'); else { this.z.modus = 'einzel'; e.schwarzweiss ? this._zeige('filter') : this._aufnehmen('farbe'); }
+    if (e.streifen) this._zeige('modus'); else { this.z.modus = 'einzel'; filterAngebot(e).length > 1 ? this._zeige('filter') : this._aufnehmen('farbe'); }
   }
 
   // Bluetooth-Knopf (oder Buzzer): startet den Countdown sofort, fehlende Auswahl kommt aus den Einstellungen
@@ -167,10 +188,10 @@ class Ablauf extends EventEmitter {
     if (a === 'start') {
       this.sitzung++; this.kamera.neueSzene();
       Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal, modus: e.streifen ? e.knopfModus : 'einzel' });
-      return this._aufnehmen(e.schwarzweiss ? e.knopfFilter : 'farbe');
+      return this._aufnehmen(knopfFilter(e));
     }
-    if (a === 'modus') { this.z.modus = e.knopfModus; return this._aufnehmen(e.schwarzweiss ? e.knopfFilter : 'farbe'); }
-    if (a === 'filter') return this._aufnehmen(e.knopfFilter);
+    if (a === 'modus') { this.z.modus = e.knopfModus; return this._aufnehmen(knopfFilter(e)); }
+    if (a === 'filter') return this._aufnehmen(knopfFilter(e));
   }
 
   // Knopf anlernen: der nächste Tastendruck auf iPad oder großem Bildschirm wird als Knopf-Taste gespeichert
@@ -190,19 +211,20 @@ class Ablauf extends EventEmitter {
     if (this.z.ansicht === 'aufnahme') return;
     const s = this.sitzung;
     const anzahl = this.z.modus === 'streifen' ? 4 : 1;
-    const dauer = this._dauer(this.speicher.einstellungen());
+    const e0 = this.speicher.einstellungen(), dauer = this._dauer(e0);
+    const posen = e0.posenAn ? e0.posenListe.split('\n').map((x) => x.trim()).filter(Boolean) : [];
     this.z.filter = filter;
     this._zeige('aufnahme', { foto: null, inDiashow: true });
     try {
       const aufnahmen = [];
       for (let i = 0; i < anzahl; i++) {
         this.z.bild = { nr: i + 1, von: anzahl };
-        this.z.hinweis = i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
+        this.z.hinweis = posen.length ? 'Pose: ' + this._pose(posen) : i === 0 ? 'Schaut in die Kamera!' : 'Neue Pose fürs nächste Bild!';
         for (let c = dauer.countdownSek; c >= 1; c--) { this.z.countdown = c; this._melden(); await this._warte(this.zeiten.countdownSchritt); }
         this.z.countdown = null; this.z.blitz++; this._melden();
         let b;
         try { b = await this.kamera.ausloesen(); } catch (err) { err.kamera = true; throw err; }
-        if (filter === 'sw') b = await this.bild.schwarzweiss(b);
+        if (filter !== 'farbe') b = this.bild.filtern ? await this.bild.filtern(b, filter) : filter === 'sw' ? await this.bild.schwarzweiss(b) : b;
         aufnahmen.push(b);
         if (i < anzahl - 1) await this._warte(this.zeiten.pause);
       }
@@ -215,12 +237,34 @@ class Ablauf extends EventEmitter {
       });
       const foto = await this.speicher.neuesFoto({ modus: this.z.modus, filter, aufnahmen, druck });
       this.log('info', `Foto ${foto.id} aufgenommen`);
-      this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg` }, hinweis: '', bild: null });
+      this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg`, schluessel: foto.schluessel }, hinweis: '', bild: null, imGaestebuch: false });
     } catch (err) {
       this.log('fehler', 'Aufnahme fehlgeschlagen: ' + err.message);
       const text = err.kamera ? 'Die Kamera hat nicht ausgelöst.' : 'Das Foto konnte nicht gespeichert werden.';
       this._zeige('stoerung', { countdown: null, bild: null, hinweis: '', stoerung: `${text} Sagt bitte dem Brautpaar oder einem Helfer Bescheid.` });
     }
+  }
+
+  // Zufällige Pose, innerhalb einer Sitzung ohne Wiederholung (solange die Liste reicht)
+  _pose(liste) {
+    if (this._poseSitzung !== this.sitzung) { this._poseSitzung = this.sitzung; this._posenBenutzt = new Set(); }
+    let frei = liste.filter((p) => !this._posenBenutzt.has(p));
+    if (!frei.length) { this._posenBenutzt.clear(); frei = liste; }
+    const p = frei[Math.floor(Math.random() * frei.length)];
+    this._posenBenutzt.add(p);
+    return p;
+  }
+
+  // QR-Codes: Foto-Link (über das Fotobox-WLAN) und, falls eingetragen, WLAN-Zugang
+  _qr(e) {
+    if (!e.qrAn || !this.z.foto || !['druck', 'drucken', 'danke'].includes(this.z.ansicht)) return null;
+    const basis = e.adresse || this.basisUrl || '';
+    const esc = (t) => String(t).replace(/([\\;,:"])/g, '\\$1');
+    return {
+      foto: `${basis}/f/${this.z.foto.id}?k=${this.z.foto.schluessel || ''}`,
+      wlan: e.wlanName ? `WIFI:T:${e.wlanPasswort ? 'WPA' : 'nopass'};S:${esc(e.wlanName)};P:${esc(e.wlanPasswort)};;` : null,
+      wlanName: e.wlanName || null,
+    };
   }
 
   _behalten() {
@@ -241,11 +285,12 @@ class Ablauf extends EventEmitter {
     }
     if (this.knopfLernenBis && Date.now() > this.knopfLernenBis) { this.knopfLernenBis = 0; this._melden(); }
     if (!LEERLAUF_ANSICHTEN.includes(this.z.ansicht)) return;
+    if (this.z.ansicht === 'danke' && !(e.qrAn && this.z.foto)) return; // ohne QR-Code endet „Danke“ von selbst
     // Solange die eigenen Abzüge noch drucken, nicht zum Start zurückspringen
     if (this.z.ansicht === 'drucken' && this.z.foto && this.drucker.auftraegeZu(this.z.foto.id).some((x) => x.status !== 'fertig')) { this.letzteAktivitaet = Date.now(); return; }
     const dauer = this._dauer(e), vorbei = Date.now() - this.letzteAktivitaet;
     if (vorbei >= dauer.leerlauf) {
-      if (['vorschau', 'druck'].includes(this.z.ansicht)) this._behalten();
+      if (['vorschau', 'gaestebuch', 'druck'].includes(this.z.ansicht)) this._behalten();
       this.log('info', 'Leerlauf: zurück zum Start');
       return this._zeige('start', this._grundzustand());
     }
@@ -274,9 +319,11 @@ class Ablauf extends EventEmitter {
       diashowVersion: this.diashowVersion,
       knopfLernen: Date.now() < this.knopfLernenBis,
       druckRest: Number.isFinite(rest) ? rest : null,
+      qr: this._qr(e),
       einstellungen: {
         namen: e.namen, datum: e.datum, streifen: e.streifen, schwarzweiss: e.schwarzweiss, maxAbzuege: e.maxAbzuege,
         druckenAn: e.druckenAn, spiegeln: e.spiegeln, diashowSek: e.diashowSek, knopfTasten: this.knopfTastenAlle(),
+        filter: filterAngebot(e), toene: e.toene, lautstaerke: e.lautstaerke, gaestebuchAn: e.gaestebuchAn,
         texte: { startTitel: e.textStartTitel, start: e.textStart, buehne: e.textBuehne, danke: e.textDanke, dankeKlein: e.textDankeKlein },
       },
       gestaltung: this.gestaltungVon(e).css,
@@ -286,4 +333,4 @@ class Ablauf extends EventEmitter {
   beenden() { clearInterval(this.takt); }
 }
 
-module.exports = { Ablauf, geschlossen };
+module.exports = { Ablauf, geschlossen, filterAngebot };

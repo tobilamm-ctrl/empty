@@ -43,6 +43,22 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
 .pin input { font-size: 28px; text-align: center; letter-spacing: .3em; }
 .pause-an { background: color-mix(in srgb, var(--warn) 16%, var(--flaeche)); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
 .logo { max-height: 90px; max-width: 220px; background: repeating-conic-gradient(#ffffff22 0 25%, #00000022 0 50%) 0 0 / 16px 16px; border-radius: 6px; }
+textarea { font: inherit; font-size: 14px; color: var(--tinte); background: var(--grund); border: 1px solid var(--linie); border-radius: 9px; padding: 9px 10px; min-width: 0; resize: vertical; }
+input[type=range] { accent-color: var(--akzent); }
+.eigene { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.eigene div { position: relative; }
+.eigene img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+.eigene button { position: absolute; top: 4px; right: 4px; font-size: 12px; padding: 4px 8px; border-radius: 99px; border: 0; background: rgba(0,0,0,.7); color: #fff; }
+.gb-eintrag { font-size: 12px; color: var(--tinte); line-height: 1.4; border-top: 1px solid var(--linie); padding-top: 6px; }
+.gb-eintrag img { width: 100%; aspect-ratio: 5 / 2; object-fit: contain; background: #fbf8f1; border-radius: 6px; margin-top: 4px; }
+.stat { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.stat div { background: var(--grund); border-radius: 10px; padding: 10px; }
+.stat b { display: block; font-size: 24px; font-family: var(--kopf); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--leise); }
+.stunden { display: grid; grid-template-columns: 3.5em 1fr 2.5em; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--leise); font-variant-numeric: tabular-nums; }
+.stunden i { display: block; height: 10px; border-radius: 99px; background: var(--akzent); }
+.dk { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; border-top: 1px solid var(--linie); padding-top: 8px; font-size: 13px; }
+.dk img, .dk .leer { width: 64px; height: 43px; object-fit: cover; border-radius: 4px; background: var(--grund); }
 .chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--linie); color: var(--tinte); font-variant-numeric: tabular-nums; }
 .lernen { color: var(--warn); font-weight: 600; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--gut); color: #0f1a12; padding: 10px 16px; border-radius: 99px; font-weight: 600; z-index: 40; }
@@ -103,9 +119,15 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
       <label>„Nochmal“ höchstens<select name="maxNochmal" data-zahl><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
       <label>Bluetooth-Knopf macht
         <span class="zeile"><select name="knopfModus" style="flex:1"><option value="einzel">Einzelfoto</option><option value="streifen">Fotostreifen</option></select>
-        <select name="knopfFilter" style="flex:1"><option value="farbe">in Farbe</option><option value="sw">in Schwarzweiß</option></select></span></label>
+        <select name="knopfFilter" style="flex:1"><option value="farbe">in Farbe</option><option value="sw">in Schwarzweiß</option><option value="vintage">als Vintage</option><option value="weich">hell &amp; weich</option></select></span></label>
       <label class="haken"><input type="checkbox" name="streifen">Fotostreifen anbieten</label>
-      <label class="haken"><input type="checkbox" name="schwarzweiss">Schwarzweiß anbieten</label>
+      <label class="haken"><input type="checkbox" name="schwarzweiss">Filter Schwarzweiß anbieten</label>
+      <label class="haken"><input type="checkbox" name="filterVintage">Filter Vintage anbieten</label>
+      <label class="haken"><input type="checkbox" name="filterWeich">Filter „Hell &amp; weich“ anbieten</label>
+      <label class="haken ganz"><input type="checkbox" name="posenAn">Posen-Vorschläge vor jedem Bild („Pose: …“)</label>
+      <label class="ganz">Posen (eine pro Zeile)<textarea name="posenListe" rows="6"></textarea></label>
+      <label>Töne (Piep beim Countdown, Auslösegeräusch)<select name="toene"><option value="aus">aus</option><option value="buehne">am großen Bildschirm</option><option value="ipad">am iPad</option><option value="beide">an beiden</option></select></label>
+      <label>Lautstärke<input type="range" name="lautstaerke" data-zahl min="0" max="100" step="5"></label>
       <label>Geöffnet ab (leer = immer)<input type="time" name="oeffnungAb"></label>
       <label>Geöffnet bis (leer = offen bis 5 Uhr)<input type="time" name="oeffnungBis"></label>
       <p class="leise ganz">Außerhalb der Öffnungszeit zeigt die Fotobox die Diashow und „Die Fotobox öffnet um …“ bzw. „hat jetzt geschlossen“. Über Mitternacht geht auch, z. B. 19:00 bis 03:00.</p>
@@ -120,7 +142,7 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
       <label>Abzüge pro Foto höchstens<select name="maxAbzuege" data-zahl><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option></select></label>
       <label>Abzüge insgesamt höchstens (0 = ohne Grenze)<input type="number" name="maxAbzuegeGesamt" data-zahl min="0" step="10"></label>
       <p class="leise ganz" id="abzuegeBisher"></p>
-      <label>Druckbild<select name="druckLayout"><option value="rahmen">mit hellem Rand, Namen darunter</option><option value="vollbild">Vollbild, Namen auf dem Foto</option></select></label>
+      <label>Druckbild<select name="druckLayout" id="druckLayout"><option value="rahmen">mit hellem Rand, Namen darunter</option><option value="vollbild">Vollbild, Namen auf dem Foto</option></select></label>
       <label class="haken"><input type="checkbox" name="logoStattNamen">Logo/Monogramm statt der Namen drucken</label>
       <label>Feinkorrektur waagerecht (mm, + = nach rechts)<input type="number" name="druckVersatzX" data-zahl min="-5" max="5" step="0.5"></label>
       <label>Feinkorrektur senkrecht (mm, + = nach unten)<input type="number" name="druckVersatzY" data-zahl min="-5" max="5" step="0.5"></label>
@@ -172,6 +194,37 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
       <label>Neue Fotos erscheinen<select name="diashowVerzoegerungSek" data-zahl><option value="0">sofort</option><option value="60">nach 1 Minute</option><option value="120">nach 2 Minuten</option><option value="300">nach 5 Minuten</option></select></label>
       <label>Jedes Foto zeigen für<select name="diashowSek" data-zahl><option value="3">3 Sekunden</option><option value="5">5 Sekunden</option><option value="8">8 Sekunden</option><option value="12">12 Sekunden</option></select></label>
       <label class="haken ganz"><input type="checkbox" name="diashowFreigabe">Nur Fotos zeigen, die wir einzeln freigeben (unten bei „Fotos“)</label>
+      <label>Eigenes Foto einmischen nach jedem<select name="eigeneAlle" data-zahl><option value="2">2. Fotobox-Foto</option><option value="3">3. Fotobox-Foto</option><option value="5">5. Fotobox-Foto</option><option value="10">10. Fotobox-Foto</option></select></label>
+      <div class="ganz zeile"><button class="btn btn-haupt">Speichern</button></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Eigene Fotos für die Diashow</h2>
+    <div class="karte">
+      <p class="leise">Z. B. Kennenlern- oder Kinderfotos von euch. Sie laufen zwischen den Fotobox-Fotos und werden nicht gedruckt. JPG oder PNG, mehrere auf einmal möglich.</p>
+      <div class="zeile"><input type="file" id="eigeneDatei" accept="image/jpeg,image/png" multiple><button class="btn btn-haupt" id="eigeneLos">Hochladen</button></div>
+      <div class="eigene" id="eigene"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>QR-Code zum Herunterladen</h2>
+    <form class="karte formular einst">
+      <label class="haken ganz"><input type="checkbox" name="qrAn">QR-Code zeigen (iPad und großer Bildschirm, nach dem Foto)</label>
+      <label>WLAN-Name der Fotobox<input type="text" name="wlanName" autocomplete="off"></label>
+      <label>WLAN-Passwort<input type="text" name="wlanPasswort" autocomplete="off"></label>
+      <label class="ganz">Adresse der Fotobox (leer = automatisch)<input type="text" name="adresse" id="adresse" placeholder="http://192.168.8.10:8080"></label>
+      <p class="leise ganz">Mit WLAN-Name zeigt die Fotobox zwei QR-Codes: erst ins Fotobox-WLAN, dann das Foto. Ohne Internet: Die Gäste müssen im Fotobox-WLAN sein, damit der Foto-Link funktioniert.</p>
+      <div class="ganz zeile"><button class="btn btn-haupt">Speichern</button></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Gästebuch</h2>
+    <form class="karte formular einst">
+      <label class="haken ganz"><input type="checkbox" name="gaestebuchAn">„Ins Gästebuch“ nach dem Foto anbieten</label>
+      <p class="leise ganz" id="gbInfo"></p>
       <div class="ganz zeile"><button class="btn btn-haupt">Speichern</button></div>
     </form>
   </section>
@@ -196,8 +249,30 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
   </section>
 
   <section>
-    <div class="zeile"><h2>Fotos</h2><span class="leise" id="fotoZahl"></span><span class="frei"></span><a class="btn btn-rand" id="export" href="#">Alle Fotos als ZIP</a></div>
+    <div class="zeile"><h2>Fotos</h2><span class="leise" id="fotoZahl"></span></div>
     <div class="fotos" id="fotos"></div>
+  </section>
+
+  <section>
+    <h2>Statistik</h2>
+    <div class="karte" id="statistik"></div>
+  </section>
+
+  <section>
+    <h2>Fotos herunterladen</h2>
+    <div class="karte">
+      <p class="leise">Als ZIP-Datei mit allen behaltenen Fotos, dem Gästebuch (Tabelle und Unterschriften) und – wenn eine Gästeliste da ist – der Dankeskarten-Tabelle. Nach Tisch oder Gast sortiert wird über die Namen, die im Gästebuch angetippt wurden.</p>
+      <div class="zeile"><a class="btn btn-rand" id="exportZeit" href="#">Nach Uhrzeit</a><a class="btn btn-rand" id="exportTisch" href="#">Nach Tisch</a><a class="btn btn-rand" id="exportGast" href="#">Nach Gast</a></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dankeskarten</h2>
+    <div class="karte">
+      <p class="leise">Für jeden Gast aus der Gästeliste ein Foto-Vorschlag: das neueste Foto, auf dem er im Gästebuch angetippt wurde (Einzelfoto bevorzugt). Die Tabelle enthält Name, Anschrift aus dem Sitzplantool und den Dateinamen des Fotos – passend für einen Serienbrief.</p>
+      <div class="zeile"><a class="btn btn-rand" id="dkCsv" href="#">Tabelle herunterladen (CSV)</a><span class="leise" id="dkZahl"></span></div>
+      <div id="dankeskarten" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto"></div>
+    </div>
   </section>
 
   <section>
@@ -240,10 +315,12 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
     if (r.status === 403) { $('inhalt').hidden = true; $('pinForm').hidden = false; $('pinFehler').textContent = pin ? 'Falsche PIN.' : ''; return false; }
     daten = await r.json();
     $('pinForm').hidden = true; $('inhalt').hidden = false;
-    $('export').href = '/api/export.zip?pin=' + encodeURIComponent(pin);
+    const pinQ = 'pin=' + encodeURIComponent(pin);
+    $('exportZeit').href = '/api/export.zip?sort=zeit&' + pinQ; $('exportTisch').href = '/api/export.zip?sort=tisch&' + pinQ;
+    $('exportGast').href = '/api/export.zip?sort=gast&' + pinQ; $('dkCsv').href = '/api/dankeskarten.csv?' + pinQ;
     $('simulator').hidden = !(daten.simulation.kamera || daten.simulation.drucker);
     diaVersion = z ? z.diashowVersion : diaVersion;
-    formulare(); logo(); fotos(); platz(); protokoll(); jetzt();
+    formulare(); logo(); fotos(); eigene(); statistik(); dankeskarten(); platz(); protokoll(); jetzt();
     return true;
   }
   $('pinForm').onsubmit = (e) => { e.preventDefault(); pinMerken($('pin').value.trim()); laden(); };
@@ -263,6 +340,9 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
       if (el.type === 'checkbox') el.checked = !!e[el.name]; else el.value = String(e[el.name]);
     }));
     $('akzentWahl').value = /^#[0-9a-f]{6}$/i.test(e.akzent) ? e.akzent : daten.farbwelten[e.farbwelt].akzent;
+    if (daten.layouts && Object.keys(daten.layouts).length) { $('druckLayout').innerHTML = Object.entries(daten.layouts).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join(''); $('druckLayout').value = e.druckLayout; }
+    $('adresse').placeholder = daten.basisUrl || 'http://192.168.8.10:8080';
+    $('gbInfo').textContent = daten.gaesteListe.length ? `Gästeliste: ${daten.gaesteListe.length} Gäste – sie können sich am iPad antippen.` : 'Noch keine Gästeliste – die Gäste tippen ihre Namen dann selbst ein. Mit Gästeliste (Import aus dem Sitzplantool) tippen sie ihre Namen nur an.';
     $('abzuegeBisher').textContent = `Bisher gedruckt: ${daten.abzuegeBisher} Abzüge` + (e.maxAbzuegeGesamt ? ` von höchstens ${e.maxAbzuegeGesamt}.` : '.');
     knopf();
   }
@@ -330,7 +410,48 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--akzent); }
       <div><span>${new Date(f.zeit).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · ${f.modus === 'streifen' ? 'Streifen' : 'Einzel'} · ${f.abzuege || 0} Abzüge${f.inDiashow ? '' : ' · Gast: nicht in Diashow'}</span>
       ${freigabe && f.inDiashow && !f.ausgeblendet ? `<button class="btn ${f.freigegeben ? 'btn-rand' : 'btn-haupt'}" data-frei="${f.id}" data-wert="${f.freigegeben ? '0' : '1'}">${f.freigegeben ? 'Freigabe zurücknehmen' : 'Freigeben'}</button>` : ''}
       <button class="btn btn-rand" data-aus="${f.id}" data-wert="${f.ausgeblendet ? '0' : '1'}">${f.ausgeblendet ? 'Wieder zeigen' : 'Ausblenden'}</button>
-      <button class="btn btn-rand" data-nach="${f.id}">Nachdrucken</button></div></div>`).join('') || '<p class="leise">Noch keine Fotos.</p>';
+      <button class="btn btn-rand" data-nach="${f.id}">Nachdrucken</button>${gbEintrag(f)}</div></div>`).join('') || '<p class="leise">Noch keine Fotos.</p>';
+  }
+  const gastName = (id) => { const g = daten.gaesteListe.find((x) => x.id === id); return g ? g.name : '?'; };
+  function gbEintrag(f) {
+    const gb = f.gaestebuch; if (!gb) return '';
+    const namen = gb.gaeste.map(gastName).concat(gb.namenFrei ? [gb.namenFrei] : []).join(', ');
+    return `<div class="gb-eintrag">${namen ? `<b>${esc(namen)}</b>` : ''}${gb.gruss ? `<br>„${esc(gb.gruss)}“` : ''}${gb.unterschrift ? `<img loading="lazy" src="/fotos/${f.id}/unterschrift.png" alt="Unterschrift">` : ''}</div>`;
+  }
+
+  // ---------- Eigene Fotos ----------
+  function eigene() {
+    $('eigene').innerHTML = daten.eigene.map((d) => `<div><img loading="lazy" src="/eigene/${encodeURIComponent(d)}" alt=""><button data-weg="${esc(d)}">Löschen</button></div>`).join('') || '<p class="leise">Noch keine eigenen Fotos.</p>';
+  }
+  $('eigeneLos').onclick = async () => {
+    const dateien = [...$('eigeneDatei').files]; if (!dateien.length) return toast('Bitte zuerst Bilder auswählen');
+    let ok = 0;
+    for (const d of dateien) {
+      const r = await fetch('/api/eigene?pin=' + encodeURIComponent(pin), { method: 'POST', body: d });
+      if (r.ok) ok++; else toast((await r.json()).fehler);
+    }
+    $('eigeneDatei').value = ''; toast(`${ok} ${ok === 1 ? 'Foto' : 'Fotos'} hochgeladen`); laden();
+  };
+  $('eigene').onclick = (e) => { const b = e.target.closest('[data-weg]'); if (b) admin('eigeneLoeschen', { datei: b.dataset.weg }).then(laden); };
+
+  // ---------- Statistik ----------
+  const FILTERNAME = { farbe: 'Farbe', sw: 'Schwarzweiß', vintage: 'Vintage', weich: 'Hell & weich' };
+  function statistik() {
+    const s = daten.statistik, max = Math.max(1, ...s.proStunde.map((x) => x.anzahl));
+    const kachel = (zahl, text) => `<div><b>${zahl}</b><span>${text}</span></div>`;
+    $('statistik').innerHTML = `<div class="stat">${kachel(s.fotos, 'Fotos behalten')}${kachel(s.abzuege, 'Abzüge gedruckt')}${kachel(s.einzel, 'Einzelfotos')}${kachel(s.streifen, 'Fotostreifen')}${kachel(s.gaestebuch, 'Gästebuch-Einträge')}${s.gaesteGesamt ? kachel(s.gaesteOhneFoto, `von ${s.gaesteGesamt} Gästen noch ohne Foto`) : ''}</div>`
+      + (s.proStunde.length ? `<p class="leise">Fotos pro Stunde${s.beliebtesteStunde !== null ? ` – am meisten los um ${s.beliebtesteStunde} Uhr` : ''}</p><div class="stunden">${s.proStunde.map((x) => `<span>${x.stunde}–${(x.stunde + 1) % 24} Uhr</span><i style="width:${Math.round(x.anzahl / max * 100)}%"></i><span>${x.anzahl}</span>`).join('')}</div>` : '')
+      + (Object.keys(s.filter).length ? `<p class="leise">Filter: ${Object.entries(s.filter).map(([k, n]) => `${FILTERNAME[k] || k} ${n}`).join(' · ')}</p>` : '')
+      + (s.top.length ? `<p class="leise">Am häufigsten im Gästebuch: ${s.top.map((t) => `${esc(t.name)} (${t.anzahl})`).join(', ')}</p>` : '')
+      + (s.fotos ? '' : '<p class="leise">Noch keine Fotos – die Statistik füllt sich am Abend.</p>');
+  }
+
+  // ---------- Dankeskarten ----------
+  function dankeskarten() {
+    const l = daten.dankeskarten;
+    $('dkZahl').textContent = l.length ? `${l.filter((d) => d.foto).length} von ${l.length} Gästen mit Foto` : 'Noch keine Gästeliste – bitte aus dem Sitzplantool übernehmen.';
+    $('dankeskarten').innerHTML = l.map((d) => `<div class="dk">${d.foto ? `<img loading="lazy" src="/fotos/${d.foto}/druck.jpg" alt="">` : '<span class="leer"></span>'}
+      <div><b>${esc(d.name)}</b>${d.tisch ? ` · <span class="leise">${esc(d.tisch)}</span>` : ''}<br><span class="leise">${esc([d.strasse, [d.plz, d.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'keine Anschrift')}${d.foto ? '' : ' · noch kein Foto'}</span></div></div>`).join('');
   }
   $('fotos').onclick = (e) => {
     const b = e.target.closest('button'); if (!b) return;

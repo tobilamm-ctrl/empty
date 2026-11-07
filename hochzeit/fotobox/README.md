@@ -234,12 +234,12 @@ Die Fotobox kann dieselben Farben und Schriften wie die Einladungen zeigen. Dazu
 
 Übernommen werden:
 
-- die Gästeliste mit Namen und Tisch. Eine neue Liste ersetzt die alte.
+- die Gästeliste mit Namen, Tisch und Anschrift (für Gästebuch und Dankeskarten). Eine neue Liste ersetzt die alte.
 - Namen des Brautpaares und Datum
 - Farbwelt, Akzentfarbe und Schriftstil
 - eigene Schriften aus dem Karten-Editor
 
-Nicht übernommen werden der Ort und das Monogramm (das Monogramm am iPad bildet die Fotobox selbst aus den Anfangsbuchstaben der Namen). Die Gästeliste mit Tischen wird gespeichert und ist für spätere Funktionen wie Tisch-Aufgaben gedacht. Im Moment zeigt die Fotobox nur, wie viele Gäste übernommen wurden.
+Nicht übernommen werden der Ort und das Monogramm (das Monogramm am iPad bildet die Fotobox selbst aus den Anfangsbuchstaben der Namen). Die Gästeliste nutzt die Fotobox im Gästebuch (Namen antippen), für den Export nach Tisch oder Gast, die Statistik und die Dankeskarten.
 
 ### Ohne Import
 
@@ -267,14 +267,17 @@ Jeder Abschnitt hat einen eigenen Knopf **Speichern**. Änderungen gelten sofort
 **Ablauf**
 - **Countdown**: 3, 5 oder 10 Sekunden
 - **Zurück zum Start ohne Eingabe nach** 30 Sekunden bis 2 Minuten
-- **„Nochmal“ höchstens**, **Fotostreifen anbieten**, **Schwarzweiß anbieten**
-- **Bluetooth-Knopf macht**: Einzelfoto oder Streifen, Farbe oder Schwarzweiß
+- **„Nochmal“ höchstens**, **Fotostreifen anbieten**
+- **Filter anbieten**: Schwarzweiß, Vintage, „Hell & weich“ (Farbe gibt es immer). Ist nur Farbe an, fällt die Auswahl am iPad weg.
+- **Bluetooth-Knopf macht**: Einzelfoto oder Streifen und einen der Filter
+- **Posen-Vorschläge**: Vor jedem Bild steht auf iPad und großem Bildschirm „Pose: …“, zufällig aus eurer Liste (eine Pose pro Zeile, in einer Sitzung ohne Wiederholung).
+- **Töne**: Piep bei jeder Countdown-Zahl und ein Auslösegeräusch – am großen Bildschirm, am iPad, an beiden oder aus; mit Lautstärke. Am iPad erklingen Töne erst nach der ersten Berührung (Vorgabe von Safari); am großen Bildschirm erlaubt die Datei `Grosser-Bildschirm-Vollbild.bat` den Ton von Anfang an.
 - **Geöffnet ab / bis**: Außerhalb dieser Zeit zeigt die Fotobox die Diashow und „Die Fotobox öffnet um …“ bzw. „hat jetzt geschlossen“. Über Mitternacht geht auch (z. B. 19:00 bis 03:00). Nur „ab“ eingetragen: offen bis 5 Uhr morgens.
 
 **Drucken**
 - **Drucken an/aus**: Aus heißt, die Fotos werden nur gespeichert und gezeigt, z. B. spät in der Nacht.
 - **Abzüge pro Foto höchstens** und **Abzüge insgesamt höchstens** (0 = ohne Grenze). Ist die Grenze erreicht, druckt die Fotobox nicht mehr.
-- **Druckbild**: mit hellem Rand oder Vollbild
+- **Druckbild**: mit hellem Rand, Vollbild, Polaroid (breiter Rand unten) oder Elegant (Doppellinie in der Akzentfarbe)
 - **Logo/Monogramm statt der Namen drucken** (Bild im Abschnitt „Logo oder Monogramm“ hochladen, am besten PNG mit durchsichtigem Hintergrund)
 - **Feinkorrektur** waagerecht und senkrecht in Millimetern (−5 bis +5), falls der Drucker schief abschneidet. Sie wirkt nur auf den Druck.
 
@@ -286,6 +289,15 @@ Jeder Abschnitt hat einen eigenen Knopf **Speichern**. Änderungen gelten sofort
 - **Neue Fotos erscheinen** sofort oder nach 1, 2 oder 5 Minuten
 - **Jedes Foto zeigen für** 3 bis 12 Sekunden
 - **Nur freigegebene Fotos zeigen**: Dann erscheint ein Foto erst, wenn ihr es unten bei „Fotos“ mit **Freigeben** bestätigt.
+- **Eigene Fotos für die Diashow**: z. B. Kennenlern- oder Kinderfotos hochladen (JPG/PNG, mehrere auf einmal). Sie laufen nach jedem 2., 3., 5. oder 10. Fotobox-Foto und werden nie gedruckt.
+
+**QR-Code zum Herunterladen**: Nach dem Foto zeigen iPad und großer Bildschirm einen QR-Code. Die Gäste scannen ihn mit der Handy-Kamera und bekommen eine Seite mit ihrem Foto und „Foto speichern“. Tragt ihr WLAN-Name und -Passwort ein, erscheint davor ein zweiter QR-Code, der das Handy ins Fotobox-WLAN bringt – ohne dieses WLAN funktioniert der Link nicht (kein Internet nötig). Die Adresse der Fotobox erkennt die App selbst; nur wenn der Link nicht klappt, tragt sie von Hand ein (z. B. `http://192.168.8.10:8080`). Mit QR-Code bleibt der Danke-Bildschirm stehen, bis jemand „Fertig“ tippt oder 45 Sekunden nichts passiert.
+
+**Gästebuch**: Nach dem Foto können die Gäste „Ins Gästebuch“ tippen: Namen antippen (aus der Gästeliste des Sitzplantools, mit Suche und Tisch-Auswahl) oder eintippen, einen Gruß schreiben und mit dem Finger unterschreiben. Die Einträge seht ihr bei den Fotos.
+
+**Statistik**: Fotos, Abzüge, Einzelfotos und Streifen, Fotos pro Stunde, beliebteste Uhrzeit, Filter, Gästebuch-Einträge, wer am häufigsten drauf ist und wie viele Gäste noch kein Foto haben.
+
+**Dankeskarten**: Für jeden Gast ein Foto-Vorschlag (das neueste Foto, auf dem er im Gästebuch angetippt wurde, Einzelfoto bevorzugt) mit Anschrift aus dem Sitzplantool. „Tabelle herunterladen“ liefert eine CSV-Datei für den Serienbrief.
 
 **Bluetooth-Knopf**: Knopf anlernen (siehe Abschnitt 7)
 
@@ -325,10 +337,13 @@ Nur neue Fotos werden kopiert. Änderungen später, etwa Ausblenden, werden nich
 
 ### Export als ZIP
 
-Auf der Service-Seite drückst du **„Alle Fotos als ZIP“**. Die Datei heißt `fotobox-fotos.zip`. Sie enthält:
+Auf der Service-Seite unter **„Fotos herunterladen“** gibt es drei Knöpfe:
 
-- `druckbilder/`: ein Bild je behaltenem Foto
-- `aufnahmen/`: alle Einzelaufnahmen der behaltenen Fotos
+- **Nach Uhrzeit**: `druckbilder/` (ein Bild je behaltenem Foto) und `aufnahmen/` (alle Einzelaufnahmen)
+- **Nach Tisch**: `nach-tisch/<Tisch>/…` – ein Foto landet bei jedem Tisch, von dem jemand im Gästebuch angetippt wurde
+- **Nach Gast**: `nach-gast/<Name>/…` – praktisch zum Weitergeben an die Gäste
+
+Fotos ohne Gästebuch-Eintrag liegen in `ohne Zuordnung/`. Jede ZIP-Datei enthält außerdem `gaestebuch/gaestebuch.csv` mit allen Grüßen, die Unterschriften als Bilder und – wenn eine Gästeliste da ist – `dankeskarten.csv`.
 
 Kopiere die ZIP-Datei nach der Feier auf einen zweiten Datenträger.
 

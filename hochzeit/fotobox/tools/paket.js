@@ -52,7 +52,7 @@ function alleDateien(ordner, basis = ordner) {
 
 const START_WINDOWS = {
   'Fotobox-starten.bat': `@echo off\r\ncd /d "%~dp0"\r\ntitle Fotobox\r\necho Fotobox startet ... Dieses Fenster bitte offen lassen.\r\n"%~dp0node\\node.exe" server\\index.js\r\necho.\r\necho Die Fotobox wurde beendet.\r\npause\r\n`,
-  'Grosser-Bildschirm-Vollbild.bat': `@echo off\r\nrem Oeffnet den grossen Bildschirm im Vollbild (Microsoft Edge, Kiosk-Modus). Beenden mit Alt+F4.\r\nrem Wartet vorher, bis die Fotobox laeuft.\r\n:warten\r\ncurl -s -o nul http://localhost:8080/buehne\r\nif errorlevel 1 (timeout /t 2 /nobreak >nul & goto warten)\r\nstart "" msedge --kiosk http://localhost:8080/buehne --edge-kiosk-type=fullscreen --no-first-run\r\n`,
+  'Grosser-Bildschirm-Vollbild.bat': `@echo off\r\nrem Oeffnet den grossen Bildschirm im Vollbild (Microsoft Edge, Kiosk-Modus). Beenden mit Alt+F4.\r\nrem Wartet vorher, bis die Fotobox laeuft. Toene duerfen ohne Klick abgespielt werden (autoplay-policy).\r\n:warten\r\ncurl -s -o nul http://localhost:8080/buehne\r\nif errorlevel 1 (timeout /t 2 /nobreak >nul & goto warten)\r\nstart "" msedge --kiosk http://localhost:8080/buehne --edge-kiosk-type=fullscreen --no-first-run --autoplay-policy=no-user-gesture-required\r\n`,
   'Simulator-oeffnen.bat': `@echo off\r\nstart "" http://localhost:8080/simulator\r\n`,
 };
 const START_LINUX = {

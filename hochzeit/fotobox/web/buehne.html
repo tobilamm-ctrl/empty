@@ -33,6 +33,11 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 .st-danke p, .st-stoerung p { font-size: 3.6vmin; color: var(--leise); margin-top: 1.5vmin; }
 .st-stoerung { display: grid; place-items: center; text-align: center; }
 .st-stoerung h2 { font-size: 10vmin; }
+.qr-ecke { position: fixed; right: 3vmin; bottom: 3vmin; display: flex; gap: 2vmin; z-index: 3; }
+.qr-ecke figure { margin: 0; background: rgba(6,8,7,.85); border-radius: 2vmin; padding: 1.4vmin; display: flex; flex-direction: column; align-items: center; gap: .8vmin; }
+.qr-ecke img { width: 17vmin; height: 17vmin; background: #fff; border-radius: 1vmin; padding: .6vmin; }
+.qr-ecke figcaption { font-size: 1.9vmin; color: var(--tinte); text-align: center; }
+.mit-qr .st-ergebnis, .mit-qr .st-danke { padding-right: 24vmin; }
 .fokus { position: fixed; right: 1.5vmin; bottom: 1.5vmin; font-size: 1.6vmin; color: var(--leise); background: rgba(0,0,0,.6); padding: .6vmin 1.4vmin; border-radius: 99px; z-index: 6; cursor: default; }
 </style>
 </head>
@@ -63,6 +68,7 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 <div class="st st-stoerung" id="s-stoerung" hidden>
   <div><h2>Kurze Pause</h2><p>Gleich geht’s weiter.</p></div>
 </div>
+<div class="qr-ecke" id="qrEcke"></div>
 <div class="blitz" id="blitz"></div>
 <div class="fokus" id="fokus" hidden>Für den Bluetooth-Knopf einmal hier hineinklicken</div>
 
@@ -85,7 +91,7 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 
   // ---------- Diashow ----------
   let dia = [], diaIdx = 0, vorne = 'diaA', diaTimer = null, gleich = 0;
-  function diaLaden() { return fetch('/api/diashow', { cache: 'no-store' }).then((r) => r.json()).then((d) => { dia = d.fotos; gleich = d.gleich; }).catch(() => {}); }
+  function diaLaden() { return fetch('/api/diashow', { cache: 'no-store' }).then((r) => r.json()).then((d) => { dia = d.bilder || d.fotos.map((id) => `/fotos/${id}/druck.jpg`); gleich = d.gleich; }).catch(() => {}); }
   function diaText() {
     const hinweis = z && z.ansicht === 'pause' ? z.pauseText : (z ? z.einstellungen.texte.buehne : '');
     $('diaText').textContent = gleich && !(z && z.ansicht === 'pause') ? `${gleich} neue${gleich === 1 ? 's Foto' : ' Fotos'} gleich in der Diashow · ${hinweis}` : hinweis;
@@ -95,7 +101,7 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
     diaText();
     if (!dia.length) { $(vorne).classList.remove('an'); return; }
     const hinten = vorne === 'diaA' ? 'diaB' : 'diaA';
-    $(hinten).src = `/fotos/${dia[diaIdx % dia.length]}/druck.jpg`;
+    $(hinten).src = dia[diaIdx % dia.length];
     $(hinten).onload = () => { $(hinten).classList.add('an'); $(vorne).classList.remove('an'); vorne = hinten; };
     diaIdx++;
   }
@@ -103,8 +109,20 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
   function diaStart() { if (diaTimer) return; diaLaden().then(diaWeiter); diaTimer = setInterval(() => { if (diaIdx % 3 === 0) diaLaden(); diaWeiter(); }, diaTakt); }
   function diaStopp() { clearInterval(diaTimer); diaTimer = null; }
 
+  // QR-Codes in der Ecke, solange das Foto groß zu sehen ist (größer = aus der Entfernung scannbar)
+  let letzteQr = '';
+  function qrEcke(qr) {
+    const k = JSON.stringify(qr); if (k === letzteQr) return; letzteQr = k;
+    const bild = (t) => `/api/qr?t=${encodeURIComponent(t)}`;
+    $('qrEcke').innerHTML = !qr ? '' : (qr.wlan ? `<figure><img src="${bild(qr.wlan)}" alt="QR-Code für das WLAN"><figcaption>1. WLAN</figcaption></figure>` : '')
+      + `<figure><img src="${bild(qr.foto)}" alt="QR-Code für euer Foto"><figcaption>${qr.wlan ? '2. ' : ''}Foto aufs Handy</figcaption></figure>`;
+  }
+
   function zeichnen(neu) {
     z = neu;
+    Fotobox.toeneAusZustand(z, 'buehne');
+    qrEcke(z.qr);
+    document.body.classList.toggle('mit-qr', !!z.qr);
     const s = BUEHNE[z.ansicht] || 'dia';
     ['dia', 'live', 'aufnahme', 'ergebnis', 'danke', 'stoerung'].forEach((x) => { $('s-' + x).hidden = x !== s; });
     $('namen').textContent = z.einstellungen.namen; $('datum').textContent = z.einstellungen.datum;
