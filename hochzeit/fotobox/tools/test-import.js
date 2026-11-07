@@ -79,6 +79,16 @@ test('Datum wird ausgeschrieben', () => {
   assert.equal(datumText('2027-03-01'), '1. März 2027');
 });
 
+test('Adresse: Straße, PLZ und Ort kommen aus street/zip/city (Zahl-PLZ wird Text), fehlt die Adresse, bleibt es leer', () => {
+  const p = projekt();
+  Object.assign(p.guests[0], { street: 'Hauptstr. 1', zip: '10115', city: 'Berlin' });
+  p.guests[1].zip = 80331; // Zahl statt Text
+  const im = sitzplanLesen(JSON.stringify(p));
+  assert.deepEqual([im.gaeste[0].strasse, im.gaeste[0].plz, im.gaeste[0].ort], ['Hauptstr. 1', '10115', 'Berlin']);
+  assert.deepEqual([im.gaeste[1].strasse, im.gaeste[1].plz, im.gaeste[1].ort], ['', '80331', '']);
+  assert.deepEqual([im.gaeste[2].strasse, im.gaeste[2].plz, im.gaeste[2].ort], ['', '', '']);
+});
+
 (async () => {
   for (const t of tests) {
     try {

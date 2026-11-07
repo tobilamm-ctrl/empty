@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const WebSocket = require('ws');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Ablauf, geschlossen } = require('../server/ablauf');
@@ -135,6 +136,34 @@ test('bereinigen: Schalter werden zu true/false', () => {
   assert.equal(bereinigen('pause', 1), true);
   assert.equal(bereinigen('spiegeln', 0), false);
   assert.equal(bereinigen('diashowFreigabe', ''), false);
+});
+
+test('bereinigen: Töne nur aus, buehne, ipad oder beide, alles andere wird ignoriert', () => {
+  ['aus', 'buehne', 'ipad', 'beide'].forEach((t) => assert.equal(bereinigen('toene', t), t));
+  assert.equal(bereinigen('toene', 'radio'), undefined);
+  assert.equal(bereinigen('toene', ''), undefined);
+});
+
+test('bereinigen: Adresse leer oder http(s)://Host:Port, Schrägstrich am Ende fällt weg, „ftp“ und Text werden abgelehnt', () => {
+  assert.equal(bereinigen('adresse', ''), '');
+  assert.equal(bereinigen('adresse', 'http://192.168.8.10:8080'), 'http://192.168.8.10:8080');
+  assert.equal(bereinigen('adresse', 'http://192.168.8.10:8080/'), 'http://192.168.8.10:8080');
+  assert.equal(bereinigen('adresse', 'ftp://x'), undefined);
+  assert.equal(bereinigen('adresse', 'foo'), undefined);
+});
+
+test('bereinigen: Lautstärke wird auf 0 bis 100 begrenzt (150 → 100, −5 → 0, 42,4 → 42)', () => {
+  assert.equal(bereinigen('lautstaerke', 150), 100);
+  assert.equal(bereinigen('lautstaerke', -5), 0);
+  assert.equal(bereinigen('lautstaerke', 42.4), 42);
+  assert.equal(bereinigen('lautstaerke', 'laut'), undefined);
+});
+
+test('bereinigen: Posenliste darf länger als 300 Zeichen sein (bis 3000), andere Texte bleiben bei 300', () => {
+  assert.equal(bereinigen('posenListe', 'Pose\n'.repeat(400)).length, 2000);
+  assert.equal(bereinigen('posenListe', 'x'.repeat(1000)).length, 1000);
+  assert.equal(bereinigen('posenListe', 'x'.repeat(5000)).length, 3000);
+  assert.equal(bereinigen('textStart', 'x'.repeat(5000)).length, 300);
 });
 
 test('einstellungenSetzen: ungültige Werte lassen den alten Wert stehen, unbekannte Schlüssel fallen weg', () => {
@@ -524,6 +553,185 @@ serverTest('Admin: PIN im Service ändern, danach gilt nur die neue PIN – auch
     assert.equal(zustand.zustand.pauseText, STANDARD.textPause);
   } finally {
     await new Promise((r) => { ws.once('close', r); ws.close(); });
+  }
+});
+
+// ---------- 7. Speicher: Statistik, Dankeskarten, Diashow, Export ----------
+
+// Frischer Speicher im Temp-Ordner; aufraeumen() löscht ihn wieder
+function speicherTemp() {
+  const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'fotobox-speicher-'));
+  return { speicher: new Speicher(ordner), ordner, aufraeumen: () => fs.rmSync(ordner, { recursive: true, force: true }) };
+}
+// Foto wie im Ablauf angelegt; behalten und Gästebuch-Gäste werden danach gesetzt
+async function fotoSpeichern(speicher, { modus = 'einzel', filter, behalten = true, gaeste = null, abzuege = 0 }) {
+  const neu = await speicher.neuesFoto({ modus, filter, aufnahmen: [Buffer.from('aufnahme')], druck: Buffer.from('druckbild') });
+  speicher.fotoAendern(neu.id, { behalten, abzuege });
+  if (gaeste) speicher.gaestebuchSpeichern(neu.id, { gaeste, namenFrei: '', gruss: '', unterschrift: null });
+  return speicher.foto(neu.id);
+}
+// ZIP prüfen (unzip -tq) und Verzeichnis (unzip -l) / Inhalt (unzip -p) lesen, wie tools/test-zip.js
+function zipPruefen(daten, ordner) {
+  const datei = path.join(ordner, 'export.zip');
+  fs.writeFileSync(datei, daten);
+  execFileSync('unzip', ['-tq', datei]);
+  return {
+    liste: execFileSync('unzip', ['-l', datei], { encoding: 'utf8' }),
+    lese: (name) => execFileSync('unzip', ['-p', datei, name], { encoding: 'utf8' }),
+  };
+}
+
+test('statistik: zählt nur behaltene Fotos, Einzel/Streifen, Filter, Gästebuch, Top-Liste und Gäste ohne Foto', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Berg', tisch: 'Tisch 1' },
+      { id: 'g2', name: 'Ben Kurz', tisch: 'Tisch 2' },
+      { id: 'g3', name: 'Cora Nie', tisch: 'Tisch 2' },
+    ]);
+    await fotoSpeichern(speicher, { modus: 'einzel', filter: 'sw', abzuege: 2, gaeste: ['g1', 'g2'] });
+    await fotoSpeichern(speicher, { modus: 'streifen', filter: 'farbe', abzuege: 1, gaeste: ['g1'] });
+    await fotoSpeichern(speicher, { modus: 'einzel', filter: 'vintage', behalten: false }); // verworfen
+    await fotoSpeichern(speicher, { modus: 'einzel', filter: undefined }); // ohne Filterangabe zählt als Farbe
+
+    const s = speicher.statistik();
+    assert.equal(s.fotos, 3);
+    assert.equal(s.verworfen, 1);
+    assert.equal(s.einzel, 2);
+    assert.equal(s.streifen, 1);
+    assert.equal(s.abzuege, 3);
+    assert.deepEqual(s.filter, { sw: 1, farbe: 2 });
+    assert.equal(s.gaestebuch, 2);
+    assert.deepEqual(s.top, [{ name: 'Anna Berg', anzahl: 2 }, { name: 'Ben Kurz', anzahl: 1 }]);
+    assert.equal(s.gaesteGesamt, 3);
+    assert.equal(s.gaesteOhneFoto, 1, 'nur Cora steht ohne Foto da');
+    assert.equal(s.proStunde.reduce((a, x) => a + x.anzahl, 0), 3);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('dankeskarten: je Gast das neueste Einzelfoto, sonst ein Streifen; Gast ohne Foto bleibt leer', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Berg', tisch: 'Tisch 1', strasse: 'Hauptstr. 1', plz: '10115', ort: 'Berlin' },
+      { id: 'g2', name: 'Ben Kurz', tisch: 'Tisch 2' },
+      { id: 'g3', name: 'Cora Nie' },
+      { id: 'g4', name: 'Dora Fuchs' },
+    ]);
+    const a = await fotoSpeichern(speicher, { modus: 'einzel', gaeste: ['g1', 'g2'] });
+    const b = await fotoSpeichern(speicher, { modus: 'einzel', gaeste: ['g1'] }); // neuestes Einzelfoto für Anna
+    await fotoSpeichern(speicher, { modus: 'streifen', gaeste: ['g2'] }); // neuer, aber Streifen: Einzelfoto bevorzugt
+    const e = await fotoSpeichern(speicher, { modus: 'streifen', gaeste: ['g4'] }); // Dora hat nur einen Streifen
+
+    const karten = Object.fromEntries(speicher.dankeskarten().map((k) => [k.id, k]));
+    assert.equal(karten.g1.foto, b.id);
+    assert.equal(karten.g1.fotos, 2);
+    assert.equal(karten.g1.strasse, 'Hauptstr. 1');
+    assert.equal(karten.g2.foto, a.id, 'Ben bekommt das Einzelfoto, nicht den neueren Streifen');
+    assert.equal(karten.g2.fotos, 2);
+    assert.equal(karten.g3.foto, null);
+    assert.equal(karten.g3.fotos, 0);
+    assert.equal(karten.g4.foto, e.id, 'ohne Einzelfoto wird der Streifen genommen');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('dankeskarten.csv: UTF-8 mit BOM, Kopfzeile, Semikolon, je Gast eine Zeile', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Berg', tisch: 'Tisch 1', strasse: 'Hauptstr. 1', plz: '10115', ort: 'Berlin' },
+      { id: 'g2', name: 'Cora Nie' },
+    ]);
+    const a = await fotoSpeichern(speicher, { gaeste: ['g1'] });
+    const csv = speicher.dankeskartenCsv();
+    assert.ok(csv.startsWith('﻿'), 'BOM fehlt (Excel liest sonst Umlaute falsch)');
+    const zeilen = csv.slice(1).split('\r\n');
+    assert.equal(zeilen.length, 3, 'Kopfzeile plus zwei Gäste');
+    assert.equal(zeilen[0], '"Name";"Tisch";"Straße";"PLZ";"Ort";"Foto";"Fotos mit diesem Gast"');
+    assert.equal(zeilen[1], `"Anna Berg";"Tisch 1";"Hauptstr. 1";"10115";"Berlin";"${a.id}.jpg";"1"`, 'alle Felder stehen in Anführungszeichen');
+    assert.equal(zeilen[2], '"Cora Nie";"";"";"";"";"";"0"');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('diashow: nach jedem zweiten Foto der Box ein eigenes Foto, verworfene fehlen; ohne Fotos nur die eigenen', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.einstellungenSetzen({ eigeneAlle: 2 });
+    const eigen = speicher.eigenesSpeichern(Buffer.from('eigenes'), 'png');
+    const f1 = await fotoSpeichern(speicher, {});
+    const f2 = await fotoSpeichern(speicher, {});
+    const f3 = await fotoSpeichern(speicher, {});
+    await fotoSpeichern(speicher, { behalten: false });
+
+    const d = speicher.diashow();
+    assert.deepEqual(d.bilder.map((b) => (b.startsWith('/eigene/') ? 'eigen' : 'foto')), ['foto', 'foto', 'eigen', 'foto']);
+    assert.deepEqual(d.bilder, [`/fotos/${f3.id}/druck.jpg`, `/fotos/${f2.id}/druck.jpg`, `/eigene/${encodeURIComponent(eigen)}`, `/fotos/${f1.id}/druck.jpg`]);
+  } finally {
+    t.aufraeumen();
+  }
+
+  const leer = speicherTemp();
+  try {
+    const { speicher } = leer;
+    speicher.einstellungenSetzen({ eigeneAlle: 2 });
+    const e1 = speicher.eigenesSpeichern(Buffer.from('a'), 'jpg');
+    const e2 = speicher.eigenesSpeichern(Buffer.from('b'), 'png');
+    await fotoSpeichern(speicher, { behalten: false });
+    assert.deepEqual([...speicher.diashow().bilder].sort(), [`/eigene/${e1}`, `/eigene/${e2}`].sort(), 'ohne behaltene Fotos nur die eigenen');
+    speicher.eigenesLoeschen(e1);
+    assert.deepEqual(speicher.diashow().bilder, [`/eigene/${e2}`]);
+  } finally {
+    leer.aufraeumen();
+  }
+});
+
+test('exportZip: Ordner nach Tisch und nach Gast, „ohne Zuordnung“, Gästebuch-CSV immer, Dankeskarten nur mit Gästen', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher, ordner } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Berg', tisch: 'Tisch 1' }, { id: 'g2', name: 'Ben Kurz', tisch: 'Tisch 2' }]);
+    const mit = await fotoSpeichern(speicher, { gaeste: ['g1'] });
+    const ohne = await fotoSpeichern(speicher, {});
+    const verworfen = await fotoSpeichern(speicher, { behalten: false });
+
+    const tisch = zipPruefen(await speicher.exportZip('tisch'), ordner);
+    assert.ok(tisch.liste.includes(`nach-tisch/Tisch 1/${mit.id}.jpg`), 'Ordner „Tisch 1“ fehlt');
+    assert.ok(tisch.liste.includes(`nach-tisch/ohne Zuordnung/${ohne.id}.jpg`), 'Foto ohne Gast muss in „ohne Zuordnung“');
+    assert.ok(!tisch.liste.includes(verworfen.id), 'verworfenes Foto darf nicht exportiert werden');
+    assert.ok(tisch.liste.includes('gaestebuch/gaestebuch.csv'));
+    assert.ok(tisch.liste.includes('dankeskarten.csv'));
+    assert.ok(tisch.lese('gaestebuch/gaestebuch.csv').includes('Anna Berg'));
+
+    const gast = zipPruefen(await speicher.exportZip('gast'), ordner);
+    assert.ok(gast.liste.includes(`nach-gast/Anna Berg/${mit.id}.jpg`), 'Ordner „Anna Berg“ fehlt');
+    assert.ok(gast.liste.includes(`nach-gast/ohne Zuordnung/${ohne.id}.jpg`));
+    assert.ok(!gast.liste.includes('nach-tisch/'));
+
+    const zeit = zipPruefen(await speicher.exportZip('zeit'), ordner);
+    assert.ok(zeit.liste.includes(`druckbilder/${mit.id}.jpg`));
+    assert.ok(zeit.liste.includes(`aufnahmen/${mit.id}_aufnahme-1.jpg`));
+  } finally {
+    t.aufraeumen();
+  }
+
+  const ohneGaeste = speicherTemp();
+  try {
+    await fotoSpeichern(ohneGaeste.speicher, {});
+    const z = zipPruefen(await ohneGaeste.speicher.exportZip('zeit'), ohneGaeste.ordner);
+    assert.ok(z.liste.includes('gaestebuch/gaestebuch.csv'), 'die Gästebuch-CSV gehört immer dazu');
+    assert.ok(!z.liste.includes('dankeskarten.csv'), 'ohne Gäste keine Dankeskarten-Liste');
+  } finally {
+    ohneGaeste.aufraeumen();
   }
 });
 
