@@ -255,13 +255,15 @@ P18. **✅ (Lieferung 72) Mehr Eintragsarten:** Stadtbummel/Spaziergang, Aussich
 - F3. Sprachnotizen und Highlights des Tages auch in der Freunde-Ansicht.
 - F4. „Unterwegs mit Freunden“ besser erreichbar machen (ist zu versteckt), Vorschläge siehe Gespräch vom 7.11.
 - F5. Gleiche Funktionen wie im Reiseblog: Herzen geben (für die andere Crew im Tagebuch sichtbar), Sprachnotizen, Highlights des Tages.
-- F6. Kein 👋-Symbol in der Heute-Karte (stünde mitten in der eigenen Reise). Stattdessen eine schmale, einzeilige Zeile zwischen
-  Kopfzeile und eigener Reise, z. B. „👋 Familie Franz · Norwegen, Tag 3 +1 ›“: nur Crews, die gerade unterwegs sind;
-  Tipp öffnet die Reise (bei mehreren die Freunde-Seite); nicht gefolgte Crews mit „folgen anfragen ›“.
+- F6. Kein 👋-Symbol in der Heute-Karte (stünde mitten in der eigenen Reise). Stattdessen zwischen Kopfzeile und eigener Reise
+  **je unterwegs befindlicher Crew eine schmale, einzeilige Zeile**, z. B. „👋 Familie Franz · Norwegen, Tag 3 ›“; Tipp öffnet
+  direkt deren Reise. Nicht gefolgte Crews mit „folgen anfragen ›“. Selten mehr als zwei gleichzeitig.
+  **Der 👋-Hinweis neben der Pinnwand entfällt** dafür.
 - F7. Auf „Unterwegs mit Freunden“ alle freigegebenen Reisen der anderen Crews gesammelt anzeigen (laufende und frühere,
   je Crew), jede lässt sich wie beim Live-Verfolgen aufrufen (Karte, Einträge, Fotos …). Ersetzt bzw. erweitert F1.
-- Offen: 👋-Hinweis neben der Pinnwand behalten oder durch die Zeile ersetzen? Antippen der Freunde-Linie auf der Karte
-  öffnet ihre Reise? Gemeinsamer Bereich „Freunde“ (Unterwegs | Freundebuch)? Kommentare der Freunde zu Einträgen?
+  **Je Reise einzeln entscheiden, ob sie für andere Crews sichtbar ist** (Schalter in der Reise).
+- F8. Tipp auf die Linie bzw. den Standort einer anderen Crew auf der eigenen Karte öffnet deren Reise.
+- Entschieden: „Unterwegs mit Freunden“ und Freundebuch bleiben getrennt. Keine Kommentare der anderen Crews, nur Herzen.
 
 **Entscheidungen Paket E (mit Tobi durchgegangen, 5.11.2026):**
 - **Reisearten** (Hauptart je Reise, jederzeit änderbar, bestehende Reisen = Camping): 🚐 Camping, ⛺ Zelten,
