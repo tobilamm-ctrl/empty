@@ -55,7 +55,7 @@ export function renderBlog(root, data, opts = {}) {
     const hl = highlights.filter(h => h.day === d);
     return `<li class="day"><h2><span>${n > 0 ? 'Tag ' + n : day(d)}</span>${n > 0 ? `<small>${day(d)}</small>` : ''}</h2>
       ${hl.length ? `<p class="blog-hl">Highlights des Tages: ${hl.map(h => `${esc(h.emoji)} ${esc(h.text)}`).join(' · ')}</p>` : ''}
-      <ol>${list.reverse().map(e => `<li class="stop stop-${e.type}"><div class="blog-stop">
+      <ol>${list.reverse().map(e => `<li class="stop stop-${e.type}" data-entry="${esc(e.id)}"><div class="blog-stop">
         <span class="node"></span>
         <span class="body">
           <span class="time">${e.date.slice(11, 16)} ${TYPE[e.type] || ''}</span>

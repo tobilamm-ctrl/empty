@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 32;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 33;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -336,7 +336,7 @@ function friendPosts(string $crew, array $entries): void {
         q('DELETE FROM push_log WHERE k = ?', [$k]);
         q('INSERT INTO push_log (k, at) VALUES (?, ?)', [$k, now()]);
         try { pushSend($sub, ['title' => '👋 ' . $name . (count($mine) > 1 ? ': ' . count($mine) . ' neue Einträge' : ': neuer Eintrag'), 'body' => mb_substr($what, 0, 80) . (!empty($e['place']) ? ' · ' . $e['place'] : ''),
-            'url' => './#/tagebuch', 'tag' => 'post-' . $crew]); } catch (Throwable $e2) { /* weiter */ }
+            'url' => './#/tagebuch/' . $crew . '.' . ($e['id'] ?? ''), 'tag' => 'post-' . $crew]); } catch (Throwable $e2) { /* weiter */ }
     }
 }
 // Andere Crew ist losgefahren (ihre Reise läuft seit eben): allen anderen Crews Bescheid geben.

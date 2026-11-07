@@ -56,7 +56,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 82;
+const APP_VERSION = 83;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -2786,7 +2786,8 @@ function onHash() {
   closeSheet();
   render();
   if (r !== 'karte') window.scrollTo(0, 0);
-  const fn = arg && ROUTE_ARGS[`${r}/${arg}`];
+  // Genau passend (z. B. „karte/hier“) oder mit Platzhalter (z. B. „tagebuch/*“ für einen Eintrag einer anderen Crew)
+  const fn = arg && (ROUTE_ARGS[`${r}/${arg}`] || (ROUTE_ARGS[`${r}/*`] && (() => ROUTE_ARGS[`${r}/*`](decodeURIComponent(arg)))));
   if (fn) {
     history.replaceState(null, '', '#/' + r);
     // warten, bis Anmeldung und Daten bereit sind

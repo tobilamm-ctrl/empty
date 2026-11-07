@@ -2632,3 +2632,6 @@ div.crew-row { cursor: default; }
 /* Version 82: Länder im Reiseblog nur als Flaggen, etwas größer */
 .blog-head .facts-flags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .blog-head .facts-flags img.fl { height: 26px; width: 35px; border-radius: 4px; vertical-align: middle; }
+/* Version 83: Sprung zu einem Eintrag (aus einer Mitteilung) kurz hervorheben */
+.stop.flash .blog-stop { animation: stopFlash 2.4s ease-out; border-radius: 12px; }
+@keyframes stopFlash { 0%, 40% { background: color-mix(in srgb, #E0A21B 30%, transparent); } 100% { background: transparent; } }

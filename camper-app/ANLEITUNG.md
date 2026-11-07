@@ -136,6 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 83: Mitteilung führt direkt zum Eintrag
+
+**Dafür die neue `api/index.php` hochladen.**
+
+- Ein Tipp auf die Mitteilung „👋 Familie Franz: neuer Eintrag“ öffnet jetzt gleich den Reiter dieser Crew im Tagebuch.
+  Die App springt zu genau diesem Eintrag und hebt ihn kurz hervor. Ist die Reise schon vorbei, öffnet sie sich als Fenster.
+
 ## Neu in Version 82: Länder im Reiseblog als Flaggen
 
 - Im Kopf des Reiseblogs und der Reisen anderer Crews stehen die Länder jetzt nur noch als Flaggen nebeneinander, etwas größer und ohne das Wort „Länder“.

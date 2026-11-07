@@ -255,6 +255,20 @@ export default function installMitreisen(app) {
       ${cs.map(c => `<button type="button" role="tab" class="crew-tab${tab === c.id ? ' on' : ''}" aria-selected="${tab === c.id}" data-action="crew-tab" data-id="${c.id}" style="--c:${esc((c.trip || {}).color || '#0F6670')}">
         <span aria-hidden="true">👋</span> ${esc(c.name)}${isNew(c) && tab !== c.id ? '<i class="cr-new" aria-label="Neue Beiträge"></i>' : ''}</button>`).join('')}</nav>`;
   };
+  // Aus einer Mitteilung „neuer Eintrag“: #/tagebuch/<crew>.<eintrag> öffnet die Crew und springt zum Eintrag
+  const jumpTo = (sel, n = 0) => {
+    const el = document.querySelector(sel);
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2500); return; }
+    if (n < 40) setTimeout(() => jumpTo(sel, n + 1), 250);
+  };
+  app.ROUTE_ARGS['tagebuch/*'] = async arg => {
+    const [of, entry] = String(arg).split('.');
+    if (!of) return;
+    await load(true);
+    const c = list().find(x => x.id === of);
+    if (c && c.follow === 'ok' && c.travelling) { tab = of; render(); if (entry) jumpTo(`#crewBlog [data-entry="${CSS.escape(entry)}"]`); }
+    else if (c && c.follow === 'ok') { ACTIONS['mr-open']({ dataset: { id: of } }); if (entry) jumpTo(`#sheet [data-entry="${CSS.escape(entry)}"]`); }
+  };
   ACTIONS['crew-tab'] = el => { tab = el.dataset.id || ''; app.render(); window.scrollTo({ top: 0 }); };
   // Gewählte Crew: statt der eigenen Reise ihre Reiseblog-Ansicht (wird nach dem Zeichnen gefüllt)
   app.diaryOther = () => {
