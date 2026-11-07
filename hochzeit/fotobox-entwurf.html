@@ -779,7 +779,7 @@ p { margin: 0; }
     const liste = filterListe(), key = liste.join(); if (key === kachelnKey) return; kachelnKey = key;
     const gross = liste.length <= 2;
     $('kFilter').className = 'kacheln' + (gross ? '' : ' vier');
-    $('kFilter').innerHTML = liste.map((f) => `<button class="kachel k-th" data-a="filter" data-w="${f}"><span class="th f-${f}"><canvas width="360" height="${gross ? 240 : 180}" data-f="${f}"></canvas><span class="th-t">${FILTER[f]}</span></span></button>`).join('');
+    $('kFilter').innerHTML = liste.map((f) => `<button class="kachel k-th" data-a="filter" data-w="${f}"><span class="th f-${f}"><canvas width="360" height="${gross ? 240 : 144}" data-f="${f}"></canvas><span class="th-t">${FILTER[f]}</span></span></button>`).join('');
   }
 
   /* ---------- QR-Codes (qrcode-generator von cdnjs; fehlt sie, erscheint die Adresse als Text) ---------- */
