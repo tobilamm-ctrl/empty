@@ -46,8 +46,13 @@ export function renderBlog(root, data, opts = {}) {
   const legs = splitLegs(stops.map(e => ({ lat: e.lat, lng: e.lng, e })), tripKind(trip));
   if (drive.length) drive.forEach(t => { const p = pts(t.pts); for (let i = 1; i < p.length; i++) dist += km({ lat: p[i - 1][0], lng: p[i - 1][1] }, { lat: p[i][0], lng: p[i][1] }); });
   else legs.filter(l => !['air', 'ship', 'rail'].includes(l.mode)).forEach(l => { dist += legKm(l); });
-  const flown = legs.filter(l => l.mode === 'air').reduce((s, l) => s + legKm(l), 0);
-  const nights = es.filter(e => isNight(e.type)).length;
+  const byLeg = m => legs.filter(l => l.mode === m).reduce((s, l) => s + legKm(l), 0);
+  const flown = byLeg('air'), sailed = byLeg('ship'), railed = byLeg('rail');
+  // Nächte wie in der App: mindestens so viele, wie die Reise bisher dauert (auch an Bord oder ohne Übernachtungs-Eintrag)
+  const first0 = trip.start || (es[0] || {}).date?.slice(0, 10);
+  const end0 = trip.end && trip.end < today() ? trip.end : today();
+  const spanDays = first0 && first0 <= end0 ? Math.round((new Date(end0 + 'T12:00') - new Date(first0 + 'T12:00')) / 864e5) + 1 : 0;
+  const nights = Math.max(es.filter(e => isNight(e.type)).length, Math.max(0, spanDays - 1));
   const first = trip.start || (es[0] || {}).date?.slice(0, 10);
   const countries = [...new Set(es.map(e => e.country).filter(Boolean))];
   const range = first ? `${long(first)}${trip.end ? ` bis ${long(trip.end)}` : trip.ended ? '' : ', wir sind noch unterwegs'}` : '';
@@ -83,6 +88,8 @@ export function renderBlog(root, data, opts = {}) {
         <div><b>${nights}</b><span>${nights === 1 ? 'Nacht' : 'Nächte'}</span></div>
         ${dist >= 1 ? `<div><b>${Math.round(dist).toLocaleString('de-DE')} km</b><span>${drive.length ? 'gefahren' : 'Luftlinie'}</span></div>` : ''}
         ${flown >= 1 ? `<div><b>${Math.round(flown).toLocaleString('de-DE')} km</b><span>geflogen</span></div>` : ''}
+        ${sailed >= 1 ? `<div><b>${Math.round(sailed).toLocaleString('de-DE')} km</b><span>per Schiff</span></div>` : ''}
+        ${railed >= 1 ? `<div><b>${Math.round(railed).toLocaleString('de-DE')} km</b><span>per Bahn</span></div>` : ''}
         ${countries.length ? `<div class="facts-flags" aria-label="${countries.length === 1 ? 'Land' : 'Länder'}">${countries.map(cc => flagImg(cc)).join('')}</div>` : ''}
       </div></header>
     ${greeting ? `<p class="blog-greeting">${esc(greeting).replace(/\n/g, '<br>')}</p>` : ''}
@@ -187,7 +194,12 @@ function drawMap(box, trip, stops, tracks, live, liveLabel) {
   const last = live ? [live.lat, live.lng] : stops.length ? [stops[stops.length - 1].lat, stops[stops.length - 1].lng] : null;
   if (last) L.circleMarker(last, { radius: 12, color: trip.color, weight: 3, fillOpacity: 0 }).bindPopup(live ? (liveLabel || 'Standort') : 'Zuletzt hier').addTo(map);
   const all = [...lines.flat(), ...stops.map(e => [e.lat, e.lng]), ...(last ? [last] : [])];
-  if (all.length > 1) map.fitBounds(all, { padding: [30, 30], maxZoom: 12 });
-  else if (all.length) map.setView(all[0], 11);
+  const fit = () => {
+    if (all.length > 1) map.fitBounds(all, { padding: [30, 30], maxZoom: 12 });
+    else if (all.length) map.setView(all[0], 11);
+  };
+  fit();
+  // Ist der Platz für die Karte beim Zeichnen noch nicht fertig (Reiter, Fenster), passt sie sonst nicht: kurz danach noch einmal
+  setTimeout(() => { try { map.invalidateSize(); fit(); } catch { /* Karte schon weg */ } }, 350);
   return map;
 }

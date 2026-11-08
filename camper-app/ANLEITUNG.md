@@ -136,6 +136,13 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 87: Nächte und Schiffsstrecke im Reiseblog
+
+- **Nächte:** Im Reiseblog und in den Reisen anderer Crews zählen die Nächte jetzt wie in eurer eigenen Reiseübersicht: mindestens so viele, wie die Reise bisher dauert.
+  Bisher zählten nur Einträge wie Stellplatz oder Unterkunft. Bei einer Kreuzfahrt stand deshalb „0 Nächte“.
+- **Strecke per Schiff und Bahn:** Neben „geflogen“ stehen jetzt auch „per Schiff“ und „per Bahn“.
+- **Karte:** Sie passt sich kurz nach dem Öffnen noch einmal an, damit die ganze Reise zu sehen ist und nicht nur ein Ausschnitt.
+
 ## Neu in Version 86: Mitglieder anderer Crews mit Namen
 
 **Dafür die neue `api/index.php` hochladen.**
