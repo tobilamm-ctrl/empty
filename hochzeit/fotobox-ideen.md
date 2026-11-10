@@ -274,3 +274,7 @@ was er aufnimmt (Einzelfoto/Streifen, Farbe/Schwarzweiß), steht in den Service-
 
 iPad (06.11.2026): wahrscheinlich iPad 6. Generation (WLAN, 9,7 Zoll, Home-Taste, Lightning), iOS 17.7 → passt;
 Geführter Zugriff per Dreifachklick auf die Home-Taste. Akku ist alt: den ganzen Abend am Ladekabel lassen.
+
+Kamera (10.11.2026): Planung jetzt Canon EOS 2000D (statt 200D). Objektiv EF-S 18–55 mm, ca. 20 mm, Zoom fixieren.
+Fokus manuell fest auf die Bodenmarkierung (Autofokus im Livebild der 2000D ist langsam), Blende 5,6–8, gutes Licht.
+Netzteil mit Akku-Attrappe für LP-E10 (Canon ACK-E10 oder Nachbau). digiCamControl-Unterstützung der 2000D vor dem Kauf prüfen.
