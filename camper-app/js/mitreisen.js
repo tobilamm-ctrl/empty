@@ -58,6 +58,7 @@ export default function installMitreisen(app) {
     d.entries.forEach(e => { likes[e.id] = e.likes || 0; if (e.liked) liked.add(e.id); });
     return {
       likesOn: true, likes, liked, notify: toast,
+      headExtra: pinBtn(d),
       people: d.people || [],
       viewPhotos: app.openPhotos ? (list, i) => app.openPhotos(list, i) : null,
       commentsOn: true, comments: Object.fromEntries(d.entries.map(e => [e.id, e.comments || []])),
@@ -73,6 +74,50 @@ export default function installMitreisen(app) {
       },
     };
   }
+
+  /* ---------- Reisen anderer Crews merken (erscheinen unter „Reisen“ und auf der Karte „Alle Reisen“) ---------- */
+
+  const pinDoc = () => S.meta.find(m => m.id === 'pinnedTrips') || { id: 'pinnedTrips', list: [] };
+  const pinned = () => pinDoc().list || [];
+  const isPinned = (of, trip) => pinned().some(p => p.of === of && p.trip === trip);
+  function pinBtn(d) {
+    if (!d.trip) return '';
+    const on = isPinned(d.of, d.trip.id);
+    return `<button type="button" class="ghost small-btn mr-pin${on ? ' on' : ''}" data-action="mr-pin" data-of="${d.of}" data-trip="${d.trip.id}">${on ? '📌 Gemerkt' : '📌 Merken'}</button>`;
+  }
+  ACTIONS['mr-pin'] = el => {
+    const of = el.dataset.of, trip = el.dataset.trip;
+    const doc = pinDoc();
+    if (isPinned(of, trip)) {
+      save('meta', { ...doc, list: pinned().filter(p => !(p.of === of && p.trip === trip)) });
+      el.classList.remove('on'); el.textContent = '📌 Merken';
+      toast('Nicht mehr gemerkt');
+      return;
+    }
+    const d = Object.values(feeds).map(f => f.data).find(x => x && x.of === of && x.trip && x.trip.id === trip);
+    if (!d) return;
+    save('meta', { ...doc, list: [...pinned(), { of, trip, crew: d.crew, name: d.trip.name, color: d.trip.color, kind: d.trip.kind || '', start: d.trip.start, end: d.trip.end, at: Date.now() }] });
+    el.classList.add('on'); el.textContent = '📌 Gemerkt';
+    toast('Gemerkt: steht jetzt unter „Reisen“ und auf der Karte bei „Alle Reisen“');
+  };
+  ACTIONS['mr-unpin'] = el => {
+    const p = pinned().find(x => x.of === el.dataset.of && x.trip === el.dataset.trip);
+    if (!p || !confirm(`„${p.name}“ von ${p.crew} nicht mehr merken?`)) return;
+    save('meta', { ...pinDoc(), list: pinned().filter(x => x !== p) });
+    render();
+  };
+  // Unter „Reisen“: gemerkte Reisen anderer Crews, neueste zuerst
+  const reisen = VIEWS.reisen;
+  VIEWS.reisen = () => {
+    const base = reisen();
+    const list2 = pinned().slice().sort((a, b) => (b.start || '').localeCompare(a.start || ''));
+    if (!list2.length) return base;
+    return `${base}<div class="toolbar"><h2>Gemerkte Reisen anderer Crews</h2></div>
+      <ul class="mr-list mr-trips pinned-trips">${list2.map(p => `<li><button class="as-text mr-trip" data-action="mr-open" data-id="${p.of}" data-trip="${p.trip}">
+        <span class="mr-dot" style="--c:${esc(p.color || '#0F6670')}"></span><span class="txt"><b>${p.kind && p.kind !== 'camping' ? `${app.kindInfo(p.kind)[2]} ` : ''}${esc(p.name || 'Reise')}</b>
+        <small>👋 ${esc(p.crew)}${p.start ? ` · ${fmtDay(p.start)}${p.end && p.end !== p.start ? ` bis ${fmtDay(p.end)}` : ''}` : ''}</small></span><span aria-hidden="true">›</span></button>
+        <button type="button" class="icon-btn small" data-action="mr-unpin" data-of="${p.of}" data-trip="${p.trip}" aria-label="Nicht mehr merken">${icon('close')}</button></li>`).join('')}</ul>`;
+  };
 
   /* ---------- Kachel unter „Mehr“ ---------- */
 
@@ -221,6 +266,18 @@ export default function installMitreisen(app) {
 
   const mapOn = () => LS.get('followMap', true) !== false;
   let fetching = false;
+  let pinFetching = false;
+  app.mapHooks.push((layer, scope) => {
+    if (scope !== 'all' || !pinned().length) return [];
+    const pts = [];
+    const missing = pinned().filter(p => !feeds[`${p.of}|${p.trip}`]);
+    pinned().forEach(p => { const f = feeds[`${p.of}|${p.trip}`]; if (f && f.data.trip) { try { pts.push(...drawTrip(layer, { ...f.data, running: false }, false)); } catch { /* egal */ } } });
+    if (missing.length && !pinFetching && navigator.onLine) {
+      pinFetching = true;
+      Promise.all(missing.map(p => feed(p.of, false, p.trip).catch(() => null))).finally(() => { pinFetching = false; if (app.ui.route === 'karte') render(); });
+    }
+    return pts;
+  });
   app.mapHooks.push(layer => {
     if (!mapOn()) return [];
     const ids = list().filter(c => c.follow === 'ok' && c.travelling).map(c => c.id);
@@ -248,7 +305,10 @@ export default function installMitreisen(app) {
   const dayOf = since => (since ? Math.max(1, Math.round((new Date(app.today() + 'T12:00') - new Date(since + 'T12:00')) / 864e5) + 1) : 0);
   // Reiter: eigene Reise und je gefolgte Crew, die gerade unterwegs ist. Gewählt bleibt, bis man zurückwechselt.
   let tab = '';
-  const onTour = () => list().filter(c => c.follow === 'ok' && c.travelling);
+  // Unterwegs oder vor höchstens 7 Tagen zurückgekommen (der Server meldet das als „recent“)
+  const onTour = () => list().filter(c => c.follow === 'ok' && (c.travelling || c.recent));
+  const tripOf = c => (c && !c.travelling && c.recent ? c.recent.id : '');
+  const tabTrip = () => tripOf(list().find(c => c.id === tab));
   const tabs = () => {
     const cs = onTour();
     if (!cs.length) { tab = ''; return ''; }
@@ -256,8 +316,8 @@ export default function installMitreisen(app) {
     const own = app.currentTrip && app.currentTrip();
     return `<nav class="crew-tabs" role="tablist">
       <button type="button" role="tab" class="crew-tab${tab ? '' : ' on'}" aria-selected="${!tab}" data-action="crew-tab" data-id="">🚐 ${esc(app.crewName ? app.crewName() : (own ? 'Unsere Reise' : 'Unser Tagebuch'))}</button>
-      ${cs.map(c => `<button type="button" role="tab" class="crew-tab${tab === c.id ? ' on' : ''}" aria-selected="${tab === c.id}" data-action="crew-tab" data-id="${c.id}" style="--c:${esc((c.trip || {}).color || '#0F6670')}">
-        <span aria-hidden="true">👋</span> ${esc(c.name)}${isNew(c) && tab !== c.id ? '<i class="cr-new" aria-label="Neue Beiträge"></i>' : ''}</button>`).join('')}</nav>`;
+      ${cs.map(c => `<button type="button" role="tab" class="crew-tab${tab === c.id ? ' on' : ''}" aria-selected="${tab === c.id}" data-action="crew-tab" data-id="${c.id}" style="--c:${esc((c.trip || c.recent || {}).color || '#0F6670')}">
+        <span aria-hidden="true">👋</span> ${esc(c.name)}${c.travelling ? '' : ' <small class="ct-done">· zurück</small>'}${isNew(c) && tab !== c.id ? '<i class="cr-new" aria-label="Neue Beiträge"></i>' : ''}</button>`).join('')}</nav>`;
   };
   // Aus einer Mitteilung „neuer Eintrag“: #/tagebuch/<crew>.<eintrag> öffnet die Crew und springt zum Eintrag
   const jumpTo = (sel, n = 0) => {
@@ -279,12 +339,12 @@ export default function installMitreisen(app) {
     if (!ready() || !tab) return '';
     const t = tabs();
     if (!tab) return '';
-    return `${t}<div class="crew-blog" id="crewBlog" data-of="${tab}"><p class="sub">Wird geladen …</p></div>`;
+    return `${t}<div class="crew-blog" id="crewBlog" data-of="${tab}" data-trip="${tabTrip()}"><p class="sub">Wird geladen …</p></div>`;
   };
   // Karte daneben (zwei Spalten): bei gewähltem Crew-Reiter zeigt „Diese Reise“ deren Reise
   app.mapOther = () => {
     if (!tab || app.ui.route !== 'tagebuch') return null;
-    const f = feeds[`${tab}|`];
+    const f = feeds[`${tab}|${tabTrip()}`];
     if (!f || !f.data.trip) return null;
     return { key: `crew:${tab}:${f.data.trip.id}`, draw: layer => drawTrip(layer, f.data, true) };
   };
@@ -293,21 +353,21 @@ export default function installMitreisen(app) {
   app.afterDraw.push(() => {
     const box = document.getElementById('crewBlog');
     if (!box) { if (shown && !document.body.contains(shown.node)) { shown.cleanup(); shown = null; } return; }
-    const of = box.dataset.of, f = feeds[`${of}|`];
+    const of = box.dataset.of, trip = box.dataset.trip || '', f = feeds[`${of}|${trip}`];
     const fill = d => {
-      const key = `${of}|${d.trip ? d.trip.id : ''}|${feeds[`${of}|`] ? feeds[`${of}|`].at : 0}`;
+      const key = `${of}|${d.trip ? d.trip.id : ''}|${feeds[`${of}|${trip}`] ? feeds[`${of}|${trip}`].at : 0}`;
       const c = list().find(x => x.id === of);
       if (c) { markSeen(c); }
       if (shown && shown.key === key) { box.replaceWith(shown.node); return; }
       if (shown) shown.cleanup();
       const node = document.createElement('div');
-      node.className = 'crew-blog'; node.id = 'crewBlog'; node.dataset.of = of;
+      node.className = 'crew-blog'; node.id = 'crewBlog'; node.dataset.of = of; node.dataset.trip = trip;
       box.replaceWith(node);
       if (!d.trip) { node.innerHTML = '<p class="hint">Gerade keine Reise zu sehen.</p>'; shown = { key, node, cleanup: () => {} }; return; }
       shown = { key, node, cleanup: renderBlog(node, { ...d, at: Date.now() }, blogOpts(d)) };
     };
     if (f && Date.now() - f.at < 5 * 60000) fill(f.data);
-    else feed(of).then(d => { if (document.getElementById('crewBlog')) { fill(d); if (document.body.classList.contains('split')) render(); } }).catch(e => { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
+    else feed(of, false, trip).then(d => { if (document.getElementById('crewBlog')) { fill(d); if (document.body.classList.contains('split')) render(); } }).catch(e => { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; });
   });
   app.diaryTop = () => {
     if (!ready()) return '';

@@ -13,7 +13,7 @@ const ADMIN_WRITE = ['stamps'];            // eigene Reisepass-Stempel: alle seh
 const FILE_MAX = 10 * 1024 * 1024;         // PDFs (Tickets, Prospekte, Dokumente) bis 10 MB
 const INVITE_DAYS = 14;                    // so lange gilt ein Einladungslink
 const TOKEN_DAYS = 400;
-const API_VERSION = 35;                     // erhöhen, wenn die App neue Server-Aktionen braucht
+const API_VERSION = 36;                     // erhöhen, wenn die App neue Server-Aktionen braucht
 const COOKIE = 'lammping';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -1201,6 +1201,17 @@ case 'travel':
         $row = ['id' => $c['id'], 'name' => $c['name'], 'travelling' => (bool) $t, 'since' => $t['start'] ?? '', 'follow' => $me, 'follower' => $rel[$c['id']]['them'] ?? null];
         // Wer folgt, sieht Name und Art der laufenden Reise (für die Zeile im Tagebuch)
         if ($me === 'ok' && $t) $row['trip'] = ['id' => $t['id'], 'name' => $t['name'] ?? '', 'kind' => (string) ($t['kind'] ?? ''), 'color' => $t['color'] ?? '#0F6670'];
+        // Gerade beendet (Ende höchstens 7 Tage her): bleibt für Folgende noch als Reiter im Tagebuch
+        if ($me === 'ok' && !$t) {
+            $d = date('Y-m-d'); $week = date('Y-m-d', time() - 7 * 86400);
+            foreach (friendTrips($c['id']) as $x) {
+                $e = (string) ($x['end'] ?? ''); $s0 = (string) ($x['start'] ?? '');
+                if ($s0 !== '' && $s0 <= $d && $e !== '' && $e >= $week && $e <= $d) {
+                    $row['recent'] = ['id' => $x['id'], 'name' => $x['name'] ?? '', 'kind' => (string) ($x['kind'] ?? ''), 'color' => $x['color'] ?? '#0F6670', 'end' => $e];
+                    break;
+                }
+            }
+        }
         // Wer freigegeben hat: Stand der Einträge (für „Neues“)
         if ($me === 'ok') $row['rev'] = (int) (one("SELECT MAX(rev) AS r FROM docs WHERE crew_id = ? AND coll IN ('entries', 'trips', 'tracks')", [$c['id']])['r'] ?? 0);
         $list[] = $row;

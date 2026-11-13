@@ -2653,3 +2653,9 @@ div.crew-row { cursor: default; }
 .pub-comments h3 small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .stop-badge.pub-cmts { border-style: dotted; }
 .blog-people { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+/* Version 88: zurückgekommene Crews, gemerkte Reisen */
+.crew-tab .ct-done { font-weight: 400; opacity: .8; }
+.mr-pin { margin: 6px 0 0; }
+.mr-pin.on { border-color: var(--petrol); }
+.pinned-trips li { display: flex; align-items: center; gap: 6px; }
+.pinned-trips .mr-trip { flex: 1; }

@@ -136,6 +136,19 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 88: Reisen anderer Crews bleiben auffindbar
+
+**Dafür die neue `api/index.php` hochladen.**
+
+- **Reiter bleibt nach der Rückkehr.** Beendet eine Crew, der ihr folgt, ihre Reise, bleibt ihr Reiter oben im Tagebuch noch 7 Tage stehen, mit „· zurück“.
+  So seht ihr auch Einträge und Fotos, die nach dem Ende noch dazukommen.
+- **„📌 Merken“.** In jeder Reise einer anderen Crew (Reiter im Tagebuch, Crews on the Road, Karte) steht unter dem Reisenamen „📌 Merken“.
+  - Gemerkte Reisen stehen dauerhaft unter **Reisen › Gemerkte Reisen anderer Crews**, mit Crew-Name und Datum. Ein Tipp öffnet sie wie im Reiseblog.
+  - Auf der Karte erscheinen sie bei **„Alle Reisen“** gestrichelt in ihrer Farbe. Ein Tipp auf die Linie öffnet die Reise.
+  - Mit ✕ in der Liste oder einem zweiten Tipp auf „📌 Gemerkt“ ist die Reise wieder entfernt.
+  - Gemerkt wird für eure ganze Crew.
+- Eine gemerkte Reise ist keine Kopie: Schaltet die andere Crew sie unsichtbar, löscht sie oder nimmt die Freigabe zurück, lässt sie sich nicht mehr öffnen.
+
 ## Neu in Version 87: Nächte und Schiffsstrecke im Reiseblog
 
 - **Nächte:** Im Reiseblog und in den Reisen anderer Crews zählen die Nächte jetzt wie in eurer eigenen Reiseübersicht: mindestens so viele, wie die Reise bisher dauert.
