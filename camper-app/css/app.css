@@ -2659,3 +2659,42 @@ div.crew-row { cursor: default; }
 .mr-pin.on { border-color: var(--petrol); }
 .pinned-trips li { display: flex; align-items: center; gap: 6px; }
 .pinned-trips .mr-trip { flex: 1; }
+
+/* ---------- Version 89: Aufgeräumt ---------- */
+/* Tagebuch: Planung/Tagebuch und „⋯“ in einer Zeile; dahinter Reise-Leiste und Ansicht */
+.diary-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.diary-row .seg.tabs { flex: 1; margin-bottom: 0; }
+.more-toggle { flex: none; width: 44px; height: 44px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: 700 22px/1 var(--body); cursor: pointer; }
+.more-toggle.on { background: var(--mist); border-color: var(--petrol); color: var(--petrol); }
+.diary-more[hidden] { display: none; }
+@media (max-width: 699px) {
+  .trip-head .facts { margin-top: 6px; gap: 2px 14px; }
+  .trip-head .facts b { font-size: 18px; }
+  .trip-head .facts span { font-size: 13px; }
+  .trip-head .page-head h1 { font-size: 30px; }
+}
+/* Zeile unter dem Eintrag: Zahl neben dem Herz, ein Foto-Knopf mit Auswahl */
+.react-count { border: 0; background: none; padding: 4px 8px 4px 0; margin-left: -6px; font: 700 14px var(--body); color: var(--ink); cursor: pointer; min-height: 32px; }
+.react-count.ext, .react-btn.ext span { text-decoration: underline dotted; text-underline-offset: 3px; }
+.photo-add { position: relative; display: inline-block; }
+.photo-add > summary { list-style: none; display: inline-flex; align-items: center; }
+.photo-add > summary::-webkit-details-marker { display: none; }
+.photo-add-menu { position: absolute; z-index: 5; left: 0; top: calc(100% + 4px); display: flex; gap: 6px; padding: 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0, 0, 0, .14); white-space: nowrap; }
+.who-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.who-list li { display: flex; flex-direction: column; }
+.who-list b { font-size: 13px; color: var(--muted); }
+/* Mehr: Suchfeld */
+.tile-search { width: 100%; min-height: 44px; margin: 0 0 12px; padding: 8px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+.tile[hidden], .tile-sep[hidden], .recent-row[hidden] { display: none !important; }
+/* Einstellungen: Gruppen */
+.set-group { margin: 22px 0 4px; font: 700 13px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+/* Reisen und Statistik: lange Listen eingeklappt */
+.more-rows > summary { cursor: pointer; padding: 10px 0; color: var(--petrol); font-weight: 600; }
+.year-fold > summary { color: var(--ink); font: 700 18px var(--head); }
+.year-fold > summary small { font: 400 14px var(--body); color: var(--muted); margin-left: 6px; }
+/* Einheitliche Neben-Knöpfe: alle kleinen Pillen mit gleicher Höhe, Rand und Schrift */
+.stop-badge, .blog-snd, .blog-like, .crew-tab, .set-jump button {
+  min-height: 34px; border-width: 1.5px; border-radius: 999px; font-family: var(--body); font-weight: 600; font-size: 14px;
+}
+.stop-badge { padding: 4px 12px; display: inline-flex; align-items: center; gap: 4px; }
+.react-btn { min-height: 34px; min-width: 34px; }

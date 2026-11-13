@@ -136,6 +136,25 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 89: Aufgeräumt
+
+**Wichtig beim Hochladen:** Der Server besteht jetzt aus `api/index.php` **und dem neuen Ordner `api/teile/`**. Bitte beides hochladen
+(vorher eine Sicherung machen). Ohne den Ordner `api/teile/` läuft der Server nicht. `api/config.php` und `api/data` bleiben wie immer unberührt.
+
+- **Tagebuch auf dem Handy:** Die Reise-Leiste (Beenden, Fotos, Packliste, Danach) und die Ansicht-Knöpfe (Filter, Reihenfolge, Tageskarten, Kalender)
+  stehen jetzt hinter dem Knopf **„⋯“** neben „Planung | Tagebuch“. So beginnt der erste Eintrag weiter oben. Die Sprungleiste zu den Tagen bleibt sichtbar.
+  Auf großen Bildschirmen, bei beendeten Reisen und mit aktivem Filter ist alles wie bisher offen. Was ihr einmal auf- oder zuklappt, merkt sich das Gerät.
+- **Zeile unter dem Eintrag:** Neben dem Herz steht jetzt eine Zahl für alle Herzen zusammen (Familie, Reiseblog, andere Crews). Ein Tipp auf die Zahl zeigt, von wem.
+  Bei 💬 zählen die öffentlichen Kommentare mit. Eine gepunktete Unterstreichung zeigt, dass etwas von außen dabei ist.
+  **📷+** ist wieder ein Knopf und bietet nach dem Antippen „Kamera“ oder „Galerie“ an.
+- **Einstellungen in vier Gruppen:** Mein Gerät · Crew & Konten · Reise & Strecke · Sicherung & Technik. Mitteilungen steht ganz oben, „Testen“ am Ende.
+- **„Mehr“ mit Suchfeld:** Ein paar Buchstaben tippen (z. B. „tank“) zeigt nur die passenden Bereiche, Enter öffnet den ersten Treffer.
+- **Reisen:** Das Archiv ist nach Jahren gegliedert, das neueste Jahr ist offen. **Statistik:** Unter „Alle Reisen“ stehen die fünf neuesten, der Rest lässt sich aufklappen.
+- **Kleine Knöpfe einheitlicher:** Die kleinen Pillen (unter Einträgen, im Reiseblog, Reiter) haben jetzt gleiche Höhe, Rand und Schrift und sind besser zu treffen.
+- **Schnellerer Start:** Die großen Spiele-Module werden erst kurz nach dem Start geladen. Die Spiele erscheinen einen Augenblick später in der Liste.
+- **Reisen anderer Crews ohne Netz:** Was ihr mit Netz gesehen habt (Reiter im Tagebuch, gemerkte Reisen), zeigt die App ohne Netz in der zuletzt gesehenen Fassung,
+  mit dem Hinweis „ohne Netz, Stand …“. Fotos erscheinen dann als Vorschaubild. Nimmt die andere Crew die Freigabe zurück, verschwindet auch diese Fassung beim nächsten Öffnen mit Netz.
+
 ## Neu in Version 88: Reisen anderer Crews bleiben auffindbar
 
 **Dafür die neue `api/index.php` hochladen.**

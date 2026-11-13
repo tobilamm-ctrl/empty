@@ -48,29 +48,15 @@ export default function installHeute(app) {
     if (e.blogHide && app.blogOn && app.blogOn(e.tripId)) {
       badges.push(`<button class="stop-badge blog-off" data-action="blog-unhide" data-id="${e.id}" title="Im Reiseblog ausgeblendet – antippen zum Einblenden">🙈 nicht im Blog</button>`);
     }
-    // Herzen von Lesern des Reiseblogs (ohne Konto) – anders als eure eigenen Herzen links
-    const bl = blogLikes()[e.id];
-    if (bl && bl.n) {
-      const who = bl.names.length ? `${bl.names.join(', ')}${bl.n > bl.names.length ? ` und ${bl.n - bl.names.length} ${bl.n - bl.names.length === 1 ? 'weitere Person' : 'weitere'}` : ''}` : `${bl.n} ${bl.n === 1 ? 'Person' : 'Personen'} ohne Namen`;
-      badges.push(`<button class="stop-badge blog-likes" data-action="blog-likes-who" data-who="${esc(who)}" title="${esc(who)}">❤️ ${bl.n} im Reiseblog</button>`);
-    }
-    // Herzen anderer Crews (Crews on the Road)
-    const cl = crewLikes()[e.id];
-    if (cl && cl.n) {
-      const who = cl.names.join(', ');
-      badges.push(`<button class="stop-badge crew-likes" data-action="blog-likes-who" data-who="${esc(who)}" data-from="von anderen Crews" title="${esc(who)}">❤️ ${cl.names.length === 1 ? esc(cl.names[0]) : `${cl.n} von Crews`}</button>`);
-    }
-    // Öffentliche Kommentare (Reiseblog, andere Crews) – getrennt von den Kommentaren der Familie
-    const pc = pubComments()[e.id] || [];
-    if (pc.length) badges.push(`<button class="stop-badge pub-cmts" data-action="open-entry" data-id="${e.id}" title="Öffentliche Kommentare">💬 ${pc.length} öffentlich</button>`);
     const snd = e.sounds || [];
     if (snd.length) {
       const total = snd.reduce((t, x) => t + (x.sec || 0), 0);
       badges.push(`<button class="stop-badge snd" data-action="snd-play" data-id="${e.id}" aria-label="Sprachnotiz abspielen">🎙️ ${snd.length > 1 ? `${snd.length} · ` : ''}${secs(total)}</button>`);
     }
-    // Foto direkt in diesen Eintrag: Kamera (landet auch in der Galerie des Handys) oder aus der Galerie
-    badges.push(`<label class="stop-badge add-photo" title="Foto aufnehmen" aria-label="Foto für diesen Eintrag aufnehmen">📷+<input type="file" accept="image/*" capture="environment" hidden data-action="stop-photo" data-camera="1" data-id="${e.id}"></label>`);
-    badges.push(`<label class="stop-badge add-photo" title="Fotos aus der Galerie" aria-label="Fotos aus der Galerie zu diesem Eintrag">🖼️+<input type="file" accept="image/*" multiple hidden data-action="stop-photo" data-id="${e.id}"></label>`);
+    // Foto direkt in diesen Eintrag: ein Knopf, der Kamera (landet auch in der Galerie des Handys) und Galerie anbietet
+    badges.push(`<details class="photo-add"><summary class="stop-badge add-photo" title="Foto zu diesem Eintrag" aria-label="Foto zu diesem Eintrag">📷+</summary>
+      <div class="photo-add-menu"><label class="stop-badge">📷 Kamera<input type="file" accept="image/*" capture="environment" hidden data-action="stop-photo" data-camera="1" data-id="${e.id}"></label>
+      <label class="stop-badge">🖼️ Galerie<input type="file" accept="image/*" multiple hidden data-action="stop-photo" data-id="${e.id}"></label></div></details>`);
     const i = html.lastIndexOf('</div>');
     return i < 0 ? html + badges.join('') : `${html.slice(0, i)}${badges.join('')}${html.slice(i)}`;
   };
@@ -121,8 +107,15 @@ export default function installHeute(app) {
     catch (e) { toast(e.message); }
   };
   ACTIONS['blog-likes-who'] = el => toast(`❤️ ${el.dataset.from || 'im Reiseblog'}: ${el.dataset.who}`);
+  // Für die Zeile unter dem Eintrag (herzen.js): Herzen und Kommentare von außen zählen mit, ein Tipp auf die Zahl zeigt, von wem
+  app.extraHearts = e => {
+    const bl = blogLikes()[e.id], cl = crewLikes()[e.id];
+    return { n: (bl ? bl.n : 0) + (cl ? cl.n : 0), blog: bl || null, crews: cl || null };
+  };
+  app.extraComments = e => (pubComments()[e.id] || []).length;
   app.CHANGES['stop-photo'] = el => {
     const files = [...el.files]; el.value = '';
+    const menu = el.closest('details'); if (menu) menu.open = false;
     // Mit der Kamera aufgenommen: wie beim Foto-Knopf auch in der Galerie ablegen (Einstellung „galleryCopy“)
     if (el.dataset.camera && files[0] && app.saveToGallery) app.saveToGallery(files[0]);
     if (files.length && app.attachTo) app.attachTo(el.dataset.id, files);

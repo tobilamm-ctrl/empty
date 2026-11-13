@@ -26,10 +26,8 @@ import installDraussen from './draussen.js';
 import installZuladung from './zuladung.js';
 import installStellplatz from './stellplatz.js';
 import installFamilienrat from './familienrat.js';
-import installFahrspiele from './fahrspiele.js';
 import installMitteilen from './mitteilen.js';
 import installTickets from './tickets.js';
-import installLabyrinth from './labyrinth.js';
 import installSprache from './sprache.js';
 import installEintragen from './eintragen.js';
 import installFotoansicht from './fotoansicht.js';
@@ -41,7 +39,6 @@ import installFahrzeuge from './fahrzeuge.js';
 import installInfos from './infos.js';
 import installFamilienleben from './familienleben.js';
 import installSichern from './sichern.js';
-import installSpielekiste from './spielekiste.js';
 import installMitfahrer from './mitfahrer.js';
 import installDateien from './dateien.js';
 import installMitreisen from './mitreisen.js';
@@ -56,7 +53,7 @@ import installStarthilfe from './starthilfe.js';
 /* ---------- Konstanten ---------- */
 
 // Versionsnummer: gleich wie VERSION in sw.js und wie die Nummer im Dateinamen der Lieferung (lammping-komplett-NN.zip)
-const APP_VERSION = 88;
+const APP_VERSION = 89;
 
 const TRIP_COLORS = [
   ['Petrol', '#0F6670'], ['Koralle', '#E4572E'], ['Senf', '#C9961A'], ['Moos', '#4F8A3C'],
@@ -940,8 +937,15 @@ VIEWS.tagebuch = () => {
     </li>`;
   }).join('');
 
-  return `${installHint()}${APP.diaryTop ? APP.diaryTop() : ''}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}${modeSeg}${APP.tripBar ? APP.tripBar(t, st) : ''}
-    ${APP.diaryTools ? (st.es.length ? APP.diaryTools(t, st, Object.keys(days), { chips, filter, label }) : '') : `<div class="chips diary-chips">${chips}</div>`}
+  // Auf dem Handy stehen Reise-Leiste und Ansicht-Knöpfe hinter „⋯“, damit der erste Eintrag weiter oben beginnt.
+  // Offen: auf breiten Bildschirmen, bei beendeter Reise, mit aktivem Filter oder wenn man es aufgeklappt hat.
+  const tools = APP.diaryTools ? (st.es.length ? APP.diaryTools(t, st, Object.keys(days), { chips, filter, label }) : '') : `<div class="chips diary-chips">${chips}</div>`;
+  const [toolBtns, jump = ''] = tools.split('<!--jump-->');
+  const pref = LS.get('diaryMore', null);
+  const moreOpen = pref !== null ? !!pref : innerWidth >= 700 || !!t.ended || filter !== 'alle' || !st.es.length;
+  const moreBtn = `<button type="button" class="more-toggle${moreOpen ? ' on' : ''}" data-action="diary-more" aria-expanded="${moreOpen}" title="Reise-Werkzeuge und Ansicht" aria-label="Reise-Werkzeuge und Ansicht">⋯</button>`;
+  return `${installHint()}${APP.diaryTop ? APP.diaryTop() : ''}${tripHead(t, st)}${APP.todayCard ? APP.todayCard(t, st) : ''}<div class="diary-row">${modeSeg}${moreBtn}</div>
+    <div class="diary-more"${moreOpen ? '' : ' hidden'}>${APP.tripBar ? APP.tripBar(t, st) : ''}${toolBtns}</div>${jump}
     <button class="fab" data-action="entry-form" aria-label="Neuer Eintrag">${icon('plus')}<span>Eintrag</span></button>
     ${list.length
       ? `<ol class="timeline">${timeline}</ol>`
@@ -1850,8 +1854,20 @@ VIEWS.reisen = () => {
     <div class="toolbar"><h2>Unterwegs &amp; geplant</h2><button class="primary" data-action="trip-form">${icon('plus')}Neue Reise</button></div>
     <ul class="trips">${active.map(t => tripRow(t, cur && t.id === cur.id)).join('') || '<li class="none">Keine laufende Reise.</li>'}</ul>
     <div class="toolbar"><h2>Archiv</h2>${S.trips.length ? '<button class="link" data-action="all-on-map">Alle Reisen auf der Karte</button>' : ''}</div>
-    <ul class="trips">${archived.map(t => tripRow(t, cur && t.id === cur.id)).join('') || '<li class="none">Abgeschlossene Reisen landen hier. Archivieren kannst du eine Reise über den Stift.</li>'}</ul>`;
+    ${archiveByYear(archived, cur)}`;
 };
+
+// Archiv nach Jahren: das neueste Jahr offen (und das Jahr der gewählten Reise), ältere eingeklappt
+function archiveByYear(archived, cur) {
+  if (!archived.length) return '<ul class="trips"><li class="none">Abgeschlossene Reisen landen hier. Archivieren kannst du eine Reise über den Stift.</li></ul>';
+  const years = {};
+  archived.forEach(t => { (years[(t.start || '').slice(0, 4) || 'Ohne Datum'] ||= []).push(t); });
+  const keys = Object.keys(years).sort((a, b) => b.localeCompare(a));
+  if (keys.length === 1) return `<ul class="trips">${archived.map(t => tripRow(t, cur && t.id === cur.id)).join('')}</ul>`;
+  return keys.map((y, i) => `<details class="more-rows year-fold"${i === 0 || (cur && years[y].some(t => t.id === cur.id)) ? ' open' : ''}>
+    <summary>${y} <small>${years[y].length} ${years[y].length === 1 ? 'Reise' : 'Reisen'}</small></summary>
+    <ul class="trips">${years[y].map(t => tripRow(t, cur && t.id === cur.id)).join('')}</ul></details>`).join('');
+}
 
 function tripForm(id) {
   const t = S.trips.find(x => x.id === id) || { color: nextColor(), start: today() };
@@ -2353,6 +2369,7 @@ const ACTIONS = {
     render();
   },
   'entry-form': () => openEntryForm({ type: 'notiz' }),
+  'diary-more': el => { LS.set('diaryMore', el.getAttribute('aria-expanded') !== 'true'); render(); },
   'open-entry': el => openEntry(el.dataset.id),
   'edit-entry': el => openEntryForm(S.entries.find(e => e.id === el.dataset.id)),
   'del-entry': el => {
@@ -2932,10 +2949,8 @@ installDraussen(APP);
 installZuladung(APP);
 installStellplatz(APP);
 installFamilienrat(APP);
-installFahrspiele(APP);
 installMitteilen(APP);
 installTickets(APP);
-installLabyrinth(APP);
 installSprache(APP);
 installEintragen(APP);
 installFotoansicht(APP);
@@ -2947,7 +2962,6 @@ installFahrzeuge(APP);
 installInfos(APP);
 installFamilienleben(APP);
 installSichern(APP);
-installSpielekiste(APP);
 installMitfahrer(APP);
 installMitreisen(APP);
 installStrecken(APP);
@@ -2957,6 +2971,12 @@ installMitteilungen(APP);
 installSpuren(APP);
 installReisearten(APP);
 installStarthilfe(APP);
+// Die großen Spiele-Module (zusammen rund 120 KB) erst nach dem Start laden: Die App ist schneller da,
+// die Spiele kommen einen Augenblick später in die Liste.
+const loadGames = () => Promise.all([import('./fahrspiele.js'), import('./labyrinth.js'), import('./spielekiste.js')])
+  .then(mods => { mods.forEach(m => m.default(APP)); APP.gamesReady = true; if (['spiele', 'kinder', 'labyrinth', 'mehr'].includes(ui.route) && !gate) render(); })
+  .catch(() => setTimeout(loadGames, 5000));
+(window.requestIdleCallback || (f => setTimeout(f, 800)))(loadGames, { timeout: 2500 });
 if (APP.sortGames) APP.sortGames();
 installNavigation(APP);
 

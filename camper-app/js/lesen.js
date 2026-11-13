@@ -27,7 +27,7 @@ export default function installLesen(app) {
         <a class="chip icon-chip" href="#/kalender" title="Kalender" aria-label="Kalender">📅</a>
       </div>
       ${f.chips && ui.filterOpen ? `<div class="chips diary-chips filter-pop">${f.chips}</div>` : ''}
-      ${days.length ? `<nav class="day-jump" data-noswipe aria-label="Zu einem Tag springen">
+      <!--jump-->${days.length ? `<nav class="day-jump" data-noswipe aria-label="Zu einem Tag springen">
         <button class="jetzt" data-action="day-now" title="${newest ? 'Ganz nach oben zum neuesten Eintrag' : 'Zum neuesten Eintrag'}">${newest ? '⤒' : '⤓'} Jetzt</button>${days.map(d => {
         const n = dayNo(st, d);
         return `<button data-action="day-jump" data-day="${d}" title="${esc(fmtDay(d))}">${n > 0 ? `Tag ${n}` : fmtDay(d).split(',')[1] || d}</button>`;

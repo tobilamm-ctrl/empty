@@ -11,11 +11,25 @@ export default function installHerzen(app) {
   // Unter jedem Eintrag im Tagebuch
   app.stopExtra = e => {
     const h = hearts(e.id), c = comments(e.id), on = !!mine(e.id);
+    // Herzen und Kommentare aus Reiseblog und von anderen Crews zählen mit (heute.js); Tipp auf die Zahl zeigt, von wem
+    const xh = app.extraHearts ? app.extraHearts(e) : { n: 0 }, xc = app.extraComments ? app.extraComments(e) : 0;
+    const total = h.length + xh.n;
     return `<div class="react-row">
-      <button class="react-btn${on ? ' on' : ''}" data-action="heart" data-id="${e.id}" aria-pressed="${on}" aria-label="Herz" title="${esc(h.map(x => personName(x.by)).join(', '))}">${on ? '❤️' : '🤍'}${h.length ? ` <span>${h.length}</span>` : ''}</button>
-      <button class="react-btn" data-action="comments-open" data-id="${e.id}" aria-label="Kommentare">💬${c.length ? ` <span>${c.length}</span>` : ''}</button>
+      <button class="react-btn${on ? ' on' : ''}" data-action="heart" data-id="${e.id}" aria-pressed="${on}" aria-label="Herz" title="${esc(h.map(x => personName(x.by)).join(', '))}">${on ? '❤️' : '🤍'}</button>${total ? `<button class="react-count${xh.n ? ' ext' : ''}" data-action="hearts-who" data-id="${e.id}" aria-label="${total} Herzen – von wem?">${total}</button>` : ''}
+      <button class="react-btn${xc ? ' ext' : ''}" data-action="comments-open" data-id="${e.id}" aria-label="Kommentare">💬${c.length + xc ? ` <span>${c.length + xc}</span>` : ''}</button>
       ${c.length ? `<span class="react-last"><b>${esc(personName(c[c.length - 1].by))}:</b> ${esc(c[c.length - 1].text)}</span>` : ''}
     </div>`;
+  };
+  ACTIONS['hearts-who'] = el => {
+    const e = S.entries.find(x => x.id === el.dataset.id);
+    if (!e) return;
+    const h = hearts(e.id), x = app.extraHearts ? app.extraHearts(e) : {};
+    const line = (label, text) => (text ? `<li><b>${label}</b><span>${esc(text)}</span></li>` : '');
+    const anon = (o, word) => (o ? `${o.names.join(', ')}${o.n > o.names.length ? `${o.names.length ? ' und ' : ''}${o.n - o.names.length} ${word}` : ''}` : '');
+    app.openSheet(`<div>${app.sheetHead('❤️ Wem gefällt das?')}<ul class="who-list">
+      ${line('Familie', h.map(y => personName(y.by)).join(', '))}
+      ${line('Reiseblog', anon(x.blog, 'ohne Namen'))}
+      ${line('Andere Crews', x.crews ? x.crews.names.join(', ') : '')}</ul></div>`);
   };
 
   ACTIONS.heart = el => {

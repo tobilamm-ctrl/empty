@@ -129,8 +129,32 @@ export default function installMore(app) {
     const cfg = { key: 'mehr', items, legacy, editExtra,
       defaultOrder: [...extras, ...THEMES.flatMap(([k, , ids]) => [`sep:${k}`, ...ids])], defaultSeps: Object.fromEntries(THEMES.map(([k, n]) => [k, n])) };
     const hidden = editing ? [] : app.boardEntries('mehr', cfg).hidden;
-    return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${editing ? '' : recentRow(items, hidden)}${app.board.view(cfg)}`;
+    // Suchfeld: findet jeden Bereich über Name oder Beschreibung (auch wenn die Kachel nur das Symbol zeigt)
+    const search = editing ? '' : `<input type="search" class="tile-search" data-keep="tileq" placeholder="Bereich suchen, z. B. Tank …" aria-label="Bereich suchen" autocomplete="off" enterkeyhint="go">`;
+    return `${pageHead('mehr', 'Mehr', editing ? 'Reihenfolge und Auswahl festlegen' : '')}${search}${editing ? '' : recentRow(items, hidden)}${app.board.view(cfg)}`;
   };
+  const tileText = a => { const r = (a.getAttribute('href') || '').replace(/^#\//, ''); const t = TILES.find(x => x.route === r); return `${a.textContent} ${t ? `${t.title} ${t.text} ${t.alt || ''}` : ''}`.toLowerCase(); };
+  function filterTiles(q) {
+    const view = document.getElementById('view');
+    if (!view) return [];
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = [];
+    view.querySelectorAll('a.tile').forEach(a => { const ok = words.every(w => tileText(a).includes(w)); a.hidden = !ok; if (ok) hits.push(a); });
+    // Beim Suchen stören Überschriften und „Zuletzt benutzt“
+    view.querySelectorAll('.tile-sep, .recent-row').forEach(el => { el.hidden = !!words.length; });
+    let none = view.querySelector('.tile-none');
+    if (!hits.length && words.length) { if (!none) { none = document.createElement('p'); none.className = 'hint tile-none'; none.textContent = 'Nichts gefunden.'; view.querySelector('.tile-search').after(none); } }
+    else if (none) none.remove();
+    return hits;
+  }
+  document.addEventListener('input', ev => { if (ev.target.classList && ev.target.classList.contains('tile-search')) filterTiles(ev.target.value); });
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' || !ev.target.classList || !ev.target.classList.contains('tile-search')) return;
+    const hits = filterTiles(ev.target.value);
+    if (hits.length && ev.target.value.trim()) { ev.preventDefault(); ev.target.value = ''; location.hash = hits[0].getAttribute('href'); }
+  });
+  // Nach dem Neuzeichnen (z. B. Abgleich) bleibt der Suchtext stehen: Filter wieder anwenden
+  app.afterDraw.push(() => { const f = document.querySelector('#view .tile-search'); if (f && f.value) filterTiles(f.value); });
 
   /* ---------- Orte: Wunschliste, Lieblingsplätze, für Reisen vorgemerkt ---------- */
 
@@ -1076,7 +1100,12 @@ export default function installMore(app) {
       years[y].nights += st.nights;
       years[y].km += st.dist;
     });
-    const ys = Object.entries(years).sort((a, b) => b[0].localeCompare(a[0]));
+    // „ohne Datum“ nur zeigen, wenn dort wirklich etwas zusammenkommt
+    const ys = Object.entries(years).filter(([y, v]) => y !== 'ohne Datum' || v.nights || v.km >= 1).sort((a, b) => b[0].localeCompare(a[0]));
+    const tripLi = ({ t, st }) => `<li><button data-action="pick-trip" data-id="${t.id}">
+        <span class="txt"><b><i class="trip-dot" style="--c:${tripColor(t)}"></i>${esc(t.name)}</b>
+          <small>${st.nights} ${st.nights === 1 ? 'Nacht' : 'Nächte'}, ${fmtKm(st.dist)}${canCash() && st.cost ? `, ${money(st.cost)}${st.nights ? `, ${money(st.cost / st.nights)} pro Nacht` : ''}` : ''}</small></span>
+      </button></li>`;
     const best = S.entries.filter(e => e.type === 'stellplatz' && e.rating >= 4)
       .sort((a, b) => b.rating - a.rating || (b.date || '').localeCompare(a.date || '')).slice(0, 6);
     const avg = canCash() ? app.fuelAverage() : null;
@@ -1095,10 +1124,8 @@ export default function installMore(app) {
       ${ys.length ? `<h2 class="stat-h">Nächte pro Jahr</h2>${bars(ys.map(([y, v]) => [y, v.nights]), v => String(v))}
         <h2 class="stat-h">Kilometer pro Jahr</h2>${bars(ys.map(([y, v]) => [y, Math.round(v.km)]), v => v.toLocaleString('de-DE') + ' km')}` : ''}
       <h2 class="stat-h">Alle Reisen</h2>
-      <ul class="ledger">${rows.map(({ t, st }) => `<li><button data-action="pick-trip" data-id="${t.id}">
-        <span class="txt"><b><i class="trip-dot" style="--c:${tripColor(t)}"></i>${esc(t.name)}</b>
-          <small>${st.nights} ${st.nights === 1 ? 'Nacht' : 'Nächte'}, ${fmtKm(st.dist)}${canCash() && st.cost ? `, ${money(st.cost)}${st.nights ? `, ${money(st.cost / st.nights)} pro Nacht` : ''}` : ''}</small></span>
-      </button></li>`).join('')}</ul>
+      <ul class="ledger">${rows.slice(0, 5).map(tripLi).join('')}</ul>
+      ${rows.length > 5 ? `<details class="more-rows"><summary>${rows.length - 5} weitere ${rows.length - 5 === 1 ? 'Reise' : 'Reisen'} zeigen</summary><ul class="ledger">${rows.slice(5).map(tripLi).join('')}</ul></details>` : ''}
       ${best.length ? `<h2 class="stat-h">Die schönsten Stellplätze</h2>
         <ul class="ledger">${best.map(e => `<li><button data-action="open-entry" data-id="${e.id}">
           <span class="txt"><b>${esc(e.title || e.place || 'Stellplatz')}</b><small>${esc([e.place, fmtDay(e.date.slice(0, 10)), (S.trips.find(t => t.id === e.tripId) || {}).name].filter(Boolean).join(', '))}</small></span>

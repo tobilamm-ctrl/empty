@@ -13,15 +13,23 @@ export default function installMitreisen(app) {
   let travel = null, loading = null, loadedAt = 0;
   const feeds = {};                       // crewId → { at, data }
 
+  // Ohne Netz: die zuletzt gesehene Übersicht (klein, im Gerätespeicher) und die zuletzt gesehenen Reisen (Cache, siehe feed)
+  const offlineTravel = () => { const c = LS.get('travelCache', null); return c && c.crew === crewId() ? { ...c, offline: true } : null; };
   async function load(force) {
-    if (!ready() || !navigator.onLine) return travel;
-    if (!force && travel && Date.now() - loadedAt < 5 * 60000) return travel;
+    if (!ready()) return travel;
+    if (!navigator.onLine) { if (!travel || travel.crew !== crewId()) travel = offlineTravel(); return travel; }
+    if (!force && travel && !travel.offline && Date.now() - loadedAt < 5 * 60000) return travel;
     if (loading) return loading;
     loading = api('travel', undefined, `&crew=${encodeURIComponent(crewId())}`)
-      .then(r => { travel = { ...r, crew: crewId() }; loadedAt = Date.now(); return travel; })
-      .catch(() => travel).finally(() => { loading = null; });
+      .then(r => { travel = { ...r, crew: crewId() }; loadedAt = Date.now(); LS.set('travelCache', travel); return travel; })
+      .catch(() => { if (!travel || travel.crew !== crewId()) travel = offlineTravel(); return travel; }).finally(() => { loading = null; });
     return loading;
   }
+  const CREWS = 'lammping-crews';
+  const cacheUrl = key => `crew-feed/${encodeURIComponent(crewId())}/${encodeURIComponent(key)}`;
+  const cachePut = (key, data) => { try { caches.open(CREWS).then(c => c.put(cacheUrl(key), new Response(JSON.stringify({ at: Date.now(), data }), { headers: { 'Content-Type': 'application/json' } }))).catch(() => {}); } catch { /* kein Speicher */ } };
+  const cacheGet = async key => { try { const r = await (await caches.open(CREWS)).match(cacheUrl(key)); return r ? await r.json() : null; } catch { return null; } };
+  const cacheDrop = key => { try { caches.open(CREWS).then(c => c.delete(cacheUrl(key))).catch(() => {}); } catch { /* egal */ } };
   const list = () => (travel && travel.crew === crewId() ? travel.crews : []);
   const seen = () => LS.get('followSeen', {});
   const isNew = c => c.follow === 'ok' && c.rev && (seen()[c.id] || 0) < c.rev;
@@ -42,10 +50,21 @@ export default function installMitreisen(app) {
   async function feed(id, force, trip = '') {
     const key = `${id}|${trip}`, f = feeds[key];
     if (!force && f && Date.now() - f.at < 5 * 60000) return f.data;
-    const data = await api('follow-feed', undefined, `&crew=${encodeURIComponent(crewId())}&of=${encodeURIComponent(id)}${trip ? `&trip=${encodeURIComponent(trip)}` : ''}`);
+    let data;
+    try {
+      data = await api('follow-feed', undefined, `&crew=${encodeURIComponent(crewId())}&of=${encodeURIComponent(id)}${trip ? `&trip=${encodeURIComponent(trip)}` : ''}`);
+    } catch (e) {
+      // Kein Netz: die zuletzt gesehene Fassung vom Gerät. Lehnt der Server ab (Freigabe weg, Reise unsichtbar), wird sie gelöscht.
+      if (!/Keine Verbindung/.test(e.message)) { cacheDrop(key); throw e; }
+      const c = await cacheGet(key);
+      if (!c) throw new Error('Ohne Netz ist diese Reise noch nicht auf dem Gerät. Einmal mit Netz öffnen, dann geht sie auch offline.');
+      feeds[key] = { at: Date.now() - 4 * 60000, data: { ...c.data, offlineAt: c.at, live: null } };
+      return feeds[key].data;
+    }
     data.of = id;
     feeds[key] = { at: Date.now(), data };
-    if (!trip) feeds[`${id}|${data.trip ? data.trip.id : ''}`] = { at: Date.now(), data };
+    cachePut(key, data);
+    if (!trip) { feeds[`${id}|${data.trip ? data.trip.id : ''}`] = { at: Date.now(), data }; if (data.trip) cachePut(`${id}|${data.trip.id}`, data); }
     return data;
   }
   const q = (of, trip) => `&crew=${encodeURIComponent(crewId())}&of=${encodeURIComponent(of)}&trip=${encodeURIComponent(trip)}`;
@@ -66,7 +85,8 @@ export default function installMitreisen(app) {
       uncomment: async (id, del) => (await api('follow-comment', { crew: crewId(), of: d.of, trip: d.trip.id, id, del })).comments,
       photoUrl: id => photoUrl(d.of, d.trip.id, id), audioUrl: id => audioUrl(d.of, d.trip.id, id),
       live: d.running ? d.live : null, liveLabel: d.live ? `${esc(d.crew)}: Standort ${ago(d.live.at)}` : '',
-      foot: `${esc(d.crew)} · Stand ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · `,
+      foot: d.offlineAt ? `${esc(d.crew)} · ohne Netz, Stand ${new Date(d.offlineAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })} · `
+        : `${esc(d.crew)} · Stand ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · `,
       like: async (id, off) => {
         const r = await api('follow-like', { crew: crewId(), of: d.of, trip: d.trip.id, id, off });
         Object.keys(feeds).filter(k => k.startsWith(`${d.of}|`)).forEach(k => { feeds[k].at = 0; });
@@ -133,7 +153,7 @@ export default function installMitreisen(app) {
   const since = c => (c.since ? `seit ${fmtDay(c.since)} unterwegs` : 'unterwegs');
   VIEWS.mitreisen = () => {
     if (!travel || travel.crew !== crewId()) {
-      if (!navigator.onLine) return `${pageHead('freunde', 'Crews on the Road')}<p class="hint">Dafür braucht es eine Internetverbindung.</p>`;
+      if (!navigator.onLine && !offlineTravel()) return `${pageHead('freunde', 'Crews on the Road')}<p class="hint">Dafür braucht es eine Internetverbindung.</p>`;
       load(true).then(() => { if (app.ui.route === 'mitreisen') render(); });
       return `${pageHead('freunde', 'Crews on the Road')}<p class="sub">Wird geladen …</p>`;
     }

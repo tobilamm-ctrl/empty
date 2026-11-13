@@ -1,5 +1,7 @@
 # Aufgaben-Generator Mathematik Mittelschule Bayern
 
+**LAMMping (Camper-App) liegt in `camper-app/` und hat eigene Regeln: `camper-app/CLAUDE.md`. Tests dazu: `camper-tests/`.**
+
 Bedienung und Aufbau: `README.md`. Aufgabentypen schreiben: `tools/AUFGABENTYPEN.md`. Lehrplan-Checkliste: `konzept/lehrplan-abgleich.md`.
 
 ## Vorgaben der Lehrkraft (verbindlich)

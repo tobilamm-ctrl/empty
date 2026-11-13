@@ -178,6 +178,29 @@ export default function installBedienung(app) {
       h.setAttribute('role', 'button'); h.tabIndex = 0;
       h.setAttribute('aria-expanded', all || open.includes(name));
     });
+    // In vier Gruppen ordnen (Unbekanntes landet in der letzten)
+    const GROUPS = [
+      ['Mein Gerät', ['Mitteilungen', 'Darstellung und Kopfzeile', 'Startseite', 'Bedienung', 'Komfort', 'App installieren und weitergeben']],
+      ['Crew & Konten', ['Crew', 'Verwaltung', 'Passwort ändern']],
+      ['Reise & Strecke', ['Strecke automatisch']],
+      ['Sicherung & Technik', ['Abgleich', 'Sicherung', 'Automatische Sicherung', 'Feedback', 'Testen']],
+    ];
+    const known = GROUPS.flatMap(g => g[1]);
+    const anchor = document.createElement('div');
+    panels[0].before(anchor);
+    const sorted = [];
+    GROUPS.forEach(([title, names], gi) => {
+      const mine = names.map(n => panels.find(x => x.dataset.name === n)).filter(Boolean);
+      if (gi === GROUPS.length - 1) mine.push(...panels.filter(x => !known.includes(x.dataset.name)));
+      if (!mine.length) return;
+      const h = document.createElement('h3');
+      h.className = 'set-group'; h.textContent = title;
+      anchor.before(h);
+      mine.forEach(x => anchor.before(x));
+      sorted.push(...mine);
+    });
+    anchor.remove();
+    panels.splice(0, panels.length, ...sorted);
     const nav = document.createElement('nav');
     nav.className = 'set-jump';
     nav.setAttribute('data-noswipe', '');
