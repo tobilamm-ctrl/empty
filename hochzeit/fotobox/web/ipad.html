@@ -59,6 +59,13 @@ main { flex: 1; position: relative; min-height: 0; }
 .chip.tisch.an { color: var(--akzent-tinte); }
 .unterschrift { background: #fbf8f1; border-radius: .6rem; width: 100%; aspect-ratio: 5 / 2; touch-action: none; display: block; }
 .zeile { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+/* Scanner: Personen auf dem Foto, Meldung, „Deine Fotos“ */
+.personen { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; font-size: .8rem; color: var(--leise); }
+.personen .chip { display: inline-flex; gap: .4rem; align-items: center; color: var(--tinte); font-size: .8rem; }
+.personen .chip b { font-weight: 400; color: var(--leise); }
+.meldung-scan { position: fixed; left: 50%; top: 1.2rem; transform: translateX(-50%); z-index: 30; background: var(--akzent); color: var(--akzent-tinte); font-weight: 600; padding: .6rem 1.2rem; border-radius: 99px; font-size: 1rem; box-shadow: 0 .6rem 1.4rem -.6rem rgba(0,0,0,.7); }
+.meldung-scan.fehler { background: var(--stoerung); color: #1a0f0c; }
+.meine img { width: 11rem; height: 11rem; background: #fff; border-radius: .6rem; padding: .4rem; align-self: center; }
 
 .zahl { font-family: var(--kopf); font-size: 7rem; line-height: 1; color: var(--akzent); min-height: 1em; font-variant-numeric: tabular-nums; }
 .zwei { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4rem; align-items: center; }
@@ -141,6 +148,7 @@ main { flex: 1; position: relative; min-height: 0; }
         <button class="btn btn-rand" data-aktion="nochmal" id="nochmal">Nochmal</button>
         <button class="btn btn-rand" data-aktion="gaestebuch" id="gbKnopf">Ins Gästebuch</button>
         <label class="haken"><input type="checkbox" id="inDiashow">In der Diashow zeigen</label>
+        <div class="personen" id="personen1"></div>
       </div>
     </div>
   </section>
@@ -208,6 +216,17 @@ main { flex: 1; position: relative; min-height: 0; }
     <button class="btn btn-haupt" data-aktion="stoerungOk">Zurück zum Start</button>
   </section>
 </main>
+
+<div class="meldung-scan" id="scanMeldung" hidden></div>
+
+<div class="ueber" id="meineFotos" hidden>
+  <div class="karte meine">
+    <h2 id="meineTitel">Hallo!</h2>
+    <img id="meineQr" alt="QR-Code zu deinen Fotos">
+    <p class="klein" id="meineText"></p>
+    <button class="btn btn-haupt" data-aktion="meineFotosZu">Schließen</button>
+  </div>
+</div>
 
 <div class="ueber" id="leerlauf" hidden>
   <div class="karte">
@@ -310,11 +329,33 @@ main { flex: 1; position: relative; min-height: 0; }
     document.querySelectorAll('.qr-platz').forEach((d) => { d.innerHTML = html; });
   }
 
+  // ---------- Scanner ----------
+  let letzteMeldung = 0, meldungTimer = null;
+  function scanZeigen(z) {
+    const m = z.scanMeldung;
+    if (m && m.zeit !== letzteMeldung) {
+      letzteMeldung = m.zeit; $('scanMeldung').textContent = m.text; $('scanMeldung').className = 'meldung-scan' + (m.art === 'fehler' ? ' fehler' : '');
+      $('scanMeldung').hidden = false; clearTimeout(meldungTimer); meldungTimer = setTimeout(() => { $('scanMeldung').hidden = true; }, 3000);
+    }
+    const p = z.personenNamen || [];
+    const html = (p.length ? '<span>Auf dem Foto:</span>' + p.map((x) => `<button class="chip" data-aktion="personEntfernen" data-wert="${esc(x.id)}">${esc(x.name)} <b aria-label="entfernen">×</b></button>`).join('') : '')
+      + (z.scanner ? `<span>${p.length ? 'Noch jemand? ' : ''}Haltet eure Tischkarten an den Scanner – dann findet ihr das Foto später unter eurem Code.</span>` : '');
+    $('personen1').innerHTML = html;
+    const mf = z.meineFotos;
+    $('meineFotos').hidden = !mf;
+    if (mf) {
+      $('meineTitel').textContent = `Hallo ${mf.namen.join(', ')}!`;
+      const qr = `/api/qr?t=${encodeURIComponent(mf.url)}`; if ($('meineQr').getAttribute('src') !== qr) $('meineQr').src = qr;
+      $('meineText').textContent = (mf.anzahl ? `${mf.anzahl} ${mf.anzahl === 1 ? 'Foto' : 'Fotos'} mit dir. ` : 'Noch keine Fotos mit dir – das nächste Foto ist für dich vorgemerkt. ') + 'Mit der Handy-Kamera scannen (im Fotobox-WLAN).';
+    }
+  }
+
   let vorherAnsicht = '';
   function zeichnen(neu) {
     z = neu;
     const e = z.einstellungen;
     Fotobox.toeneAusZustand(z, 'ipad');
+    scanZeigen(z);
     if (z.ansicht === 'gaestebuch' && vorherAnsicht !== 'gaestebuch') gaestebuchOeffnen();
     vorherAnsicht = z.ansicht;
     filterKacheln(e.filter);

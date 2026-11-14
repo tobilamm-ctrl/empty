@@ -4,6 +4,8 @@
  *   start → modus → filter → aufnahme → vorschau (↔ gaestebuch) → druck → drucken → danke → start
  *   stoerung (Kamera ausgefallen) → start
  *   pause (Pause-Modus oder außerhalb der Öffnungszeit; nur aus „start“ heraus, laufende Fotos werden fertig)
+ *   scan(text): Code von Tischkarte oder Einladung – während eines Fotos: Person dem Foto zuordnen;
+ *               am Start: „Deine Fotos“ mit QR-Code zeigen und die Person für das nächste Foto vormerken
  *
  * new Ablauf({ kamera, drucker, speicher, bild, gestaltung, zeiten, knopfTasten, log })
  *   zeiten (ms): countdownSchritt, pause, leerlaufWarnung, leerlauf, danke, knopfSperre, takt, countdownSek
@@ -51,6 +53,8 @@ class Ablauf extends EventEmitter {
     this.knopfLernenBis = 0;
     this.sitzung = 0;
     this.diashowVersion = 0;
+    this.vorgemerkt = null; // { gaeste, bis } – am Start gescannt, gilt für das nächste Foto
+    this.meineFotosZeit = 0;
     this.takt = setInterval(() => this._takt(), zeiten.takt || 1000);
     if (this.takt.unref) this.takt.unref();
     drucker.on('aenderung', () => this._melden());
@@ -58,7 +62,8 @@ class Ablauf extends EventEmitter {
 
   _grundzustand() {
     return { ansicht: 'start', modus: 'einzel', filter: 'farbe', bild: null, countdown: null, hinweis: '', blitz: 0,
-      foto: null, nochmal: 0, inDiashow: true, anzahl: 1, leerlaufWarnung: null, stoerung: null, pauseText: '', ohneDruck: false, imGaestebuch: false };
+      foto: null, nochmal: 0, inDiashow: true, anzahl: 1, leerlaufWarnung: null, stoerung: null, pauseText: '', ohneDruck: false, imGaestebuch: false,
+      personen: [], meineFotos: null, scanMeldung: null };
   }
   _melden() { this.emit('aenderung'); }
   _zeige(ansicht, mehr) {
@@ -109,6 +114,11 @@ class Ablauf extends EventEmitter {
       case 'gaestebuch':
         if (a === 'vorschau' && e.gaestebuchAn) this._zeige('gaestebuch');
         return;
+      case 'personEntfernen':
+        if (a !== 'start' && a !== 'pause') this.personEntfernen(String(daten));
+        return;
+      case 'meineFotosZu':
+        this.z.meineFotos = null; return this._melden();
       case 'gaestebuchAbbrechen':
         if (a === 'gaestebuch') this._zeige('vorschau');
         return;
@@ -175,7 +185,7 @@ class Ablauf extends EventEmitter {
   _beginnen(e) {
     this.sitzung++;
     this.kamera.neueSzene();
-    Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal });
+    Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal, personen: this._vorgemerkt() });
     if (e.streifen) this._zeige('modus'); else { this.z.modus = 'einzel'; filterAngebot(e).length > 1 ? this._zeige('filter') : this._aufnehmen('farbe'); }
   }
 
@@ -187,7 +197,7 @@ class Ablauf extends EventEmitter {
     const a = this.z.ansicht;
     if (a === 'start') {
       this.sitzung++; this.kamera.neueSzene();
-      Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal, modus: e.streifen ? e.knopfModus : 'einzel' });
+      Object.assign(this.z, this._grundzustand(), { nochmal: e.maxNochmal, modus: e.streifen ? e.knopfModus : 'einzel', personen: this._vorgemerkt() });
       return this._aufnehmen(knopfFilter(e));
     }
     if (a === 'modus') { this.z.modus = e.knopfModus; return this._aufnehmen(knopfFilter(e)); }
@@ -236,6 +246,7 @@ class Ablauf extends EventEmitter {
         logo: e.logoStattNamen ? this.speicher.logo() : null,
       });
       const foto = await this.speicher.neuesFoto({ modus: this.z.modus, filter, aufnahmen, druck });
+      if (this.z.personen.length) this.speicher.personenSetzen(foto.id, this.z.personen);
       this.log('info', `Foto ${foto.id} aufgenommen`);
       this._zeige('vorschau', { foto: { id: foto.id, url: `/fotos/${foto.id}/druck.jpg?k=${foto.schluessel}`, schluessel: foto.schluessel }, hinweis: '', bild: null, imGaestebuch: false });
     } catch (err) {
@@ -275,6 +286,7 @@ class Ablauf extends EventEmitter {
 
   _takt() {
     const e = this.speicher.einstellungen();
+    if (this.z.meineFotos && Date.now() - this.meineFotosZeit > 25000) { this.z.meineFotos = null; this._melden(); }
     // Pause und Öffnungszeit: nur zwischen zwei Gästen umschalten
     const zu = geschlossen(e);
     if (this.z.ansicht === 'start' && zu) return this._zeige('pause', { pauseText: zu });
@@ -302,6 +314,42 @@ class Ablauf extends EventEmitter {
   }
 
   // Service: Foto ein-/ausblenden, freigeben, nachdrucken, zum Start
+  // ---------- Scanner (Tischkarte oder Einladung) ----------
+  _vorgemerkt() {
+    const v = this.vorgemerkt; this.vorgemerkt = null;
+    return v && Date.now() < v.bis ? v.gaeste : [];
+  }
+  _namen(ids) { const g = this.speicher.gaesteNamen(); return ids.map((id) => (g.get(id) || {}).name).filter(Boolean); }
+  _meldung(text, art) { this.z.scanMeldung = { text, art, zeit: Date.now() }; }
+  scan(text) {
+    this.letzteAktivitaet = Date.now();
+    const treffer = this.speicher.codeSuchen(text), a = this.z.ansicht;
+    if (!treffer) { this._meldung('Diesen Code kennt die Fotobox nicht.', 'fehler'); this.log('info', 'Scan: unbekannter Code'); return this._melden(); }
+    const namen = this._namen(treffer.gaeste);
+    if (a === 'start' || a === 'pause') {
+      // „Deine Fotos“ zeigen und für das nächste Foto vormerken (eine Minute)
+      const e = this.speicher.einstellungen(), anzahl = this.speicher.fotosMit(treffer.gaeste).length;
+      this.vorgemerkt = { gaeste: treffer.gaeste, bis: Date.now() + 60000 };
+      this.z.meineFotos = { namen, anzahl, url: `${e.adresse || this.basisUrl || ''}/m/${treffer.code}` };
+      this.meineFotosZeit = Date.now();
+      this._meldung(`Hallo ${namen.join(', ')}!`, 'ok');
+      this.log('info', `Scan: ${namen.join(', ')} – Deine Fotos (${anzahl})`);
+      return this._melden();
+    }
+    if (a === 'stoerung') return;
+    const neu = treffer.gaeste.filter((id) => !this.z.personen.includes(id));
+    this.z.personen = this.z.personen.concat(neu);
+    if (this.z.foto) this.speicher.personenSetzen(this.z.foto.id, this.z.personen);
+    this._meldung(neu.length ? `✓ ${this._namen(neu).join(', ')}` : `${namen.join(', ')} ist schon dabei`, 'ok');
+    this.log('info', `Scan: ${namen.join(', ')} zugeordnet`);
+    this._melden();
+  }
+  personEntfernen(id) {
+    this.z.personen = this.z.personen.filter((x) => x !== id);
+    if (this.z.foto) this.speicher.personenSetzen(this.z.foto.id, this.z.personen);
+    this._melden();
+  }
+
   fotoAusblenden(id, aus) { if (this.speicher.fotoAendern(id, { ausgeblendet: !!aus })) { this.diashowVersion++; this._melden(); } }
   fotoFreigeben(id, frei) { if (this.speicher.fotoAendern(id, { freigegeben: !!frei })) { this.diashowVersion++; this._melden(); } }
   nachdrucken(id) { if (this.speicher.foto(id)) return this._drucken(id, 1, this.speicher.einstellungen()); return Promise.resolve(0); }
@@ -320,6 +368,8 @@ class Ablauf extends EventEmitter {
       diashowVersion: this.diashowVersion,
       knopfLernen: Date.now() < this.knopfLernenBis,
       druckRest: Number.isFinite(rest) ? rest : null,
+      personenNamen: this.z.personen.map((id) => ({ id, name: (this.speicher.gaesteNamen().get(id) || {}).name || '?' })),
+      scanner: this.speicher.gaeste().some((g) => g.code || g.einladung),
       qr: this._qr(e),
       einstellungen: {
         namen: e.namen, datum: e.datum, streifen: e.streifen, schwarzweiss: e.schwarzweiss, maxAbzuege: e.maxAbzuege,

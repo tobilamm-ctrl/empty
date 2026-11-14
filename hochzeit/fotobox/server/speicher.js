@@ -240,8 +240,36 @@ class Speicher {
       },
     });
   }
-  // Wer ist auf welchem Foto? (aus dem Gästebuch; nur behaltene Fotos)
   gaesteNamen() { return new Map(this._gaeste.map((g) => [g.id, g])); }
+
+  // Wer ist auf einem Foto? Gescannte Tischkarten (personen) und im Gästebuch Angetippte zusammen
+  personenVon(f) { return [...new Set([...(f.personen || []), ...((f.gaestebuch && f.gaestebuch.gaeste) || [])])]; }
+  personenSetzen(id, ids) {
+    const bekannt = new Set(this._gaeste.map((g) => g.id));
+    return this.fotoAendern(id, { personen: [...new Set((ids || []).map(String))].filter((g) => bekannt.has(g)).slice(0, 40) });
+  }
+
+  // Code von Tischkarte (FOTOBOX:XXXXXXXX), Einladung (XXXX-XXXX, auch als Link) → Gäste.
+  // { art: 'gast'|'haushalt', code, gaeste: [id] } oder null
+  codeSuchen(text) {
+    const t = String(text || '').trim().toUpperCase(), norm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    let m = /FOTOBOX:([A-Z0-9-]{6,20})/.exec(t) || /[?&]G=([A-Z0-9-]{6,20})/.exec(t);
+    if (m) { const c = norm(m[1]), g = this._gaeste.find((x) => norm(x.code) === c); return g ? { art: 'gast', code: c, gaeste: [g.id] } : null; }
+    const kandidaten = t.match(/[A-Z0-9]{4}-?[A-Z0-9]{4}/g) || [];
+    for (const k of kandidaten.reverse()) {
+      const c = norm(k);
+      const g = this._gaeste.find((x) => norm(x.code) === c);
+      if (g) return { art: 'gast', code: c, gaeste: [g.id] };
+      const haus = this._gaeste.filter((x) => norm(x.einladung) === c);
+      if (haus.length) return { art: 'haushalt', code: c, gaeste: haus.map((x) => x.id) };
+    }
+    return null;
+  }
+  // Behaltene, nicht ausgeblendete Fotos mit mindestens einer dieser Personen (neueste zuerst)
+  fotosMit(ids) {
+    const s = new Set(ids);
+    return this._fotos.filter((f) => f.behalten && !f.ausgeblendet && this.personenVon(f).some((id) => s.has(id))).reverse();
+  }
 
   // ---------- Statistik ----------
   statistik() {
@@ -250,7 +278,7 @@ class Speicher {
     fotos.forEach((f) => {
       const h = new Date(f.zeit).getHours(); proStunde[h] = (proStunde[h] || 0) + 1;
       filter[f.filter || 'farbe'] = (filter[f.filter || 'farbe'] || 0) + 1;
-      ((f.gaestebuch && f.gaestebuch.gaeste) || []).forEach((id) => { genannt[id] = (genannt[id] || 0) + 1; });
+      this.personenVon(f).forEach((id) => { genannt[id] = (genannt[id] || 0) + 1; });
     });
     const stunden = Object.keys(proStunde).map(Number).sort((a, b) => ((a + 12) % 24) - ((b + 12) % 24)); // Abend vor Nacht
     const beliebt = stunden.reduce((m, h) => (m === null || proStunde[h] > proStunde[m] ? h : m), null);
@@ -267,9 +295,9 @@ class Speicher {
 
   // ---------- Dankeskarten: je Gast ein Foto-Vorschlag (neuestes Foto mit dem Gast, Einzelfoto bevorzugt) ----------
   dankeskarten() {
-    const fotos = this._fotos.filter((f) => f.behalten && f.gaestebuch).slice().reverse();
+    const fotos = this._fotos.filter((f) => f.behalten && !f.ausgeblendet).slice().reverse();
     return this._gaeste.map((x) => {
-      const mit = fotos.filter((f) => f.gaestebuch.gaeste.includes(x.id));
+      const mit = fotos.filter((f) => this.personenVon(f).includes(x.id));
       const foto = mit.find((f) => f.modus !== 'streifen') || mit[0] || null;
       return { id: x.id, name: x.name, tisch: x.tisch || '', strasse: x.strasse || '', plz: x.plz || '', ort: x.ort || '', foto: foto ? foto.id : null, schluessel: foto ? foto.schluessel : null, fotos: mit.length };
     });
@@ -291,7 +319,7 @@ class Speicher {
     for (const f of this._fotos.filter((x) => x.behalten)) {
       const zeit = new Date(f.zeit);
       let druck; try { druck = await fsp.readFile(this.druckDatei(f.id)); } catch (e) { continue; }
-      const gb = f.gaestebuch, leute = gb ? gb.gaeste.map((id) => g.get(id)).filter(Boolean) : [];
+      const gb = f.gaestebuch, leute = this.personenVon(f).map((id) => g.get(id)).filter(Boolean);
       if (sortierung === 'tisch' || sortierung === 'gast') {
         const gruppen = sortierung === 'tisch' ? [...new Set(leute.map((x) => x.tisch || 'ohne Tisch'))] : [...new Set(leute.map((x) => x.name))];
         (gruppen.length ? gruppen : ['ohne Zuordnung']).forEach((o) => eintraege.push({ name: `${sortierung === 'tisch' ? 'nach-tisch' : 'nach-gast'}/${ordnerName(o)}/${f.id}.jpg`, daten: druck, zeit }));

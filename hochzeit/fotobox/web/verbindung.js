@@ -2,6 +2,7 @@
  * Verbindung zum Fotobox-Server (WebSocket mit automatischem Neuaufbau), Gestaltung anwenden, Bluetooth-Knopf.
  *   Fotobox.verbinden(beiZustand)   Fotobox.aktion(name, daten)   Fotobox.admin(pin, aktion, daten) → Promise
  *   Fotobox.toeneAusZustand(z, 'buehne'|'ipad')  Countdown-Piep und Auslösegeräusch je nach Einstellung „Töne“
+ *   Fotobox.scan(text)              Scan senden (z. B. aus dem Simulator)
  *   Fotobox.knopfAktivieren()       Tasten aus config.json („knopf.tasten“) und angelernte Tasten lösen den Countdown aus;
  *                                   im Lernmodus (Service → „Knopf anlernen“) wird der nächste Tastendruck gespeichert
  */
@@ -42,10 +43,19 @@
   })).catch(() => {});
 
   // Bluetooth-Knopf: koppelt sich wie eine Tastatur und schickt z. B. Enter, Leertaste oder „Lauter“
+  // QR-Scanner (USB/Bluetooth) tippt wie eine Tastatur sehr schnell Zeichen und am Ende Enter.
+  // Schnell getippte Zeichen werden gesammelt; Enter mit mindestens 6 Zeichen = Scan, sonst Bluetooth-Knopf.
+  let scanPuffer = '', scanZeit = 0;
   function knopfAktivieren() {
     document.addEventListener('keydown', (e) => {
       if (e.repeat || /^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
       if (lernen && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) { e.preventDefault(); lernen = false; senden({ typ: 'knopfGelernt', taste: e.key || e.code }); return; }
+      if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'AltGraph'].includes(e.key)) return; // Scanner drückt Shift für Großbuchstaben
+      const jetzt = performance.now();
+      if (jetzt - scanZeit > 100) scanPuffer = '';
+      if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) { scanPuffer += e.key; scanZeit = jetzt; e.preventDefault(); return; }
+      if (e.key === 'Enter' && scanPuffer.length >= 6) { e.preventDefault(); senden({ typ: 'scan', text: scanPuffer }); scanPuffer = ''; return; }
+      scanPuffer = '';
       if (tasten.includes(e.key) || tasten.includes(e.code)) { e.preventDefault(); senden({ typ: 'aktion', aktion: 'knopf' }); }
     });
   }
@@ -88,6 +98,7 @@
 
   window.Fotobox = {
     toeneAusZustand,
+    scan(text) { senden({ typ: 'scan', text }); },
     verbinden(f) { beiZustand = f; aufbauen(500); },
     aktion(name, daten) { senden({ typ: 'aktion', aktion: name, daten }); },
     admin(pin, aktion, daten) { return new Promise((ok) => { antworten.push(ok); senden({ typ: 'admin', pin, aktion, daten }); }); },

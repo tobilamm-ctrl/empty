@@ -230,6 +230,15 @@ input[type=range] { accent-color: var(--akzent); }
   </section>
 
   <section>
+    <h2>QR-Scanner (Tischkarten)</h2>
+    <div class="karte">
+      <p class="leise">Gäste halten ihre Tischkarte (persönlicher QR-Code aus dem Sitzplantool) oder ihre Einladung an den Scanner. Während eines Fotos ordnet die Fotobox sie dem Foto zu; am Startbildschirm zeigt sie „Deine Fotos“ mit QR-Code fürs Handy und merkt die Person für das nächste Foto vor. Der Scanner wird am Mini-PC angeschlossen und wie eine Tastatur erkannt.</p>
+      <p class="leise" id="scanInfo"></p>
+      <div class="zeile"><select id="scanGast" style="flex:1" aria-label="Gast für den Test-Scan"></select><button class="btn btn-rand" id="scanLos">Test-Scan</button></div>
+    </div>
+  </section>
+
+  <section>
     <h2>Bluetooth-Knopf</h2>
     <div class="karte">
       <p class="leise">„Knopf anlernen“ tippen, dann innerhalb von 20 Sekunden den Bluetooth-Knopf drücken. Er muss mit dem Mini-PC (großer Bildschirm) oder dem iPad gekoppelt sein.</p>
@@ -320,7 +329,7 @@ input[type=range] { accent-color: var(--akzent); }
     $('exportGast').href = '/api/export.zip?sort=gast&' + pinQ; $('dkCsv').href = '/api/dankeskarten.csv?' + pinQ;
     $('simulator').hidden = !(daten.simulation.kamera || daten.simulation.drucker);
     diaVersion = z ? z.diashowVersion : diaVersion;
-    formulare(); logo(); fotos(); eigene(); statistik(); dankeskarten(); platz(); protokoll(); jetzt();
+    formulare(); logo(); fotos(); eigene(); statistik(); dankeskarten(); scanner(); platz(); protokoll(); jetzt();
     return true;
   }
   $('pinForm').onsubmit = (e) => { e.preventDefault(); pinMerken($('pin').value.trim()); laden(); };
@@ -414,10 +423,20 @@ input[type=range] { accent-color: var(--akzent); }
   }
   const gastName = (id) => { const g = daten.gaesteListe.find((x) => x.id === id); return g ? g.name : '?'; };
   function gbEintrag(f) {
-    const gb = f.gaestebuch; if (!gb) return '';
-    const namen = gb.gaeste.map(gastName).concat(gb.namenFrei ? [gb.namenFrei] : []).join(', ');
+    const gb = f.gaestebuch, gescannt = (f.personen || []).map(gastName);
+    if (!gb) return gescannt.length ? `<div class="gb-eintrag">Gescannt: <b>${esc(gescannt.join(', '))}</b></div>` : '';
+    const namen = [...new Set(gb.gaeste.concat(f.personen || []))].map(gastName).concat(gb.namenFrei ? [gb.namenFrei] : []).join(', ');
     return `<div class="gb-eintrag">${namen ? `<b>${esc(namen)}</b>` : ''}${gb.gruss ? `<br>„${esc(gb.gruss)}“` : ''}${gb.unterschrift ? `<img loading="lazy" src="/fotos/${f.id}/unterschrift.png?k=${f.schluessel || ''}" alt="Unterschrift">` : ''}</div>`;
   }
+
+  // ---------- Scanner ----------
+  function scanner() {
+    const mitCode = daten.gaesteListe.filter((g) => g.code || g.einladung);
+    $('scanInfo').textContent = mitCode.length ? `${daten.gaesteListe.filter((g) => g.code).length} von ${daten.gaesteListe.length} Gästen haben einen persönlichen Code.` : 'Noch keine Codes – bitte die Gästeliste aus dem Sitzplantool (mit Tischkarten-Codes) übernehmen.';
+    $('scanGast').innerHTML = mitCode.map((g) => `<option value="${esc(g.code ? 'FOTOBOX:' + g.code : g.einladung)}">${esc(g.name)}${g.code ? '' : ' (Einladung)'}</option>`).join('');
+    $('scanLos').disabled = !mitCode.length;
+  }
+  $('scanLos').onclick = () => admin('scan', { text: $('scanGast').value }).then(() => toast('Gescannt'));
 
   // ---------- Eigene Fotos ----------
   function eigene() {

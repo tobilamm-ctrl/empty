@@ -37,6 +37,13 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
 .qr-ecke figure { margin: 0; background: rgba(6,8,7,.85); border-radius: 2vmin; padding: 1.4vmin; display: flex; flex-direction: column; align-items: center; gap: .8vmin; }
 .qr-ecke img { width: 17vmin; height: 17vmin; background: #fff; border-radius: 1vmin; padding: .6vmin; }
 .qr-ecke figcaption { font-size: 1.9vmin; color: var(--tinte); text-align: center; }
+.scan-meldung { position: fixed; left: 50%; top: 5vmin; transform: translateX(-50%); z-index: 7; background: var(--akzent); color: var(--akzent-tinte); font-weight: 600; font-size: 4vmin; padding: 1.6vmin 4vmin; border-radius: 99px; box-shadow: 0 2vmin 4vmin -2vmin rgba(0,0,0,.8); }
+.scan-meldung.fehler { background: var(--stoerung); color: #1a0f0c; }
+.meine { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(4,5,4,.82); }
+.meine div { display: flex; flex-direction: column; align-items: center; gap: 2.4vmin; text-align: center; }
+.meine h2 { font-size: 9vmin; font-family: var(--namen); font-weight: 400; }
+.meine img { width: 38vmin; height: 38vmin; background: #fff; border-radius: 2vmin; padding: 1.4vmin; }
+.meine p { font-size: 3vmin; color: var(--leise); max-width: 60vw; }
 .mit-qr .st-ergebnis, .mit-qr .st-danke { padding-right: 24vmin; }
 .fokus { position: fixed; right: 1.5vmin; bottom: 1.5vmin; font-size: 1.6vmin; color: var(--leise); background: rgba(0,0,0,.6); padding: .6vmin 1.4vmin; border-radius: 99px; z-index: 6; cursor: default; }
 </style>
@@ -69,6 +76,8 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
   <div><h2>Kurze Pause</h2><p>Gleich geht’s weiter.</p></div>
 </div>
 <div class="qr-ecke" id="qrEcke"></div>
+<div class="scan-meldung" id="scanMeldung" hidden></div>
+<div class="meine" id="meineFotos" hidden><div><h2 id="meineTitel"></h2><img id="meineQr" alt="QR-Code zu deinen Fotos"><p id="meineText"></p></div></div>
 <div class="blitz" id="blitz"></div>
 <div class="fokus" id="fokus" hidden>Für den Bluetooth-Knopf einmal hier hineinklicken</div>
 
@@ -118,10 +127,28 @@ html, body { overflow: hidden; background: #070807; cursor: none; }
       + `<figure><img src="${bild(qr.foto)}" alt="QR-Code für euer Foto"><figcaption>${qr.wlan ? '2. ' : ''}Foto aufs Handy</figcaption></figure>`;
   }
 
+  // Scanner: kurze Meldung oben, „Deine Fotos“ groß mit QR-Code
+  let letzteMeldung = 0, meldungTimer = null;
+  function scanZeigen(z) {
+    const m = z.scanMeldung;
+    if (m && m.zeit !== letzteMeldung) {
+      letzteMeldung = m.zeit; $('scanMeldung').textContent = m.text; $('scanMeldung').className = 'scan-meldung' + (m.art === 'fehler' ? ' fehler' : '');
+      $('scanMeldung').hidden = false; clearTimeout(meldungTimer); meldungTimer = setTimeout(() => { $('scanMeldung').hidden = true; }, 3000);
+    }
+    const mf = z.meineFotos;
+    $('meineFotos').hidden = !mf;
+    if (mf) {
+      $('meineTitel').textContent = `Hallo ${mf.namen.join(', ')}!`;
+      const qr = `/api/qr?t=${encodeURIComponent(mf.url)}`; if ($('meineQr').getAttribute('src') !== qr) $('meineQr').src = qr;
+      $('meineText').textContent = mf.anzahl ? `${mf.anzahl} ${mf.anzahl === 1 ? 'Foto' : 'Fotos'} mit dir – mit der Handy-Kamera scannen.` : 'Noch keine Fotos mit dir. Dein nächstes Foto ist vorgemerkt – tippt aufs iPad!';
+    }
+  }
+
   function zeichnen(neu) {
     z = neu;
     Fotobox.toeneAusZustand(z, 'buehne');
     qrEcke(z.qr);
+    scanZeigen(z);
     document.body.classList.toggle('mit-qr', !!z.qr);
     const s = BUEHNE[z.ansicht] || 'dia';
     ['dia', 'live', 'aufnahme', 'ergebnis', 'danke', 'stoerung'].forEach((x) => { $('s-' + x).hidden = x !== s; });

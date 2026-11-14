@@ -31,6 +31,7 @@ a.btn { text-decoration: none; }
 <div class="leiste">
   <button class="knopf" id="knopf" aria-label="Bluetooth-Knopf drücken">Knopf</button>
   <p class="leise">Der rote Knopf spielt den Bluetooth-Knopf. Die Enter- oder Leertaste geht auch, wenn diese Seite angeklickt ist. Kamera und Drucker sind simuliert – Störungen und Papierstand gibt es im Service.</p>
+  <form id="scanForm" style="display:flex;gap:8px;align-items:center"><input id="scanText" placeholder="QR-Scan, z. B. FOTOBOX:ABCD1234" aria-label="QR-Code-Inhalt" style="font:inherit;font-size:14px;color:var(--tinte);background:var(--flaeche);border:1px solid var(--linie);border-radius:9px;padding:9px 10px;width:16em"><button class="btn btn-rand">Scannen</button></form>
   <a class="btn btn-rand" href="/service" target="_blank" rel="noopener">Service öffnen</a>
 </div>
 <script src="/web/verbindung.js"></script>
@@ -46,6 +47,8 @@ a.btn { text-decoration: none; }
   }
   window.addEventListener('resize', anpassen); anpassen();
   document.getElementById('knopf').onclick = () => Fotobox.aktion('knopf');
+  // Spielt den QR-Scanner: Codes der Gäste stehen im Service unter „QR-Scanner“ (Test-Scan)
+  document.getElementById('scanForm').onsubmit = (e) => { e.preventDefault(); const t = document.getElementById('scanText').value.trim(); if (t) Fotobox.scan(t); };
   Fotobox.verbinden(() => {});
   Fotobox.knopfAktivieren();
 })();

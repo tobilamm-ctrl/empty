@@ -5,6 +5,7 @@
  *   /service     Service und Admin (Handy), Aktionen mit PIN
  *   /simulator   iPad und großer Bildschirm nebeneinander, Knopf und Störungen zum Ausprobieren
  *   /f/<id>?k=…  Download-Seite für den QR-Code (Handy der Gäste im Fotobox-WLAN)
+ *   /m/<code>    „Deine Fotos“: alle Fotos eines Gastes (Tischkarten-Code) bzw. Haushalts (Einladungscode)
  * Start: npm start   (Einstellungen in config.json, optional config.local.json für den eigenen PC)
  */
 'use strict';
@@ -113,6 +114,24 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
 <p>${esc(e.datum)}</p></body></html>`);
   }
 
+  // „Deine Fotos“ fürs Handy: alle Fotos, auf denen der Gast (bzw. der Haushalt) gescannt oder angetippt wurde
+  function meineFotosSeite(res, code) {
+    const e = speicher.einstellungen(), g = gestaltung(e).css, treffer = speicher.codeSuchen(code);
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const fotos = treffer ? speicher.fotosMit(treffer.gaeste) : [];
+    const namen = treffer ? treffer.gaeste.map((id) => (speicher.gaesteNamen().get(id) || {}).name).filter(Boolean).join(', ') : '';
+    res.writeHead(treffer ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deine Fotos – ${esc(e.namen)}</title><link rel="stylesheet" href="/web/app.css">
+<style>:root{${Object.entries(g).map(([a, b]) => `${a}:${b}`).join(';')}} body{padding:24px 16px 40px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center}
+h1{font-family:var(--namen);font-weight:400;font-size:42px} .raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;width:100%;max-width:900px}
+figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;border-radius:4px;box-shadow:0 14px 30px -18px #000} p{color:var(--leise);line-height:1.5;max-width:40ch} .btn{font-size:14px;padding:9px 12px}</style></head>
+<body><h1>${esc(e.namen)}</h1>${!treffer ? '<p>Diesen Code kennt die Fotobox nicht.</p>'
+    : `<p><b style="color:var(--tinte)">${esc(namen)}</b> – ${fotos.length ? `${fotos.length} ${fotos.length === 1 ? 'Foto' : 'Fotos'} mit dir` : 'noch keine Fotos. Halte deine Tischkarte nach dem nächsten Foto an den Scanner!'}</p>
+<div class="raster">${fotos.map((f) => `<figure><img loading="lazy" src="/fotos/${f.id}/druck.jpg?k=${f.schluessel}" alt="Foto"><a class="btn btn-haupt" href="/fotos/${f.id}/druck.jpg?laden=1&amp;k=${f.schluessel}">Speichern</a></figure>`).join('')}</div>
+<p>Klappt „Speichern“ nicht: lange auf das Foto drücken und „In Fotos sichern“ wählen.</p>`}<p>${esc(e.datum)}</p></body></html>`);
+  }
+
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fotobox');
     let p;
@@ -149,6 +168,8 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
     if (m && speicher.eigene().includes(m[1])) return datei(res, path.join(speicher.eigeneOrdner(), m[1]), { 'Cache-Control': 'max-age=3600' });
     m = /^\/f\/([\w-]+)$/.exec(p);
     if (m) return downloadSeite(res, speicher.foto(m[1]), url.searchParams.get('k'));
+    m = /^\/m\/([A-Za-z0-9]{6,20})$/.exec(p);
+    if (m) return meineFotosSeite(res, m[1]);
     if (p === '/api/qr') { // QR-Code als SVG für einen Text (Foto-Link oder WLAN-Zugang)
       const t = (url.searchParams.get('t') || '').slice(0, 500);
       try { const q = qrcode(0, 'M'); q.addData(t); q.make(); res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=3600' }); return res.end(q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })); } catch (e) { return json(res, 400, { fehler: 'Text zu lang für einen QR-Code' }); }
@@ -165,7 +186,7 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
         einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE, platz,
         logo: !!speicher.logo(), knopfStandard: (konfig.knopf || {}).tasten || [], layouts: bild.LAYOUTS || {}, filter: bild.FILTER || {},
         eigene: speicher.eigene(), statistik: speicher.statistik(), dankeskarten: speicher.dankeskarten(),
-        gaesteListe: speicher.gaeste().map((g) => ({ id: g.id, name: g.name, tisch: g.tisch })), basisUrl: ablauf.basisUrl,
+        gaesteListe: speicher.gaeste().map((g) => ({ id: g.id, name: g.name, tisch: g.tisch, code: g.code || '', einladung: g.einladung || '' })), basisUrl: ablauf.basisUrl,
         abzuegeBisher: speicher.fotos().reduce((a, f) => a + (f.abzuege || 0), 0),
         fotos: speicher.fotos().filter((f) => f.behalten).reverse(), gaeste: speicher.gaeste().length,
         protokoll: protokoll.slice(-30).reverse(), simulation: { kamera: kamera.name === 'Simulator', drucker: simulation },
@@ -258,6 +279,7 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
       let n; try { n = JSON.parse(roh); } catch (e) { return; }
       if (n.typ === 'aktion') return ablauf.aktion(n.aktion, n.daten);
       if (n.typ === 'knopfGelernt') return ablauf.knopfGelernt(n.taste);
+      if (n.typ === 'scan') return ablauf.scan(String(n.text || '').slice(0, 300));
       if (n.typ !== 'admin') return;
       if (String(n.pin) !== aktuellePin()) return ws.send(JSON.stringify({ typ: 'antwort', ok: false, fehler: 'Falsche PIN' }));
       const d = n.daten || {};
@@ -278,6 +300,7 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
         case 'ausblenden': ablauf.fotoAusblenden(d.id, d.aus); break;
         case 'nachdrucken': ablauf.nachdrucken(d.id); log('info', `Nachdruck ${d.id}`); break;
         case 'zumStart': ablauf.zumStart(); break;
+        case 'scan': ablauf.scan(String(d.text || '')); break;
         case 'simKamera': if (kamera.name === 'Simulator') { kamera.fehlerSetzen(d.fehler ? 'Kamera antwortet nicht (simuliert)' : null); log('info', `Simulator: Kamera ${d.fehler ? 'gestört' : 'wieder ok'}`); } break;
         case 'simDrucker': if (simulation && treiber[d.i]) { treiber[d.i].fehlerSetzen('Papierstau (simuliert)'); log('info', `Simulator: Drucker ${d.i + 1} hat beim nächsten Druck einen Papierstau`); } break;
         default: return;
