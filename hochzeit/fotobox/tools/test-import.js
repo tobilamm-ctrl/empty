@@ -89,6 +89,31 @@ test('Adresse: Straße, PLZ und Ort kommen aus street/zip/city (Zahl-PLZ wird Te
   assert.deepEqual([im.gaeste[2].strasse, im.gaeste[2].plz, im.gaeste[2].ort], ['', '', '']);
 });
 
+test('Tischkarten-Code: fotoboxCode wird groß geschrieben, Bindestrich und Leerzeichen fallen weg; fehlt er, bleibt es leer', () => {
+  const p = projekt();
+  p.guests[0].fotoboxCode = 'ab12-cd34';
+  p.guests[1].fotoboxCode = ' xy 9 z!';
+  const im = sitzplanLesen(JSON.stringify(p));
+  assert.equal(im.gaeste[0].code, 'AB12CD34');
+  assert.equal(im.gaeste[1].code, 'XY9Z');
+  assert.equal(im.gaeste[2].code, '');
+});
+
+test('Einladungscode: über invitations[] dem Gast mit gleicher invitation zugeordnet, normalisiert; unbekannte oder fehlende Einladung bleibt leer', () => {
+  const p = projekt();
+  p.invitations = [{ id: 'e1', code: 'hx3k-9wq2' }, { id: 'e2', code: 'ZZZZ-1111' }];
+  p.guests[0].invitation = 'e1';
+  p.guests[1].invitation = 'gibtes-nicht';
+  // Carla hat keine invitation
+  const im = sitzplanLesen(JSON.stringify(p));
+  assert.deepEqual(im.gaeste.map((g) => g.einladung), ['HX3K9WQ2', '', '']);
+});
+
+test('ohne invitations[] und ohne Codes im Sitzplan gibt es nur leere Codes', () => {
+  const im = sitzplanLesen(JSON.stringify(projekt()));
+  assert.deepEqual(im.gaeste.map((g) => [g.code, g.einladung]), [['', ''], ['', ''], ['', '']]);
+});
+
 (async () => {
   for (const t of tests) {
     try {

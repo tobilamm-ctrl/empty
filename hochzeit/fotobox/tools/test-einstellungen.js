@@ -735,6 +735,155 @@ test('exportZip: Ordner nach Tisch und nach Gast, „ohne Zuordnung“, Gästebu
   }
 });
 
+// ---------- Tischkarten-Codes, Einladungen und „Deine Fotos“ (server/speicher.js) ----------
+
+test('codeSuchen: Tischkarte („FOTOBOX:…“, auch klein und mit Bindestrich), ?g=-Link und bloßer Code finden denselben Gast', () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster', code: 'K7PX29QM', einladung: '' }, { id: 'g2', name: 'Bert Beispiel', code: 'BERT5678', einladung: '' }]);
+    const anna = { art: 'gast', code: 'K7PX29QM', gaeste: ['g1'] };
+    for (const text of ['FOTOBOX:K7PX29QM', 'fotobox:k7px29qm', 'FOTOBOX:K7PX-29QM', 'FOTOBOX:k7px-29qm', 'https://fotobox.local:3000/m/?g=K7PX29QM', 'K7PX29QM', 'K7PX-29QM', '  k7px-29qm  ']) {
+      assert.deepEqual(speicher.codeSuchen(text), anna, `Eingabe „${text}“`);
+    }
+    assert.deepEqual(speicher.codeSuchen('FOTOBOX:BERT5678'), { art: 'gast', code: 'BERT5678', gaeste: ['g2'] });
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('codeSuchen: Einladung (Klartext oder Link https://…/K7PX-29QM-Form) → alle Gäste des Haushalts', () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Muster', code: 'K7PX29QM', einladung: 'HX3K9WQ2' },
+      { id: 'g2', name: 'Bert Beispiel', code: '', einladung: 'HX3K9WQ2' },
+      { id: 'g3', name: 'Cora Nie', code: '', einladung: '' },
+    ]);
+    const haushalt = { art: 'haushalt', code: 'HX3K9WQ2', gaeste: ['g1', 'g2'] };
+    assert.deepEqual(speicher.codeSuchen('hx3k9wq2'), haushalt);
+    assert.deepEqual(speicher.codeSuchen('HX3K-9WQ2'), haushalt);
+    assert.deepEqual(speicher.codeSuchen('https://fotobox.local/a/hx3k-9wq2'), haushalt, 'Einladungslink');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('codeSuchen: bei gleichem Code gewinnt der Gast-Code vor dem Haushaltscode', () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Muster', code: '', einladung: 'GLEICH12' },
+      { id: 'g2', name: 'Bert Beispiel', code: 'GLEICH12', einladung: '' },
+    ]);
+    assert.deepEqual(speicher.codeSuchen('GLEICH12'), { art: 'gast', code: 'GLEICH12', gaeste: ['g2'] });
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('codeSuchen: unbekannte oder leere Texte ergeben null', () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster', code: 'K7PX29QM', einladung: 'HX3K9WQ2' }]);
+    for (const text of ['ZZZZZZZZ', 'FOTOBOX:ZZZZZZZZ', 'https://fotobox.local/a/ZZZZ-ZZZZ', 'Hallo Welt', '', undefined]) {
+      assert.equal(speicher.codeSuchen(text), null, `Eingabe „${text}“`);
+    }
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('personenSetzen: unbekannte Gäste und Doppelte fallen weg, unbekanntes Foto gibt null', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster' }, { id: 'g2', name: 'Bert Beispiel' }]);
+    const a = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(a.id, ['g1', 'x', 'g1', 'g2']);
+    assert.deepEqual(speicher.foto(a.id).personen, ['g1', 'g2']);
+    speicher.personenSetzen(a.id, []);
+    assert.deepEqual(speicher.foto(a.id).personen, []);
+    assert.equal(speicher.personenSetzen('gibt-es-nicht', ['g1']), null);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('personenSetzen: höchstens 40 Personen je Foto', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    const gaeste = Array.from({ length: 45 }, (_, i) => ({ id: `g${i}`, name: `Gast ${i}` }));
+    speicher.gaesteSetzen(gaeste);
+    const a = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(a.id, gaeste.map((g) => g.id));
+    assert.equal(speicher.foto(a.id).personen.length, 40);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('personenVon: gescannte Personen und Gästebuch-Angetippte zusammen, ohne Doppelte', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster' }, { id: 'g2', name: 'Bert Beispiel' }, { id: 'g3', name: 'Cora Nie' }]);
+    const a = await fotoSpeichern(speicher, { gaeste: ['g1', 'g2'] });
+    speicher.personenSetzen(a.id, ['g1', 'g3']);
+    assert.deepEqual(speicher.personenVon(speicher.foto(a.id)).sort(), ['g1', 'g2', 'g3']);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('fotosMit: nur behaltene, nicht ausgeblendete Fotos mit der Person (Scan oder Gästebuch), neueste zuerst', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster' }, { id: 'g2', name: 'Bert Beispiel' }]);
+    const alt = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(alt.id, ['g1']);
+    const buch = await fotoSpeichern(speicher, { gaeste: ['g1'] }); // nur im Gästebuch angetippt
+    const verworfen = await fotoSpeichern(speicher, { behalten: false });
+    speicher.personenSetzen(verworfen.id, ['g1']);
+    const ausgeblendet = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(ausgeblendet.id, ['g1']);
+    speicher.fotoAendern(ausgeblendet.id, { ausgeblendet: true });
+    const fremd = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(fremd.id, ['g2']);
+    const neu = await fotoSpeichern(speicher, {});
+    speicher.personenSetzen(neu.id, ['g1']);
+
+    assert.deepEqual(speicher.fotosMit(['g1']).map((f) => f.id), [neu.id, buch.id, alt.id]);
+    assert.deepEqual(speicher.fotosMit(['g1', 'g2']).map((f) => f.id), [neu.id, fremd.id, buch.id, alt.id]);
+    assert.deepEqual(speicher.fotosMit(['g9']), []);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('dankeskarten: ein Foto, auf dem der Gast nur gescannt wurde (ohne Gästebuch), zählt für die Dankeskarte', async () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster', strasse: 'Hauptstr. 1' }, { id: 'g2', name: 'Bert Beispiel' }]);
+    const a = await fotoSpeichern(speicher, { modus: 'einzel' });
+    speicher.personenSetzen(a.id, ['g1']);
+    const karten = Object.fromEntries(speicher.dankeskarten().map((k) => [k.id, k]));
+    assert.equal(karten.g1.foto, a.id);
+    assert.equal(karten.g1.fotos, 1);
+    assert.equal(karten.g1.schluessel, a.schluessel);
+    assert.equal(karten.g2.foto, null);
+    assert.equal(speicher.statistik().gaesteOhneFoto, 1, 'Anna zählt in der Statistik nicht als „ohne Foto“');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
 // ---------- Lauf ----------
 
 // Führt alle Tests einer Liste aus und zählt die Fehlschläge
