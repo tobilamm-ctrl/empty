@@ -116,7 +116,7 @@ h1{font-family:var(--namen);font-weight:400;font-size:44px} img{max-width:100%;b
 
   // „Deine Fotos“ fürs Handy: alle Fotos, auf denen der Gast (bzw. der Haushalt) gescannt oder angetippt wurde
   function meineFotosSeite(res, code) {
-    const e = speicher.einstellungen(), g = gestaltung(e).css, treffer = speicher.codeSuchen(code);
+    const e = speicher.einstellungen(), g = gestaltung(e).css, treffer = speicher.codeSuchen(`FOTOBOX:${code}`) || speicher.codeSuchen(code); // Gästecode beliebiger Länge, sonst Einladung
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const fotos = treffer ? speicher.fotosMit(treffer.gaeste) : [];
     const namen = treffer ? treffer.gaeste.map((id) => (speicher.gaesteNamen().get(id) || {}).name).filter(Boolean).join(', ') : '';
@@ -300,7 +300,7 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
         case 'ausblenden': ablauf.fotoAusblenden(d.id, d.aus); break;
         case 'nachdrucken': ablauf.nachdrucken(d.id); log('info', `Nachdruck ${d.id}`); break;
         case 'zumStart': ablauf.zumStart(); break;
-        case 'scan': ablauf.scan(String(d.text || '')); break;
+        case 'scan': ablauf.scan(String(d.text || '').slice(0, 300)); break;
         case 'simKamera': if (kamera.name === 'Simulator') { kamera.fehlerSetzen(d.fehler ? 'Kamera antwortet nicht (simuliert)' : null); log('info', `Simulator: Kamera ${d.fehler ? 'gestört' : 'wieder ok'}`); } break;
         case 'simDrucker': if (simulation && treiber[d.i]) { treiber[d.i].fehlerSetzen('Papierstau (simuliert)'); log('info', `Simulator: Drucker ${d.i + 1} hat beim nächsten Druck einen Papierstau`); } break;
         default: return;

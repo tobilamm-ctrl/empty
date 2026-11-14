@@ -254,13 +254,13 @@ class Speicher {
   codeSuchen(text) {
     const t = String(text || '').trim().toUpperCase(), norm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     let m = /FOTOBOX:([A-Z0-9-]{6,20})/.exec(t) || /[?&]G=([A-Z0-9-]{6,20})/.exec(t);
-    if (m) { const c = norm(m[1]), g = this._gaeste.find((x) => norm(x.code) === c); return g ? { art: 'gast', code: c, gaeste: [g.id] } : null; }
+    if (m) { const c = norm(m[1]); if (c.length < 6) return null; const g = this._gaeste.find((x) => x.code && norm(x.code) === c); return g ? { art: 'gast', code: c, gaeste: [g.id] } : null; }
     const kandidaten = t.match(/[A-Z0-9]{4}-?[A-Z0-9]{4}/g) || [];
     for (const k of kandidaten.reverse()) {
       const c = norm(k);
-      const g = this._gaeste.find((x) => norm(x.code) === c);
+      const g = this._gaeste.find((x) => x.code && norm(x.code) === c);
       if (g) return { art: 'gast', code: c, gaeste: [g.id] };
-      const haus = this._gaeste.filter((x) => norm(x.einladung) === c);
+      const haus = this._gaeste.filter((x) => x.einladung && norm(x.einladung) === c);
       if (haus.length) return { art: 'haushalt', code: c, gaeste: haus.map((x) => x.id) };
     }
     return null;

@@ -321,6 +321,97 @@ test('/api/service: Layouts und Filter mit allen Schlüsseln, Statistik zählt d
   assert.equal(daten.statistik.gaestebuch, 1);
 });
 
+// ---------- Scanner: Tischkarten-Code und Einladung („Deine Fotos“) ----------
+
+// Sitzplan wie projekt(), dazu Tischkarten-Code für Anna und ein Haushalt (Bert und Carla teilen die Einladung)
+function projektMitCodes() {
+  const p = projekt();
+  p.guests[0].fotoboxCode = 'k7px-29qm';
+  p.guests[1].invitation = 'e1';
+  p.guests[2].invitation = 'e1';
+  p.invitations = [{ id: 'e1', code: 'hx3k-9wq2' }];
+  return p;
+}
+
+test('Import mit Codes: Service-Liste zeigt Code und Einladung, GET /api/gaeste bleibt ohne Codes', async (ctx) => {
+  const res = await fetch(`${ctx.base}/api/import?pin=${ctx.pin}`, { method: 'POST', body: JSON.stringify(projektMitCodes()) });
+  assert.equal(res.status, 200);
+
+  const service = await (await fetch(`${ctx.base}/api/service?pin=${ctx.pin}`)).json();
+  const liste = Object.fromEntries(service.gaesteListe.map((g) => [g.id, g]));
+  assert.deepEqual([liste.g1.code, liste.g1.einladung], ['K7PX29QM', '']);
+  assert.deepEqual([liste.g2.code, liste.g2.einladung], ['', 'HX3K9WQ2']);
+  assert.deepEqual([liste.g3.code, liste.g3.einladung], ['', 'HX3K9WQ2']);
+
+  const gaeste = await (await fetch(`${ctx.base}/api/gaeste`)).json();
+  gaeste.forEach((g) => assert.deepEqual(Object.keys(g).sort(), ['id', 'name', 'tisch']));
+});
+
+test('WebSocket scan: Tischkarte am Start → „Deine Fotos“ mit Anna und ihrem Foto, danach schließt es', async (ctx) => {
+  const { ws, nachrichten } = await verbinden(wsUrl(ctx));
+  try {
+    const start = await warteNachricht(nachrichten, (m) => m.typ === 'zustand');
+    assert.equal(start.zustand.ansicht, 'start');
+
+    ws.send(JSON.stringify({ typ: 'scan', text: 'FOTOBOX:K7PX29QM' }));
+    const z = await warteNachricht(nachrichten, (m) => m.typ === 'zustand' && m.zustand.meineFotos && m.zustand.meineFotos.namen.includes('Anna Muster'));
+    assert.equal(z.zustand.ansicht, 'start', 'der Scan startet keine Sitzung');
+    assert.equal(z.zustand.meineFotos.anzahl, 1, 'Anna hat genau das Foto aus dem Knopf-Test');
+    assert.match(z.zustand.meineFotos.url, /\/m\/K7PX29QM$/);
+
+    const vorher = nachrichten.length;
+    ws.send(JSON.stringify({ typ: 'aktion', aktion: 'meineFotosZu' }));
+    await warteNachricht(nachrichten, (m) => m.typ === 'zustand' && m.zustand.meineFotos === null && nachrichten.indexOf(m) >= vorher);
+  } finally {
+    await new Promise((r) => { ws.once('close', r); ws.close(); });
+  }
+});
+
+test('GET /m/<Code>: Seite mit Name und Foto (mit Schlüssel), Haushalts-Code listet alle Mitglieder, unbekannter Code 404', async (ctx) => {
+  const anna = await fetch(`${ctx.base}/m/K7PX29QM`);
+  assert.equal(anna.status, 200);
+  assert.match(anna.headers.get('content-type'), /^text\/html/);
+  const seite = await anna.text();
+  assert.ok(seite.includes('Anna Muster'), 'der Name fehlt');
+  assert.ok(seite.includes('1 Foto mit dir'));
+  assert.ok(seite.includes(`/fotos/${ctx.foto.id}/druck.jpg?k=${ctx.foto.schluessel}`), 'das Foto mit Schlüssel fehlt');
+
+  const haus = await fetch(`${ctx.base}/m/HX3K9WQ2`);
+  assert.equal(haus.status, 200);
+  const hausSeite = await haus.text();
+  assert.ok(hausSeite.includes('Bert Beispiel, Carla Ohneplatz'), 'beide Haushaltsmitglieder müssen stehen');
+  assert.ok(hausSeite.includes('noch keine Fotos'));
+
+  const unbekannt = await fetch(`${ctx.base}/m/ZZZZZZZZ`);
+  assert.equal(unbekannt.status, 404);
+  assert.ok((await unbekannt.text()).includes('Diesen Code kennt die Fotobox nicht.'));
+});
+
+test('Admin-Scan: falsche PIN wird abgelehnt und zeigt nichts; mit PIN wirkt er wie ein Scan am Start', async (ctx) => {
+  const falsch = await verbinden(wsUrl(ctx));
+  try {
+    await warteNachricht(falsch.nachrichten, (m) => m.typ === 'zustand');
+    falsch.ws.send(JSON.stringify({ typ: 'admin', pin: 'falsch', aktion: 'scan', daten: { text: 'FOTOBOX:K7PX29QM' } }));
+    const antwort = await warteNachricht(falsch.nachrichten, (m) => m.typ === 'antwort');
+    assert.equal(antwort.ok, false);
+    assert.equal(ctx.server.ablauf.zustand().meineFotos, null, 'ohne PIN darf der Scan nichts anzeigen');
+  } finally {
+    await new Promise((r) => { falsch.ws.once('close', r); falsch.ws.close(); });
+  }
+
+  const richtig = await verbinden(wsUrl(ctx));
+  try {
+    await warteNachricht(richtig.nachrichten, (m) => m.typ === 'zustand');
+    richtig.ws.send(JSON.stringify({ typ: 'admin', pin: ctx.pin, aktion: 'scan', daten: { text: 'FOTOBOX:K7PX29QM' } }));
+    const antwort = await warteNachricht(richtig.nachrichten, (m) => m.typ === 'antwort');
+    assert.equal(antwort.ok, true);
+    await warteNachricht(richtig.nachrichten, (m) => m.typ === 'zustand' && m.zustand.meineFotos && m.zustand.meineFotos.namen.includes('Anna Muster'));
+    richtig.ws.send(JSON.stringify({ typ: 'aktion', aktion: 'meineFotosZu' }));
+  } finally {
+    await new Promise((r) => { richtig.ws.once('close', r); richtig.ws.close(); });
+  }
+});
+
 (async () => {
   const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'fotobox-server-'));
   const konfig = Object.assign(konfigLaden(), { port: 0, datenOrdner: ordner });

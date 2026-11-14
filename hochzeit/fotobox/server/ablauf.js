@@ -329,7 +329,9 @@ class Ablauf extends EventEmitter {
     if (a === 'start' || a === 'pause') {
       // „Deine Fotos“ zeigen und für das nächste Foto vormerken (eine Minute)
       const e = this.speicher.einstellungen(), anzahl = this.speicher.fotosMit(treffer.gaeste).length;
-      this.vorgemerkt = { gaeste: treffer.gaeste, bis: Date.now() + 60000 };
+      // Mehrere Gäste nacheinander scannen: alle für das nächste Foto vormerken
+      const schon = this.vorgemerkt && Date.now() < this.vorgemerkt.bis ? this.vorgemerkt.gaeste : [];
+      this.vorgemerkt = { gaeste: [...new Set(schon.concat(treffer.gaeste))], bis: Date.now() + 60000 };
       this.z.meineFotos = { namen, anzahl, url: `${e.adresse || this.basisUrl || ''}/m/${treffer.code}` };
       this.meineFotosZeit = Date.now();
       this._meldung(`Hallo ${namen.join(', ')}!`, 'ok');
@@ -346,7 +348,11 @@ class Ablauf extends EventEmitter {
   }
   personEntfernen(id) {
     this.z.personen = this.z.personen.filter((x) => x !== id);
-    if (this.z.foto) this.speicher.personenSetzen(this.z.foto.id, this.z.personen);
+    if (this.z.foto) {
+      this.speicher.personenSetzen(this.z.foto.id, this.z.personen);
+      const f = this.speicher.foto(this.z.foto.id); // auch aus dem Gästebuch-Eintrag entfernen
+      if (f && f.gaestebuch && f.gaestebuch.gaeste.includes(id)) this.speicher.fotoAendern(f.id, { gaestebuch: Object.assign({}, f.gaestebuch, { gaeste: f.gaestebuch.gaeste.filter((x) => x !== id) }) });
+    }
     this._melden();
   }
 

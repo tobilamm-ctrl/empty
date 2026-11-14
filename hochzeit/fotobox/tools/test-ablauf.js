@@ -441,6 +441,180 @@ test('Danke mit QR-Code bleibt stehen bis „Fertig“; ohne QR-Code endet es na
   }
 });
 
+// ---------- Scanner: Tischkarte und Einladung ----------
+
+// Gäste mit Codes: Anna (eigener Code), Bert und Cora (ein Haushalt mit Einladungscode)
+function gaesteMitCodes(speicher) {
+  speicher.gaesteSetzen([
+    { id: 'g1', name: 'Anna Muster', tisch: 'Tisch 1', code: 'K7PX29QM', einladung: '' },
+    { id: 'g2', name: 'Bert Beispiel', tisch: 'Tisch 2', code: '', einladung: 'HX3K9WQ2' },
+    { id: 'g3', name: 'Cora Nie', tisch: 'Tisch 2', code: '', einladung: 'HX3K9WQ2' },
+  ]);
+}
+
+// Startet über den Knopf eine Sitzung und wartet auf die Vorschau des ersten Fotos
+async function bisVorschau(ablauf) {
+  ablauf.aktion('knopf');
+  return warteAnsicht(ablauf, 'vorschau');
+}
+
+test('Scan: unbekannter Code → Meldung „Diesen Code kennt die Fotobox nicht.“ (art fehler), kein „Deine Fotos“', () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    ablauf.scan('FOTOBOX:ZZZZZZZZ');
+    const z = ablauf.zustand();
+    assert.equal(z.scanMeldung.art, 'fehler');
+    assert.equal(z.scanMeldung.text, 'Diesen Code kennt die Fotobox nicht.');
+    assert.equal(z.meineFotos, null);
+    assert.equal(z.ansicht, 'start');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Scan am Start: „Deine Fotos“ mit Name, Anzahl 0 und Link /m/<Code>; danach über den Knopf ist Anna auf dem Foto', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    ablauf.scan('FOTOBOX:K7PX29QM');
+    const z = ablauf.zustand();
+    assert.equal(z.ansicht, 'start', 'der Scan wechselt nicht in eine Sitzung');
+    assert.deepEqual(z.meineFotos.namen, ['Anna Muster']);
+    assert.equal(z.meineFotos.anzahl, 0);
+    assert.match(z.meineFotos.url, /\/m\/K7PX29QM$/);
+    assert.deepEqual(z.personenNamen, [], 'noch keine Person in einer Sitzung');
+
+    ablauf.aktion('knopf');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.deepEqual(v.personenNamen, [{ id: 'g1', name: 'Anna Muster' }]);
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g1']);
+    assert.equal(ablauf.zustand().meineFotos, null, '„Deine Fotos“ schließt mit dem Start der Sitzung');
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Scan am Start wirkt auch für aktion(\'start\') (Knopf am Bildschirm)', () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    ablauf.scan('fotobox:k7px-29qm');
+    ablauf.aktion('start');
+    const z = ablauf.zustand();
+    assert.equal(z.ansicht, 'modus');
+    assert.deepEqual(z.personenNamen, [{ id: 'g1', name: 'Anna Muster' }]);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('vorgemerkter Gast verfällt nach 60 Sekunden: die nächste Sitzung startet ohne Person', () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    ablauf.scan('FOTOBOX:K7PX29QM');
+    assert.ok(ablauf.vorgemerkt, 'die Person muss vorgemerkt sein');
+    ablauf.vorgemerkt.bis = Date.now() - 1;
+    ablauf.aktion('start');
+    assert.equal(ablauf.zustand().ansicht, 'modus');
+    assert.deepEqual(ablauf.zustand().personenNamen, []);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Haushalts-Code in der Vorschau fügt alle Mitglieder hinzu, zweimal gescannt ohne Doppelte', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    const v = await bisVorschau(ablauf);
+
+    ablauf.scan('https://fotobox.local/a/HX3K-9WQ2');
+    assert.deepEqual(ablauf.zustand().personenNamen, [{ id: 'g2', name: 'Bert Beispiel' }, { id: 'g3', name: 'Cora Nie' }]);
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g2', 'g3']);
+
+    ablauf.scan('HX3K9WQ2');
+    const z = ablauf.zustand();
+    assert.equal(z.personenNamen.length, 2, 'kein Doppelter');
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g2', 'g3']);
+    assert.match(z.scanMeldung.text, /ist schon dabei/);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('personEntfernen: Person verschwindet aus der Sitzung und vom Foto; ein unbekannter Scan ändert nichts', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    const v = await bisVorschau(ablauf);
+    ablauf.scan('HX3K9WQ2');
+
+    ablauf.aktion('personEntfernen', 'g2');
+    assert.deepEqual(ablauf.zustand().personenNamen, [{ id: 'g3', name: 'Cora Nie' }]);
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g3']);
+
+    ablauf.scan('FOTOBOX:ZZZZZZZZ');
+    assert.deepEqual(ablauf.zustand().personenNamen, [{ id: 'g3', name: 'Cora Nie' }]);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('nach „nochmal“ behält das neue Foto die Personen der Sitzung', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    const erstes = await bisVorschau(ablauf);
+    ablauf.scan('FOTOBOX:K7PX29QM');
+
+    ablauf.aktion('nochmal');
+    const zweites = await warteAuf(ablauf, (z) => z.ansicht === 'vorschau' && z.foto && z.foto.id !== erstes.foto.id);
+    assert.deepEqual(speicher.foto(zweites.foto.id).personen, ['g1']);
+    assert.deepEqual(speicher.foto(erstes.foto.id).personen, ['g1']);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('Scan während der Aufnahme: die Person kommt auf das Foto, sobald es gespeichert ist', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    ablauf.aktion('knopf');
+    await warteAuf(ablauf, (z) => z.ansicht === 'aufnahme');
+    ablauf.scan('FOTOBOX:K7PX29QM');
+    const v = await warteAnsicht(ablauf, 'vorschau');
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g1']);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
+test('zustand().scanner: true, sobald ein Gast einen Tischkarten- oder Einladungscode hat; sonst false', () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster' }]);
+    assert.equal(ablauf.zustand().scanner, false);
+    speicher.gaesteSetzen([{ id: 'g1', name: 'Anna Muster', code: '', einladung: 'HX3K9WQ2' }]);
+    assert.equal(ablauf.zustand().scanner, true, 'eine Einladung allein reicht');
+    gaesteMitCodes(speicher);
+    assert.equal(ablauf.zustand().scanner, true);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
 (async () => {
   for (const t of tests) {
     try {
