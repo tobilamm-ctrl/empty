@@ -38,7 +38,9 @@ async function pruefen({ adresse, schluessel }) {
 async function abgleichen({ speicher, adresse, schluessel, log = () => {} }) {
   const erg = { hochgeladen: 0, aktualisiert: 0, geloescht: 0, ohneZuordnung: 0, fehler: [] };
   if (!adresse || !schluessel) { erg.fehler.push('Adresse und Schlüssel fehlen.'); return erg; }
-  const online = new Map((await anfrage(adresse, 'fotobox_list', { schluessel })).photos.map((p) => [p.id, (p.codes || []).slice().sort()]));
+  // Codes vergleichbar machen (der Server speichert sie evtl. anders geschrieben)
+  const norm = (c) => String(c).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const online = new Map((await anfrage(adresse, 'fotobox_list', { schluessel })).photos.map((p) => [p.id, (p.codes || []).map(norm).sort()]));
   const lokal = new Set();
   for (const f of speicher.fotos().filter((x) => x.behalten && !x.ausgeblendet)) {
     const codes = codesVon(speicher, f);
