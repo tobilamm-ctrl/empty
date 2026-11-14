@@ -222,6 +222,18 @@ Die Einstellung „Bluetooth-Knopf macht“ findest du auf der Service-Seite unt
 
 Hinweis: Wenn der Knopf mit dem **iPad** gekoppelt ist, kommen die Lautstärke-Tasten meist nicht bei Safari an. Nimm dann die Taste Enter oder Leertaste des Knopfes. Oder koppelt den Knopf mit dem Mini-PC.
 
+### QR-Scanner für Tischkarten
+
+Mit einem QR-Scanner (USB oder Bluetooth, am Mini-PC) weiß die Fotobox, wer auf einem Foto ist.
+
+- **Codes**: Im Sitzplantool bekommt jeder Gast einen persönlichen Code. Im Karten-Editor bei den **Platzkarten** „QR-Code“ hinzufügen – er erscheint klein unten rechts, auf jeder Karte mit dem Code des jeweiligen Gastes. Der Code steht auch im Gast-Profil. Danach die Sitzplan-Datei speichern und im Service der Fotobox übernehmen.
+- **Auch die Einladung geht**: Wer den QR-Code seiner Einladung scannt, wird mit dem ganzen Haushalt zugeordnet.
+- **Während eines Fotos** (von der Auswahl bis „Danke“): Jeder Scan fügt die Person dem Foto hinzu. Die Namen stehen am iPad unter „Auf dem Foto“; mit × lässt sich jemand wieder entfernen. Großer Bildschirm und iPad bestätigen jeden Scan kurz.
+- **Am Startbildschirm**: Ein Scan zeigt „Hallo …!“ mit einem QR-Code zu **„Deine Fotos“** – einer Seite mit allen Fotos dieser Person zum Speichern (im Fotobox-WLAN). Wer danach innerhalb einer Minute ein Foto macht, ist darauf schon eingetragen.
+- **Zuordnung überall**: Gescannte Personen zählen wie im Gästebuch angetippte – für den Export nach Gast oder Tisch, die Statistik und die Dankeskarten.
+- **Scanner einrichten**: Der Scanner arbeitet wie eine Tastatur (Zeichen und am Ende Enter). Er muss wie der Bluetooth-Knopf an das Gerät, dessen Seite den Fokus hat – am besten der Mini-PC mit dem großen Bildschirm. Ein einzelnes Enter bleibt der Bluetooth-Knopf; nur schnell getippte Zeichen mit Enter zählen als Scan.
+- **Ausprobieren**: Im Service unter „QR-Scanner“ einen Gast wählen und „Test-Scan“ drücken; im Simulator gibt es ein Feld „Scannen“.
+
 ## 8. Gestaltung wie die Einladungen
 
 Die Fotobox kann dieselben Farben und Schriften wie die Einladungen zeigen. Dazu nutzt du die Datei aus dem Sitzplantool.
