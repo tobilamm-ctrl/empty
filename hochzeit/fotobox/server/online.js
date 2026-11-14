@@ -2,8 +2,10 @@
  * Fotos auf die persönliche Gästeseite des Sitzplantools hochladen (nach der Feier, braucht Internet).
  * Jedes Foto geht mit den Einladungscodes (Haushalte) der Gäste darauf hoch; jeder Haushalt sieht dort nur seine Fotos.
  * Schnittstelle (Sitzplantool, api.php): fotobox_list, fotobox_upload, fotobox_delete mit dem Schlüssel f.
+ * Galerie für alle Gäste: Fotos, die der Gast für die Diashow freigegeben hat (und ggf. vom Paar freigegeben sind),
+ * gehen mit alle: true hoch – auch ohne Zuordnung. Ob die Galerie gezeigt wird, entscheidet das Sitzplantool.
  *
- * abgleichen({ speicher, adresse, schluessel, log }) → { hochgeladen, aktualisiert, geloescht, ohneZuordnung, fehler: [text] }
+ * abgleichen({ speicher, adresse, schluessel, log }) → { hochgeladen, aktualisiert, geloescht, ohneZuordnung, fuerAlle, fehler: [text] }
  * pruefen({ adresse, schluessel }) → { ok, fotos, limit, fehler }
  */
 'use strict';
@@ -36,24 +38,27 @@ async function pruefen({ adresse, schluessel }) {
 }
 
 async function abgleichen({ speicher, adresse, schluessel, log = () => {} }) {
-  const erg = { hochgeladen: 0, aktualisiert: 0, geloescht: 0, ohneZuordnung: 0, fehler: [] };
+  const erg = { hochgeladen: 0, aktualisiert: 0, geloescht: 0, ohneZuordnung: 0, fuerAlle: 0, fehler: [] };
+  const e = speicher.einstellungen();
+  const fuerAlle = (f) => f.inDiashow !== false && (!e.diashowFreigabe || !!f.freigegeben);
   if (!adresse || !schluessel) { erg.fehler.push('Adresse und Schlüssel fehlen.'); return erg; }
   // Codes vergleichbar machen (der Server speichert sie evtl. anders geschrieben)
   const norm = (c) => String(c).toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const online = new Map((await anfrage(adresse, 'fotobox_list', { schluessel })).photos.map((p) => [p.id, (p.codes || []).map(norm).sort()]));
+  const online = new Map((await anfrage(adresse, 'fotobox_list', { schluessel })).photos.map((p) => [p.id, (p.codes || []).map(norm).sort().join() + (p.alle ? '|alle' : '')]));
   const lokal = new Set();
   for (const f of speicher.fotos().filter((x) => x.behalten && !x.ausgeblendet)) {
-    const codes = codesVon(speicher, f);
-    if (!codes.length) { erg.ohneZuordnung++; continue; }
+    const codes = codesVon(speicher, f), alle = fuerAlle(f);
+    if (alle) erg.fuerAlle++;
+    if (!codes.length && !alle) { erg.ohneZuordnung++; continue; }
     lokal.add(f.id);
     const vorher = online.get(f.id);
-    if (vorher && vorher.join() === codes.join()) continue;
+    if (vorher !== undefined && vorher === codes.join() + (alle ? '|alle' : '')) continue;
     try {
-      const body = { id: f.id, codes, zeit: f.zeit };
-      if (!vorher) body.bild = 'data:image/jpeg;base64,' + fs.readFileSync(speicher.druckDatei(f.id)).toString('base64');
+      const body = { id: f.id, codes, zeit: f.zeit, alle };
+      if (vorher === undefined) body.bild = 'data:image/jpeg;base64,' + fs.readFileSync(speicher.druckDatei(f.id)).toString('base64');
       await anfrage(adresse, 'fotobox_upload', { schluessel, body, methode: 'POST' });
-      if (vorher) erg.aktualisiert++; else erg.hochgeladen++;
-      speicher.fotoAendern(f.id, { online: { zeit: new Date().toISOString(), codes } });
+      if (vorher !== undefined) erg.aktualisiert++; else erg.hochgeladen++;
+      speicher.fotoAendern(f.id, { online: { zeit: new Date().toISOString(), codes, alle } });
     } catch (e) { erg.fehler.push(`${f.id}: ${e.message}`); if (/limit|bad_token|off/i.test(e.message)) break; }
   }
   // Online, aber hier ausgeblendet, gelöscht oder ohne Zuordnung → online löschen
@@ -61,7 +66,7 @@ async function abgleichen({ speicher, adresse, schluessel, log = () => {} }) {
     if (lokal.has(id)) continue;
     try { await anfrage(adresse, 'fotobox_delete', { schluessel, body: { id }, methode: 'POST' }); erg.geloescht++; } catch (e) { erg.fehler.push(`${id}: ${e.message}`); }
   }
-  log('info', `Gästeseite: ${erg.hochgeladen} hochgeladen, ${erg.aktualisiert} aktualisiert, ${erg.geloescht} gelöscht, ${erg.ohneZuordnung} ohne Zuordnung, ${erg.fehler.length} Fehler`);
+  log('info', `Gästeseite: ${erg.hochgeladen} hochgeladen, ${erg.aktualisiert} aktualisiert, ${erg.geloescht} gelöscht, ${erg.ohneZuordnung} ohne Zuordnung, ${erg.fuerAlle} für die Galerie, ${erg.fehler.length} Fehler`);
   return erg;
 }
 

@@ -25,10 +25,11 @@ function nachbau() {
       const f = req.method === 'GET' ? u.searchParams.get('f') : body.f;
       if (f !== SCHLUESSEL) return antwort(403, { ok: false, code: 'bad_token', error: 'Falscher Schlüssel.' });
       log.push(a);
-      if (a === 'fotobox_list') return antwort(200, { ok: true, photos: [...fotos.entries()].map(([id, p]) => ({ id, codes: p.codes })), limit: 1000, used: fotos.size });
+      if (a === 'fotobox_list') return antwort(200, { ok: true, photos: [...fotos.entries()].map(([id, p]) => ({ id, codes: p.codes, alle: !!p.alle })), limit: 1000, used: fotos.size });
       if (a === 'fotobox_upload') {
         if (!fotos.has(body.id) && !body.bild) return antwort(400, { ok: false, code: 'bad_image', error: 'Bild fehlt.' });
-        fotos.set(body.id, { codes: body.codes, bild: body.bild || (fotos.get(body.id) || {}).bild });
+        if (!body.codes.length && !body.alle) return antwort(400, { ok: false, code: 'no_codes', error: 'Keine Codes.' });
+        fotos.set(body.id, { codes: body.codes, alle: !!body.alle, bild: body.bild || (fotos.get(body.id) || {}).bild });
         return antwort(200, { ok: true, photo: { id: body.id, codes: body.codes } });
       }
       if (a === 'fotobox_delete') { fotos.delete(body.id); return antwort(200, { ok: true }); }
@@ -56,7 +57,8 @@ async function fotoAnlegen(speicher, personen, teil = {}) {
       { id: 'g3', name: 'Clara Lang', einladung: 'HAUS2222' }, { id: 'g4', name: 'Dora ohne Einladung', einladung: '' },
     ]);
     const f1 = await fotoAnlegen(speicher, ['g1', 'g2', 'g3']);
-    const f2 = await fotoAnlegen(speicher, ['g4']); // nur Gast ohne Einladung → bleibt lokal
+    const f2 = await fotoAnlegen(speicher, ['g4'], { inDiashow: false }); // nur Gast ohne Einladung, nicht für die Diashow → bleibt lokal
+    const f4 = await fotoAnlegen(speicher, []); // ohne Zuordnung, aber für die Diashow freigegeben → nur Galerie
     const f3 = await fotoAnlegen(speicher, ['g3'], { ausgeblendet: true }); // ausgeblendet → nicht hoch
     const zugang = { speicher, adresse: s.adresse, schluessel: SCHLUESSEL };
 
@@ -67,12 +69,29 @@ async function fotoAnlegen(speicher, personen, teil = {}) {
     console.log('ok – Verbindung prüfen (richtiger und falscher Schlüssel)');
 
     let e = await online.abgleichen(zugang);
-    assert.deepEqual([e.hochgeladen, e.aktualisiert, e.geloescht, e.ohneZuordnung, e.fehler.length], [1, 0, 0, 1, 0]);
+    assert.deepEqual([e.hochgeladen, e.aktualisiert, e.geloescht, e.ohneZuordnung, e.fehler.length], [2, 0, 0, 1, 0]);
     assert.deepEqual(s.fotos.get(f1.id).codes, ['HAUS1111', 'HAUS2222']);
+    assert.equal(s.fotos.get(f1.id).alle, true);
+    assert.deepEqual(s.fotos.get(f4.id), Object.assign({}, s.fotos.get(f4.id), { codes: [], alle: true }));
     assert.match(s.fotos.get(f1.id).bild, /^data:image\/jpeg;base64,/);
     assert.ok(!s.fotos.has(f2.id) && !s.fotos.has(f3.id));
     assert.ok(speicher.foto(f1.id).online, 'Upload wird am Foto vermerkt');
-    console.log('ok – erster Abgleich: nur zugeordnete, sichtbare Fotos mit den Codes der Haushalte');
+    console.log('ok – erster Abgleich: zugeordnete Fotos mit Codes, Diashow-Fotos auch für die Galerie, Rest bleibt lokal');
+
+    speicher.einstellungenSetzen({ diashowFreigabe: true });
+    e = await online.abgleichen(zugang);
+    assert.equal(e.aktualisiert, 1, 'f1 verliert die Galerie-Freigabe'); assert.equal(e.geloescht, 1, 'f4 ohne Freigabe und ohne Zuordnung wird gelöscht');
+    assert.equal(s.fotos.get(f1.id).alle, false);
+    speicher.fotoAendern(f4.id, { freigegeben: true });
+    e = await online.abgleichen(zugang);
+    assert.equal(e.hochgeladen, 1);
+    speicher.fotoAendern(f4.id, { inDiashow: false });
+    e = await online.abgleichen(zugang);
+    assert.equal(e.geloescht, 1);
+    speicher.einstellungenSetzen({ diashowFreigabe: false });
+    e = await online.abgleichen(zugang);
+    assert.equal(e.aktualisiert, 1, 'f1 wieder für die Galerie');
+    console.log('ok – Galerie folgt „In der Diashow zeigen“ und der Freigabe durch das Paar');
 
     e = await online.abgleichen(zugang);
     assert.deepEqual([e.hochgeladen, e.aktualisiert, e.geloescht], [0, 0, 0]);
@@ -87,7 +106,7 @@ async function fotoAnlegen(speicher, personen, teil = {}) {
 
     speicher.fotoAendern(f1.id, { ausgeblendet: true });
     e = await online.abgleichen(zugang);
-    assert.equal(e.geloescht, 1); assert.equal(s.fotos.size, 0);
+    assert.equal(e.geloescht, 1); assert.ok(!s.fotos.has(f1.id));
     console.log('ok – ausgeblendetes Foto wird online gelöscht');
 
     e = await online.abgleichen(Object.assign({}, zugang, { adresse: '' }));

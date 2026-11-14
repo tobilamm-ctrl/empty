@@ -242,7 +242,7 @@ Jeder Haushalt kann seine Fotos später auf seiner persönlichen Gästeseite des
 2. Adresse und Schlüssel in der Fotobox im Service unter **„Online-Gästeseite“** eintragen und speichern.
 3. Nach der Feier den Mini-PC ins Internet bringen, **„Verbindung prüfen“** und dann **„Fotos hochladen“** drücken.
 
-Fotos ohne Zuordnung bleiben nur auf dem Mini-PC. Ausgeblendete Fotos werden nicht hochgeladen bzw. online wieder gelöscht. „Fotos hochladen“ kann man beliebig oft drücken: Es lädt nur Neues hoch und gleicht geänderte Zuordnungen ab.
+**Galerie für alle Gäste:** Fotos, bei denen die Gäste „In der Diashow zeigen“ angehakt haben (bei „Nur freigegebene Fotos zeigen“ zusätzlich nur mit eurer Freigabe), lädt die Fotobox auch für eine gemeinsame Galerie hoch. Ob die Galerie auf der Gästeseite erscheint, schaltet ihr im Sitzplantool ein. Fotos ohne Zuordnung und ohne Diashow-Freigabe bleiben nur auf dem Mini-PC. Ausgeblendete Fotos werden nicht hochgeladen bzw. online wieder gelöscht. „Fotos hochladen“ kann man beliebig oft drücken: Es lädt nur Neues hoch und gleicht geänderte Zuordnungen ab.
 
 ## 8. Gestaltung wie die Einladungen
 

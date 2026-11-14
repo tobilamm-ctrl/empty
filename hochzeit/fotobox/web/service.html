@@ -232,7 +232,7 @@ input[type=range] { accent-color: var(--akzent); }
   <section>
     <h2>Online-Gästeseite</h2>
     <form class="karte formular einst" id="onlineForm">
-      <p class="leise ganz">Nach der Feier lädt die Fotobox die Fotos auf die persönliche Gästeseite des Sitzplantools hoch. Jeder Haushalt sieht dort nur die Fotos, auf denen jemand von ihm gescannt oder im Gästebuch angetippt wurde. Adresse und Schlüssel findet ihr im Sitzplantool unter Gästeseite → „Fotos aus der Fotobox“ → „Zugang für die Fotobox anzeigen“. Dafür braucht der Mini-PC Internet.</p>
+      <p class="leise ganz">Nach der Feier lädt die Fotobox die Fotos auf die persönliche Gästeseite des Sitzplantools hoch. Jeder Haushalt sieht dort nur die Fotos, auf denen jemand von ihm gescannt oder im Gästebuch angetippt wurde. Fotos mit „In der Diashow zeigen“ (und ggf. eurer Freigabe) gehen zusätzlich für die Galerie aller Gäste hoch – ob sie gezeigt wird, stellt ihr im Sitzplantool ein. Adresse und Schlüssel findet ihr im Sitzplantool unter Gästeseite → „Fotos aus der Fotobox“ → „Zugang für die Fotobox anzeigen“. Dafür braucht der Mini-PC Internet.</p>
       <label>Adresse<input type="text" name="onlineAdresse" placeholder="https://eure-seite.de/sitzplan/" autocomplete="off"></label>
       <label>Schlüssel<input type="text" name="onlineSchluessel" autocomplete="off" spellcheck="false"></label>
       <div class="ganz zeile"><button class="btn btn-haupt">Speichern</button><button type="button" class="btn btn-rand" id="onlinePruefen">Verbindung prüfen</button><button type="button" class="btn btn-rand" id="onlineLos">Fotos hochladen</button></div>
@@ -458,7 +458,7 @@ input[type=range] { accent-color: var(--akzent); }
     try {
       const r = await (await fetch('/api/online-hochladen?pin=' + encodeURIComponent(pin), { method: 'POST' })).json();
       $('onlineText').textContent = r.fehler && !Array.isArray(r.fehler) ? `Fehler: ${r.fehler}`
-        : `Fertig: ${r.hochgeladen} neu, ${r.aktualisiert} aktualisiert, ${r.geloescht} online gelöscht, ${r.ohneZuordnung} ohne Zuordnung (bleiben nur hier).` + (r.fehler.length ? ` ${r.fehler.length} Fehler, z. B. ${r.fehler[0]}` : '');
+        : `Fertig: ${r.hochgeladen} neu, ${r.aktualisiert} aktualisiert, ${r.geloescht} online gelöscht, ${r.fuerAlle || 0} für die Galerie aller Gäste freigegeben, ${r.ohneZuordnung} ohne Zuordnung und ohne Diashow-Freigabe (bleiben nur hier).` + (r.fehler.length ? ` ${r.fehler.length} Fehler, z. B. ${r.fehler[0]}` : '');
     } catch (e) { $('onlineText').textContent = 'Fehler: ' + e.message; }
     $('onlineLos').disabled = false; laden();
   };
