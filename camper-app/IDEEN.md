@@ -129,7 +129,7 @@ Die Nummern bleiben fest, auch wenn Punkte erledigt werden (Beschreibungen weite
 82. ~~Benachrichtigungssymbol für die Pinnwand~~ Erledigt in Lieferung 54 als gelber Zettel in der Kopfzeile.
 83. ~~In eine bestimmte Reiseidee teilen, PDFs teilen und anhängen~~ Erledigt in Lieferung 54 und 55 (PDFs an
     Reiseideen, Tickets und Dokumenten, LAMMping im Teilen-Menü auch für PDFs).
-84. Fehlende Bereichsbilder im neuen Schaf-Stil (Lieferung 52): Karte, Tagebuch, Listen, Planung (zurzeit Basis-Schaf
+84. ✅ (Lieferung 90: alle 36 Bereiche mit eigenem Bild, nur Symbol ohne Schaf; Vorlagen von Tobi mit Higgsfield erzeugt) Fehlende Bereichsbilder im neuen Schaf-Stil (Lieferung 52): Karte, Tagebuch, Listen, Planung (zurzeit Basis-Schaf
     plus altes Symbol) und ggf. „Mehr“. Bilder in höherer Auflösung liefern, dann tausche ich sie aus.
 
 ## Praxistest November 2026 (nur gemerkt, Umsetzung nach der Rückkehr)

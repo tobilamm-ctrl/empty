@@ -136,6 +136,15 @@ In der konsoleH eine Datenbank anlegen und in `api/config.php` die MySQL-Zeilen 
 - **Anmeldung** bleibt auf jedem Handy gut ein Jahr bestehen. Nach 10 falschen Passwörtern
   ist die Anmeldung 15 Minuten gesperrt.
 
+## Neu in Version 90: Bereichsbilder nur noch als Symbol
+
+Kein Hochladen von `api` nötig, es ändern sich nur Dateien der App.
+
+- **Neben der Überschrift jedes Bereichs steht jetzt nur noch das Symbol** (z. B. Kochtopf, Tanksäule, Sparschwein), ohne das Schaf daneben.
+  Die Seiten wirken dadurch ruhiger, das Symbol ist größer und besser zu erkennen. Das Schaf bleibt im Logo oben und als Hintergrund.
+- **Alle 36 Bereiche haben ein eigenes Bild** im gleichen Stil, auch Karte, Tagebuch, Listen, Planung und „Mehr“, die bisher nur das Schaf mit einem Strich-Symbol zeigten.
+- Die Bilder sind schärfer, weil das Symbol jetzt die ganze Fläche nutzt, und liegen wie bisher für die Nutzung ohne Netz bereit.
+
 ## Neu in Version 89: Aufgeräumt
 
 **Wichtig beim Hochladen:** Der Server besteht jetzt aus `api/index.php` **und dem neuen Ordner `api/teile/`**. Bitte beides hochladen

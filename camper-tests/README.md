@@ -2,7 +2,7 @@
 
 ```
 node camper-tests/run.js              # alle Tests (etwa 40 Minuten)
-node camper-tests/run.js e2e89 push84 # nur einzelne
+node camper-tests/run.js e2e90 push84 # nur einzelne
 ```
 
 - `tests/` – Browser-Tests (`e2e…`, `karte…`, Playwright) und Server-Tests (`srv…`, `push…`).
