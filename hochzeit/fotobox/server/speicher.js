@@ -65,6 +65,9 @@ const STANDARD = {
   wlanPasswort: '',
   adresse: '',
   gaestebuchAn: true,
+  // Online-Gästeseite des Sitzplantools (Fotos nach der Feier hochladen)
+  onlineAdresse: '',
+  onlineSchluessel: '',
   // Texte
   textStartTitel: 'Lächeln, bitte!',
   textStart: 'Euer Bild seht ihr groß auf dem Bildschirm über der Kamera.',
@@ -101,6 +104,8 @@ function bereinigen(k, v) {
   if (k === 'oeffnungAb' || k === 'oeffnungBis') return t === '' || UHRZEIT.test(t) ? t : undefined;
   if (k === 'pin') return t === '' || /^\d{4,8}$/.test(t) ? t : undefined;
   if (k === 'toene') return ['aus', 'buehne', 'ipad', 'beide'].includes(t) ? t : undefined;
+  if (k === 'onlineAdresse') return t === '' || /^https?:\/\/\S+$/.test(t) ? t.trim() : undefined;
+  if (k === 'onlineSchluessel') return t === '' || /^[0-9a-f]{16,64}$/i.test(t.trim()) ? t.trim() : undefined;
   if (k === 'adresse') return t === '' || /^https?:\/\/[^\s/]+$/.test(t.replace(/\/$/, '')) ? t.replace(/\/$/, '') : undefined;
   return t;
 }

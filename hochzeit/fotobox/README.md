@@ -234,6 +234,16 @@ Mit einem QR-Scanner (USB oder Bluetooth, am Mini-PC) weiß die Fotobox, wer auf
 - **Scanner einrichten**: Der Scanner arbeitet wie eine Tastatur (Zeichen und am Ende Enter). Er muss wie der Bluetooth-Knopf an das Gerät, dessen Seite den Fokus hat – am besten der Mini-PC mit dem großen Bildschirm. Ein einzelnes Enter bleibt der Bluetooth-Knopf; nur schnell getippte Zeichen mit Enter zählen als Scan.
 - **Ausprobieren**: Im Service unter „QR-Scanner“ einen Gast wählen und „Test-Scan“ drücken; im Simulator gibt es ein Feld „Scannen“.
 
+### Fotos auf der persönlichen Gästeseite (nach der Feier)
+
+Jeder Haushalt kann seine Fotos später auf seiner persönlichen Gästeseite des Sitzplantools ansehen und speichern – über den Link aus der Einladung. Er sieht nur Fotos, auf denen jemand aus dem Haushalt gescannt oder im Gästebuch angetippt wurde.
+
+1. Im Sitzplantool unter Gästeseite → **„Fotos aus der Fotobox“** einschalten, festlegen, wie lange die Fotos sichtbar bleiben (danach werden sie automatisch gelöscht), und **„Zugang für die Fotobox anzeigen“** wählen.
+2. Adresse und Schlüssel in der Fotobox im Service unter **„Online-Gästeseite“** eintragen und speichern.
+3. Nach der Feier den Mini-PC ins Internet bringen, **„Verbindung prüfen“** und dann **„Fotos hochladen“** drücken.
+
+Fotos ohne Zuordnung bleiben nur auf dem Mini-PC. Ausgeblendete Fotos werden nicht hochgeladen bzw. online wieder gelöscht. „Fotos hochladen“ kann man beliebig oft drücken: Es lädt nur Neues hoch und gleicht geänderte Zuordnungen ab.
+
 ## 8. Gestaltung wie die Einladungen
 
 Die Fotobox kann dieselben Farben und Schriften wie die Einladungen zeigen. Dazu nutzt du die Datei aus dem Sitzplantool.

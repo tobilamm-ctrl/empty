@@ -24,6 +24,7 @@ const { kameraDigicamcontrol } = require('./kamera/digicamcontrol');
 const bild = require('./bild');
 const { gestaltung, FARBWELTEN, SCHRIFTSTILE } = require('./gestaltung');
 const qrcode = require('qrcode-generator');
+const online = require('./online');
 const { sitzplanLesen } = require('./import');
 
 const WURZEL = path.join(__dirname, '..');
@@ -220,6 +221,12 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
         ablauf.einstellungenGeaendert(); json(res, 200, { datei: d });
       });
       return;
+    }
+    if ((p === '/api/online-pruefen' || p === '/api/online-hochladen') && req.method === 'POST') {
+      if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
+      const e = speicher.einstellungen(), zugang = { adresse: e.onlineAdresse, schluessel: e.onlineSchluessel };
+      if (p === '/api/online-pruefen') return online.pruefen(zugang).then((r) => json(res, 200, r));
+      return online.abgleichen(Object.assign({ speicher, log }, zugang)).then((r) => json(res, 200, r), (err) => json(res, 502, { fehler: err.message }));
     }
     if (p === '/api/dankeskarten.csv') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
