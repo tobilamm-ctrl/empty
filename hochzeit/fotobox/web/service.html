@@ -98,6 +98,24 @@ input[type=range] { accent-color: var(--akzent); }
     <div id="drucker" style="display:flex;flex-direction:column;gap:10px"></div>
   </section>
 
+  <section>
+    <h2>Technik testen</h2>
+    <div class="karte">
+      <div class="zeile"><b>Kamera</b><span class="frei"></span><button class="btn btn-rand" id="testFoto">Testfoto machen</button><button class="btn btn-rand" id="testLive">Livebild zeigen</button></div>
+      <p class="leise" id="testFotoText">Löst die Kamera einmal aus, ohne dass ein Foto gespeichert wird, und zeigt Bild, Größe und Dauer.</p>
+      <img id="testFotoBild" alt="Testfoto" hidden style="max-width:100%;border-radius:8px">
+    </div>
+    <div class="karte">
+      <div class="zeile"><b>Drucker</b></div>
+      <p class="leise">Der <b>Probedruck</b> zeigt Linien 1 bis 6 mm vom Papierrand. Schaut je Seite, welche Linie als erste vollständig zu sehen ist: Ist links mehr abgeschnitten als rechts, die Feinkorrektur (unter „Drucken“) waagerecht ins Plus stellen; oben mehr als unten → senkrecht ins Plus. Etwa die Hälfte des Unterschieds einstellen und neu drucken. Das <b>Beispielfoto</b> zeigt das aktuelle Druckbild. Jeder Druck verbraucht ein Blatt.</p>
+      <div id="testDrucker" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="karte">
+      <div class="zeile"><b>Ton</b><span class="frei"></span><button class="btn btn-rand" id="testTon">Testton abspielen</button></div>
+      <p class="leise">Spielt Countdown-Piep und Auslösegeräusch dort, wo die Töne eingeschaltet sind (Einstellung „Töne“ unter „Ablauf“). Am iPad erst nach einer Berührung des iPads.</p>
+    </div>
+  </section>
+
   <section id="simulator" hidden>
     <h2>Simulator</h2>
     <div class="karte">
@@ -462,6 +480,30 @@ input[type=range] { accent-color: var(--akzent); }
     } catch (e) { $('onlineText').textContent = 'Fehler: ' + e.message; }
     $('onlineLos').disabled = false; laden();
   };
+  // ---------- Technik testen ----------
+  $('testFoto').onclick = async () => {
+    $('testFoto').disabled = true; $('testFotoText').textContent = 'Kamera löst aus …';
+    try {
+      const r = await (await fetch('/api/testfoto?pin=' + encodeURIComponent(pin), { method: 'POST' })).json();
+      if (r.ok) { $('testFotoBild').src = r.bild; $('testFotoBild').hidden = false; $('testFotoText').textContent = `Klappt: ${r.breite} × ${r.hoehe} Pixel, ${r.kb} KB, Aufnahme in ${(r.ms / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} s.`; }
+      else { $('testFotoBild').hidden = true; $('testFotoText').textContent = `Kamera-Fehler: ${r.fehler}`; }
+    } catch (e) { $('testFotoText').textContent = 'Fehler: ' + e.message; }
+    $('testFoto').disabled = false; laden();
+  };
+  $('testLive').onclick = () => {
+    $('testFotoBild').hidden = false; $('testFotoBild').src = '/live.jpg?t=' + Date.now();
+    $('testFotoText').textContent = 'Standbild aus dem Livebild (so sieht es der große Bildschirm). Erneut tippen für ein neues Bild.';
+  };
+  $('testTon').onclick = () => admin('tonTest').then((a) => { if (a.ok) toast('Testton gesendet'); });
+  function testDrucker() {
+    $('testDrucker').innerHTML = (z ? z.drucker : []).map((d) => `<div class="zeile"><span style="flex:1">${esc(d.name)} <span class="leise">· ${d.papier} Blatt${d.status === 'aus' ? ' · abgeschaltet' : d.status === 'fehler' ? ' · Störung' : ''}</span></span>
+      <button class="btn btn-rand" data-probe="${d.i}" data-inhalt="raster">Probedruck</button><button class="btn btn-rand" data-probe="${d.i}" data-inhalt="foto">Beispielfoto</button></div>`).join('');
+  }
+  $('testDrucker').onclick = (e) => {
+    const b = e.target.closest('[data-probe]'); if (!b) return;
+    b.disabled = true;
+    admin('probedruck', { i: +b.dataset.probe, inhalt: b.dataset.inhalt }).then((a) => { b.disabled = false; if (a.ok) toast('Wird gedruckt'); });
+  };
   $('scanLos').onclick = () => admin('scan', { text: $('scanGast').value }).then(() => toast('Gescannt'));
 
   // ---------- Eigene Fotos ----------
@@ -554,6 +596,7 @@ input[type=range] { accent-color: var(--akzent); }
     $('jetztKarte').classList.toggle('pause-an', pause || z.ansicht === 'pause');
     $('knopfStatus').innerHTML = z.knopfLernen ? '<span class="lernen">Jetzt den Bluetooth-Knopf drücken …</span>' : '';
     drucker();
+    testDrucker();
   }
   let letzteTasten = '';
   Fotobox.verbinden((neu) => {

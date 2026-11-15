@@ -38,6 +38,27 @@ test('Drucken verteilt auf beide Drucker, Papier sinkt, alle Aufträge werden fe
   }
 });
 
+test('Probedruck gezielt auf einem Drucker; abgeschaltet, gestört oder leer → kein Auftrag', async () => {
+  const { treiber, verwaltung } = aufbauen(2);
+  try {
+    const a = verwaltung.druckenAuf(1, 'probe.jpg', 'probedruck');
+    assert.equal(a.length, 1); assert.equal(a[0].drucker, 'Drucker B');
+    assert.equal(verwaltung.uebersicht()[1].papier, 1); assert.equal(verwaltung.uebersicht()[0].papier, 2);
+    await warte(200);
+    assert.equal(verwaltung.auftraegeZu('probedruck')[0].status, 'fertig');
+    verwaltung.ausSetzen(0, true);
+    assert.deepEqual(verwaltung.druckenAuf(0, 'probe.jpg', 'probedruck'), []);
+    verwaltung.ausSetzen(0, false);
+    verwaltung.druckenAuf(1, 'probe.jpg', 'probedruck'); await warte(200);
+    assert.deepEqual(verwaltung.druckenAuf(1, 'probe.jpg', 'probedruck'), [], 'Drucker B hat kein Papier mehr');
+    treiber[0].fehlerSetzen('Stau'); verwaltung.druckenAuf(0, 'probe.jpg', 'probedruck'); await warte(200);
+    assert.deepEqual(verwaltung.druckenAuf(0, 'probe.jpg', 'probedruck'), [], 'Drucker A ist gestört');
+    assert.deepEqual(verwaltung.druckenAuf(5, 'probe.jpg', 'probedruck'), [], 'unbekannter Drucker');
+  } finally {
+    verwaltung.beenden();
+  }
+});
+
 test('Papier geht aus: nur so viele Abzüge wie Papier da ist, danach 0, Kassette wechseln stellt wieder her', async () => {
   const { verwaltung } = aufbauen(2);
   try {

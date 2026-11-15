@@ -359,6 +359,8 @@ class Ablauf extends EventEmitter {
   fotoAusblenden(id, aus) { if (this.speicher.fotoAendern(id, { ausgeblendet: !!aus })) { this.diashowVersion++; this._melden(); } }
   fotoFreigeben(id, frei) { if (this.speicher.fotoAendern(id, { freigegeben: !!frei })) { this.diashowVersion++; this._melden(); } }
   nachdrucken(id) { if (this.speicher.foto(id)) return this._drucken(id, 1, this.speicher.einstellungen()); return Promise.resolve(0); }
+  // Testton auf iPad und großem Bildschirm (Service → Technik testen)
+  tonTest() { this.z.tonTest = Date.now(); this._melden(); }
   zumStart() { if (this.z.ansicht !== 'pause') this._zeige('start', this._grundzustand()); }
   einstellungenGeaendert() { this.diashowVersion++; this._takt(); this._melden(); }
 

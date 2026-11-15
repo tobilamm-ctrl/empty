@@ -60,4 +60,9 @@ const { kameraSimulator } = require('../server/kamera/simulator');
   }
   const alias = await mittel(await bild.schwarzweiss(fotos[0]));
   assert.ok(alias.maxAbw <= 3, 'schwarzweiss: Alias von sw');
+  // Probedruck zum Einrichten: 10 × 15 cm bei 300 dpi, Ränder weiß bis auf die Linien
+  const probe = await loadImage(bild.probedruck({ versatzX: 0.5, versatzY: -1, druckerName: 'Selphy 1' }));
+  assert.deepEqual([probe.width, probe.height], [1800, 1200], 'Probedruck: Größe');
+  if (ordner) fs.writeFileSync(path.join(ordner, 'probedruck.jpg'), bild.probedruck({ versatzX: 0.5 }));
+  console.log('ok – Probedruck mit Ausrichtungsraster: 1800 × 1200');
 })().catch((e) => { console.error('FEHLER:', e.message); process.exit(1); });

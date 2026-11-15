@@ -4,7 +4,7 @@
  *
  * new DruckerVerwaltung({ treiber: [treiber], kassette: 18, dauerMs, papier?: [n, n] })
  *   drucken(datei, anzahl, fotoId) → [auftrag]   auftrag: { id, nr, fotoId, drucker, status, fortschritt }
- *   kassetteGetauscht(i), fehlerBehoben(i), ausSetzen(i, aus), papierGesamt(), uebersicht(), auftraegeZu(fotoId)
+ *   druckenAuf(i, datei, fotoId) (Probedruck auf einem bestimmten Drucker), kassetteGetauscht(i), fehlerBehoben(i), ausSetzen(i, aus), papierGesamt(), uebersicht(), auftraegeZu(fotoId)
  *   Ereignis 'aenderung' bei jeder Änderung.
  * Status je Drucker: bereit | druckt | leer | fehler | aus. Ein abgeschalteter Drucker bekommt nichts mehr,
  * wartende Abzüge gehen an den anderen. Ein Fehler nimmt den Drucker aus der Verteilung,
@@ -79,6 +79,16 @@ class DruckerVerwaltung extends EventEmitter {
     if (geaendert) this.emit('aenderung');
   }
 
+  // Probedruck gezielt auf einem Drucker (Service → Technik testen); [] wenn er aus, gestört oder leer ist
+  druckenAuf(i, datei, fotoId) {
+    const d = this.drucker[i];
+    if (!d || d.aus || d.fehler || d.papier <= 0) return [];
+    d.papier--;
+    const a = { id: ++this.zaehler, nr: 1, fotoId, datei, drucker: d.name, status: 'wartet', fortschritt: 0, start: 0 };
+    d.warteschlange.push(a); this.auftraege.push(a);
+    this._weiter(d); this.emit('aenderung');
+    return [a];
+  }
   kassetteGetauscht(i) { const d = this.drucker[i]; if (!d) return; d.papier = this.kassette; this.drucker.forEach((x) => this._weiter(x)); this.emit('aenderung'); }
   ausSetzen(i, aus) {
     const d = this.drucker[i]; if (!d) return;

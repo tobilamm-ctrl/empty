@@ -373,6 +373,31 @@ Kopiere die ZIP-Datei nach der Feier auf einen zweiten Datenträger.
 
 Wer „Nochmal“ drückt, bekommt ein neues Foto. Das alte bleibt auf der Festplatte und auf dem Stick. Es wird aber nicht in die ZIP-Datei übernommen und nicht in der Diashow gezeigt.
 
+## Technik testen und Generalprobe
+
+Auf der Service-Seite unter **„Technik testen“**:
+
+- **Testfoto machen**: löst die Kamera einmal aus (ohne zu speichern) und zeigt Bild, Größe und Dauer – oder die Fehlermeldung der Kamera.
+- **Livebild zeigen**: ein Standbild aus dem Livebild, wie es der große Bildschirm bekommt.
+- **Probedruck** (je Drucker): Linien 1 bis 6 mm vom Papierrand. Je Seite die erste vollständig sichtbare Linie ablesen. Links mehr abgeschnitten als rechts → Feinkorrektur waagerecht ins Plus; oben mehr als unten → senkrecht ins Plus. Etwa die Hälfte des Unterschieds einstellen und neu drucken, bis es ringsum gleich aussieht.
+- **Beispielfoto** (je Drucker): druckt ein Foto im aktuellen Druckbild mit Namen und Datum.
+- **Testton abspielen**: Piep und Auslösegeräusch dort, wo die Töne eingeschaltet sind.
+
+Jeder Probedruck verbraucht ein Blatt und zählt beim Papierstand mit.
+
+### Prüfliste mit der echten Technik
+
+1. Windows-Paket auf dem Mini-PC entpacken, `Fotobox-starten.bat` – startet die Fotobox ohne Fehlermeldung?
+2. Kamera (200D) mit digiCamControl verbinden, `kamera.art` auf `digicamcontrol` stellen → **Testfoto** und **Livebild** im Service.
+3. Beide Selphys einrichten, `drucker.art` auf `windows` stellen → je ein **Probedruck**, Feinkorrektur einstellen, je ein **Beispielfoto**.
+4. iPad mit dem Fotobox-WLAN verbinden, `/ipad` öffnen, ein Foto komplett durchspielen (auch Gästebuch und QR-Code mit einem Handy scannen).
+5. Großer Bildschirm mit `Grosser-Bildschirm-Vollbild.bat` → Countdown, Diashow, **Testton**.
+6. Bluetooth-Knopf koppeln → Foto auslösen; reagiert er nicht: „Knopf anlernen“.
+7. QR-Scanner anschließen → eine gedruckte Platzkarte scannen.
+8. Generalprobe: 2–3 Stunden laufen lassen, viele Fotos, beide Drucker; danach Fotos als ZIP herunterladen und „Fotos hochladen“ zur Gästeseite testen.
+
+Was dabei hakt, steht im **Protokoll** (Service-Seite) bzw. in `daten/protokoll.txt` – das hilft bei der Fehlersuche.
+
 ## 10. Wenn etwas hakt
 
 - **Roter Hinweis „Verbindung zur Fotobox unterbrochen“** oben auf dem iPad oder der Bühne. Der Server läuft nicht, oder das WLAN ist weg. Prüfe das Terminal-Fenster auf dem Mini-PC und das WLAN. Ist der Server wieder da, verbindet sich die Seite von allein.

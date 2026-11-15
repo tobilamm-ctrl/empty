@@ -89,11 +89,14 @@
   let vorher = null;
   function toeneAusZustand(z, ort) {
     const e = z.einstellungen, an = e.toene === 'beide' || e.toene === ort;
+    if (vorher && z.tonTest && z.tonTest !== vorher.tonTest) { // Testton: immer, sofern Töne hier nicht aus sind
+      if (an) { ton('piep', e.lautstaerke); setTimeout(() => ton('letzter', e.lautstaerke), 350); setTimeout(() => ton('ausloeser', e.lautstaerke), 800); }
+    }
     if (an && vorher) {
       if (z.countdown && z.countdown !== vorher.countdown) ton(z.countdown === 1 ? 'letzter' : 'piep', e.lautstaerke);
       if (z.blitz !== vorher.blitz) ton('ausloeser', e.lautstaerke);
     }
-    vorher = { countdown: z.countdown, blitz: z.blitz };
+    vorher = { countdown: z.countdown, blitz: z.blitz, tonTest: z.tonTest };
   }
 
   window.Fotobox = {

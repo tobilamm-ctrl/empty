@@ -295,4 +295,41 @@ async function versetzen(jpeg, mmX, mmY, farbe) {
   return c.toBuffer('image/jpeg', 92);
 }
 
-module.exports = { schriftenLaden, FILTER, LAYOUTS, filtern, schwarzweiss, zusammensetzen, versetzen };
+// Probedruck zum Einrichten (10 × 15 cm, 300 dpi): Linien 1–6 mm vom Papierrand an allen vier Seiten, Mittelkreuz,
+// Erklärung und die aktuell eingestellte Feinkorrektur. Die äußerste vollständig sichtbare Linie zeigt je Seite,
+// wie viel der Drucker abschneidet.
+function probedruck({ versatzX = 0, versatzY = 0, druckerName = '' } = {}) {
+  const W = 1800, H = 1200, mm = 300 / 25.4, c = createCanvas(W, H), ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  const farben = ['#d62828', '#f77f00', '#2a9d8f', '#264653', '#7b2cbf', '#555555'];
+  for (let n = 1; n <= 6; n++) {
+    const d = Math.round(n * mm);
+    ctx.strokeStyle = farben[n - 1]; ctx.lineWidth = 3; ctx.strokeRect(d, d, W - 2 * d, H - 2 * d);
+    ctx.fillStyle = farben[n - 1]; ctx.font = '600 22px "Montserrat", sans-serif'; ctx.textAlign = 'center';
+    // Beschriftung an jeder Seite, versetzt, damit sich die Zahlen nicht überdecken
+    const pos = 300 + n * 110;
+    ctx.fillText(`${n}`, pos, d + 26); ctx.fillText(`${n}`, W - pos, H - d - 8);
+    ctx.save(); ctx.translate(d + 26, H - pos); ctx.rotate(-Math.PI / 2); ctx.fillText(`${n}`, 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(W - d - 26, pos); ctx.rotate(Math.PI / 2); ctx.fillText(`${n}`, 0, 0); ctx.restore();
+  }
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(W / 2 - 60, H / 2); ctx.lineTo(W / 2 + 60, H / 2); ctx.moveTo(W / 2, H / 2 - 60); ctx.lineTo(W / 2, H / 2 + 60); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, 30, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#222'; ctx.textAlign = 'center';
+  ctx.font = '600 48px "Montserrat", sans-serif'; ctx.fillText('Probedruck Fotobox', W / 2, 250);
+  ctx.font = '30px "Montserrat", sans-serif';
+  const zeilen = [
+    `${druckerName ? druckerName + ' · ' : ''}${new Date().toLocaleString('de-DE')}`,
+    `Feinkorrektur jetzt: waagerecht ${versatzX.toLocaleString('de-DE')} mm, senkrecht ${versatzY.toLocaleString('de-DE')} mm`,
+    'Zahl = Abstand der Linie zum Papierrand in mm. Schaut je Seite,',
+    'welche Linie als erste vollständig zu sehen ist.',
+    'Links mehr abgeschnitten als rechts: waagerecht ins Plus (nach rechts).',
+    'Oben mehr abgeschnitten als unten: senkrecht ins Plus (nach unten).',
+    'Etwa die Hälfte des Unterschieds einstellen und neu drucken.',
+  ];
+  // Kopfzeilen oben, Anleitung unter dem Mittelkreuz
+  zeilen.forEach((z, i) => ctx.fillText(z, W / 2, i < 2 ? 330 + i * 46 : 760 + (i - 2) * 46));
+  return c.toBuffer('image/jpeg', 95);
+}
+
+module.exports = { schriftenLaden, FILTER, LAYOUTS, filtern, schwarzweiss, zusammensetzen, versetzen, probedruck };

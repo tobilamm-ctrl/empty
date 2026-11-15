@@ -24,6 +24,7 @@ const { kameraDigicamcontrol } = require('./kamera/digicamcontrol');
 const bild = require('./bild');
 const { gestaltung, FARBWELTEN, SCHRIFTSTILE } = require('./gestaltung');
 const qrcode = require('qrcode-generator');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const online = require('./online');
 const { sitzplanLesen } = require('./import');
 
@@ -228,6 +229,17 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
       if (p === '/api/online-pruefen') return online.pruefen(zugang).then((r) => json(res, 200, r));
       return online.abgleichen(Object.assign({ speicher, log }, zugang)).then((r) => json(res, 200, r), (err) => json(res, 502, { fehler: err.message }));
     }
+    if (p === '/api/testfoto' && req.method === 'POST') { // Service → Technik testen: ein Foto ohne Gäste-Ablauf
+      if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
+      const t0 = Date.now();
+      return kamera.ausloesen().then(async (b) => {
+        const img = await loadImage(b), ms = Date.now() - t0;
+        const w = Math.min(900, img.width), c = createCanvas(w, Math.round(img.height * w / img.width));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        log('info', `Testfoto: ${img.width} × ${img.height} in ${ms} ms`);
+        json(res, 200, { ok: true, ms, breite: img.width, hoehe: img.height, kb: Math.round(b.length / 1024), bild: c.toDataURL('image/jpeg', 0.85) });
+      }, (e) => { log('fehler', 'Testfoto: ' + e.message); json(res, 200, { ok: false, fehler: e.message }); });
+    }
     if (p === '/api/dankeskarten.csv') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
       res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="dankeskarten.csv"' });
@@ -282,7 +294,7 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
 
   wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ typ: 'zustand', zustand: ablauf.zustand() }));
-    ws.on('message', (roh) => {
+    ws.on('message', async (roh) => {
       let n; try { n = JSON.parse(roh); } catch (e) { return; }
       if (n.typ === 'aktion') return ablauf.aktion(n.aktion, n.daten);
       if (n.typ === 'knopfGelernt') return ablauf.knopfGelernt(n.taste);
@@ -303,6 +315,23 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
         case 'knopfLernen': ablauf.knopfLernen(); log('info', 'Knopf anlernen: warte auf Tastendruck'); break;
         case 'knopfZuruecksetzen': speicher.einstellungenSetzen({ knopfGelernt: [] }); log('info', 'Angelernte Knopf-Tasten gelöscht'); break;
         case 'logoLoeschen': speicher.logoSetzen(null); log('info', 'Logo gelöscht'); break;
+        case 'probedruck': {
+          const e = speicher.einstellungen(), ziel = path.join(datenOrdner, `probedruck-${Number(d.i) || 0}.jpg`), dr = drucker.drucker[d.i];
+          if (!dr) break;
+          let b;
+          if (d.inhalt === 'foto') { // Beispielfoto im aktuellen Druckbild, mit Feinkorrektur
+            const k = kameraSimulator(), fotos = [];
+            for (let n = 0; n < 4; n++) fotos.push(await k.ausloesen());
+            b = await bild.zusammensetzen({ modus: 'einzel', layout: e.druckLayout, fotos, g: gestaltung(e), namen: e.namen, datum: e.datum, logo: e.logoStattNamen ? speicher.logo() : null });
+          } else b = bild.probedruck({ versatzX: e.druckVersatzX, versatzY: e.druckVersatzY, druckerName: dr.name });
+          if (e.druckVersatzX || e.druckVersatzY) b = await bild.versetzen(b, e.druckVersatzX, e.druckVersatzY, '#ffffff');
+          fs.writeFileSync(ziel, b);
+          const neu = drucker.druckenAuf(d.i, ziel, 'probedruck');
+          if (!neu.length) return ws.send(JSON.stringify({ typ: 'antwort', ok: false, fehler: `${dr.name} ist abgeschaltet, gestört oder ohne Papier.` }));
+          log('info', `Probedruck (${d.inhalt === 'foto' ? 'Beispielfoto' : 'Raster'}) auf ${dr.name}`);
+          break;
+        }
+        case 'tonTest': ablauf.tonTest(); break;
         case 'eigeneLoeschen': speicher.eigenesLoeschen(String(d.datei || '')); ablauf.einstellungenGeaendert(); log('info', 'Eigenes Foto gelöscht'); break;
         case 'ausblenden': ablauf.fotoAusblenden(d.id, d.aus); break;
         case 'nachdrucken': ablauf.nachdrucken(d.id); log('info', `Nachdruck ${d.id}`); break;
