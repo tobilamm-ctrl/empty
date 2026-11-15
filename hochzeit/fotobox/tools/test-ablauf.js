@@ -497,6 +497,27 @@ test('Scan am Start: „Deine Fotos“ mit Name, Anzahl 0 und Link /m/<Code>; da
   }
 });
 
+test('Neuer Platzkarten-QR (Link zur Gästeseite mit #FOTOBOX:<Code>): am Start „Deine Fotos“, in der Vorschau nur dieser Gast', async () => {
+  const t = aufbauen();
+  try {
+    const { ablauf, speicher } = t;
+    gaesteMitCodes(speicher);
+    // Link enthält den Einladungscode von Bert und Cora – erkannt wird trotzdem nur Annas Fotobox-Code
+    ablauf.scan('https://sitzplan.lamm7.de/a/hx3k9wq2#FOTOBOX:K7PX29QM');
+    const z = ablauf.zustand();
+    assert.deepEqual(z.meineFotos.namen, ['Anna Muster']);
+    assert.match(z.meineFotos.url, /\/m\/K7PX29QM$/);
+
+    const v = await bisVorschau(ablauf);
+    assert.deepEqual(v.personenNamen, [{ id: 'g1', name: 'Anna Muster' }]);
+    ablauf.scan('https://sitzplan.lamm7.de/a/hx3k9wq2#FOTOBOX:K7PX29QM');
+    assert.deepEqual(speicher.foto(v.foto.id).personen, ['g1'], 'kein Haushalt, kein Doppelter');
+    assert.match(ablauf.zustand().scanMeldung.text, /ist schon dabei/);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
 test('Scan am Start wirkt auch für aktion(\'start\') (Knopf am Bildschirm)', () => {
   const t = aufbauen();
   try {

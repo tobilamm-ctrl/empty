@@ -752,6 +752,35 @@ test('codeSuchen: Tischkarte („FOTOBOX:…“, auch klein und mit Bindestrich)
   }
 });
 
+test('codeSuchen: neuer Platzkarten-QR „https://…/a/<Einladung>#FOTOBOX:<Code>“ findet nur den Gast, nicht den Haushalt aus dem Link', () => {
+  const t = speicherTemp();
+  try {
+    const { speicher } = t;
+    // Anna gehört zum Haushalt XPX7PGJF – der Einladungscode im Link darf nicht den ganzen Haushalt liefern
+    speicher.gaesteSetzen([
+      { id: 'g1', name: 'Anna Muster', code: 'K7QP2WXD', einladung: 'XPX7PGJF' },
+      { id: 'g2', name: 'Bert Muster', code: 'BERT5678', einladung: 'XPX7PGJF' },
+    ]);
+    const anna = { art: 'gast', code: 'K7QP2WXD', gaeste: ['g1'] };
+    for (const text of [
+      'https://sitzplan.lamm7.de/a/xpx7pgjf#FOTOBOX:K7QP2WXD',
+      'https://sitzplan.lamm7.de/a/xpx7pgjf#fotobox:k7qp-2wxd',
+      'HTTPS://SITZPLAN.LAMM7.DE/A/XPX7PGJF#FOTOBOX:K7QP2WXD',
+      'https://sitzplan.lamm7.de/a/xpx7pgjf?lang=de#FOTOBOX:K7QP2WXD',
+      '  https://sitzplan.lamm7.de/a/xpx7pgjf#FOTOBOX:K7QP2WXD  ',
+      'FOTOBOX:K7QP2WXD', // alte, schon gedruckte Karten
+    ]) {
+      assert.deepEqual(speicher.codeSuchen(text), anna, `Eingabe „${text}“`);
+    }
+    // Unbekannter Gästecode im Link: kein Treffer (nicht stattdessen den Haushalt aus dem Link nehmen)
+    assert.equal(speicher.codeSuchen('https://sitzplan.lamm7.de/a/xpx7pgjf#FOTOBOX:ZZZZZZZZ'), null);
+    // Link ohne Fotobox-Teil (Einladungslink) bleibt wie bisher der Haushalt
+    assert.deepEqual(speicher.codeSuchen('https://sitzplan.lamm7.de/a/xpx7pgjf').gaeste, ['g1', 'g2']);
+  } finally {
+    t.aufraeumen();
+  }
+});
+
 test('codeSuchen: Einladung (Klartext oder Link https://…/K7PX-29QM-Form) → alle Gäste des Haushalts', () => {
   const t = speicherTemp();
   try {
