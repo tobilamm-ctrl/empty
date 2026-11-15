@@ -1,0 +1,632 @@
+<title>Fotobox-Hintergründe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Pinyon+Script&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --acc:#a4506a; --paper:#f8f3ee;
+  --ink:#2c2523; --muted:#6b5f5a;
+  --bg:var(--paper);
+  --card:color-mix(in srgb, var(--paper) 45%, #fff);
+  --line:color-mix(in srgb, var(--ink) 14%, var(--paper));
+  --acc-text:var(--acc);
+  --acc-soft:color-mix(in srgb, var(--acc) 10%, var(--paper));
+  --shadow:0 1px 2px rgba(60,40,30,.06), 0 8px 24px rgba(60,40,30,.07);
+  /* Illustrationsfarben (folgen der Farbwelt) */
+  --a1:var(--acc);
+  --a2:color-mix(in srgb, var(--acc) 55%, #fff);
+  --a3:color-mix(in srgb, var(--acc) 76%, #000);
+  --a4:color-mix(in srgb, var(--acc) 22%, #fff);
+  --cream:color-mix(in srgb, var(--paper) 55%, #fff);
+  --leaf:color-mix(in srgb, #5d8a60 82%, var(--acc) 18%);
+  --leaf2:color-mix(in srgb, #3f6a45 85%, var(--acc) 15%);
+  --gold:#c4a15a;
+  --wall:color-mix(in srgb, var(--paper) 84%, #a89c90);
+  --floor:color-mix(in srgb, var(--paper) 62%, #7a6b5f);
+  --sil:#3f3439;
+  --namefont:'Great Vibes', cursive;
+  --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --sans:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#f0e9e2; --muted:#b7aca3;
+    --bg:color-mix(in srgb, var(--acc) 7%, #1b1715);
+    --card:color-mix(in srgb, var(--acc) 6%, #26211f);
+    --line:color-mix(in srgb, var(--ink) 16%, var(--bg));
+    --acc-text:color-mix(in srgb, var(--acc) 58%, #fff);
+    --acc-soft:color-mix(in srgb, var(--acc) 16%, var(--bg));
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#f0e9e2; --muted:#b7aca3;
+  --bg:color-mix(in srgb, var(--acc) 7%, #1b1715);
+  --card:color-mix(in srgb, var(--acc) 6%, #26211f);
+  --line:color-mix(in srgb, var(--ink) 16%, var(--bg));
+  --acc-text:color-mix(in srgb, var(--acc) 58%, #fff);
+  --acc-soft:color-mix(in srgb, var(--acc) 16%, var(--bg));
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);
+  padding:0 max(16px, env(safe-area-inset-left, 0px)) 56px max(16px, env(safe-area-inset-right, 0px));
+  transition:background-color .3s}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.12;margin:0;color:var(--acc-text)}
+h1{font-size:clamp(2.2rem,7vw,3.6rem);letter-spacing:.01em}
+h2{font-size:clamp(1.6rem,4.5vw,2.2rem)}
+h3{font-size:1.55rem}
+p{margin:0}
+.eyebrow{font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+header{padding:40px 0 18px}
+header .lead{max-width:62ch;color:var(--muted);margin-top:14px;font-size:1.02rem}
+.rule{height:1px;background:var(--line);border:0;margin:0}
+
+/* Steuerung */
+.controls{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);
+  display:grid;gap:14px;margin:18px 0 8px;z-index:5}
+@media (min-width:900px){.controls{position:sticky;top:10px;grid-template-columns:1.3fr 1fr 1fr;align-items:start}
+  .controls .full{grid-column:1/-1}}
+.field label{display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.field input,.field select{width:100%;font:inherit;font-size:16px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);
+  background:color-mix(in srgb, var(--card) 70%, var(--bg));color:var(--ink);min-height:44px}
+.field input:focus-visible,.field select:focus-visible,button:focus-visible{outline:2px solid var(--acc-text);outline-offset:2px}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--c1) 50%,var(--c2) 50%);position:relative}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--c1);border-color:var(--card)}
+.worldname{font-size:.9rem;color:var(--muted);margin-top:8px}
+.worldname b{color:var(--acc-text);font-weight:600}
+
+section.block{padding:44px 0 4px}
+section.block > .head{margin-bottom:20px;max-width:64ch}
+section.block > .head p{color:var(--muted);margin-top:8px}
+
+/* Worauf es ankommt */
+.keys{display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:700px){.keys{grid-template-columns:1fr 1fr}}
+@media (min-width:1050px){.keys{grid-template-columns:repeat(3,1fr)}}
+.key{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.key h3{font-size:1.3rem;margin-bottom:6px;display:flex;gap:10px;align-items:baseline}
+.key h3 span{font-family:var(--sans);font-size:.75rem;letter-spacing:.1em;color:var(--muted)}
+.key p,.key li{font-size:.95rem;color:var(--ink)}
+.key ul{margin:6px 0 0;padding-left:1.1em}
+.key li{margin:3px 0}
+.num{color:var(--acc-text);font-weight:600}
+.diagram{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.diagram svg{display:block;width:100%;height:auto;max-height:190px}
+.diagram p{font-size:.85rem;color:var(--muted);margin-top:4px}
+
+/* Karten */
+.grid{display:grid;gap:22px;grid-template-columns:1fr}
+@media (min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+@media (min-width:1150px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.card .art{display:block;width:100%;height:auto;background:var(--wall)}
+.card .body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:14px;flex:1}
+.card .idx{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.card .mood{color:var(--muted);font-style:italic;font-family:var(--serif);font-size:1.1rem;line-height:1.3;margin-top:4px}
+.sub{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--acc-text);font-weight:600;margin:0 0 6px}
+dl.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+dl.facts dt{color:var(--muted)}
+dl.facts dd{margin:0}
+.cost{background:var(--acc-soft);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.cost small{display:block;color:var(--muted);margin-top:3px;font-size:.78rem}
+.pc{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:420px) and (max-width:759px){.pc{grid-template-columns:1fr 1fr}}
+.pc ul{margin:0;padding:0;list-style:none;font-size:.9rem}
+.pc li{padding-left:16px;position:relative;margin:4px 0}
+.pc li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--acc-text)}
+.pc .warn li::before{border-radius:1px;background:transparent;border:1.5px solid var(--acc-text);transform:rotate(45deg);width:6px;height:6px}
+.fits{margin-top:auto;font-size:.82rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.8rem;padding:4px 10px 4px 6px;border-radius:99px;border:1px solid var(--line);
+  background:transparent;color:var(--ink);cursor:pointer;min-height:30px}
+.chip i{width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,var(--c1) 50%,var(--c2) 50%);border:1px solid var(--line)}
+.chip[aria-pressed="true"]{border-color:var(--acc-text);background:var(--acc-soft)}
+
+.reco{background:var(--acc-soft)}
+.reco .cost{background:var(--card)}
+ol.steps{margin:0;padding-left:1.2em;font-size:.95rem}
+ol.steps li{margin:6px 0}
+/* Tabelle */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:700px;font-size:.92rem}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--acc-soft);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;color:var(--acc-text);font-family:var(--serif);font-size:1.1rem;min-width:170px}
+.dots{display:inline-flex;gap:3px;margin-right:7px;vertical-align:middle}
+.dots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--acc-text)}
+.dots i.on{background:var(--acc-text)}
+.scrollhint{display:none;font-size:.8rem;color:var(--muted);margin-top:6px}
+@media (max-width:760px){.scrollhint{display:block}}
+.foot{margin-top:40px;color:var(--muted);font-size:.85rem;max-width:70ch}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+@media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important;scroll-behavior:auto !important}}
+</style>
+
+<svg class="defs" aria-hidden="true" focusable="false"><defs></defs></svg>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Hochzeit &middot; Fotobox</div>
+  <h1>Fotobox-Hintergr&uuml;nde</h1>
+  <p class="lead">Acht Ideen f&uuml;r die Fotowand, jeweils mit Gr&ouml;&szlig;e, Aufbau, grobem Budget und Fototipps. Die Zeichnungen nehmen die Farben der gew&auml;hlten Farbwelt an und zeigen Namen und Datum aus den Feldern.</p>
+
+  <div class="controls" id="controls">
+    <div class="field full" style="grid-column:1/-1">
+      <label id="swl">Farbwelt</label>
+      <div class="swatches" id="swatches" role="group" aria-labelledby="swl"></div>
+      <div class="worldname" id="worldname"></div>
+    </div>
+    <div class="field"><label for="inNames">Namen</label><input id="inNames" type="text" value="Anna &amp; Ben" maxlength="40" autocomplete="off"></div>
+    <div class="field"><label for="inDate">Datum</label><input id="inDate" type="text" value="12. Juni 2027" maxlength="30" autocomplete="off"></div>
+    <div class="field"><label for="selFont">Namensschrift</label>
+      <select id="selFont">
+        <option value="Great Vibes">Great Vibes</option>
+        <option value="Cormorant Garamond">Cormorant Garamond</option>
+        <option value="Pinyon Script">Pinyon Script</option>
+        <option value="Josefin Sans">Josefin Sans</option>
+      </select></div>
+  </div>
+</header>
+<hr class="rule">
+
+<section class="block" id="worauf">
+  <div class="head"><h2>Worauf es ankommt</h2><p>Gilt f&uuml;r jede Wand, egal welche Idee es wird.</p></div>
+  <div class="keys">
+    <div class="key"><h3><span>1</span>Gr&ouml;&szlig;e</h3>
+      <p>Die Canon EOS 200D (APS-C) mit 18&ndash;55&nbsp;mm steht bei ca. <span class="num">20&nbsp;mm</span>. Auf 2&nbsp;m Abstand ist das Bild etwa <span class="num">2,3&ndash;2,5&nbsp;m</span> breit. Die Wand sollte daher mindestens <span class="num">2,5&ndash;3&nbsp;m breit</span> und <span class="num">2,2&ndash;2,4&nbsp;m hoch</span> sein, sonst sieht man links, rechts oder oben den Raum.</p></div>
+    <div class="key"><h3><span>2</span>Abstand</h3>
+      <p>G&auml;ste stehen ca. 2&nbsp;m vor der Kamera. Die Wand steht <span class="num">0,5&ndash;1&nbsp;m hinter</span> den G&auml;sten: So werfen sie keinen Schatten darauf, und der Hintergrund wirkt weicher.</p></div>
+    <div class="key"><h3><span>3</span>Licht</h3>
+      <p>Dauerlicht (LED-Softbox oder Ringlicht) von vorn. Die Wand gleichm&auml;&szlig;ig ausleuchten oder bewusst dunkel lassen; Mischlicht aus Deckenlampen und Fenstern verf&auml;lscht die Farben. Vor dem Fest mit Probefotos bei Abendlicht testen.</p></div>
+    <div class="key"><h3><span>4</span>Matt statt glatt</h3>
+      <p>Matte Stoffe und Blumen fotografieren sich ruhig. Spiegelfolie und manche Pailletten k&ouml;nnen bei Licht von vorn <span class="num">Hotspots</span> zeigen. Reine <span class="num">gr&uuml;ne</span> Fl&auml;chen vermeiden (Farbstich, wirkt wie Greenscreen); dunkles Gr&uuml;n ist unkritisch.</p></div>
+    <div class="key"><h3><span>5</span>Standsicherheit</h3>
+      <ul><li>Gestelle mit Sandsack oder Gewicht beschweren (ab ca. 10&nbsp;kg pro Fu&szlig;).</li>
+      <li>Keine Kabel quer durch Laufwege; Kabelbr&uuml;cke oder Klebeband.</li>
+      <li>Kippschutz bei hohen Gestellen, besonders bei Kindern und Tanzbetrieb.</li></ul></div>
+    <div class="key"><h3><span>6</span>Brandschutz</h3>
+      <ul><li>Lichterketten: LED, CE-gepr&uuml;ft, nicht b&uuml;ndeln oder zudecken.</li>
+      <li>Stoffe und Kunstpflanzen m&ouml;glichst schwer entflammbar (B1).</li>
+      <li>Vorher mit der Location kl&auml;ren, was erlaubt ist.</li></ul></div>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 440 150" role="img" aria-label="Draufsicht: Wand, 0,5 bis 1 m dahinter G&auml;ste, 2 m bis zur Kamera, Licht neben der Kamera" id="topview"></svg>
+    <p>Skizze von oben: Wand &ndash; 0,5&ndash;1&nbsp;m &ndash; G&auml;ste &ndash; ca. 2&nbsp;m &ndash; Kamera mit Dauerlicht. Beim Fotolayout mit Namen &uuml;ber dem Bild den oberen Wandbereich ruhig halten.</p>
+  </div>
+</section>
+
+<section class="block" id="ideen">
+  <div class="head"><h2>Acht Ideen</h2><p>Alle Preise sind grobe Sch&auml;tzungen in Euro (Stand heute, je nach Region und Anbieter). Bitte vor der Buchung konkret vergleichen.</p></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section class="block" id="systeme">
+  <div class="head"><h2>Wechselbare Systeme</h2><p>Gestell einmal kaufen, Front je nach Anlass tauschen: Hochzeit, Geburtstag, Firmenfeier, Weihnachten. Preise sind grobe Sch&auml;tzungen, bitte vor dem Kauf vergleichen.</p></div>
+  <div class="grid">
+    <article class="card">
+      <svg class="art" viewBox="0 0 300 150" aria-hidden="true"><rect width="300" height="150" fill="var(--wall)"/><rect x="60" y="18" width="180" height="112" rx="2" fill="var(--wall)" stroke="var(--muted)" stroke-width="5"/><rect x="66" y="24" width="168" height="100" fill="var(--acc)" opacity=".12"/><text x="150" y="80" text-anchor="middle" font-size="22" fill="var(--acc-text)" font-family="var(--serif)">Stoff tauschen</text><path d="M60 130 l-14 10 M240 130 l14 10" stroke="var(--muted)" stroke-width="5"/></svg>
+      <div class="body">
+        <div><div class="idx">System A &middot; Empfehlung</div><h3>Textilspannrahmen (Keder/SEG)</h3><p class="mood">Faltenfrei, matt, in Minuten neu bespannt.</p></div>
+        <div><p class="sub">So funktioniert&rsquo;s</p><dl class="facts"><dt>Aufbau</dt><dd>Aluprofil zum Stecken; der bedruckte Stoff hat am Rand einen Gummikeder, der in die Nut gedr&uuml;ckt wird.</dd><dt>Gr&ouml;&szlig;e</dt><dd>z.&nbsp;B. 2,5&ndash;3 &times; 2,25&nbsp;m</dd><dt>Wechsel</dt><dd>ca. 5&ndash;10 Min.</dd></dl></div>
+        <div class="cost">Rahmen ca. 150&ndash;400&nbsp;&euro;, je Stoffdruck ca. 80&ndash;200&nbsp;&euro;<small>Stoffe sind faltbar, waschbar und brauchen kaum Platz.</small></div>
+        <div class="pc"><ul><li>Sehr ruhiges, professionelles Bild</li><li>Matt, keine Spiegelungen</li><li>Motiv mit Namen und Datum m&ouml;glich</li></ul><ul class="warn"><li>Jeder Anlass braucht einen eigenen Druck</li><li>Gr&ouml;&szlig;e muss exakt zum Rahmen passen</li></ul></div>
+      </div>
+    </article>
+    <article class="card">
+      <svg class="art" viewBox="0 0 300 150" aria-hidden="true"><rect width="300" height="150" fill="var(--wall)"/><g stroke="var(--muted)" stroke-width="2" opacity=".7"><path d="M60 20 L120 130 M120 20 L60 130 M120 20 L180 130 M180 20 L120 130 M180 20 L240 130 M240 20 L180 130"/></g><rect x="60" y="20" width="60" height="110" fill="var(--acc-soft)" opacity=".85"/><rect x="120" y="20" width="60" height="110" fill="var(--acc-soft)" opacity=".55"/><g fill="var(--acc-text)"><rect x="58" y="22" width="4" height="106"/><rect x="118" y="22" width="4" height="106"/></g><g transform="rotate(-8 250 30)"><rect x="200" y="30" width="60" height="110" fill="var(--acc-soft)" opacity=".9" stroke="var(--acc-text)" stroke-opacity=".4"/><rect x="200" y="32" width="4" height="106" fill="var(--acc-text)"/></g><text x="270" y="18" text-anchor="end" font-size="11" fill="var(--muted)">Bahn per Magnet</text></svg>
+      <div class="body">
+        <div><div class="idx">System B</div><h3>Pop-up-Faltwand</h3><p class="mood">Auseinanderziehen, Bahnen anklicken, fertig.</p></div>
+        <div><p class="sub">So funktioniert&rsquo;s</p><dl class="facts"><dt>Aufbau</dt><dd>Scherengitter aus Alu; Stoffbahnen halten mit Magnetstreifen oder Klett.</dd><dt>Gr&ouml;&szlig;e</dt><dd>ca. 3 &times; 2,25&nbsp;m (gerade Variante w&auml;hlen)</dd><dt>Wechsel</dt><dd>unter 10 Min.</dd></dl></div>
+        <div class="cost">ca. 150&ndash;300&nbsp;&euro; inkl. erstem Druck<small>Mit Transporttasche, weitere Drucke einzeln.</small></div>
+        <div class="pc"><ul><li>Sehr schneller Aufbau</li><li>Kompakt zu transportieren</li></ul><ul class="warn"><li>Viele Modelle leicht gebogen</li><li>Stoffst&ouml;&szlig;e zwischen den Bahnen m&ouml;glich</li></ul></div>
+      </div>
+    </article>
+    <article class="card">
+      <svg class="art" viewBox="0 0 300 150" aria-hidden="true"><rect width="300" height="150" fill="var(--wall)"/><g stroke="var(--muted)" stroke-width="4"><path d="M55 20 V130 M245 20 V130 M50 20 H250 M55 130 l-14 10 M55 130 l14 10 M245 130 l-14 10 M245 130 l14 10"/></g><path d="M62 22 Q80 80 66 128 H120 Q104 80 118 22 Z" fill="var(--acc-soft)"/><path d="M118 22 Q130 80 120 128 H182 Q172 80 184 22 Z" fill="var(--acc-text)" opacity=".25"/><path d="M184 22 Q196 80 182 128 H238 Q226 80 240 22 Z" fill="var(--acc-soft)"/><g fill="var(--gold)"><circle cx="90" cy="22" r="4"/><circle cx="150" cy="22" r="4"/><circle cx="210" cy="22" r="4"/></g></svg>
+      <div class="body">
+        <div><div class="idx">System C</div><h3>Teleskop-Hintergrundsystem</h3><p class="mood">G&uuml;nstig, leicht, f&uuml;r alles, was h&auml;ngt.</p></div>
+        <div><p class="sub">So funktioniert&rsquo;s</p><dl class="facts"><dt>Aufbau</dt><dd>Zwei Stative mit ausziehbarer Querstange; Stoff, T&uuml;ll, Papierrollen, Pailletten- oder Lichtervorhang mit Klemmen aufh&auml;ngen.</dd><dt>Gr&ouml;&szlig;e</dt><dd>bis ca. 3 &times; 2,6&nbsp;m</dd><dt>Wechsel</dt><dd>wenige Minuten</dd></dl></div>
+        <div class="cost">ca. 40&ndash;100&nbsp;&euro;<small>Dazu Stoffe ab ca. 20&nbsp;&euro; je Bahn.</small></div>
+        <div class="pc"><ul><li>Sehr g&uuml;nstig und vielseitig</li><li>Gut als zweite Ebene vor einer Wand</li></ul><ul class="warn"><li>Kippelig: unbedingt Sands&auml;cke</li><li>Stoffe fallen weniger glatt</li></ul></div>
+      </div>
+    </article>
+    <article class="card">
+      <svg class="art" viewBox="0 0 300 150" aria-hidden="true"><rect width="300" height="150" fill="var(--wall)"/><g stroke="var(--muted)" stroke-width="1.5" opacity=".8"><path d="M70 20 V130 M90 20 V130 M110 20 V130 M130 20 V130 M150 20 V130 M170 20 V130 M190 20 V130 M210 20 V130 M230 20 V130 M70 20 H230 M70 40 H230 M70 60 H230 M70 80 H230 M70 100 H230 M70 120 H230"/></g><g fill="var(--acc-text)" opacity=".8"><circle cx="96" cy="44" r="12"/><circle cx="118" cy="58" r="9"/><circle cx="100" cy="70" r="8"/><circle cx="200" cy="92" r="12"/><circle cx="182" cy="104" r="8"/></g><g fill="var(--gold)"><circle cx="112" cy="40" r="5"/><circle cx="210" cy="108" r="5"/></g><rect x="128" y="62" width="44" height="30" rx="3" fill="var(--wall)"/><text x="150" y="83" text-anchor="middle" font-size="17" fill="var(--acc-text)" font-family="var(--serif)">A &amp; B</text><path d="M75 130 v10 M225 130 v10 M62 140 h26 M212 140 h26" stroke="var(--muted)" stroke-width="4"/></svg>
+      <div class="body">
+        <div><div class="idx">System D</div><h3>Gitterwand / Rasterwand</h3><p class="mood">Tr&auml;gt Blumen, Buchstaben und alles mit Gewicht.</p></div>
+        <div><p class="sub">So funktioniert&rsquo;s</p><dl class="facts"><dt>Aufbau</dt><dd>Metallgitter auf F&uuml;&szlig;en; Deko mit Kabelbindern oder Haken befestigen.</dd><dt>Passt f&uuml;r</dt><dd>Kunstblumen-Paneele, Eukalyptus, Holzbuchstaben, Ballons, Neonschrift</dd><dt>Wechsel</dt><dd>15&ndash;45 Min. je nach Deko</dd></dl></div>
+        <div class="cost">ca. 100&ndash;250&nbsp;&euro; plus Deko<small>Ideal als Tr&auml;ger f&uuml;r die Blumenwand (Idee 1).</small></div>
+        <div class="pc"><ul><li>Sehr stabil, auch f&uuml;r schwere Deko</li><li>Deko immer wieder neu kombinierbar</li></ul><ul class="warn"><li>Gitter muss vollst&auml;ndig verdeckt sein</li><li>Schwerer im Transport</li></ul></div>
+      </div>
+    </article>
+    <article class="card">
+      <svg class="art" viewBox="0 0 300 150" aria-hidden="true"><rect width="300" height="150" fill="var(--wall)"/><rect x="66" y="20" width="168" height="110" fill="none" stroke="var(--gold)" stroke-width="8"/><path d="M150 20 V130 M66 75 H234" stroke="var(--gold)" stroke-width="6"/><rect x="74" y="28" width="72" height="43" fill="var(--acc-soft)"/><rect x="154" y="28" width="72" height="43" fill="var(--acc-text)" opacity=".3"/><rect x="74" y="79" width="72" height="43" fill="var(--acc-text)" opacity=".3"/><rect x="154" y="79" width="72" height="43" fill="var(--acc-soft)"/><path d="M80 130 l-14 10 M220 130 l14 10" stroke="var(--gold)" stroke-width="6"/></svg>
+      <div class="body">
+        <div><div class="idx">System E</div><h3>Selbstbau-Holzrahmen</h3><p class="mood">G&uuml;nstig und genau nach Ma&szlig;.</p></div>
+        <div><p class="sub">So funktioniert&rsquo;s</p><dl class="facts"><dt>Aufbau</dt><dd>Rahmen aus Dachlatten oder Kanth&ouml;lzern mit F&uuml;&szlig;en; Felder mit Klett, Magneten oder Schienen best&uuml;cken.</dd><dt>Paneele</dt><dd>z.&nbsp;B. bedruckte Forex- oder Stoffplatten 60 &times; 90&nbsp;cm</dd><dt>Wechsel</dt><dd>10&ndash;20 Min.</dd></dl></div>
+        <div class="cost">ca. 60&ndash;150&nbsp;&euro; Material<small>Plus Druck der Paneele.</small></div>
+        <div class="pc"><ul><li>Am g&uuml;nstigsten</li><li>Teile einzeln austauschbar</li></ul><ul class="warn"><li>Schwer und sperrig</li><li>Fugen zwischen den Paneelen sichtbar</li></ul></div>
+      </div>
+    </article>
+    <article class="card reco">
+      <div class="body">
+        <div><div class="idx">Unser Vorschlag</div><h3>Ein Rahmen, viele Gesichter</h3><p class="mood">Grundwand plus zweite Ebene.</p></div>
+        <ol class="steps">
+          <li><b>Grundwand:</b> Textilspannrahmen ca. 2,5&ndash;3 &times; 2,25&nbsp;m.</li>
+          <li><b>Erster Stoff:</b> ruhig und einfarbig in der Farbwelt &ndash; passt zu jedem Anlass.</li>
+          <li><b>Pro Anlass:</b> optional ein Stoff mit Namen und Datum (Druckdatei kann ich vorbereiten).</li>
+          <li><b>Zweite Ebene:</b> Teleskopst&auml;nder oder Gitterwand davor f&uuml;r Blumen, T&uuml;ll oder Lichter.</li>
+        </ol>
+        <div class="cost">Grundausstattung ca. 300&ndash;600&nbsp;&euro;<small>Danach je Anlass nur Stoff oder Deko.</small></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="block" id="vergleich">
+  <div class="head"><h2>Im Vergleich</h2></div>
+  <div class="tablewrap" tabindex="0" role="region" aria-label="Vergleichstabelle, horizontal scrollbar"><table id="cmp"></table></div>
+  <p class="scrollhint">Tabelle seitlich wischen, um alle Spalten zu sehen.</p>
+  <p class="foot">Alle Kosten sind Richtwerte. Die Druckdatei f&uuml;rs Stoffbanner (Idee 4) kann ich in der passenden Gr&ouml;&szlig;e vorbereiten.</p>
+</section>
+</div>
+
+<script>
+(function(){
+'use strict';
+var WORLDS=[
+ {k:'rose',n:'Rosé & Creme',s:'Rosé',acc:'#a4506a',paper:'#f8f3ee'},
+ {k:'salbei',n:'Salbei & Eukalyptus',s:'Salbei',acc:'#5b7a64',paper:'#f2f4ef'},
+ {k:'champagner',n:'Champagner & Gold',s:'Champagner',acc:'#9a7433',paper:'#f8f4ec'},
+ {k:'navy',n:'Nachtblau & Gold',s:'Nachtblau',acc:'#2a426b',paper:'#f3f4f7'},
+ {k:'terrakotta',n:'Terrakotta (Boho)',s:'Terrakotta',acc:'#b0603d',paper:'#f8f1ea'},
+ {k:'festlich',n:'Bordeaux & Gold',s:'Bordeaux',acc:'#8c2f45',paper:'#f8f2ee'},
+ {k:'business',n:'Blaugrau',s:'Blaugrau',acc:'#2f5d7c',paper:'#f2f4f6'},
+ {k:'pastell',n:'Pastell (Hellblau & Mint)',s:'Pastell',acc:'#5f8fb0',paper:'#f4f7f8'},
+ {k:'bunt',n:'Bunt & fröhlich',s:'Bunt',acc:'#d2563b',paper:'#fbf6ef'},
+ {k:'flieder',n:'Flieder & Silber',s:'Flieder',acc:'#7a5d9b',paper:'#f5f3f7'}
+];
+var WK={}; WORLDS.forEach(function(w){WK[w.k]=w;});
+var FONTS={'Great Vibes':.40,'Cormorant Garamond':.47,'Pinyon Script':.40,'Josefin Sans':.62};
+var st={world:'rose',font:'Great Vibes',names:'Anna & Ben',date:'12. Juni 2027'};
+try{var sw=localStorage.getItem('fbh-world'); if(sw&&WK[sw]) st.world=sw; var sf=localStorage.getItem('fbh-font'); if(sf&&FONTS[sf]) st.font=sf;}catch(e){}
+
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function f1(n){return Math.round(n*10)/10;}
+
+/* ---------- Silhouetten ---------- */
+function guest(x,H,kind){
+  var top=302-H, r=H*.075, hy=top+r, sy=top+2*r+8, w=H*.16, s='';
+  s+='<ellipse cx="'+x+'" cy="296" rx="'+(w*1.9)+'" ry="5" fill="#000" opacity=".12"/>';
+  if(kind==='dress'){
+    w=H*.12;
+    s+='<path d="M'+(x-w)+','+(sy+16)+' Q'+(x-w)+','+sy+' '+(x-w*.5)+','+(sy-1)+' L'+(x-4)+','+(sy-5)+' L'+(x+4)+','+(sy-5)+' L'+(x+w*.5)+','+(sy-1)+' Q'+(x+w)+','+sy+' '+(x+w)+','+(sy+16)+' L'+(x+w*.55)+','+(sy+52)+' L'+(x+w*1.55)+',302 L'+(x-w*1.55)+',302 L'+(x-w*.55)+','+(sy+52)+' Z" fill="var(--sil)"/>';
+    s+='<circle cx="'+(x+r*.55)+'" cy="'+(hy-r*.75)+'" r="'+(r*.55)+'" fill="var(--sil)"/>';
+  } else {
+    s+='<path d="M'+(x-w)+',302 L'+(x-w+1)+','+(sy+16)+' Q'+(x-w)+','+sy+' '+(x-w*.55)+','+(sy-1)+' L'+(x-5)+','+(sy-5)+' L'+(x+5)+','+(sy-5)+' L'+(x+w*.55)+','+(sy-1)+' Q'+(x+w)+','+sy+' '+(x+w-1)+','+(sy+16)+' L'+(x+w)+',302 Z" fill="var(--sil)"/>';
+  }
+  s+='<rect x="'+(x-3)+'" y="'+(hy+r-2)+'" width="6" height="'+(sy-hy-r+6)+'" fill="var(--sil)"/>';
+  s+='<circle cx="'+x+'" cy="'+hy+'" r="'+r+'" fill="var(--sil)"/>';
+  return '<g opacity=".93">'+s+'</g>';
+}
+function guests(){return guest(92,132,'dress')+guest(134,144,'suit')+guest(306,124,'dress');}
+
+var X0=56,X1=344,Y0=14,YB=236;
+function room(){return '<rect width="400" height="300" fill="var(--wall)"/><rect y="'+YB+'" width="400" height="64" fill="var(--floor)"/><rect y="'+YB+'" width="400" height="1.5" fill="#000" opacity=".1"/>';}
+function svg(label,inner,defs){return '<svg class="art" viewBox="0 0 400 300" role="img" aria-label="'+esc(label)+'"><defs>'+(defs||'')+'</defs>'+room()+inner+guests()+'</svg>';}
+
+function flower(x,y,r,col){
+  return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(r)+'" fill="'+col+'"/><circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(r*.62)+'" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1"/><circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(r*.26)+'" fill="var(--gold)"/>';
+}
+function leafEl(x,y,a,rx,ry,col){return '<ellipse cx="'+f1(x)+'" cy="'+f1(y)+'" rx="'+rx+'" ry="'+ry+'" transform="rotate('+Math.round(a)+' '+f1(x)+' '+f1(y)+')" fill="'+col+'"/>';}
+function bez(p,t){var u=1-t;return [u*u*u*p[0][0]+3*u*u*t*p[1][0]+3*u*t*t*p[2][0]+t*t*t*p[3][0],u*u*u*p[0][1]+3*u*u*t*p[1][1]+3*u*t*t*p[2][1]+t*t*t*p[3][1]];}
+function ang(p,t){var a=bez(p,Math.max(0,t-.01)),b=bez(p,Math.min(1,t+.01));return Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;}
+function ivy(p,n,seed,rs){
+  var R=rng(seed),s='',d='M'+p[0][0]+','+p[0][1]+' C'+p[1][0]+','+p[1][1]+' '+p[2][0]+','+p[2][1]+' '+p[3][0]+','+p[3][1];
+  s+='<path d="'+d+'" fill="none" stroke="var(--leaf2)" stroke-width="1.8" stroke-linecap="round"/>';
+  for(var i=0;i<n;i++){var t=i/(n-1),q=bez(p,t),a=ang(p,t),side=i%2?1:-1;
+    s+=leafEl(q[0]+side*3,q[1]+R()*3,a+side*(50+R()*25),(rs||5.5)+R()*2,(rs||5.5)*.6,R()>.5?'var(--leaf)':'var(--leaf2)');}
+  return s;
+}
+function initials(n){
+  var parts=n.split(/\s*(?:&|\+|\bund\b)\s*/i).map(function(x){return x.trim();}).filter(Boolean);
+  if(parts.length>=2) return (parts[0][0]+'&'+parts[1][0]).toUpperCase();
+  return (n.trim()[0]||'A').toUpperCase();
+}
+function fit(text,maxW,cap,font){var fw=FONTS[font]||.45;return Math.max(14,Math.min(cap,maxW/(Math.max(text.length,1)*fw)));}
+
+/* ---------- 8 Illustrationen ---------- */
+var ART=[];
+
+ART[0]=function(){ /* Blumenwand */
+  var R=rng(11),s='',cols=['var(--a1)','var(--a2)','var(--a3)','var(--a4)','var(--cream)','var(--a2)'],i,j;
+  s+='<clipPath id="c1"><rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" rx="3"/></clipPath>';
+  var g='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="var(--leaf2)"/>';
+  for(i=0;i<90;i++) g+=leafEl(X0+R()*288,Y0+R()*222,R()*180,9,4.5,R()>.5?'var(--leaf)':'var(--leaf2)');
+  var pts=[];
+  for(j=0;j<12;j++)for(i=0;i<15;i++){pts.push([X0+i*20.5+(j%2?10:0)+R()*6-3,Y0+j*20+R()*6-3,10+R()*6,cols[Math.floor(R()*cols.length)]]);}
+  pts.sort(function(a,b){return b[2]-a[2];});
+  pts.forEach(function(p){g+=flower(p[0],p[1],p[2],p[3]);});
+  for(i=1;i<4;i++) g+='<line x1="'+(X0+i*72)+'" y1="'+Y0+'" x2="'+(X0+i*72)+'" y2="'+YB+'" stroke="#000" stroke-opacity=".18" stroke-width="1.4"/>';
+  for(i=1;i<4;i++) g+='<line x1="'+X0+'" y1="'+(Y0+i*55.5)+'" x2="'+X1+'" y2="'+(Y0+i*55.5)+'" stroke="#000" stroke-opacity=".18" stroke-width="1.4"/>';
+  s+='<g clip-path="url(#c1)">'+g+'</g>';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" rx="3" fill="none" stroke="#000" stroke-opacity=".2"/>';
+  return svg('Blumenwand aus Kunstblumen-Paneelen',s);
+};
+
+ART[1]=function(){ /* Boho-Bogen */
+  var s='',i,R=rng(5);
+  // Stoffbahnen links/rechts
+  [[X0,125],[275,X1]].forEach(function(w,k){
+    s+='<rect x="'+w[0]+'" y="24" width="'+(w[1]-w[0])+'" height="'+(YB-24)+'" fill="var(--cream)"/>';
+    for(i=0;i<5;i++){var x=w[0]+(i+.5)*(w[1]-w[0])/5;s+='<path d="M'+x+',24 C'+(x+4)+',90 '+(x-4)+',160 '+x+','+YB+'" stroke="#000" stroke-opacity=".09" stroke-width="5" fill="none"/>';}
+    s+='<rect x="'+w[0]+'" y="22" width="'+(w[1]-w[0])+'" height="3" fill="var(--gold)"/>';
+  });
+  s+='<rect x="'+(X0-3)+'" y="22" width="3" height="'+(YB-22)+'" fill="var(--gold)"/><rect x="'+X1+'" y="22" width="3" height="'+(YB-22)+'" fill="var(--gold)"/>';
+  // Bogen
+  var arch='M125,'+YB+' V105 A75,75 0 0 1 275,105 V'+YB;
+  s+='<path d="'+arch+' Z" fill="var(--a4)"/>';
+  for(i=0;i<6;i++){var x=140+i*24;s+='<path d="M'+x+',34 C'+(x+6)+',100 '+(x-6)+',170 '+x+','+YB+'" stroke="#fff" stroke-opacity=".35" stroke-width="6" fill="none"/>';}
+  s+='<path d="'+arch+'" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linejoin="round"/>';
+  // Eukalyptus-Girlande entlang Bogen links nach oben
+  var N=26;
+  for(i=0;i<N;i++){var th=Math.PI-(i/(N-1))*Math.PI*.62,px=200+75*Math.cos(th),py=105-75*Math.sin(th),a=(th*180/Math.PI)+90;
+    s+=leafEl(px-5*Math.cos(th),py+5*Math.sin(th),a+40,6.5,3.6,i%3?'var(--leaf)':'var(--leaf2)');
+    s+=leafEl(px+6*Math.cos(th),py-6*Math.sin(th),a-40,6.5,3.6,i%2?'var(--leaf2)':'var(--leaf)');}
+  // Pampas unten links (Fächer)
+  function pampas(bx,by,dir,len,cnt,seed){var q=rng(seed),o='';
+    for(var k=0;k<cnt;k++){var an=(-90+dir*(k-(cnt-1)/2)*11+q()*5)*Math.PI/180,L=len*(.8+q()*.35),ex=bx+Math.cos(an)*L,ey=by+Math.sin(an)*L;
+      o+='<line x1="'+bx+'" y1="'+by+'" x2="'+f1(ex)+'" y2="'+f1(ey)+'" stroke="#b9a07a" stroke-width="1.2"/>';
+      o+='<ellipse cx="'+f1(ex)+'" cy="'+f1(ey)+'" rx="4.6" ry="'+f1(L*.32)+'" transform="rotate('+Math.round(an*180/Math.PI+90)+' '+f1(ex)+' '+f1(ey)+')" fill="#e3d2b2" opacity=".95"/>';
+      o+='<ellipse cx="'+f1(ex)+'" cy="'+f1(ey)+'" rx="2.4" ry="'+f1(L*.2)+'" transform="rotate('+Math.round(an*180/Math.PI+90)+' '+f1(ex)+' '+f1(ey)+')" fill="#f4e9d2"/>';}
+    return o;}
+  s+=pampas(112,YB,1,92,9,3);
+  s+=pampas(288,YB,-1,78,7,8);
+  // oben rechts am Bogen
+  s+=pampas(262,66,-1,0,0,1);
+  for(i=0;i<7;i++){var an2=(25+i*14)*Math.PI/180,L=34+R()*10,bx=270,by=60,ex=bx+Math.cos(an2)*L,ey=by+Math.sin(an2)*L;
+    s+='<line x1="'+bx+'" y1="'+by+'" x2="'+f1(ex)+'" y2="'+f1(ey)+'" stroke="#b9a07a" stroke-width="1.2"/><ellipse cx="'+f1(ex)+'" cy="'+f1(ey)+'" rx="4.4" ry="'+f1(L*.32)+'" transform="rotate('+Math.round(an2*180/Math.PI-90)+' '+f1(ex)+' '+f1(ey)+')" fill="#e3d2b2"/>';}
+  s+=flower(266,64,8,'var(--a1)')+flower(256,76,6,'var(--a2)')+flower(130,196,8,'var(--a1)')+flower(142,208,6,'var(--a2)');
+  return svg('Boho-Rundbogen mit Pampasgras, Eukalyptus und Stoffbahnen',s);
+};
+
+ART[2]=function(){ /* Lichtervorhang */
+  var s='',i,j,R=rng(21),glow='',dots='';
+  var defs='<filter id="gl3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2"/></filter><linearGradient id="tg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".02"/><stop offset=".7" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity=".22"/></linearGradient>';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="color-mix(in srgb, var(--acc) 28%, #1b1520)"/>';
+  for(i=0;i<22;i++){var x=X0+10+i*13.1,len=180+R()*40,n=Math.floor(len/12);
+    s+='<line x1="'+f1(x)+'" y1="28" x2="'+f1(x)+'" y2="'+f1(28+len)+'" stroke="#fff" stroke-opacity=".18" stroke-width=".7"/>';
+    for(j=0;j<n;j++){var y=34+j*12+R()*3;glow+='<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+(4+R()*2)+'" fill="#ffd27a" opacity="'+f1(.35+R()*.3)+'"/>';dots+='<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="1.7" fill="#fff4d6"/>';}}
+  s+='<g filter="url(#gl3)">'+glow+'</g>'+dots;
+  // Tüll
+  s+='<rect x="'+X0+'" y="26" width="'+(X1-X0)+'" height="'+(YB-26)+'" fill="url(#tg3)"/>';
+  for(i=0;i<9;i++){var fx=X0+16+i*32;s+='<path d="M'+fx+',26 C'+(fx+7)+',90 '+(fx-7)+',170 '+fx+','+YB+'" stroke="#fff" stroke-opacity=".14" stroke-width="9" fill="none"/>';}
+  s+='<ellipse cx="200" cy="'+(YB-1)+'" rx="150" ry="7" fill="#fff" opacity=".14"/>';
+  // Stange + Füße
+  s+='<rect x="'+(X0-6)+'" y="22" width="'+(X1-X0+12)+'" height="5" rx="2" fill="var(--gold)"/>';
+  s+='<rect x="'+(X0-3)+'" y="22" width="4" height="'+(YB-22)+'" fill="var(--gold)"/><rect x="'+(X1-1)+'" y="22" width="4" height="'+(YB-22)+'" fill="var(--gold)"/>';
+  s+='<rect x="'+(X0-14)+'" y="'+(YB-4)+'" width="28" height="5" rx="2" fill="#555"/><rect x="'+(X1-14)+'" y="'+(YB-4)+'" width="28" height="5" rx="2" fill="#555"/>';
+  return svg('Lichtervorhang aus warmweißen LED-Lichterketten hinter Tüll',s,defs);
+};
+
+ART[3]=function(){ /* Banner */
+  var names=st.names||'Anna & Ben',date=st.date||'',f=st.font,ft="'"+f+"', cursive";
+  if(f==='Cormorant Garamond')ft="'Cormorant Garamond', serif"; if(f==='Josefin Sans')ft="'Josefin Sans', sans-serif";
+  var s='',bx=66,bw=268,by=30,bh=206,i;
+  s+='<rect x="'+(X0-4)+'" y="20" width="6" height="'+(YB-20)+'" fill="#6b6b70"/><rect x="'+(X1-2)+'" y="20" width="6" height="'+(YB-20)+'" fill="#6b6b70"/>';
+  s+='<rect x="'+(X0-4)+'" y="18" width="'+(X1-X0+8)+'" height="6" rx="2" fill="#6b6b70"/>';
+  s+='<rect x="'+(X0-18)+'" y="'+(YB-4)+'" width="36" height="6" rx="2" fill="#3b3b3f"/><rect x="'+(X1-18)+'" y="'+(YB-4)+'" width="36" height="6" rx="2" fill="#3b3b3f"/>';
+  s+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" fill="var(--cream)"/>';
+  for(i=0;i<4;i++){var x=bx+30+i*70;s+='<path d="M'+x+','+by+' C'+(x+3)+',100 '+(x-3)+',170 '+x+','+(by+bh)+'" stroke="#000" stroke-opacity=".05" stroke-width="7" fill="none"/>';}
+  s+='<rect x="'+(bx+8)+'" y="'+(by+8)+'" width="'+(bw-16)+'" height="'+(bh-16)+'" fill="none" stroke="var(--a1)" stroke-width="1.6"/><rect x="'+(bx+13)+'" y="'+(by+13)+'" width="'+(bw-26)+'" height="'+(bh-26)+'" fill="none" stroke="var(--gold)" stroke-width=".8"/>';
+  [[bx+22,by+22,1,1],[bx+bw-22,by+22,-1,1],[bx+22,by+bh-22,1,-1],[bx+bw-22,by+bh-22,-1,-1]].forEach(function(c){
+    s+=leafEl(c[0]+c[2]*10,c[1]+c[3]*2,c[2]*c[3]*20,8,3.2,'var(--leaf)')+leafEl(c[0]+c[2]*2,c[1]+c[3]*10,c[2]*c[3]*70,8,3.2,'var(--leaf2)')+flower(c[0],c[1],6.5,'var(--a1)');});
+  s+='<circle cx="200" cy="'+(by+44)+'" r="25" fill="none" stroke="var(--a1)" stroke-width="1.6"/><circle cx="200" cy="'+(by+44)+'" r="21" fill="none" stroke="var(--gold)" stroke-width=".8"/>';
+  s+='<text x="200" y="'+(by+44)+'" text-anchor="middle" dominant-baseline="central" font-family="'+ft+'" font-size="'+f1(f==='Josefin Sans'?18:25)+'" fill="var(--a1)">'+esc(initials(names))+'</text>';
+  var fs=fit(names,214,46,f);
+  s+='<text x="200" y="'+(by+96)+'" text-anchor="middle" dominant-baseline="central" font-family="'+ft+'" font-size="'+f1(fs)+'" fill="var(--a1)">'+esc(names)+'</text>';
+  s+='<line x1="150" y1="'+(by+124)+'" x2="188" y2="'+(by+124)+'" stroke="var(--gold)"/><line x1="212" y1="'+(by+124)+'" x2="250" y2="'+(by+124)+'" stroke="var(--gold)"/><path d="M200,'+(by+128)+' c-6,-4 -7,-9 -3,-10 c2,-.4 3,1 3,2 c0,-1 1,-2.4 3,-2 c4,1 3,6 -3,10z" fill="var(--a1)"/>';
+  var dfs=Math.min(13,196/(Math.max(date.length,1)*.78));
+  s+='<text x="200" y="'+(by+146)+'" text-anchor="middle" dominant-baseline="central" font-family="\'Cormorant Garamond\', serif" letter-spacing="2" font-size="'+f1(dfs)+'" fill="var(--sil)" opacity=".8">'+esc(date.toUpperCase())+'</text>';
+  return svg('Bedrucktes Stoffbanner mit Monogramm, Namen und Datum',s);
+};
+
+ART[4]=function(){ /* Pailletten */
+  var s='',defs='<pattern id="p5" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="color-mix(in srgb, var(--acc) 70%, #000)"/><circle cx="3" cy="3" r="3" fill="var(--a1)"/><circle cx="9" cy="9" r="3" fill="var(--a1)"/><circle cx="9" cy="3" r="3" fill="var(--a2)"/><circle cx="3" cy="9" r="3" fill="var(--a3)"/><circle cx="2.2" cy="2.2" r=".9" fill="#fff" opacity=".7"/><circle cx="8.2" cy="8.2" r=".9" fill="#fff" opacity=".7"/></pattern><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".3" stop-color="#fff" stop-opacity=".45"/><stop offset=".45" stop-color="#fff" stop-opacity=".0"/><stop offset=".75" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient><filter id="b5" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.5"/></filter>';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="url(#p5)"/>';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="url(#g5)"/>';
+  for(var i=1;i<4;i++)s+='<line x1="'+(X0+i*72)+'" y1="'+Y0+'" x2="'+(X0+i*72)+'" y2="'+YB+'" stroke="#000" stroke-opacity=".25" stroke-width="1.2"/>';
+  function star(x,y,r){return '<g transform="translate('+x+' '+y+')"><circle r="'+r*.6+'" fill="#fff" opacity=".8" filter="url(#b5)"/><path d="M0,'+(-r)+' L'+(r*.16)+','+(-r*.16)+' L'+r+',0 L'+(r*.16)+','+(r*.16)+' L0,'+r+' L'+(-r*.16)+','+(r*.16)+' L'+(-r)+',0 L'+(-r*.16)+','+(-r*.16)+' Z" fill="#fff"/></g>';}
+  s+=star(112,48,13)+star(168,96,9)+star(250,40,10)+star(300,120,12)+star(90,150,8)+star(210,190,7);
+  s+='<rect x="'+(X0-3)+'" y="'+(Y0-3)+'" width="'+(X1-X0+6)+'" height="'+(YB-Y0+3)+'" fill="none" stroke="#5a5a5f" stroke-width="3"/>';
+  return svg('Pailletten-Wand mit Glitzerreflexen',s,defs);
+};
+
+ART[5]=function(){ /* Holzrahmen */
+  var s='',i,R=rng(31),wood='#7b5a3c';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="color-mix(in srgb, #9a7a58 30%, var(--paper))"/>';
+  for(i=1;i<9;i++)s+='<line x1="'+(X0+i*32)+'" y1="'+Y0+'" x2="'+(X0+i*32)+'" y2="'+YB+'" stroke="#5b4026" stroke-opacity=".22" stroke-width="1.3"/>';
+  function win(x,y,w,h,cols,rows){
+    var o='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#fff" fill-opacity=".28"/>';
+    for(var c=1;c<cols;c++)o+='<line x1="'+(x+c*w/cols)+'" y1="'+y+'" x2="'+(x+c*w/cols)+'" y2="'+(y+h)+'" stroke="'+wood+'" stroke-width="3.2"/>';
+    for(var r=1;r<rows;r++)o+='<line x1="'+x+'" y1="'+(y+r*h/rows)+'" x2="'+(x+w)+'" y2="'+(y+r*h/rows)+'" stroke="'+wood+'" stroke-width="3.2"/>';
+    o+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="none" stroke="'+wood+'" stroke-width="8"/><rect x="'+(x-4)+'" y="'+(y-4)+'" width="'+(w+8)+'" height="'+(h+8)+'" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/>';
+    return o;}
+  s+=win(70,92,64,138,2,3)+win(266,78,64,152,2,3)+win(148,38,104,192,2,4);
+  // Füße
+  [[70,134],[266,330],[148,252]].forEach(function(f){s+='<path d="M'+f[0]+','+YB+' l-4,0 l0,-8 l'+(f[1]-f[0]+8)+',0 l0,8 z" fill="#5b4026"/>';});
+  // Efeu
+  s+=ivy([[148,34],[120,60],[170,110],[150,170]],18,2,6);
+  s+=ivy([[252,34],[290,50],[240,100],[254,150]],18,3,6);
+  s+=ivy([[70,92],[60,120],[90,150],[72,200]],12,4,5);
+  s+=ivy([[330,78],[340,110],[310,140],[328,190]],12,5,5);
+  s+=ivy([[134,230],[160,205],[190,240],[210,226]],10,6,5);
+  // Blumen unten
+  var fl=[[88,222,7,'var(--a1)'],[100,230,6,'var(--a2)'],[78,232,5,'var(--cream)'],[312,224,7,'var(--a1)'],[300,232,6,'var(--a2)'],[322,232,5,'var(--cream)'],[160,222,8,'var(--a1)'],[176,230,6,'var(--a2)'],[236,224,8,'var(--a2)'],[224,232,6,'var(--a1)'],[154,40,6,'var(--cream)'],[252,38,6,'var(--a2)'],[72,96,5,'var(--a2)'],[328,82,5,'var(--cream)']];
+  fl.forEach(function(f){s+=flower(f[0],f[1],f[2],f[3]);});
+  return svg('Alte Holzfenster mit Efeu und Blumen',s);
+};
+
+ART[6]=function(){ /* Ballongirlande */
+  var s='',i,R=rng(41),P=[[66,236],[40,0],[300,-8],[338,170]];
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="color-mix(in srgb, var(--paper) 72%, #cfc6bb)"/>';
+  for(i=0;i<12;i++){var x=X0+12+i*24.5;s+='<path d="M'+x+','+Y0+' C'+(x+5)+',90 '+(x-5)+',170 '+x+','+YB+'" stroke="#fff" stroke-opacity=".28" stroke-width="9" fill="none"/><path d="M'+(x+10)+','+Y0+' C'+(x+14)+',90 '+(x+5)+',170 '+(x+10)+','+YB+'" stroke="#000" stroke-opacity=".05" stroke-width="5" fill="none"/>';}
+  s+='<rect x="'+(X0-3)+'" y="22" width="'+(X1-X0+6)+'" height="3" fill="var(--gold)" opacity=".0"/>';
+  var cols=['var(--a1)','var(--a2)','var(--a3)','var(--a4)','var(--cream)','var(--a2)','var(--leaf)','var(--a1)'],B=[],t;
+  for(i=0;i<46;i++){t=i/45;var q=bez(P,t);B.push([q[0]+R()*14-7,q[1]+R()*14-7,12+R()*8,cols[Math.floor(R()*cols.length)]]);}
+  for(i=0;i<44;i++){t=R();var q2=bez(P,t);B.push([q2[0]+R()*30-15,q2[1]+R()*30-15,6+R()*3,cols[Math.floor(R()*cols.length)]]);}
+  B.sort(function(a,b){return b[2]-a[2]||0;});
+  B.forEach(function(b){s+='<circle cx="'+f1(b[0])+'" cy="'+f1(b[1])+'" r="'+f1(b[2])+'" fill="'+b[3]+'" stroke="#000" stroke-opacity=".12" stroke-width=".8"/><ellipse cx="'+f1(b[0]-b[2]*.35)+'" cy="'+f1(b[1]-b[2]*.4)+'" rx="'+f1(b[2]*.22)+'" ry="'+f1(b[2]*.13)+'" transform="rotate(-35 '+f1(b[0]-b[2]*.35)+' '+f1(b[1]-b[2]*.4)+')" fill="#fff" opacity=".35"/>';});
+  s+='<rect x="'+(X0-4)+'" y="22" width="3" height="'+(YB-22)+'" fill="#777" opacity=".5"/><rect x="'+(X1+1)+'" y="22" width="3" height="'+(YB-22)+'" fill="#777" opacity=".5"/>';
+  return svg('Organische Ballongirlande vor neutraler Stoffwand',s);
+};
+
+ART[7]=function(){ /* Grünwand + Neon */
+  var s='',i,R=rng(51),names=st.names||'Anna & Ben',f=st.font;
+  var ft="'"+f+"', cursive"; if(f==='Cormorant Garamond')ft="'Cormorant Garamond', serif"; if(f==='Josefin Sans')ft="'Josefin Sans', sans-serif";
+  var defs='<filter id="gl8" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="4"/></filter><radialGradient id="rg8"><stop offset="0" stop-color="var(--neon)" stop-opacity=".5"/><stop offset="1" stop-color="var(--neon)" stop-opacity="0"/></radialGradient><clipPath id="c8"><rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" rx="3"/></clipPath>';
+  var g='<rect x="'+X0+'" y="'+Y0+'" width="'+(X1-X0)+'" height="'+(YB-Y0)+'" fill="#244a2f"/>',gc=['#2d5a39','#3a6c47','#1f4129','#4a7d54','#2a5535'];
+  for(i=0;i<620;i++)g+='<circle cx="'+f1(X0+R()*288)+'" cy="'+f1(Y0+R()*222)+'" r="'+f1(5+R()*4)+'" fill="'+gc[Math.floor(R()*gc.length)]+'"/>';
+  for(i=1;i<6;i++)g+='<line x1="'+(X0+i*48)+'" y1="'+Y0+'" x2="'+(X0+i*48)+'" y2="'+YB+'" stroke="#000" stroke-opacity=".18"/>';
+  g+='<ellipse cx="200" cy="112" rx="150" ry="62" fill="url(#rg8)"/>';
+  s+='<g clip-path="url(#c8)">'+g+'</g>';
+  var fs=fit(names,230,52,f);
+  s+='<g filter="url(#gl8)"><text x="200" y="112" text-anchor="middle" dominant-baseline="central" font-family="'+ft+'" font-size="'+f1(fs)+'" fill="var(--neon)" stroke="var(--neon)" stroke-width="3">'+esc(names)+'</text></g>';
+  s+='<text x="200" y="112" text-anchor="middle" dominant-baseline="central" font-family="'+ft+'" font-size="'+f1(fs)+'" fill="#fff" fill-opacity=".92" stroke="var(--neon)" stroke-width="1.3" paint-order="stroke">'+esc(names)+'</text>';
+  s+='<path d="M200,162 c-12,-8 -14,-18 -6,-20 c4,-.8 6,2 6,4 c0,-2 2,-4.8 6,-4 c8,2 6,12 -6,20z" fill="none" stroke="var(--neon)" stroke-width="1.6"/>';
+  return svg('Grünwand aus Buchsbaum-Matten mit leuchtendem Neon-Schriftzug',s,defs);
+};
+
+/* ---------- Inhalte ---------- */
+var CARDS=[
+ {t:'Blumenwand',m:'Opulent, romantisch, sofort Hochzeit.',
+  mat:'Kunstblumen-Paneele (z. B. 40 × 60 cm), auf Gestell oder Wand',size:'ca. 3 × 2,4 m, rund 30 Paneele',time:'30–45 Min. mit zwei Personen',
+  cost:'Kaufen ca. 450–900 €; mieten ca. 150–400 € pro Tag',
+  pro:['Dichte Fläche, deckt den Raum komplett ab','Matte Kunstseide fotografiert sich ruhig','Farben lassen sich gut auf das Brautstraußthema abstimmen'],
+  warn:['Billige Blumen glänzen: vor dem Kauf mit Blitz/LED testen','Paneele fest verbinden, sonst klaffen Fugen','Abends wirkt es dunkler; Licht von vorn etwas heller stellen'],
+  fit:['rose','festlich','flieder','pastell','bunt']},
+ {t:'Boho-Bogen',m:'Weich, luftig, natürlich – Pampas und Eukalyptus.',
+  mat:'Rundbogen-Gestell (Metall), Trockenblumen, Pampasgras, Eukalyptus, Stoffbahnen links und rechts',size:'Bogen ca. 2 m hoch; mit Stoff auf 2,5–3 m Breite erweitern',time:'45–60 Min.',
+  cost:'DIY ca. 80–200 €; Bogen mieten ca. 60–150 €',
+  pro:['Sehr gefällig als Rahmen für Paare und Gruppen','Trockenblumen sind matt und reflexarm','Der Bogen lässt sich nach dem Fest für die Trauung wiederverwenden'],
+  warn:['Ein Bogen allein ist zu schmal: Stoff als Seitenflügel ergänzen','Gestell beschweren, sonst kippelt er','Pampas verliert Fusseln: nicht direkt am Kleid platzieren'],
+  fit:['terrakotta','salbei','champagner','rose']},
+ {t:'Lichtervorhang mit Tüll',m:'Funkelndes Sternenzelt, abends am schönsten.',
+  mat:'Warmweiße LED-Lichtervorhänge hinter Chiffon oder Tüll, Rohr- oder Traversengestell',size:'3 × 3 m Vorhang, sichtbarer Bereich 3 × 2,3 m',time:'ca. 30 Min.',
+  cost:'ca. 100–200 € gesamt (Vorhang 30–60 €, Tüll 20–50 €, Gestell 50–100 € oder mieten)',
+  pro:['Günstig und schnell aufgebaut','Warme Lichtpunkte geben weiche Bokeh-Kugeln','Dunkle Wand dahinter lässt Hauttöne leuchten'],
+  warn:['Lichter nicht zu hell: sonst überstrahlen sie bei Dauerlicht','Tüll glatt ziehen und mit Abstand zu den Lampen hängen','Nur LED-Ketten verwenden, nicht bündeln (Brandschutz)'],
+  fit:['navy','champagner','festlich','flieder']},
+ {t:'Stoffbanner mit Monogramm',m:'Persönlich: Namen, Datum und Hochzeitsdesign.',
+  mat:'Bedruckter Polyesterstoff (matt) mit Tunnelsaum, Teleskop- oder Messestand-Gestell',size:'3 × 2,3 m',time:'ca. 20–30 Min.; Druck und Lieferung 1–2 Wochen vorher',
+  cost:'Druck ca. 120–300 €, Gestell kaufen ca. 60–120 € oder mieten ca. 40–80 €',
+  pro:['Passt exakt zu Einladung, Kirchenheft und Fotobox-Rahmen','Matte Fläche, kaum Reflexionen','Leicht zu transportieren und wiederzuverwenden'],
+  warn:['Falten: vor dem Fest aushängen oder mit Dampfbügler bearbeiten','Eine leere helle Fläche wirkt schnell fad: Muster oder Motiv einplanen','Randbereiche im Layout ruhig halten, falls das Foto zugeschnitten wird'],
+  extra:'Ich kann die Druckdatei in der richtigen Größe (z. B. 3 × 2,3 m bei 100–150 dpi) für einen Online-Druckshop vorbereiten.',
+  fit:null,fitnote:'Alle Farbwelten: Farben und Motive sind frei wählbar.'},
+ {t:'Pailletten-Wand',m:'Glamour und Glitzer, ideal für die Party.',
+  mat:'Pailletten-Paneele (z. B. 30 × 30 cm) oder Paillettenvorhang auf Gestell',size:'3 × 2,3 m',time:'30–60 Min.',
+  cost:'Paneele mieten ca. 150–350 €; Paillettenvorhang DIY ca. 40–100 €',
+  pro:['Sehr festlicher, bewegter Look','Funkelt besonders bei Bewegung der Gäste','Mit Matt-Gold, Silber oder Pastell wirkt es edel'],
+  warn:['Reflexionen: Licht von vorn spiegelt sich und erzeugt Hotspots','Dauerlicht seitlich oder leicht von oben platzieren, nicht frontal','Pailletten können die Kamera-Belichtung verwirren: Probebild machen'],
+  fit:['champagner','navy','festlich','flieder']},
+ {t:'Holzrahmen und alte Fenster',m:'Rustikal, gemütlich, mit Efeu und Wiesenblumen.',
+  mat:'3–5 alte Holzfenster oder Rahmen, Kunst-Efeu, Blumen, Holzfüße als Stütze',size:'Gesamtbreite ca. 2,5–3 m, Höhe bis 2,3 m',time:'45–60 Min.',
+  cost:'DIY ca. 100–250 € (Fenster vom Flohmarkt 10–40 € je Stück); mieten ca. 150–300 €',
+  pro:['Charmant und schön mit Scheunen- oder Gartenhochzeit','Holz wirkt ruhig, Efeu bringt Tiefe','Viel Eigenleistung möglich'],
+  warn:['Glas ausbauen oder durch Acryl ersetzen (Spiegelungen, Splittergefahr)','Standsicherheit: Stützfüße und Gewichte, kein Anlehnen','Hinter den Fenstern eine neutrale Wand oder einen Vorhang einplanen'],
+  fit:['salbei','terrakotta','rose','bunt']},
+ {t:'Organische Ballongirlande',m:'Verspielt und locker, in den Farben der Farbwelt.',
+  mat:'Latexballons in 3–5 Tönen und Größen, Girlandenband; vor neutraler Stoffwand',size:'Girlande ca. 3 m, Wand 3 × 2,4 m',time:'Bauen 1,5–3 Std.; am Vortag aufbauen',
+  cost:'DIY ca. 60–150 € Ballons plus Wand 40–100 €; Dekoprofi ca. 150–450 €',
+  pro:['Fröhlicher Hingucker, viel Farbe für wenig Geld','Matte Ballons wirken edel','Neutrale Wand hält das Bild ruhig'],
+  warn:['Chrom- und Metallic-Ballons spiegeln: matte wählen','Hitze und Sonne lassen Ballons platzen oder schrumpfen','Raum nicht zu warm halten, Ersatzballons mitbringen'],
+  fit:['bunt','pastell','terrakotta','rose','salbei']},
+ {t:'Grünwand mit Neon-Schriftzug',m:'Frisch und modern, mit leuchtendem Namen.',
+  mat:'Buchsbaum- oder Kunstrasen-Matten (UV-fest) auf Gestell, LED-Neon-Schriftzug',size:'3 × 2,4 m, ca. 29 Matten (50 × 50 cm)',time:'45–75 Min.',
+  cost:'Kaufen ca. 350–700 € (Matten 250–450 €, Neon 80–250 €); mieten ca. 200–450 €',
+  pro:['Dunkles Grün ist kein Chroma-Key-Grün und kontrastiert schön','Neon ist ein starker Blickfang, auch für Social Media','Gut für Gruppenfotos'],
+  warn:['Licht gleichmäßig halten, sonst werden Seiten dunkel','Neon nicht zu hell stellen, sonst Streulicht und Farbstich','Kunststoffblätter glänzen: Matten prüfen, Blitz vermeiden','Matten schwer entflammbar kaufen (B1)']
+  ,fit:['salbei','festlich','navy','champagner']}
+];
+
+var TBL=[
+ ['Blumenwand','ca. 450–900 € kaufen, 150–400 € mieten',2,'mittel',3,'gering'],
+ ['Boho-Bogen','ca. 80–200 € DIY, 60–150 € mieten',2,'mittel',3,'gering'],
+ ['Lichtervorhang mit Tüll','ca. 100–200 €',1,'gering',5,'mittel'],
+ ['Stoffbanner','ca. 180–420 €',1,'gering',3,'gering'],
+ ['Pailletten-Wand','ca. 150–350 € mieten, 40–100 € Vorhang',2,'gering bis mittel',4,'hoch'],
+ ['Holzrahmen und Fenster','ca. 100–300 €',3,'hoch',3,'mittel'],
+ ['Ballongirlande','ca. 100–450 €',3,'hoch',3,'gering bis mittel'],
+ ['Grünwand mit Neon','ca. 350–700 € kaufen, 200–450 € mieten',2,'mittel',5,'mittel']
+];
+function dots(n,label){var o='<span class="dots" role="img" aria-label="'+n+' von 5">';for(var i=1;i<=5;i++)o+='<i class="'+(i<=n?'on':'')+'"></i>';return o+'</span>';}
+
+/* ---------- Aufbau der Seite ---------- */
+function chip(k){var w=WK[k];return '<button type="button" class="chip" data-w="'+k+'" aria-pressed="false" title="'+esc(w.n)+'" style="--c1:'+w.acc+';--c2:'+w.paper+'"><i></i>'+esc(w.s)+'</button>';}
+function buildCards(){
+  var h='';
+  CARDS.forEach(function(c,i){
+    h+='<article class="card"><div class="artbox" id="art'+i+'"></div><div class="body">'
+     +'<div><div class="idx">Idee '+(i+1)+'</div><h3>'+c.t+'</h3><p class="mood">'+c.m+'</p></div>'
+     +'<div><p class="sub">So geht’s</p><dl class="facts"><dt>Material</dt><dd>'+c.mat+'</dd><dt>Größe</dt><dd>'+c.size+'</dd><dt>Aufbau</dt><dd>'+c.time+'</dd></dl>'+(c.extra?'<p style="font-size:.88rem;margin-top:8px;color:var(--acc-text)">'+c.extra+'</p>':'')+'</div>'
+     +'<div class="cost"><p class="sub" style="margin-bottom:2px">Kosten grob</p>'+c.cost+'<small>Grobe Schätzung, kein Angebot.</small></div>'
+     +'<div class="pc"><div><p class="sub">Vorteile</p><ul>'+c.pro.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div><div class="warn"><p class="sub">Achtung</p><ul>'+c.warn.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div></div>'
+     +'<div class="fits"><p class="sub" style="margin-bottom:0">Passt zu</p>'+(c.fit?'<div class="chips">'+c.fit.map(chip).join('')+'</div>':'<p style="margin-top:4px">'+c.fitnote+'</p>')+'</div>'
+     +'</div></article>';
+  });
+  document.getElementById('grid').innerHTML=h;
+}
+function buildTable(){
+  var h='<thead><tr><th>Konzept</th><th>Kosten grob</th><th>Aufwand</th><th>Wirkung abends</th><th>Reflexionsgefahr</th></tr></thead><tbody>';
+  TBL.forEach(function(r){h+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+dots(r[2])+r[3]+'</td><td>'+dots(r[4])+(['','','schwach','mittel','gut','sehr gut'][r[4]]||'')+'</td><td>'+r[5]+'</td></tr>';});
+  document.getElementById('cmp').innerHTML=h+'</tbody>';
+}
+function buildSwatches(){
+  document.getElementById('swatches').innerHTML=WORLDS.map(function(w){return '<button type="button" class="sw" data-w="'+w.k+'" aria-pressed="false" aria-label="'+esc(w.n)+'" title="'+esc(w.n)+'" style="--c1:'+w.acc+';--c2:'+w.paper+'"></button>';}).join('');
+}
+function topview(){
+  var a='var(--acc-text)',m='var(--muted)';
+  document.getElementById('topview').innerHTML=
+   '<rect x="20" y="28" width="10" height="94" rx="2" fill="var(--acc-text)" opacity=".85"/>'
+  +'<text x="25" y="18" text-anchor="middle" font-size="14" fill="'+m+'">Wand</text>'
+  +'<g fill="var(--sil)" opacity=".9"><circle cx="105" cy="62" r="9"/><circle cx="125" cy="86" r="9"/><circle cx="95" cy="98" r="9"/></g>'
+  +'<text x="118" y="116" text-anchor="middle" font-size="14" fill="'+m+'">Gäste</text>'
+  +'<line x1="32" y1="140" x2="98" y2="140" stroke="'+m+'"/><text x="65" y="134" text-anchor="middle" font-size="14" fill="'+m+'">0,5–1 m</text>'
+  +'<line x1="134" y1="140" x2="376" y2="140" stroke="'+m+'"/><text x="255" y="134" text-anchor="middle" font-size="14" fill="'+m+'">ca. 2 m</text>'
+  +'<rect x="368" y="56" width="30" height="40" rx="5" fill="none" stroke="'+a+'" stroke-width="2"/><circle cx="383" cy="76" r="9" fill="none" stroke="'+a+'" stroke-width="2"/>'
+  +'<text x="372" y="44" text-anchor="middle" font-size="14" fill="'+m+'">Kamera</text>'
+  +'<rect x="410" y="52" width="8" height="48" rx="3" fill="var(--gold)"/><text x="414" y="118" text-anchor="middle" font-size="14" fill="'+m+'">Licht</text>'
+  +'<path d="M368,66 L30,28 M368,86 L30,122" stroke="'+a+'" stroke-opacity=".35" stroke-dasharray="4 4" fill="none"/>'
+  +'<text x="252" y="74" text-anchor="middle" font-size="13" fill="'+a+'">Bildausschnitt</text><text x="252" y="91" text-anchor="middle" font-size="13" fill="'+a+'">ca. 2,3–2,5 m an den Gästen</text>';
+}
+
+function renderArt(){for(var i=0;i<ART.length;i++){var el=document.getElementById('art'+i);if(el)el.innerHTML=ART[i]();}}
+function apply(){
+  var w=WK[st.world],r=document.documentElement.style;
+  r.setProperty('--acc',w.acc);r.setProperty('--paper',w.paper);
+  r.setProperty('--neon','color-mix(in srgb, '+w.acc+' 62%, #fff)');
+  var ff="'"+st.font+"', cursive"; if(st.font==='Cormorant Garamond')ff="'Cormorant Garamond', serif"; if(st.font==='Josefin Sans')ff="'Josefin Sans', sans-serif";
+  r.setProperty('--namefont',ff);
+  [].forEach.call(document.querySelectorAll('[data-w]'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-w')===st.world?'true':'false');});
+  document.getElementById('worldname').innerHTML='Gewählt: <b>'+esc(w.n)+'</b>';
+  renderArt();
+}
+function save(){try{localStorage.setItem('fbh-world',st.world);localStorage.setItem('fbh-font',st.font);}catch(e){}}
+
+buildSwatches();buildCards();buildTable();topview();
+document.getElementById('selFont').value=st.font;
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-w]');if(!b)return;st.world=b.getAttribute('data-w');save();apply();});
+document.getElementById('selFont').addEventListener('change',function(e){st.font=e.target.value;save();apply();});
+document.getElementById('inNames').addEventListener('input',function(e){st.names=e.target.value;renderArt();});
+document.getElementById('inDate').addEventListener('input',function(e){st.date=e.target.value;renderArt();});
+apply();
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(renderArt).catch(function(){});}
+})();
+</script>
