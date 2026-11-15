@@ -24,6 +24,35 @@ const SCHRIFTSTILE = {
   modern: { label: 'Modern (schlicht)', kopf: 'Josefin Sans', namen: 'Josefin Sans' },
 };
 
+// Schriften für die Namen – dieselben wie im Sitzplantool (settings.namesFont, js/theme.js SP.NAME_FONTS),
+// die Dateien liegen in schriften/. Gespeichert wird in der Fotobox der Familienname (namenSchrift).
+const NAMEN_SCHRIFTEN = {
+  cormorant: { label: 'Cormorant (Serifen)', familie: 'Cormorant Garamond' },
+  vibes: { label: 'Great Vibes (Schreibschrift)', familie: 'Great Vibes' },
+  parisienne: { label: 'Parisienne (Schreibschrift)', familie: 'Parisienne' },
+  dancing: { label: 'Dancing Script (Schreibschrift)', familie: 'Dancing Script' },
+  playfair: { label: 'Playfair Display', familie: 'Playfair Display' },
+  lora: { label: 'Lora (Serifen)', familie: 'Lora' },
+  josefin: { label: 'Josefin Sans (modern)', familie: 'Josefin Sans' },
+  montserrat: { label: 'Montserrat (modern)', familie: 'Montserrat' },
+  allura: { label: 'Allura (Schreibschrift)', familie: 'Allura' },
+  pinyon: { label: 'Pinyon Script (Kalligrafie)', familie: 'Pinyon Script' },
+  caveat: { label: 'Caveat (Handschrift)', familie: 'Caveat' },
+  pacifico: { label: 'Pacifico (rund, fröhlich)', familie: 'Pacifico' },
+  cinzel: { label: 'Cinzel (Großbuchstaben)', familie: 'Cinzel' },
+  abril: { label: 'Abril Fatface (kräftig)', familie: 'Abril Fatface' },
+  poppins: { label: 'Poppins (modern)', familie: 'Poppins' },
+  quicksand: { label: 'Quicksand (weich, rund)', familie: 'Quicksand' },
+  alexbrush: { label: 'Alex Brush (Schreibschrift)', familie: 'Alex Brush' },
+  sacramento: { label: 'Sacramento (feine Schreibschrift)', familie: 'Sacramento' },
+  satisfy: { label: 'Satisfy (Pinselschrift)', familie: 'Satisfy' },
+  amatic: { label: 'Amatic SC (handgezeichnet)', familie: 'Amatic SC' },
+  marcellus: { label: 'Marcellus (elegant)', familie: 'Marcellus' },
+  bodoni: { label: 'Bodoni Moda (fein, kontrastreich)', familie: 'Bodoni Moda' },
+  raleway: { label: 'Raleway (schlank, modern)', familie: 'Raleway' },
+  bebas: { label: 'Bebas Neue (Großbuchstaben)', familie: 'Bebas Neue' },
+};
+
 const TEXT_SCHRIFT = 'Montserrat';
 
 const hexRgb = (h) => { const n = parseInt(String(h).replace('#', '').padEnd(6, '0').slice(0, 6), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
@@ -63,4 +92,4 @@ function gestaltung(e) {
   };
 }
 
-module.exports = { FARBWELTEN, SCHRIFTSTILE, gestaltung, mix };
+module.exports = { FARBWELTEN, SCHRIFTSTILE, NAMEN_SCHRIFTEN, gestaltung, mix };

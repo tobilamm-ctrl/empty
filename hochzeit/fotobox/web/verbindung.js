@@ -38,8 +38,8 @@
   }
 
   // Eigene Schriften aus dem Import (z. B. die Schrift der Einladungskarte)
-  fetch('/api/schriften').then((r) => r.json()).then((d) => (d.eigene || []).forEach((s) => {
-    try { const f = new FontFace(s.name, `url(/schriften/${encodeURIComponent(s.datei)})`); f.load().then(() => document.fonts.add(f)); } catch (e) { /* alte Browser */ }
+  fetch('/api/schriften').then((r) => r.json()).then((d) => (d.eigene || []).concat(d.eingebaut || []).forEach((s) => {
+    try { const f = new FontFace(s.name, `url(/schriften/${encodeURIComponent(s.datei)})`, s.gewicht ? { weight: s.gewicht } : {}); f.load().then(() => document.fonts.add(f)); } catch (e) { /* alte Browser */ }
   })).catch(() => {});
 
   // Bluetooth-Knopf: koppelt sich wie eine Tastatur und schickt z. B. Enter, Leertaste oder „Lauter“

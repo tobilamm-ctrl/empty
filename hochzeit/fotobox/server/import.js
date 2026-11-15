@@ -45,6 +45,7 @@ function sitzplanLesen(text) {
     farbwelt: s.theme || '',
     akzent: s.accent || '',
     schriftstil: s.font || '',
+    namenSchrift: s.namesFont || '', // Schlüssel aus dem Sitzplantool (z. B. 'vibes'), leer = wie im Schriftstil
     gaeste,
     tische: [...new Set(gaeste.map((g) => g.tisch).filter(Boolean))],
     schriften,

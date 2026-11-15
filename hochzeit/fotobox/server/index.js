@@ -22,7 +22,7 @@ const { druckerSimulator, druckerWindows } = require('./drucker/treiber');
 const { kameraSimulator } = require('./kamera/simulator');
 const { kameraDigicamcontrol } = require('./kamera/digicamcontrol');
 const bild = require('./bild');
-const { gestaltung, FARBWELTEN, SCHRIFTSTILE } = require('./gestaltung');
+const { gestaltung, FARBWELTEN, SCHRIFTSTILE, NAMEN_SCHRIFTEN } = require('./gestaltung');
 const qrcode = require('qrcode-generator');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const online = require('./online');
@@ -180,12 +180,18 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
     if (p === '/api/diashow') return json(res, 200, speicher.diashow());
     if (p === '/api/schriften') {
       const eigene = fs.readdirSync(speicher.schriftenOrdner()).filter((f) => /\.(woff2?|ttf|otf)$/i.test(f)).map((f) => ({ name: f.replace(/\.[^.]+$/, ''), datei: f }));
-      return json(res, 200, { eigene });
+      // Eingebaute Namensschriften (schriften/<familie>-latin-<gewicht>-normal.woff2) fürs iPad und den großen Bildschirm
+      const eingebaut = fs.readdirSync(path.join(WURZEL, 'schriften')).filter((f) => /-latin-\d+-normal\.woff2$/.test(f)).map((f) => {
+        const t = f.split('-latin-'), gewicht = t[1].split('-')[0];
+        let name = t[0].split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '); if (name === 'Amatic Sc') name = 'Amatic SC';
+        return { name, datei: f, gewicht };
+      });
+      return json(res, 200, { eigene, eingebaut });
     }
     if (p === '/api/service') {
       if (!pinOk(url)) return json(res, 403, { fehler: 'Falsche PIN' });
       return speicher.platz().then((platz) => json(res, 200, {
-        einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE, platz,
+        einstellungen: speicher.einstellungen(), farbwelten: FARBWELTEN, schriftstile: SCHRIFTSTILE, namenSchriften: NAMEN_SCHRIFTEN, platz,
         logo: !!speicher.logo(), knopfStandard: (konfig.knopf || {}).tasten || [], layouts: bild.LAYOUTS || {}, filter: bild.FILTER || {},
         eigene: speicher.eigene(), statistik: speicher.statistik(), dankeskarten: speicher.dankeskarten(),
         gaesteListe: speicher.gaeste().map((g) => ({ id: g.id, name: g.name, tisch: g.tisch, code: g.code || '', einladung: g.einladung || '' })), basisUrl: ablauf.basisUrl,
@@ -267,6 +273,7 @@ figure{margin:0;display:flex;flex-direction:column;gap:8px} img{width:100%;borde
           if (FARBWELTEN[im.farbwelt]) neu.farbwelt = im.farbwelt;
           neu.akzent = im.akzent || '';
           if (SCHRIFTSTILE[im.schriftstil]) neu.schriftstil = im.schriftstil;
+          neu.namenSchrift = NAMEN_SCHRIFTEN[im.namenSchrift] ? NAMEN_SCHRIFTEN[im.namenSchrift].familie : '';
           speicher.einstellungenSetzen(neu);
           speicher.gaesteSetzen(im.gaeste);
           log('info', `Import: ${im.gaeste.length} Gäste, ${im.tische.length} Tische, ${im.schriften.length} eigene Schriften`);

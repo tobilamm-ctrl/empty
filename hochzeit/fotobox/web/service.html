@@ -369,8 +369,9 @@ input[type=range] { accent-color: var(--akzent); }
     $('farbwelt').innerHTML = Object.entries(daten.farbwelten).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
     $('schriftstil').innerHTML = Object.entries(daten.schriftstile).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
     fetch('/api/schriften').then((r) => r.json()).then((s) => {
-      $('namenSchrift').innerHTML = '<option value="">wie im Schriftstil</option>' + ['Cormorant Garamond', 'Great Vibes', 'Josefin Sans'].concat(s.eigene.map((x) => x.name))
-        .map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      $('namenSchrift').innerHTML = '<option value="">wie im Schriftstil</option>'
+        + Object.values(daten.namenSchriften || {}).map((n) => `<option value="${esc(n.familie)}" style="font-family:'${esc(n.familie)}'">${esc(n.label)}</option>`).join('')
+        + s.eigene.map((x) => `<option value="${esc(x.name)}">${esc(x.name)} (eigene)</option>`).join('');
       $('namenSchrift').value = e.namenSchrift || '';
     });
     document.querySelectorAll('form.einst').forEach((f) => [...f.elements].forEach((el) => {

@@ -22,9 +22,10 @@ function schriftenLaden(ordner) {
     const datei = path.join(ordner, f);
     if (geladen.has(datei)) return;
     const basis = f.replace(/\.(woff2?|ttf|otf)$/i, '');
-    const familie = /-latin-/.test(basis)
+    let familie = /-latin-/.test(basis)
       ? basis.split('-latin-')[0].split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
       : basis;
+    if (familie === 'Amatic Sc') familie = 'Amatic SC';
     if (GlobalFonts.registerFromPath(datei, familie)) { geladen.add(datei); namen.push(familie); }
   });
   return [...new Set(namen)];
@@ -102,10 +103,10 @@ async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum
   if (layout === 'vollbild') return vollbild({ modus, bilder, g, namen, datum, logoBild });
   if (layout === 'polaroid') return polaroid({ modus, bilder, g, namen, datum, logoBild });
   if (layout === 'elegant') return elegant({ modus, bilder, g, namen, datum, logoBild });
-  const tinte = '#262521';
+  const tinte = '#3a302b';
   const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
-  const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
-  const schreibschrift = /vibes|script|parisienne/i.test(g.namenSchrift);
+  const datumFont = `600 {g}px "${g.kopfSchrift}", Georgia, serif`;
+  const schreibschrift = /vibes|script|parisienne|allura|pinyon|brush|sacramento|satisfy|caveat|dancing/i.test(g.namenSchrift);
   let c, ctx;
   if (modus === 'streifen') {
     c = createCanvas(1200, 1800); ctx = c.getContext('2d');
@@ -113,11 +114,11 @@ async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum
     for (let k = 0; k < 2; k++) {
       const ox = k * 600;
       bilder.slice(0, 4).forEach((b, j) => cover(ctx, b, ox + 40, 40 + j * 365, 520, 345));
-      ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+      ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
       if (logoBild) einpassen(ctx, logoBild, ox + 300, 1496, 520, 128);
       else { passend(ctx, namen, namenFont, schreibschrift ? 78 : 58, 520); ctx.fillText(namen, ox + 300, 1612); }
-      ctx.fillStyle = g.akzent; passend(ctx, datum.toUpperCase(), datumFont, 26, 520);
-      ctx.fillText(datum.toUpperCase(), ox + 300, 1672);
+      ctx.fillStyle = tinte; passend(ctx, datum, datumFont, 32, 520);
+      ctx.fillText(datum, ox + 300, 1672);
     }
     ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 2; ctx.setLineDash([14, 12]);
     ctx.beginPath(); ctx.moveTo(600, 0); ctx.lineTo(600, 1800); ctx.stroke(); ctx.setLineDash([]);
@@ -126,20 +127,20 @@ async function zusammensetzen({ modus, layout = 'rahmen', fotos, g, namen, datum
     ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
     cover(ctx, bilder[0], 70, 70, 1660, 900);
     ctx.strokeStyle = g.akzent; ctx.lineWidth = 3; ctx.strokeRect(46, 46, 1708, 948);
-    ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+    ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
     if (logoBild) einpassen(ctx, logoBild, 900, 1008, 1200, 116);
     else { passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500); ctx.fillText(namen, 900, 1100); }
-    ctx.fillStyle = g.akzent; passend(ctx, datum.toUpperCase(), datumFont, 34, 1500);
-    ctx.fillText(datum.toUpperCase(), 900, 1160);
+    ctx.fillStyle = tinte; passend(ctx, datum, datumFont, 44, 1500);
+    ctx.fillText(datum, 900, 1160);
   }
   return c.toBuffer('image/jpeg', 92);
 }
 
 function vollbild({ modus, bilder, g, namen, datum, logoBild }) {
   const namenFont = `{g}px "${g.namenSchrift}", Georgia, serif`;
-  const datumFont = `600 {g}px "${g.textSchrift}", sans-serif`;
-  const schreibschrift = /vibes|script|parisienne/i.test(g.namenSchrift);
-  const datumText = datum.toUpperCase();
+  const datumFont = `600 {g}px "${g.kopfSchrift}", Georgia, serif`;
+  const schreibschrift = /vibes|script|parisienne|allura|pinyon|brush|sacramento|satisfy|caveat|dancing/i.test(g.namenSchrift);
+  const datumText = datum;
   let c, ctx;
   if (modus === 'streifen') {
     // zwei gleiche Streifen à 600 × 1800, je vier Bilder 600 × 450 ohne Abstand; Text auf dem letzten Bild
@@ -151,7 +152,7 @@ function vollbild({ modus, bilder, g, namen, datum, logoBild }) {
       ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
       if (logoBild) { schatten(ctx, false); einpassen(ctx, logoBild, ox + 300, 1566, 440, 112); schatten(ctx, true); }
       else { passend(ctx, namen, namenFont, schreibschrift ? 72 : 54, 440); ctx.fillText(namen, ox + 300, 1668); }
-      passend(ctx, datumText, datumFont, 24, 440);
+      passend(ctx, datumText, datumFont, 30, 440);
       ctx.fillText(datumText, ox + 300, 1712);
       schatten(ctx, false);
     }
@@ -164,7 +165,7 @@ function vollbild({ modus, bilder, g, namen, datum, logoBild }) {
     ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; schatten(ctx, true);
     if (logoBild) { schatten(ctx, false); einpassen(ctx, logoBild, 900, 906, 1200, 140); schatten(ctx, true); }
     else { passend(ctx, namen, namenFont, schreibschrift ? 120 : 92, 1500); ctx.fillText(namen, 900, 1040); }
-    passend(ctx, datumText, datumFont, 34, 1500);
+    passend(ctx, datumText, datumFont, 44, 1500);
     ctx.fillText(datumText, 900, 1100);
     schatten(ctx, false);
   }
@@ -184,16 +185,16 @@ function schnittlinie(ctx) {
 function schriften(g) {
   return {
     namenFont: `{g}px "${g.namenSchrift}", Georgia, serif`,
-    datumFont: `600 {g}px "${g.textSchrift}", sans-serif`,
-    schreibschrift: /vibes|script|parisienne/i.test(g.namenSchrift),
-    tinte: '#262521',
+    datumFont: `600 {g}px "${g.kopfSchrift}", Georgia, serif`,
+    schreibschrift: /vibes|script|parisienne|allura|pinyon|brush|sacramento|satisfy|caveat|dancing/i.test(g.namenSchrift),
+    tinte: '#3a302b',
   };
 }
 
 // Polaroid: gleichmäßiger Rand links/oben/rechts, tiefer Rand unten mit Namen und Datum
 function polaroid({ modus, bilder, g, namen, datum, logoBild }) {
   const { namenFont, datumFont, schreibschrift, tinte } = schriften(g);
-  const datumText = datum.toUpperCase();
+  const datumText = datum;
   let c, ctx;
   if (modus === 'streifen') {
     c = createCanvas(1200, 1800); ctx = c.getContext('2d');
@@ -201,10 +202,10 @@ function polaroid({ modus, bilder, g, namen, datum, logoBild }) {
     for (let k = 0; k < 2; k++) {
       const ox = k * 600;
       bilder.slice(0, 4).forEach((b, j) => mitSchatten(ctx, b, ox + 40, 40 + j * 366, 520, 346));
-      ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+      ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
       if (logoBild) einpassen(ctx, logoBild, ox + 300, 1500, 420, 130);
       else { passend(ctx, namen, namenFont, schreibschrift ? 78 : 56, 420); ctx.fillText(namen, ox + 300, 1610); }
-      ctx.fillStyle = g.akzent; passend(ctx, datumText, datumFont, 26, 420);
+      ctx.fillStyle = tinte; passend(ctx, datumText, datumFont, 32, 420);
       ctx.fillText(datumText, ox + 300, 1685);
     }
     schnittlinie(ctx);
@@ -212,10 +213,10 @@ function polaroid({ modus, bilder, g, namen, datum, logoBild }) {
     c = createCanvas(1800, 1200); ctx = c.getContext('2d');
     ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
     mitSchatten(ctx, bilder[0], 60, 60, 1680, 840);
-    ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+    ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
     if (logoBild) einpassen(ctx, logoBild, 900, 925, 1200, 130);
     else { passend(ctx, namen, namenFont, schreibschrift ? 120 : 90, 1500); ctx.fillText(namen, 900, 1025); }
-    ctx.fillStyle = g.akzent; passend(ctx, datumText, datumFont, 34, 1500);
+    ctx.fillStyle = tinte; passend(ctx, datumText, datumFont, 44, 1500);
     ctx.fillText(datumText, 900, 1095);
   }
   return c.toBuffer('image/jpeg', 92);
@@ -241,7 +242,7 @@ function doppellinie(ctx, g, x, y, w, h) {
 function datumMitLinien(ctx, g, text, font, groesse, cx, y, maxB) {
   passend(ctx, text, font, groesse, maxB);
   const b = ctx.measureText(text).width, gap = 22, len = Math.min(70, Math.max(30, (maxB - b) / 2 - gap));
-  ctx.fillStyle = g.akzent; ctx.textAlign = 'center'; ctx.fillText(text, cx, y);
+  ctx.fillStyle = '#3a302b'; ctx.textAlign = 'center'; ctx.fillText(text, cx, y); // Datum in Tinte, Linien in Akzentfarbe
   const ly = y - groesse * 0.36;
   ctx.strokeStyle = g.akzent; ctx.lineWidth = 2; ctx.beginPath();
   ctx.moveTo(cx - b / 2 - gap, ly); ctx.lineTo(cx - b / 2 - gap - len, ly);
@@ -252,7 +253,7 @@ function datumMitLinien(ctx, g, text, font, groesse, cx, y, maxB) {
 // Elegant: Doppellinie in der Akzentfarbe um Foto und Text, Zierrauten in den Ecken
 function elegant({ modus, bilder, g, namen, datum, logoBild }) {
   const { namenFont, datumFont, schreibschrift, tinte } = schriften(g);
-  const datumText = datum.toUpperCase();
+  const datumText = datum;
   let c, ctx;
   if (modus === 'streifen') {
     c = createCanvas(1200, 1800); ctx = c.getContext('2d');
@@ -261,10 +262,10 @@ function elegant({ modus, bilder, g, namen, datum, logoBild }) {
       const ox = k * 600;
       doppellinie(ctx, g, ox + 28, 28, 544, 1744);
       bilder.slice(0, 4).forEach((b, j) => cover(ctx, b, ox + 60, 60 + j * 346, 480, 330));
-      ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+      ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
       if (logoBild) einpassen(ctx, logoBild, ox + 300, 1450, 400, 120);
       else { passend(ctx, namen, namenFont, schreibschrift ? 76 : 54, 400); ctx.fillText(namen, ox + 300, 1550); }
-      datumMitLinien(ctx, g, datumText, datumFont, 24, ox + 300, 1650, 420);
+      datumMitLinien(ctx, g, datumText, datumFont, 30, ox + 300, 1650, 420);
     }
     schnittlinie(ctx);
   } else {
@@ -272,10 +273,10 @@ function elegant({ modus, bilder, g, namen, datum, logoBild }) {
     ctx.fillStyle = g.papier; ctx.fillRect(0, 0, 1800, 1200);
     doppellinie(ctx, g, 40, 40, 1720, 1120);
     cover(ctx, bilder[0], 80, 80, 1640, 780);
-    ctx.textAlign = 'center'; ctx.fillStyle = tinte;
+    ctx.textAlign = 'center'; ctx.fillStyle = g.akzent;
     if (logoBild) einpassen(ctx, logoBild, 900, 880, 1100, 120);
     else { passend(ctx, namen, namenFont, schreibschrift ? 108 : 82, 1400); ctx.fillText(namen, 900, 975); }
-    datumMitLinien(ctx, g, datumText, datumFont, 32, 900, 1075, 1200);
+    datumMitLinien(ctx, g, datumText, datumFont, 40, 900, 1075, 1200);
   }
   return c.toBuffer('image/jpeg', 92);
 }
