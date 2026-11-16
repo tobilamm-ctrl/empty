@@ -278,3 +278,19 @@ Geführter Zugriff per Dreifachklick auf die Home-Taste. Akku ist alt: den ganze
 Kamera (10.11.2026): Es bleibt wahrscheinlich bei der Canon EOS 200D. Objektiv EF-S 18–55 mm (am besten IS STM), ca. 20 mm,
 Zoom mit Klebeband fixieren, Blende 5,6–8. Autofokus im Livebild ist bei der 200D schnell (Dual Pixel); fester Fokus auf die
 Bodenmarkierung geht trotzdem als Rückfallebene. Netzteil mit Akku-Attrappe für LP-E17 (Canon ACK-E18 oder Nachbau).
+
+## Idee: Fotobox auch für Laufveranstaltungen (16.11.2026, nur Idee)
+
+- Fotobox parallel mit der Laufveranstaltungs-App verbinden: Jeder Läufer darf mit seinem QR-Code ein Foto machen.
+- Empfehlung: keine eigene App, sondern dieselbe Fotobox mit „Veranstaltungsart“ (Hochzeit / Lauf / Allgemein)
+  und Teilnehmer-Import je Quelle (Sitzplan, Lauf-App, CSV); Scan als Pflicht vor dem Auslösen, Limit pro Code
+  (z. B. ein Foto pro Läufer), Hochzeits-Teile (Gästebuch, Dankeskarten, Tische) aus.
+- Auf dem Foto (Wunsch der Lehrkraft):
+  - **Strecke** einfügen (Streckenverlauf als Linie, z. B. aus der GPX-Datei der Veranstaltung)
+  - **Logo vom Verein**
+  - **Datum**
+  - (dazu passend: Name, Startnummer, evtl. Laufzeit)
+- Zu beachten: viel Andrang nach dem Zieleinlauf (Druck aus/begrenzt, Fotos online), draußen (Licht, Regen, Strom),
+  Datenschutz (Einwilligung bei der Anmeldung, Minderjährige, Löschfrist).
+- Die Laufveranstaltungs-App lädt die Lehrkraft später als ZIP hoch (nicht „laufspur“ = Spurwerk, das ist das GPX-Poster-Tool;
+  dessen Streckendarstellung könnte man für die Strecke auf dem Foto wiederverwenden).
