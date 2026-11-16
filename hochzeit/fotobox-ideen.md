@@ -285,12 +285,12 @@ Bodenmarkierung geht trotzdem als Rückfallebene. Netzteil mit Akku-Attrappe fü
 - Empfehlung: keine eigene App, sondern dieselbe Fotobox mit „Veranstaltungsart“ (Hochzeit / Lauf / Allgemein)
   und Teilnehmer-Import je Quelle (Sitzplan, Lauf-App, CSV); Scan als Pflicht vor dem Auslösen, Limit pro Code
   (z. B. ein Foto pro Läufer), Hochzeits-Teile (Gästebuch, Dankeskarten, Tische) aus.
-- Auf dem Foto (Wunsch der Lehrkraft):
+- Auf dem Foto (Wunsch):
   - **Strecke** einfügen (Streckenverlauf als Linie, z. B. aus der GPX-Datei der Veranstaltung)
   - **Logo vom Verein**
   - **Datum**
   - (dazu passend: Name, Startnummer, evtl. Laufzeit)
 - Zu beachten: viel Andrang nach dem Zieleinlauf (Druck aus/begrenzt, Fotos online), draußen (Licht, Regen, Strom),
   Datenschutz (Einwilligung bei der Anmeldung, Minderjährige, Löschfrist).
-- Die Laufveranstaltungs-App lädt die Lehrkraft später als ZIP hoch (nicht „laufspur“ = Spurwerk, das ist das GPX-Poster-Tool;
+- Die Laufveranstaltungs-App kommt später als ZIP hoch (nicht „laufspur“ = Spurwerk, das ist das GPX-Poster-Tool;
   dessen Streckendarstellung könnte man für die Strecke auf dem Foto wiederverwenden).
