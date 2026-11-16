@@ -310,4 +310,7 @@ Bodenmarkierung geht trotzdem als Rückfallebene. Netzteil mit Akku-Attrappe fü
     (Fotobox fragt den Spendenlauf-Laptop, merkt sich die Liste für Ausfälle).
   - „Ein Foto pro Läufer“ einstellbar, dazu **Foto gegen Spende** (Spende in der Kasse der Spendenlauf-App verbuchen,
     die hat schon S.donations).
+  - **Foto gegen Spende = Spende, kein Verkauf**: Freigabe durch Helfer nur **optional** (Standard aus). Normalfall:
+    Hinweis „Weitere Fotos gegen eine Spende in die Spendenbox“ und dann einfach weiter – Vertrauen auf Ehrlichkeit.
+    Optional: Spende in der Kasse verbuchen (ohne Pflicht, ohne Sperre).
   - Spendenlauf-App als GitHub-Repository anlegen, damit Claude dort direkt ändern kann (ohne daten/ und node/).
