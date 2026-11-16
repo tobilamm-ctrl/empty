@@ -303,3 +303,11 @@ Bodenmarkierung geht trotzdem als Rückfallebene. Netzteil mit Akku-Attrappe fü
   Streckenplan-Bilder (Anzeige → Strecken), Zielfotos, Ergebnis-Terminal mit Hand-Scanner, E-Mail-Versand.
 - Verbindung zur Fotobox: Import/Live-Abfrage der Teilnehmer (Startnummer, Name, Lauf, QR-Code), Scanner-Erkennung
   „letzte 12 Ziffern“, Gestaltung (Logo, Datum, Strecke) aus der App; Fotobox-Fotos auf der persönlichen Ergebnisseite.
+- Wünsche (16.11.2026):
+  - Strecke auf dem Foto aus einer **GPX-Datei** (nicht das Streckenplan-Bild).
+  - Fotobox-Foto auch beim **Mailversand** (Urkunde, Zielfoto …) mitschicken.
+  - **Kein Export**: am Lauftag viele Nachmeldungen, keine Zeit zum Übertragen → **Live-Verbindung** im WLAN
+    (Fotobox fragt den Spendenlauf-Laptop, merkt sich die Liste für Ausfälle).
+  - „Ein Foto pro Läufer“ einstellbar, dazu **Foto gegen Spende** (Spende in der Kasse der Spendenlauf-App verbuchen,
+    die hat schon S.donations).
+  - Spendenlauf-App als GitHub-Repository anlegen, damit Claude dort direkt ändern kann (ohne daten/ und node/).
