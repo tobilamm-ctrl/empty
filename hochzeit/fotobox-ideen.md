@@ -294,3 +294,12 @@ Bodenmarkierung geht trotzdem als Rückfallebene. Netzteil mit Akku-Attrappe fü
   Datenschutz (Einwilligung bei der Anmeldung, Minderjährige, Löschfrist).
 - Die Laufveranstaltungs-App kommt später als ZIP hoch (nicht „laufspur“ = Spurwerk, das ist das GPX-Poster-Tool;
   dessen Streckendarstellung könnte man für die Strecke auf dem Foto wiederverwenden).
+
+### Spendenlauf-App angesehen (16.11.2026, ZIP ohne Daten/node)
+- Node-Server im WLAN (server.js, Laptop) + PHP-Homepage (Anmeldung, Ergebnisse, persönliche Ergebnisseite ergebnis.php?c=…).
+- QR auf der Startnummer: 12 Ziffern aus Startnummer + geheimem Schlüssel (settings.qrSecret, Core.bibQr), wahlweise als
+  Link `…/ergebnis.php?c=<12 Ziffern>`; die App wertet nur die letzten 12 Ziffern aus (robust gegen deutsche Tastatur).
+- Vorhanden und für das Foto nutzbar: Vereinslogo (Administration), Veranstaltung/Datum/Ort, Läufe mit Farben,
+  Streckenplan-Bilder (Anzeige → Strecken), Zielfotos, Ergebnis-Terminal mit Hand-Scanner, E-Mail-Versand.
+- Verbindung zur Fotobox: Import/Live-Abfrage der Teilnehmer (Startnummer, Name, Lauf, QR-Code), Scanner-Erkennung
+  „letzte 12 Ziffern“, Gestaltung (Logo, Datum, Strecke) aus der App; Fotobox-Fotos auf der persönlichen Ergebnisseite.
