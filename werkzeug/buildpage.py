@@ -9,7 +9,7 @@ vars_=lambda d:" ".join(f"--{k}:{v};" for k,v in d.items())
 pos=[(50,13),(84,38),(72,83),(28,83),(16,38)]
 topics=[{"t":job["topics"][i],"tasks":job["texts"][i]["a"],"x":pos[i][0],"y":pos[i][1]} for i in range(5)]
 rep={"__TITLE__":w["title"],"__LAYOUT__":w["layoutComment"],"__ROOTVARS__":"  "+vars_(w["light"]),"__DARKVARS__":vars_(w["dark"]),
- "__H1__":w["h1"],"__NAME__":job["name"],"__PHOTO__":job["photo"],"__ALT__":w["alt"],"__SVGLABEL__":w["svgLabel"],"__DRAWING__":job["drawing"],
+ "__H1__":w["h1"],"__NAME__":job["name"],"__POSS__":job.get("poss","seiner"),"__PHOTO__":job["photo"],"__ALT__":w["alt"],"__SVGLABEL__":w["svgLabel"],"__DRAWING__":job["drawing"],
  "__HUBLABEL__":w["hubLabel"],"__TOPICS__":json.dumps(topics,ensure_ascii=False),"__TIMING__":open(timf,encoding="utf-8").read().strip()}
 for k,v in rep.items():
     assert k in p,k; p=p.replace(k,v)
