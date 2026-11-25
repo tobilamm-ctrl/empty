@@ -122,7 +122,7 @@ const entwurf=doc([
   ['15′','Erarbeitung I',['**Expertengruppen „Berufe-Quartett“**: vier Gruppen (je ein Beruf) füllen ihre Quartett-Karte aus: Arbeitsort, Ausbildungsdauer, typische Tätigkeit und **Sterne (1–5)** für sechs Merkmale, jeweils mit Begründung aus dem Text.','Rollen: Vorleser/-in, Schreiber/-in, Sternrichter/-in, Sprecher/-in.','Differenzierung: schnelle Gruppen schauen auf der Steckbrief-Webseite nach (Mitlesen).'],'GA','M2 (je Gruppe eine Karte), Hefteinträge/Texte der Steckbriefe, ggf. Tablets'],
   ['10′','Erarbeitung II',['**Quartett-Duell**: L nennt ein Merkmal („Wer hat die meisten Sterne bei Arbeitszeiten?“). Die Sprecher/-innen nennen ihre Sterne und den Grund. Die höchste Karte „sticht“. L trägt die Sterne in die Vergleichstabelle an der Tafel ein.','Bei Uneinigkeit: andere Gruppen dürfen Einspruch mit Textbeleg erheben.'],'Plenum','Tafel (Vergleichstabelle)'],
   ['8′','Sicherung',['Gemeinsame Formulierung der Merksätze: Arbeitsplätze unterscheiden sich in den Merkmalen; Vor- und Nachteile hängen von der Person ab.','S übertragen die Sterne und füllen den Lückentext aus.'],'EA','03 Hefteintrag (Lückentext)'],
-  ['7′','Beurteilung / Abschluss',['**Punktabfrage**: Jede/r klebt einen Punkt unter die Figur des Lieblingsarbeitsplatzes (Plakate an den vier Wänden oder Magnete an der Tafel).','**Exit-Ticket**: Begründung mit einem Merkmal und ein Arbeitsplatz, der weniger gefällt.','Ausblick: „Nächste Stunde schauen wir genauer hin: Strengt diese Arbeit eher den Körper oder den Kopf an?“'],'EA / Plenum','Klebepunkte, M3 Exit-Ticket'],
+  ['7′','Beurteilung / Abschluss',['**Punktabfrage**: Jede/r klebt einen Punkt unter die Figur des Lieblingsarbeitsplatzes (Plakate an den vier Wänden oder Magnete an der Tafel).','**Exit-Ticket**: Begründung mit einem Merkmal und ein Arbeitsplatz, der weniger gefällt.','Ausblick: „Nächste Stunde schauen wir genauer hin: Strengt diese Arbeit eher den Körper oder den Kopf an?“'],'EA / Plenum','M4 Plakate, Klebepunkte, M3 Exit-Ticket'],
  ]),
  P('**Didaktische Hinweise**',{...C,size:24,color:'1F6E43',before:160}),
  ...['Die Sterne sind **Einschätzungen**. Abweichungen vom Lösungsvorschlag sind erwünscht, solange sie mit dem Text begründet werden. Genau daraus entsteht das Beurteilen.',
@@ -134,6 +134,21 @@ const entwurf=doc([
  E('M2: siehe M2_Loesung_Berufe-Quartett (Lösungsvorschlag mit Sternen und Begründungen)'),
  E('Hefteintrag: Arbeitsplatzmerkmalen · Arbeitsmittel · Arbeitsbedingungen · Vorteile · Nachteile · Interessen · Fähigkeiten'),
  P('**Material und Vorbereitung**',{...C,size:24,color:'1F6E43',before:160}),
- ...['M1 als Folie bzw. am Beamer','M2: jede Karte einmal pro Gruppe kopieren (ggf. A3 für das Duell)','M3: eine Seite = vier Tickets','Klebepunkte oder Magnete; vier Figuren-Bilder als Plakate (Bilder im Ordner „bilder“)'].map(t=>E(t,{bullet:true,after:20})),
+ ...['M1 als Folie bzw. am Beamer','M2: jede Karte einmal pro Gruppe kopieren (ggf. A3 für das Duell)','M3: eine Seite = vier Tickets','M4 Plakate: vier Seiten (je Beruf eine), am besten auf A3 vergrößert, an die vier Wände oder an die Tafel; Klebepunkte (ein Punkt pro S) oder Magnete'].map(t=>E(t,{bullet:true,after:20})),
 ],{font:'Calibri',size:20,margin:720});
 save(entwurf,`${DIR}/01_Entwurf_Stunde_01.docx`);
+
+// ---------- M4 Plakate Punktabfrage (je Beruf eine Seite, A4 hoch, auf A3 vergrößerbar) ----------
+{
+  const ch=[];
+  FIG.forEach((f,i)=>{
+    if(i) ch.push(br());
+    ch.push(table([10466],[[cell([P(`**${f.name}**`,{size:96,color:'FFFFFF',align:AlignmentType.CENTER,after:0}),
+      P(f.beruf,{size:40,color:'FFFFFF',align:AlignmentType.CENTER,after:0})],10466,{fill:f.col,bc:f.col,m:200})]]));
+    ch.push(img(`${B}/Figur_${f.k}.png`,330,330,{before:200,after:160}));
+    ch.push(P(`${f.ort} · Ausbildung ${f.ausb}`,{size:30,align:AlignmentType.CENTER,color:'4A5A50',after:200}));
+    ch.push(table([10466],[[cell([P('Mein Lieblingsarbeitsplatz?  Klebe hier deinen Punkt!',{size:30,bold:true,color:f.col,align:AlignmentType.CENTER,after:0})],10466,{fill:f.soft,bc:f.col,bs:16,m:160})],
+      [cell([P('',{after:0})],10466,{bc:f.col,bs:16})]],{height:ri=>ri?6300:0}));
+  });
+  save(doc(ch,{margin:600}),`${DIR}/M4_Plakate_Punktabfrage.docx`);
+}
