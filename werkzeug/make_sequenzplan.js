@@ -1,0 +1,125 @@
+// Sequenzplan WiB 7, Lernbereich 2: Arbeit (einstündig)
+const fs=require('fs');
+const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,BorderStyle,AlignmentType,ShadingType,PageOrientation,HeadingLevel,LevelFormat,PageBreak}=require('docx');
+const OUT=process.argv[2];
+const F="Calibri", GREEN="1F6E43", HEAD="DCEFE3", DONE="EEEEEE", PROBE="FCE8D2";
+const rich=(s,o={})=>{ // **fett**
+  return s.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map(t=>t.startsWith("**")?new TextRun({text:t.slice(2,-2),bold:true,font:F,size:o.size||18}):new TextRun({text:t,font:F,size:o.size||18,italics:o.it}));
+};
+const para=(s,o={})=>new Paragraph({children:rich(s,o),spacing:{after:o.after??40},...(o.bullet?{numbering:{reference:"b",level:0}}:{})});
+const cellParas=v=>(Array.isArray(v)?v:[v]).map(x=>x.startsWith("• ")?para(x.slice(2),{bullet:true}):para(x));
+const W=15398; // A4 quer, Ränder 720
+const cols=[600,2300,2700,4600,3000,2198];
+const bd={style:BorderStyle.SINGLE,size:4,color:"9DB8A8"};
+const borders={top:bd,bottom:bd,left:bd,right:bd};
+const cell=(v,w,fill,head)=>new TableCell({width:{size:w,type:WidthType.DXA},borders,margins:{top:60,bottom:60,left:90,right:90},
+  shading:fill?{type:ShadingType.CLEAR,fill,color:"auto"}:undefined,
+  children:head?[new Paragraph({children:[new TextRun({text:v,bold:true,font:F,size:18,color:GREEN})]})]:cellParas(v)});
+const H=["Nr.","Thema / Leitfrage","Kompetenz & Inhalt (LehrplanPLUS)","Ablauf (45 min, Kurzskizze)","Methoden & Material","Ergebnis / Hefteintrag"];
+const rows=[
+["–","**Bereits erledigt:** Merkmale eines Arbeitsplatzes; Berufssteckbriefe",
+ ["Arbeitsplatz beschreiben mithilfe der **Arbeitsplatzmerkmale**"],
+ ["Merkmale eines Arbeitsplatzes erarbeitet (Tätigkeiten, Arbeitsort, Arbeitsmittel, Arbeitsbedingungen, Anforderungen, Gründe für die Berufswahl)","Steckbriefe zu Kfz-Mechatroniker, MFA, Kaufmann/-frau im Einzelhandel, Koch/Köchin bearbeitet (Hör-Mindmaps, Texte 1–5)"],
+ ["alt: 01-29 bis 01-38","neu: Berufssteckbriefe (Word, Audios, Webseiten)"],
+ ["Mindmap-Hefteinträge zu den 4 Berufen"],DONE],
+["1","**Vier Berufe im Vergleich** – Welcher Arbeitsplatz passt zu mir?",
+ ["beschreiben, **beurteilen** und **präsentieren** Arbeitsplätze mithilfe der Arbeitsplatzmerkmale"],
+ ["Einstieg (5′): Bildimpuls der 4 Figuren – „Wer bin ich?“ (Zitate aus den Texten)","Erarbeitung (20′): Expertengruppen (je ein Beruf) übertragen Steckbrief in Vergleichstabelle; Gruppenpuzzle","Sicherung (15′): Vergleichstabelle an der Tafel; je 1 Satz pro Merkmal","Abschluss (5′): Daumenabfrage / Punktabfrage: „Welcher Arbeitsplatz reizt mich? Begründe mit einem Merkmal.“"],
+ ["Gruppenpuzzle, Vergleichstabelle (M1)","Steckbrief-Webseiten auf Tablets"],
+ ["Vergleichstabelle 4 Berufe × 6 Merkmale"]],
+["2","**Formen der Arbeit I:** Körperliche und geistige Arbeit",
+ ["unterscheiden **Kategorien von Arbeit**: körperliche und geistige Arbeit"],
+ ["Einstieg (8′): Bildkarten mit Tätigkeiten (Reifen wechseln, Rechnung schreiben, Teig kneten, Kunden beraten …)","Erarbeitung (20′): PA – Tätigkeiten aus den 4 Steckbriefen auf einer Skala „überwiegend körperlich ↔ überwiegend geistig“ einordnen","Sicherung (12′): Erkenntnis: fast jeder Beruf ist eine **Mischform**; Definitionen","Transfer (5′): Eltern-/Wunschberuf einordnen"],
+ ["Bildkarten, Skala an der Tafel (Magnete)","alt: 01-39 bis 01-48 (Formen der Arbeit, Einstiege, Vertiefungen)"],
+ ["Definition körperliche / geistige Arbeit; Skala mit Beispielen"]],
+["3","**Formen der Arbeit II:** Gelernte und angelernte Arbeit",
+ ["unterscheiden **gelernte und angelernte (ungelernte) Arbeit**"],
+ ["Einstieg (5′): Zwei Personen am selben Arbeitsplatz (Fachkraft vs. Aushilfe in der Küche) – Was ist anders?","Erarbeitung (20′): Fallkarten zuordnen: Ausbildungsdauer, Abschluss, Lohn, Aufgaben, Aufstieg","Sicherung (15′): Tabelle gelernt / angelernt; Vor- und Nachteile","Übung (5′): Kreuzworträtsel (Hausaufgabe)"],
+ ["Fallkarten, Zuordnungstabelle","alt: 01-49 bis 01-52 (inkl. Kreuzworträtsel)"],
+ ["Tabelle gelernt – angelernt – ungelernt"]],
+["4","**Berufe ordnen** – Nach welchen Merkmalen kann man Berufe sortieren?",
+ ["ordnen Berufe in **einfache Ordnungssystematiken** ein, die sie **weitgehend selbständig formulieren**"],
+ ["Einstieg (5′): 20 Berufekarten liegen ungeordnet – „Bringt Ordnung hinein!“","Erarbeitung (20′): GA entwickelt eigene Ordnungskriterien (z. B. **im Freien / in Räumen**, **viel Maschinenarbeit**, mit Menschen / Sachen / Daten, Branche)","Präsentation (12′): Gruppen stellen ihre Systematik vor; Vergleich der Kriterien","Sicherung (8′): eine Systematik in den Hefteintrag; Hinweis auf Berufsfelder (planet-beruf.de)"],
+ ["Lege-Methode mit Berufekarten (M), Plakate","neu zu erstellen"],
+ ["eigene Ordnungssystematik mit Kriterien und Beispielen"]],
+["5","**Warum arbeiten Menschen?** Sinn eines Berufs",
+ ["**Kurzprobe 1** (Std. 2–4); Bedeutung von Erwerbsarbeit für Jugendliche und Erwachsene"],
+ ["Kurzprobe 1 (15′)","Einstieg (5′): Rollenspiel-Impuls „Warum gehst du arbeiten?“","Erarbeitung (15′): Gründe sammeln und clustern: Geld, Selbstverwirklichung, Anerkennung, Kontakte, Sicherheit, Tagesstruktur","Sicherung (10′): Unterschiede Jugendliche ↔ Erwachsene; Bezug zu den Steckbriefen (Gründe für die Berufswahl)"],
+ ["Rollenspiel, Cluster an der Tafel","alt: 01-53 bis 01-58"],
+ ["Mindmap „Sinn der Berufsausübung“"],PROBE],
+["6","**Angestellt oder selbstständig?**",
+ ["unterscheiden **abhängige Beschäftigung** und **unternehmerische Selbständigkeit**"],
+ ["Einstieg (5′): Lenas Traum vom eigenen Restaurant / Tims Werkstatt – „Was ändert sich, wenn ich Chef bin?“","Erarbeitung (20′): Fallbeispiele Arbeitnehmer/-in – Selbständige/-r; Merkmale (Lohn/Gewinn, Risiko, Verantwortung, Arbeitszeit, Urlaub, Weisungen)","Sicherung (15′): Gegenüberstellung mit Vor- und Nachteilen","Abschluss (5′): Positionslinie „Ich möchte später selbstständig sein“"],
+ ["Fallbeispiele, Positionslinie","alt: 01-59 bis 01-62"],
+ ["Tabelle abhängig beschäftigt – selbstständig"]],
+["7","**Zugangserkundung vorbereiten I:** Wir erkunden einen Betrieb",
+ ["erkunden **zunehmend selbständig** einen betrieblichen Arbeitsplatz; **Zugangserkundung**"],
+ ["Einstieg (5′): Was ist eine Erkundung? Ziel: Arbeitsplatz **und Ausbildung** im Betrieb kennenlernen","Erarbeitung (25′): Erkundungsbogen gemeinsam aus den **Arbeitsplatzmerkmalen** entwickeln; Ergänzung „Ausbildung im Betrieb“ (Dauer, Berufsschule, Vergütung, Voraussetzungen, Praktikum)","Organisation (15′): Gruppen, Rollen (Interviewer/-in, Protokoll, Fotos), Verhaltensregeln"],
+ ["Erkundungsbogen (M), Rollenkarten","Organisation: Termin mit Betrieb, Elternbrief, Genehmigung"],
+ ["Erkundungsbogen, Verhaltensregeln"]],
+["8","**Zugangserkundung vorbereiten II:** Interview üben",
+ ["**Kurzprobe 2** (Std. 5–6); Fragetechnik"],
+ ["Kurzprobe 2 (15′)","Erarbeitung (15′): offene Fragen formulieren, Fragen den Merkmalen zuordnen","Übung (15′): Interview-Rollenspiel (Lehrkraft als Betriebsinhaber/-in), Feedback"],
+ ["Rollenspiel, Fragenkarten"],
+ ["fertiger Interviewleitfaden"],PROBE],
+["9","**Zugangserkundung** im Betrieb",
+ ["erkunden einen betrieblichen Arbeitsplatz, Schwerpunkt **Ausbildung**"],
+ ["Unterrichtsgang in einen Betrieb im Schulumfeld (z. B. Bäckerei, Supermarkt, Autowerkstatt, Gasthof, Arztpraxis)","Alternativ: Betriebsvertreter/-in oder Azubi kommt in die Klasse"],
+ ["Erkundungsbogen, Tablet für Fotos (Einwilligung)"],
+ ["ausgefüllte Erkundungsbögen"]],
+["10","**Auswertung der Erkundung**",
+ ["**beschreiben** den erkundeten Arbeitsplatz mithilfe der Arbeitsplatzmerkmale"],
+ ["Einstieg (5′): Blitzlicht: Was hat mich überrascht?","Erarbeitung (35′): GA erstellt Plakat oder digitale Präsentation: Arbeitsplatzmerkmale + Ausbildung im Betrieb + Einordnung (körperlich/geistig, gelernt/angelernt, drinnen/draußen, abhängig/selbständig)","Abschluss (5′): Zeitplan für Präsentation"],
+ ["Plakat oder Präsentation (Tablet)","Bewertungsbogen Präsentation"],
+ ["Gruppenprodukt"]],
+["11","**Präsentation und Beurteilung**",
+ ["**präsentieren** und **beurteilen** den erkundeten Arbeitsplatz"],
+ ["Präsentationen / Galeriegang (30′)","Beurteilung (10′): Was spricht für, was gegen diesen Arbeitsplatz für mich?","Feedback (5′)"],
+ ["Galeriegang, Feedbackbogen"],
+ ["persönliche Beurteilung (3 Sätze)"]],
+["12","**Wiederholung**",
+ ["Sicherung aller Inhalte des Lernbereichs"],
+ ["Lernzirkel / Quiz zu Arbeitsplatzmerkmalen, Formen der Arbeit, Ordnungssystematiken, Sinn der Arbeit, abhängig/selbständig, Ausbildung"],
+ ["Lernzirkel oder Quiz"],
+ ["Selbsteinschätzungsbogen"]],
+["13","**Probe**",
+ ["große Probe (alle Inhalte, die tatsächlich behandelt wurden)"],
+ ["Probe (40′), Rückgabe und Besprechung in der Folgestunde"],
+ ["Schülerblatt, Erwartungshorizont mit Punkten und Notenschlüssel"],
+ ["–"],PROBE]];
+const table=new Table({width:{size:W,type:WidthType.DXA},columnWidths:cols,
+  rows:[new TableRow({tableHeader:true,children:H.map((h,i)=>cell(h,cols[i],HEAD,true))}),
+   ...rows.map(r=>new TableRow({cantSplit:true,children:r.slice(0,6).map((v,i)=>cell(i===0?[`**${v}**`]:v,cols[i],r[6]))}))]});
+const h=(t,lv=HeadingLevel.HEADING_2)=>new Paragraph({heading:lv,spacing:{before:200,after:100},children:[new TextRun({text:t,font:F,bold:true,color:GREEN,size:lv===HeadingLevel.HEADING_1?32:24})]});
+const body=[
+ h("Sequenzplan WiB 7 – Lernbereich 2: Arbeit",HeadingLevel.HEADING_1),
+ para("Mittelschule Bayern · Jahrgangsstufe 7 · **einstündig** (1 × 45 min pro Woche) · 13 Stunden im Anschluss an die Berufssteckbriefe, ca. ein Schulhalbjahr mit Puffer",{size:20,after:120}),
+ h("Kompetenzerwartungen"),
+ para("Die Schülerinnen und Schüler erkunden und analysieren zunehmend selbständig einen betrieblichen Arbeitsplatz. Sie beschreiben, beurteilen und präsentieren ihn mithilfe der Arbeitsplatzmerkmale, mit Schwerpunkt auf der Ausbildung im erkundeten Betrieb.",{bullet:true,size:20}),
+ para("Sie unterscheiden Formen von Erwerbsarbeit, ordnen Berufe in einfache, weitgehend selbst formulierte Ordnungssystematiken ein und unterscheiden abhängige Beschäftigung und unternehmerische Selbständigkeit.",{bullet:true,size:20,after:120}),
+ h("Stundenübersicht"),
+ para("Grau: bereits erledigt · Orange: Stunde mit Leistungserhebung",{size:18,it:true,after:80}),
+ table,
+ new Paragraph({children:[new PageBreak()]}),
+ h("Leistungserhebungen"),
+ para("**Kurzprobe 1** (Stunde 5, 15 min): Formen der Arbeit (körperlich/geistig, gelernt/angelernt), Ordnungssystematiken",{bullet:true,size:20}),
+ para("**Kurzprobe 2** (Stunde 8, 15 min): Sinn der Berufsausübung, abhängige Beschäftigung und Selbständigkeit",{bullet:true,size:20}),
+ para("**Große Probe** (Stunde 13): alle Inhalte inkl. Arbeitsplatzmerkmale und Ergebnisse der Erkundung",{bullet:true,size:20}),
+ para("Optional: Präsentation der Erkundung (Stunde 11) als mündliche Note",{bullet:true,size:20,after:120}),
+ h("Organisation der Zugangserkundung"),
+ para("3–4 Wochen vorher: Betrieb anfragen, Termin festlegen, Schulleitung informieren",{bullet:true,size:20}),
+ para("2 Wochen vorher: Elternbrief mit Einverständnis (Unterrichtsgang, Fotos)",{bullet:true,size:20}),
+ para("Bei nur einer Wochenstunde: Stunde mit einer Kollegin oder einem Kollegen tauschen oder die Erkundung auf einen Projekt- bzw. Wandertag legen. Alternative: Expertenbesuch (Ausbilder/-in oder Azubi) in der Klasse.",{bullet:true,size:20}),
+ para("Passende Betriebe zu den Steckbriefen: Autowerkstatt, Arztpraxis, Supermarkt oder Fachgeschäft, Gasthof oder Hotelküche",{bullet:true,size:20,after:120}),
+ h("Zuordnung deines alten Materials"),
+ para("01-29 bis 01-38 (Aufgaben, Tätigkeiten, Merkmale von Arbeitsplätzen): bereits erledigt; Grundlage für den Erkundungsbogen in Stunde 7",{bullet:true,size:20}),
+ para("01-39 bis 01-48 (Formen der Arbeit, Einstiege 1–6, Vertiefungen): Stunde 2",{bullet:true,size:20}),
+ para("01-49 bis 01-52 (gelernte und angelernte Arbeit, Kreuzworträtsel): Stunde 3",{bullet:true,size:20}),
+ para("01-53 bis 01-58 (Sinn der Ausübung eines Berufs, Rollenspiel): Stunde 5",{bullet:true,size:20}),
+ para("01-59 bis 01-62 (selbstständig oder angestellt): Stunde 6",{bullet:true,size:20}),
+ para("Neu zu erstellen: Vergleichstabelle (Std. 1), Berufekarten für die Lege-Methode (Std. 4), Erkundungsbogen und Interviewleitfaden (Std. 7–8), Bewertungsbogen Präsentation (Std. 10–11), Kurzproben und Probe",{bullet:true,size:20}),
+];
+const doc=new Document({numbering:{config:[{reference:"b",levels:[{level:0,format:LevelFormat.BULLET,text:"•",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:280,hanging:200}}}}]}]},
+ styles:{default:{document:{run:{font:F,size:20}}}},
+ sections:[{properties:{page:{size:{width:11906,height:16838,orientation:PageOrientation.LANDSCAPE},margin:{top:720,right:720,bottom:720,left:720}}},children:body}]});
+Packer.toBuffer(doc).then(b=>fs.writeFileSync(OUT,b));
