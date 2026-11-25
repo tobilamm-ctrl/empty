@@ -56,3 +56,54 @@ function doc(children,o={}){
 }
 const save=(d,f)=>D.Packer.toBuffer(d).then(b=>{fs.writeFileSync(f,b);console.log("ok",f.split("/").slice(-2).join("/"))});
 module.exports={ctx,runs,P,H,img,cell,table,line,br,doc,save,BORD,NOB,D};
+
+// ---------- gemeinsame Bausteine für Entwürfe ----------
+const U2=module.exports;
+U2.entwurf=function(o){
+  const {AlignmentType}=D;const C={font:'Calibri'};
+  const E=(s,x={})=>U2.P(s,{...C,size:20,...x});
+  const sec=t=>U2.P(`**${t}**`,{...C,size:24,color:'1F6E43',before:160,after:60,keepNext:true});
+  const cs=[800,1500,5000,1300,1866];
+  const vt=U2.table(cs,[["Zeit","Phase","Unterrichtsgeschehen","Sozialform","Medien"].map((h,i)=>U2.cell(E(`**${h}**`,{after:0}),cs[i],{fill:'DCEFE3'})),
+    ...o.verlauf.map(r=>r.map((v,i)=>U2.cell((Array.isArray(v)?v:[v]).map(x=>E(x,{after:40})),cs[i])))],{header:true});
+  const ch=[U2.P(`**Stundenentwurf WiB 7 – Stunde ${o.nr}: ${o.titel}**`,{...C,size:30,color:'1F6E43'}),E(o.info),
+    U2.P(`**Leitfrage:** ${o.leitfrage}`,{...C,size:22,before:80}),sec('Lernziele'),E(`Grobziel: ${o.grob}`),E('Die Schülerinnen und Schüler …',{after:40}),
+    ...o.fein.map(t=>E(t,{bullet:true,after:20})),sec('Verlaufsplan'),vt];
+  if(o.hinweise){ch.push(sec('Didaktische Hinweise'));o.hinweise.forEach(t=>ch.push(E(t,{bullet:true,after:40})));}
+  if(o.loesungen){ch.push(sec('Lösungen'));o.loesungen.forEach(t=>ch.push(E(t,{after:60})));}
+  if(o.material){ch.push(sec('Material und Vorbereitung'));o.material.forEach(t=>ch.push(E(t,{bullet:true,after:20})));}
+  if(o.extra) ch.push(...o.extra(E,sec));
+  return U2.doc(ch,{font:'Calibri',size:20,margin:720});
+};
+// Eintrag: blocks(mode) liefert die Absätze; erzeugt Tafelbild und Lückentext
+U2.eintraege=function(dir,kopf,titel,blocks,wortspeicher){
+  for(const mode of ['tafel','luecke']){
+    U2.ctx.mode=mode;const lk=mode==='luecke';
+    const ch=[U2.H(titel,{size:32}),...blocks(mode)];
+    if(lk&&wortspeicher) ch.push(U2.P(`**Wortspeicher:** ${wortspeicher}`,{size:19,before:140,color:'4A5A50'}));
+    U2.ctx.mode='tafel';
+    U2.save(U2.doc(ch,{kopf:kopf+(lk?' · Hefteintrag':' · Tafelbild')}),`${dir}/${lk?'03_Hefteintrag_Lueckentext':'02_Tafelbild'}.docx`);
+  }
+};
+U2.FIG=[
+ {k:'tim',name:'Tim',beruf:'Kfz-Mechatroniker',col:'1F4E9E',soft:'DCE6F5'},
+ {k:'selin',name:'Selin',beruf:'Medizinische Fachangestellte',col:'0F6E6E',soft:'D6EDEA'},
+ {k:'jonas',name:'Jonas',beruf:'Kaufmann im Einzelhandel',col:'A4243B',soft:'F6DDE1'},
+ {k:'lena',name:'Lena',beruf:'Köchin',col:'3D6B21',soft:'E0EBD4'}];
+U2.ROOT='/home/user/empty/WiB7_LB2_Arbeit';U2.B=U2.ROOT+'/bilder';
+// Ampelkarten-Folie: Aussagen mit Lösung
+U2.ampelFolie=function(titel,aussagen,loesung){
+  const {AlignmentType}=D;const W=15300;
+  const rows=aussagen.map(([t,r],i)=>[U2.cell(U2.P(`**${i+1}.**`,{size:28,after:0}),700,{valign:D.VerticalAlign.CENTER}),
+    U2.cell(U2.P(t,{size:28,after:0}),loesung?11600:14600,{valign:D.VerticalAlign.CENTER}),
+    ...(loesung?[U2.cell(U2.P(r[0]==='r'?'**richtig**':'**falsch**'+(r.length>1?` – ${r.slice(2)}`:''),{size:20,color:r[0]==='r'?'2E7D32':'C62828',after:0}),3000,{fill:r[0]==='r'?'E3F2E5':'FBE3E3',valign:D.VerticalAlign.CENTER})]:[])]);
+  return U2.doc([U2.P(`**${titel}**${loesung?' – Lösung':''}`,{size:40,color:'1F6E43',align:AlignmentType.CENTER,after:40}),
+    U2.P('Grüne Karte = richtig · Rote Karte = falsch',{size:24,align:AlignmentType.CENTER,after:120}),
+    U2.table(loesung?[700,11600,3000]:[700,14600],rows,{height:()=>700})],{landscape:true,margin:600});
+};
+U2.ampelKarten=function(){
+  const {AlignmentType}=D;
+  const k=(c,t)=>U2.cell([U2.P(`**${t}**`,{size:72,color:'FFFFFF',align:AlignmentType.CENTER,after:0})],5233,{fill:c,bc:c,valign:D.VerticalAlign.CENTER});
+  return U2.doc([U2.P('**Ampelkarten** – auf festes Papier drucken, ausschneiden, Rückseite an Rückseite kleben (wiederverwendbar)',{size:18,color:'7A8A80',after:100}),
+    U2.table([5233,5233],[[k('2E9E4F','richtig'),k('D64541','falsch')],[k('2E9E4F','richtig'),k('D64541','falsch')],[k('2E9E4F','richtig'),k('D64541','falsch')]],{height:()=>4300})],{margin:600});
+};
